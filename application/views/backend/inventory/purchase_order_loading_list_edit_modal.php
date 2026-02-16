@@ -1560,6 +1560,7 @@ function calculateOfficial(rowId) {
     calculateRow(rowId);
 }
 
+// Calculate CTN for a product
 function calculateCTN(rowId) {
     var $mainRow = $('#loading_row_' + rowId);
     var loadingQty = parseFloat($mainRow.find('.loading-qty').val()) || 0;

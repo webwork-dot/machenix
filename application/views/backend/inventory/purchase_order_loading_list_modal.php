@@ -1405,6 +1405,57 @@ function calculateOfficial(rowId) {
     calculateRow(rowId);
 }
 
+// Calculate CTN for a product
+function calculateCTN(rowId) {
+    var $mainRow = $('#loading_row_' + rowId);
+    var loadingQty = parseFloat($mainRow.find('.loading-qty').val()) || 0;
+    var officialCIQty = parseFloat($mainRow.find('.official-ci-qty').val()) || 0;
+    var pkgCtn = parseFloat($mainRow.find('.pkg-ctn').val()) || 0;
+   
+    $('[data-row-id="' + rowId + '"]').each(function() {
+        var $row = $(this);
+
+        var pkgCtn = parseFloat($row.find('.pkg-ctn').val()) || 0;
+        var nwKg = parseFloat($row.find('.nw-kg').val()) || 0;
+        var gwKg = parseFloat($row.find('.gw-kg').val()) || 0;
+        var length = parseFloat($row.find('.length').val()) || 0;
+        var width = parseFloat($row.find('.width').val()) || 0;
+        var height = parseFloat($row.find('.height').val()) || 0;
+
+        // Calculate Total N.W.
+        var totalNW = nwKg * pkgCtn;
+        $row.find('.total-nw').val(totalNW.toFixed(2));
+        
+        // Calculate Total G.W.
+        var totalGW = gwKg * pkgCtn;
+        $row.find('.total-gw').val(totalGW.toFixed(2));
+        
+        // Calculate Total CBM: (L * W * H / 1000000000) * PKG (ctn)
+        // Dimensions are in mm, dividing by 1000000000 converts mm³ to m³
+        // Formula: (L * W * H / 1000000000) * PKG * (Loading Qty / PKG) = (L * W * H / 1000000000) * Loading Qty
+        // But requirement specifies * PKG, so we'll use: (L * W * H / 1000000000) * PKG * (Loading Qty / PKG) if PKG > 0
+        var volumeMm3 = length * width * height;
+        var volumeM3PerUnit = volumeMm3 / 1000000000; // Convert mm³ to m³
+        // If PKG > 0, calculate number of cartons, otherwise use direct calculation
+        var totalCBM;
+        if (pkgCtn > 0 && loadingQty > 0) {
+            var cbmPerCarton = volumeM3PerUnit * pkgCtn; // CBM per carton
+            var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
+            totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
+        } else {
+            // Fallback: direct calculation if PKG is 0
+            totalCBM = volumeM3PerUnit * loadingQty;
+        }
+
+        $row.find('.total-cbm').val(totalCBM.toFixed(6));
+    });
+    
+    // Update supplier totals after row calculation
+    updateSupplierTotals($mainRow.closest('.supplier-section'));
+    // Update grand totals
+    updateGrandTotals();
+}
+
 // Calculate all fields for a product (and its variation rows)
 function calculateRow(rowId) {
     var $mainRow = $('#loading_row_' + rowId);
