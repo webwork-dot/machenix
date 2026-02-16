@@ -1,0 +1,44 @@
+When I Submit the PO [file] form I want to add data in 2 tables
+1. purchase_order [table]
+2. purchase_order_product [table]
+
+In purchase_order table I want to add data in the following columns
+- method
+- voucher_no
+- date
+- delivery_date
+- company_id
+- company_name
+- warehouse_id
+- warehouse_name
+- delivery_address
+- mode_of_payment
+- dispatch
+- destination
+- other_refrence
+- terms_of_delivery
+- narration
+- total_cbm
+
+In purchase_order_product table I want to add data in the following columns
+- parent_id - po insert id
+- supplier_id - supplier id 
+- product_type - ready or spare 
+- product_id - product id from dropdown inside supplier row
+- categories - categories get from raw_products table
+- group_id - group id get from raw_products table
+- product_name - product name get from raw_products table
+- hsn_code - hsn code get from raw_products table
+- item_code - model no from input field inside supplier row
+- quantity - quantity from input field inside supplier row
+- cbm - cbm from input field inside supplier row
+- total_cbm - total cbm from input field inside supplier row
+- pending_po_qty - pending po qty from input field inside supplier row
+- loading_list_qty - loading list qty from input field inside supplier row
+- in_stock_qty - in stock qty from input field inside supplier row
+- company_stock - company stock from input field inside supplier row
+- cartoon - cartoon_qty get from raw_products table
+- rate - product_mrp get from raw_products table
+- basic_amount - costing_price get from raw_products table
+
+If any row of ready material and spare part has no selected product or 0 quantity  then ignore that row and dont add that row in the database.. but id there isnt any single row with no product data then show error message and dont submit the form.

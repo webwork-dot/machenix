@@ -1,0 +1,17 @@
+Payment 
+
+Supplier Select, 
+Invoice no, 
+Batch Select, 
+Select Payment (official, black), 
+Amount (USD, RS, RMB), 
+Date of Payment
+narration
+if official --> select bank acc
+
+
+Bank Accounts --
+name, 
+ifsc code, 
+bank name, 
+account no

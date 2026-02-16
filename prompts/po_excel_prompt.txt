@@ -1,0 +1,21 @@
+[generate_purchase_order_excel] In this function I want to generate a excel file from the data I am storing in the $excel_data variable.
+
+The following is the structure of the excel sheet looks like this:
+
+[Supplier Name] ----> column span to 6 cells
+[Batch No] ----> column span to 6 cells
+[Sr No.] | [Product] | [Model] | [Quantity] | [CBM] | [Total CBM]
+1 | Product 1 | Model 1 | 10 | 10 | 100
+2 | Product 2 | Model 2 | 20 | 20 | 200
+3 | Product 3 | Model 3 | 30 | 30 | 300
+column span to 4 cells ---------> [Total] | [Total] | [Total]
+[Supplier Name] --- > multiple supplier
+[Batch No]
+[Sr No.] | [Product] | [Model] | [Quantity] | [CBM] | [Total CBM]
+1 | Product 1 | Model 1 | 10 | 10 | 100
+2 | Product 2 | Model 2 | 20 | 20 | 200
+3 | Product 3 | Model 3 | 30 | 30 | 300
+                [Total] | [Total] | [Total]
+
+it should generate excel for each supplier section wise.
+and at the end of the excel file it should generate a row of the total quantity, total cbm, total amount.

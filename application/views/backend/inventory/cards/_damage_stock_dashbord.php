@@ -1,0 +1,49 @@
+<div class="row">
+                 
+    <div class="col-md-4 col-sm-3 col-xs-12">
+        <a class="w-100" href="#">
+            <div class="card-st hiauto" style="">
+               <div class="card-header d-flex">
+                  <div>
+                     <h2 class="text-bold-700 mb-0"><?php echo $stats['total_damage_stock']; ?></h2>
+                     <p>Total Damage Stock</p>
+                  </div>
+                  <div class="avatar bg-rgba-primary p-50 m-0">
+                     <div class="avatar-content"><i class="fa fa-inr text-primary font-medium-5"></i></div>
+                  </div>
+               </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-sm-3 col-xs-12">
+        <a class="w-100" href="#">
+            <div class="card-st hiauto" style="">
+               <div class="card-header d-flex">
+                  <div>
+                     <h2 class="text-bold-700 mb-0"><?php echo $stats['total_damage_stock_qty']; ?></h2>
+                     <p>Total Damage Quantity</p>
+                  </div>
+                  <div class="avatar bg-rgba-primary p-50 m-0">
+                     <div class="avatar-content"><i class="feather icon-package text-primary font-medium-5"></i></div>
+                  </div>
+               </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-sm-3 col-xs-12">
+        <a class="w-100" href="#">
+            <div class="card-st hiauto" style="">
+               <div class="card-header d-flex">
+                  <div>
+                     <h2 class="text-bold-700 mb-0"><?php echo $stats['total_scrap_qty']; ?></h2>
+                     <p>Total Scrap Quantity</p>
+                  </div>
+                  <div class="avatar bg-rgba-primary p-50 m-0">
+                     <div class="avatar-content"><i class="feather icon-list text-primary font-medium-5"></i></div>
+                  </div>
+               </div>
+            </div>
+        </a>
+    </div>
+    
+</div>

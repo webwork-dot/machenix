@@ -1,0 +1,97 @@
+StartFontMetrics 4.1
+Notice Converted by PHP-font-lib
+Comment https://github.com/PhenX/php-font-lib
+EncodingScheme FontSpecific
+Copyright Copyright 2017 The Libre Barcode Project Authors (lasse@graphicore.de)
+FontName Libre Barcode 39 Text
+FontSubfamily Regular
+UniqueID 1.002;GRCR;LibreBarcode39Text-Regular
+FullName Libre Barcode 39 Text Regular
+Version Version 1.002; ttfautohint (v1.6)
+PostScriptName LibreBarcode39Text-Regular
+LicenseURL http://scripts.sil.org/OFL
+Weight Medium
+ItalicAngle 0
+IsFixedPitch false
+UnderlineThickness 50
+UnderlinePosition -75
+FontHeightOffset 0
+Ascender 600
+Descender -400
+FontBBox 0 -400 540 600
+StartCharMetrics 160
+U 0 ; WX 0 ; N uni0000 ; G 2
+U 13 ; WX 0 ; N uni000D ; G 1
+U 32 ; WX 510 ; N uni0020 ; G 89
+U 36 ; WX 570 ; N uni0024 ; G 90
+U 37 ; WX 570 ; N uni0025 ; G 91
+U 42 ; WX 510 ; N uni002A ; G 92
+U 43 ; WX 570 ; N uni002B ; G 93
+U 45 ; WX 510 ; N uni002D ; G 94
+U 46 ; WX 510 ; N uni002E ; G 95
+U 47 ; WX 570 ; N uni002F ; G 96
+U 48 ; WX 510 ; N uni0030 ; G 97
+U 49 ; WX 510 ; N uni0031 ; G 98
+U 50 ; WX 510 ; N uni0032 ; G 99
+U 51 ; WX 510 ; N uni0033 ; G 100
+U 52 ; WX 510 ; N uni0034 ; G 101
+U 53 ; WX 510 ; N uni0035 ; G 102
+U 54 ; WX 510 ; N uni0036 ; G 103
+U 55 ; WX 510 ; N uni0037 ; G 104
+U 56 ; WX 510 ; N uni0038 ; G 105
+U 57 ; WX 510 ; N uni0039 ; G 106
+U 65 ; WX 510 ; N uni0041 ; G 107
+U 66 ; WX 510 ; N uni0042 ; G 108
+U 67 ; WX 510 ; N uni0043 ; G 109
+U 68 ; WX 510 ; N uni0044 ; G 110
+U 69 ; WX 510 ; N uni0045 ; G 111
+U 70 ; WX 510 ; N uni0046 ; G 112
+U 71 ; WX 510 ; N uni0047 ; G 113
+U 72 ; WX 510 ; N uni0048 ; G 114
+U 73 ; WX 510 ; N uni0049 ; G 115
+U 74 ; WX 510 ; N uni004A ; G 116
+U 75 ; WX 510 ; N uni004B ; G 117
+U 76 ; WX 510 ; N uni004C ; G 118
+U 77 ; WX 510 ; N uni004D ; G 119
+U 78 ; WX 510 ; N uni004E ; G 120
+U 79 ; WX 510 ; N uni004F ; G 121
+U 80 ; WX 510 ; N uni0050 ; G 122
+U 81 ; WX 510 ; N uni0051 ; G 123
+U 82 ; WX 510 ; N uni0052 ; G 124
+U 83 ; WX 510 ; N uni0053 ; G 125
+U 84 ; WX 510 ; N uni0054 ; G 126
+U 85 ; WX 510 ; N uni0055 ; G 127
+U 86 ; WX 510 ; N uni0056 ; G 128
+U 87 ; WX 510 ; N uni0057 ; G 129
+U 88 ; WX 510 ; N uni0058 ; G 130
+U 89 ; WX 510 ; N uni0059 ; G 131
+U 90 ; WX 510 ; N uni005A ; G 132
+U 97 ; WX 510 ; N uni0061 ; G 133
+U 98 ; WX 510 ; N uni0062 ; G 134
+U 99 ; WX 510 ; N uni0063 ; G 135
+U 100 ; WX 510 ; N uni0064 ; G 136
+U 101 ; WX 510 ; N uni0065 ; G 137
+U 102 ; WX 510 ; N uni0066 ; G 138
+U 103 ; WX 510 ; N uni0067 ; G 139
+U 104 ; WX 510 ; N uni0068 ; G 140
+U 105 ; WX 510 ; N uni0069 ; G 141
+U 106 ; WX 510 ; N uni006A ; G 142
+U 107 ; WX 510 ; N uni006B ; G 143
+U 108 ; WX 510 ; N uni006C ; G 144
+U 109 ; WX 510 ; N uni006D ; G 145
+U 110 ; WX 510 ; N uni006E ; G 146
+U 111 ; WX 510 ; N uni006F ; G 147
+U 112 ; WX 510 ; N uni0070 ; G 148
+U 113 ; WX 510 ; N uni0071 ; G 149
+U 114 ; WX 510 ; N uni0072 ; G 150
+U 115 ; WX 510 ; N uni0073 ; G 151
+U 116 ; WX 510 ; N uni0074 ; G 152
+U 117 ; WX 510 ; N uni0075 ; G 153
+U 118 ; WX 510 ; N uni0076 ; G 154
+U 119 ; WX 510 ; N uni0077 ; G 155
+U 120 ; WX 510 ; N uni0078 ; G 156
+U 121 ; WX 510 ; N uni0079 ; G 157
+U 122 ; WX 510 ; N uni007A ; G 158
+U 160 ; WX 510 ; N uni00A0 ; G 159
+EndCharMetrics
+EndFontMetrics

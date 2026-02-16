@@ -1,0 +1,61 @@
+Prompt for Purchase Order Priority List Modal Details
+  [modal] in this modal I want you to show the list of all products inside that particular PO.. use $param2 to get PO and its products from these tables [table] [table]
+
+  1). Show data in tabular format with the following columns:
+  - Sr, Supplier Name, Type (Ready/Spare), Product Name, Model No, Quantity, CBM, Total CBM, Pending PO Qty, Loading List Qty, In Stock Qty, Selected Company Stock, Action
+
+  - Sr no: should be auto incremented.
+  - Supplier Name: should be the name of the from [table] using supplier_id.
+  - Type (Ready Goods/Spare Parts): stored in [table] with the enum('ready','spare','')
+  - Product Name: categories - product_name in [table].
+  - Model No: item_code
+  - Quantity: quantity
+  - CBM: cbm
+  - Total CBM: total_cbm
+  - Pending PO Qty: pending_po_qty
+  - Loading List Qty: loading_list_qty
+  - In Stock Qty: in_stock_qty
+  - Selected Company Stock: company_stock
+  - Action: should have a button to remove the row from the table only.
+
+  In this make the Quantity Field Editable and when user change the quantity then update the Total CBM Field automatically.
+
+  At the bottom of the table there should be a button to add a new row to the table... When User press that button then add a new row to the table with the same column as above but the supplier, type, product and qty would be editable
+
+  supplier will be a supplier dropdown with the list of suppliers of this particular company.
+  type will be a dropdown with the list of types (Ready Goods/Spare Parts) with the value of (ready/spare) based on that fetch the product from the list of products based on the selected type... 
+  When user select products then use the same function used inside PO add form [form]
+
+  At the end of the table show total CBM and a remark textbox below it. and a button to submit the form....
+
+  [function] you can also refer to this function to get the following data for dropdown fields like supplier etc
+
+
+Prompt for Purchase Order Priority List Modal Loading Products
+  [modal] in this modal if the user remove a certain row or reduce the quantity of the existing product in purchase_order_product then create a table called Loading Products and show the data that user has removed or reduced the quantity of the existing product of PO... This table fields will be same as the Purchase Order Priority List Modal Details and editable. User can add qty here as well..
+
+  If the user has revert the data.. for example user change back the quantity of the product then the data shouldn't be removed from Loading Products table. also it should all be realtime changes here is a complete breakdown of how it should work:
+
+  Cases:
+  - original qty - 3, current qty - 3, removed qty - 1, total qty - 2, then it should be shown in the Loading Products table.
+  - original qty - 3, current qty - 3, removed qty - 3, total qty - 0, then it should be shown in the Loading Products table and remove the row from the table.
+  - original qty - 3, current qty - 3, pressed delete button, then it should be shown in the Loading Products table and remove the row from the table.
+  
+  Those cases will only work if the removed products is in purchase_order_product.. it wont work with the appended product row..
+
+  After all this I want you to create an append function for the Loading Products same as the append function for the Purchase Order Priority List Modal Details. It will have same functionality like selecting supplier, type, product and qty like the Purchase Order Priority List Table and have same columns and this appended row will have input fields with name and it will have an hidden input field with the name of loading_list = 1.
+
+  also put the same hidden field in priority list modal details product row with the name of loading_list = 0
+
+  The colums will be same as the Purchase Order Priority List table.. but the action field will be same as the Purchase Order Priority Table but it will just remove the row from the table only.
+
+  In both table User cannot select the same product again inside of that particular table.. if user select the same product again then show a message to the user that the product is already selected.. User can select the duplicate product in the other table but only with the same supplier and type... otherwise show an error in Swal
+
+
+
+Prompt for Priority List Modal Update
+  When I click the update button then it should fetch purchase_order data with its product and then add it in [table] in json format.
+
+  After that it should update the purchase_order data delivery_status to 'priority' and set notes column to the notes value from the modal.. 
+
+  Then I want to these data in a same format as the purchase_order_product table and add it in [table] just set is_priority 1 or 0 based on priority and loading list 1 or 0.. do not change any other data like purchase_order_product or purchase_order (except delivery_status, notes) table data.

@@ -1,0 +1,200 @@
+.md-view .content {
+    margin-left: 0 !important;
+}
+.md-view .header-navbar.fixed-top,.md-view .header-navbar.floating-nav {
+  left: 0px !important;
+}
+.md-view  .header-navbar.floating-nav {
+    width: calc(100vw - (100vw - 100%) - calc(6rem * 2) - 0px)!important;
+}
+.md-view .navbar-floating .navbar-container:not(.main-menu-content) {
+    padding: 0rem .5rem !important;
+}
+.md-view .d-head {
+    font-weight: 700;
+    color: #1e652e;
+    font-size: 1.4rem;
+    text-transform: capitalize;
+}
+
+
+.md-view .box1{
+    background: #f7f3ff;
+    border-radius: 1rem;
+}
+.md-view .box1 i {
+    margin-left: 0px !important;
+    color: #2b2b2b !important;
+}
+.md-view .box1 .avatar {
+    background-color: #e5e3e7 !important;
+}
+
+.md-view .box2{
+    background: #fff1d7;
+    border-radius: 1rem;
+}
+.md-view .box2 i {
+    margin-left: 0px !important;
+    color: #f5a40d !important;
+}
+.md-view .box2 .avatar {
+    background-color: #f3e1bf !important;
+}
+
+.md-view .box3{
+    background: #b2f7ef;
+    border-radius: 1rem;
+}
+.md-view .box3 i {
+    margin-left: 0px !important;
+    color: #63928d  !important;
+}
+.md-view .box3 .avatar {
+    background-color: #97e6dd  !important;
+}
+
+.md-view .box4{
+    background: #eff7f6;
+    border-radius: 1rem;
+}
+.md-view .box4 i {
+    margin-left: 0px !important;
+    color: #479d93  !important;
+}
+.md-view .box4 .avatar {
+    background-color: #d2edea  !important;
+}
+
+
+.md-view .box5{
+    background: #fed7d7;
+    border-radius: 1rem;
+}
+.md-view .box5 i {
+    margin-left: 0px !important;
+    color: #e84d4d !important;
+}
+.md-view .box5 .avatar {
+    background-color: #f4c0c0 !important;
+}
+.md-view .static2{
+    background: linear-gradient(#cdf3de,#fff) !important;
+}
+
+.md-view .static3{
+    background: linear-gradient(#ffe3c8,#fff) !important;
+}
+.dashed{
+        border: 1px dashed #858585 !important;
+}
+.happyBirthday .btn-close{
+    position: absolute;
+    top: -16px;
+    right: -16px;
+    opacity: 1;
+}
+.happyBirthday .modal-content {
+    border-radius: 1rem;
+}
+.happyBirthday video{
+    border-radius: 1rem;
+}
+.happyBirthday .logo_img{
+    height: 65px;
+    width: fit-content;
+    margin: 0px auto;
+    margin-top: 12px;
+}
+.happyBirthday .we_wish_you {
+    height: 65px;
+    width: fit-content;
+    margin: 0px auto;
+    margin-top: 10px;
+}
+.webwork{
+    height: 45px;
+}
+.from_team{
+    text-align: center;
+    margin-bottom: 15px;
+}
+.from_team h1 {
+    font-size: 20px;
+    color: #1e652e;
+}
+.md-view .content {
+    padding: calc(1rem + 4.45rem + 1.3rem) 6rem 0 !important;
+}
+
+
+
+
+@media only screen and (max-width: 900px) {
+.md-view .header-navbar.floating-nav {
+    width: calc(100vw - (100vw - 100%) - calc(2rem + .4rem)) !important;
+}  
+.md-view .header-navbar .navbar-container ul.navbar-nav li {
+    display: block !important;
+}  
+.md-view .header-navbar .navbar-container ul.navbar-nav li>a.nav-link img{
+    height: 45px;
+}
+.md-view .content {
+    padding: calc(1rem + 4.45rem + 1.3rem) 1.2rem 0 !important;
+}
+.md-view .mv3{
+    width:33%;
+    padding: 0px 2px;
+    margin-bottom: 10px;
+}
+.md-view .mv3 .avatar {
+    display: none;
+}
+.md-view .d-head {
+    font-size: 1.1rem;
+}
+.md-view .mx-stats .card-header {
+    padding: 10px 10px;
+}
+.md-view .mx-stats .card-header h2 {
+    font-size: 1.4rem !important;
+}
+.md-view .mx-stats .card-header p {
+    min-height: 42px;
+}
+.md-view .mw-full{
+    width:100%;
+    margin-bottom: 10px;
+}
+.md-view .mw-half {
+    width: 50%;
+    margin-bottom: 6px;
+    padding: 0px 2px;
+}
+.md-view .mw-half .avatar {
+    display: none;
+}
+.md-view .mw-half .card-header p {
+    min-height: auto;
+}
+.md-view .mw-half .card-header {
+    min-height: 75px;
+}
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

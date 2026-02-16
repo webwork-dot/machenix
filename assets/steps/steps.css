@@ -1,0 +1,550 @@
+
+/*form styles*/
+.steps {
+  width: auto;
+  margin: 50px auto;
+  position: relative;
+  min-height: 400px;
+  margin-top: 10px;
+  padding: 0;
+  z-index: 0;
+}
+
+.steps fieldset {
+  background: white;
+  border: 0 none;
+  border-radius: 3px;
+  -webkit-box-shadow: 0 17px 41px -21px rgba(0, 0, 0,0.2);
+  -moz-box-shadow: 0 17px 41px -21px rgba(0, 0, 0,0.2);
+  box-shadow: 0 17px 41px -21px rgba(0, 0, 0,0.2);
+  padding: 20px 30px;
+  border-top: 9px solid #1e652e;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0;
+  
+  /*stacking fieldsets above each other*/
+  #position: absolute;
+}
+/*Hide all except first fieldset*/
+.steps fieldset:not(:first-of-type) {
+  display: none;
+}
+/*inputs*/
+#steps label{
+  color: #333333;
+  text-align: left !important;
+  font-size: 15px;
+  font-weight: 200;
+  padding-bottom: 7px;
+  padding-top: 12px;
+  display: inline-block;
+}
+
+
+#steps input, .steps textarea, .steps select {
+    outline: none;
+    display: block;
+    width: 100%;
+    margin: 0px;
+    padding: 6px 15px;
+    border: 1px solid #d9d9d9;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: #837E7E;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    font-size: 16px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-transition: all 0.3s linear 0s;
+    -moz-transition: all 0.3s linear 0s;
+    -ms-transition: all 0.3s linear 0s;
+    -o-transition: all 0.3s linear 0s;
+    transition: all 0.3s linear 0s;
+}
+
+.steps input:focus, .steps textarea:focus, .steps select:focus{
+  color: #333333;
+  border: 1px solid #1e652e;
+}
+
+.error1{
+   -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  -moz-box-shadow: 0 0 0 transparent;
+  -webkit-box-shadow: 0 0 0 transparent;
+  box-shadow: 0 0 0 transparent;
+  padding: 0 10px;
+  height: 22px;
+  display: block;
+  color: #ffffff;
+  background: #cb0008;
+  border: 0;
+  font: 12px Corbel, "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", "Bitstream Vera Sans", "Liberation Sans", Verdana, "Verdana Ref", sans-serif;
+  line-height: 22px;
+  white-space: nowrap;
+  position: absolute;
+  margin-top: 5px;
+  -webkit-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.2);
+-moz-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.2);
+box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.2);
+}
+
+.error1:before{
+    width: 0;
+  height: 0;
+  left: 5px;
+  top: -4px;
+  content: '';
+  position: absolute;
+  border-bottom: 6px solid #cb0008;
+  border-right: 8px solid transparent;
+  border-left: 6px solid transparent;
+}
+.iagree{
+    left: 4%;
+    margin-top: -10px;
+}
+.error-log{
+    margin: 5px 5px 5px 0;
+  font-size: 10px;
+  position: relative;
+  bottom: 0px;
+}
+
+.question-log {
+  margin: 5px 1px 5px 0;
+  font-size: 15px;
+  position: relative;
+  bottom: -2px;
+  }
+
+/*buttons*/
+.steps .action-button, .action-button {
+ 
+  background: #1e652e;
+  font-weight: bold;
+  color: white;
+  border: 0 none;
+  border-radius: 1px;
+  cursor: pointer;
+  padding: 8px 25px;
+  margin: 10px auto;
+  -webkit-transition: all 0.3s linear 0s;
+  -moz-transition: all 0.3s linear 0s;
+  -ms-transition: all 0.3s linear 0s;
+  -o-transition: all 0.3s linear 0s;
+  transition: all 0.3s linear 0s;
+  display: block;
+}
+
+.steps .next, .steps .submit{
+    float: right;
+}
+
+.steps .previous{
+  float:left;
+}
+
+.steps .action-button:hover, .steps .action-button:focus, .action-button:hover, .action-button:focus {
+  background:#1e652e;
+  color: #fff;
+  outline: none;
+  border: none;
+}
+
+.steps .explanation{
+display: block;
+  clear: both;
+  width: 540px;
+  background: #f2f2f2;
+  position: relative;
+  margin-left: -30px;
+  padding: 22px 0px;
+  margin-bottom: -10px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  top: 10px;
+  text-align: center;
+  color: #333333;
+  font-size: 12px;
+  font-weight: 200;
+  cursor:pointer;
+}
+
+
+/*headings*/
+.fs-title {
+  text-transform: uppercase;
+     margin: 0 0 5px;
+     line-height: 1;
+     color: #23232;
+     font-size: 20px;
+    font-weight: 600;
+    text-align:center;
+}
+.fs-subtitle {
+  font-weight: normal;
+  font-size: 15px;
+  color: #837E7E;
+  margin-bottom:35px;
+  text-align: center;
+}
+/*progressbar*/
+#progressbar {
+    margin: 0 auto;
+    margin-bottom: 30px;
+    overflow: hidden;
+    counter-reset: step;
+    width: 100%;
+    text-align: center;
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+#progressbar li {
+  list-style-type: none;
+    color: rgb(51, 51, 51);
+  text-transform: uppercase;
+  font-size: 14px;
+  position: relative;
+  font-weight: 700;
+  flex: 1;
+}
+
+#progressbar li:before {
+content: counter(step);
+    counter-increment: step;
+    width: 30px;
+    line-height: 30px;
+    display: block;
+    font-size: 12px;
+    color: #333;
+    background: #e9ecef;
+    border-radius: 50%;
+    margin: 0 auto 5px auto;
+
+}
+/*progressbar connectors*/
+#progressbar li:after {
+  content: '';
+  width: 100%;
+  height: 2px;
+  background: #e9ecef;
+  position: absolute;
+  left: -50%;
+  top: 15px;
+  z-index: -1; /*put it behind the numbers*/
+}
+#progressbar li:first-child:after {
+  /*connector not needed before the first step*/
+  content: none; 
+}
+/*marking active/completed steps green*/
+/*The number of the step and the connector before it = green*/
+#progressbar li.active:before,  #progressbar li.active:after{
+  background: #1e652e;
+  color: white;
+}
+
+.field{
+  float: left;
+  width: 48%;
+  margin: 0 1%;
+  position: relative;
+}
+.flarge{
+  float: left;
+  width: 100%;
+  text-align: center;
+}
+
+
+
+
+
+
+/* Info */
+/*.info {
+  width: 300px;
+  margin: 35px auto;
+  text-align: center;
+ 
+}*/
+
+.info h1 {
+  margin: 0;
+  padding: 0;
+  font-size: 28px;
+  font-weight: 400;
+  color: #333333;
+  padding-bottom: 5px;
+
+}
+.info span {
+  color:#666666;
+  font-size: 13px;
+  margin-top:20px;
+}
+.info span a {
+  color: #666666;
+  text-decoration: none;
+}
+.info span .fa {
+  color: rgb(226, 168, 16);
+  font-size: 19px;
+  position: relative;
+  left: -2px;
+}
+
+.info span .spoilers {
+  color: #999999;
+  margin-top: 5px;
+  font-size: 10px;
+}
+.bname_box{
+  background: url(../images/browser_mockup.gif) no-repeat center center;
+  height: 165px;  
+}
+.field h3{
+  margin: 5px 0;
+  text-align: right;
+}
+
+/* ====================== upload store image file =============*/
+.file-upload {
+  background-color: #ffffff;
+  width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.file-upload-btn {
+  width: 100%;
+  margin: 0;
+  color: #fff;
+  background: #1e652e;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  border-bottom: 4px solid #15824B;
+  transition: all .2s ease;
+  outline: none;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.file-upload-btn:hover {
+  background: #037f37;
+  color: #ffffff;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.file-upload-btn:active {
+  border: 0;
+  transition: all .2s ease;
+}
+
+.file-upload-content {
+  display: none;
+  text-align: center;
+}
+
+.file-upload-input {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  opacity: 0;
+  cursor: pointer;
+}
+/*
+.image-upload-wrap {
+  margin-top: 20px;
+  border: 4px dashed #1e652e;
+  position: relative;
+}
+
+.image-dropping,
+.image-upload-wrap:hover {
+  background-color: #1e652e;
+  border: 4px dashed #ffffff;
+}
+*/
+.image-title-wrap {
+  padding: 0 15px 15px 15px;
+  color: #222;
+}
+
+.drag-text {
+  text-align: center;
+}
+
+.drag-text h3 {
+  font-weight: 100;
+  text-transform: uppercase;
+  color: #15824B;
+  padding: 60px 0;
+}
+.image-upload-wrap:hover h3{
+  color: #fff;
+}
+.file-upload-image {
+  max-height: 200px;
+  max-width: 200px;
+  margin: auto;
+  padding: 20px;
+}
+
+.remove-image {
+  width: auto;
+  margin: 0;
+  color: #cd4535;
+  background: #fff;
+  border: 1px solid #cd4535;
+  padding:5px 10px;
+  border-radius: 4px;
+  transition: all .2s ease;
+  outline: none;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.remove-image:hover {
+  background: #fff;
+  color: #c13b2a;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+input#iagree{
+  width: 50px;
+  float: left;
+  padding-bottom: 0;
+  margin-bottom:0;
+  margin-top: 16px; 
+}
+.u_img_exmple{
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.u_img_exmple span{
+  display: block;
+  position: absolute;
+  bottom: 0;
+  background: rgba(0,0,0,0.3);
+  color: #ffffff;
+  width: 100%;
+    line-height: 30px;
+    font-size: 16px;
+}
+.thumbnail a>img, .thumbnail>img {
+    margin-right: auto;
+    margin-left: auto;
+    max-height: 200px; 
+    cursor: pointer;
+}
+.thumbnail{
+ text-align: center;	
+}
+  
+.update_pic_p{
+ width: 100%; 
+ background: rgb(0, 103, 222); 
+ height: 25px; 
+ padding-top: 3px;cursor: 
+ pointer;    max-width: inherit;
+ text-align: center;color: #fff;font-size: 12px;font-weight: lighter;
+    
+}
+
+.form-group{
+margin-bottom: 20px;	
+}
+
+   
+ input[type='range'] {
+  width: 80% ;
+  height: 30px;
+  overflow: hidden;
+  cursor: pointer;
+    outline: none;
+        margin-left: 10px;
+}
+input[type='range'],
+input[type='range']::-webkit-slider-runnable-track,
+input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: button;
+    background: none;
+	    
+}
+input[type='range']::-webkit-slider-runnable-track {
+  width: 200px;
+  height: 1px;
+  background: #003D7C;
+}
+
+input[type='range']:nth-child(2)::-webkit-slider-runnable-track{
+  background: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  position: relative;
+  height: 15px;
+  width: 15px;
+  margin-top: -7px;
+  background: #fff;
+  border: 1px solid #003D7C;
+  border-radius: 25px;
+  z-index: 1;
+}
+
+
+input[type='range']:nth-child(1)::-webkit-slider-thumb{
+  z-index: 2;
+}
+
+.rangeslider{
+    /*position: relative;
+    height: 60px;
+    width: 210px;
+    display: inline-block;
+    margin-top: -5px;
+    margin-left: 20px;*/
+}
+.rangeslider input{
+    position: unset!important;
+    display: unset!important;
+}
+.rangeslider{
+    /*position: absolute;*/
+}
+
+.rangeslider span{
+    /*position: absolute;*/
+    
+    left: 0;
+}
+
+.rangeslider .right{
+   position: relative;
+   float: right;
+   margin-right: -5px;
+}
+
+
+.range_min {
+	
+vertical-align: top;
+    margin-top: 10px;	
+}

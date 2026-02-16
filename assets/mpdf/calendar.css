@@ -1,0 +1,712 @@
+@font-face {
+  font-family: 'Montserrat-Bold';
+  font-style: normal;
+  font-weight: 700;
+  src: url("fonts/Montserrat-Bold.ttf") format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  src: url("fonts/Montserrat-Regular.ttf") format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat-SemiBold';
+  font-style: normal;
+  font-weight: 600;
+  src: url("fonts/Montserrat-SemiBold.ttf") format('truetype');
+}
+
+
+@page {
+	margin: 0in 0in;
+}
+body {
+	margin: 0in;
+	padding: 0in;
+}
+
+.calendar-first{
+	width: 100%;
+	page-break-inside: none;	
+}
+
+.calendar-page{
+	position: relative;
+	width: 100%;
+	margin: 0 auto;
+	page-break-inside: auto;
+}
+
+.base-image {
+	width: 100%;
+	max-width: 100%;
+}
+.overlay-image {
+    position: absolute;
+    width: 380px;
+}
+.cal-txt {
+    position: absolute;
+    font-size: 1.1rem;
+    color: #2b2b29;
+    font-weight: 600;
+	font-family: 'Montserrat-SemiBold';
+}
+
+.cal-city {
+    position: absolute;
+    transform: rotate(90deg);
+    transform-origin: top left;
+    font-size: 1.1rem;
+    line-height: 1.5;
+	text-align:center;
+    font-family: 'Montserrat-SemiBold';
+}
+
+.january .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.january .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.january .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.january .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.january .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.january .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.january .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.january .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.january .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.january .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.january .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+.january .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+
+/*february*/
+.february .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.february .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.february .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.february .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.february .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.february .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.february .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.february .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.february .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.february .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.february .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.february .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*march*/
+.march .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.march .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.march .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.march .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.march .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.march .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.march .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.march .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.march .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.march .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.march .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.march .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*april*/
+.april .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.april .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.april .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.april .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.april .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.april .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.april .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.april .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.april .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.april .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.april .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.april .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*may*/
+.may .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.may .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.may .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.may .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.may .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.may .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.may .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.may .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.may .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.may .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.may .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.may .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*june*/
+.june .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.june .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.june .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.june .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.june .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.june .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.june .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.june .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.june .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.june .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.june .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.june .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*july*/
+.july .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.july .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.july .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.july .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.july .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.july .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.july .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.july .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.july .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.july .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.july .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.july .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*august*/
+.august .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.august .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.august .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.august .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.august .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.august .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.august .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.august .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.august .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.august .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.august .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.august .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*september*/
+.september .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.september .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.september .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.september .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.september .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.september .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.september .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.september .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.september .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.september .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.september .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.september .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*october*/
+.october .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.october .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.october .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.october .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.october .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.october .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.october .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.october .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.october .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.october .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.october .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.october .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*november*/
+.november .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.november .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.november .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.november .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.november .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.november .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.november .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.november .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.november .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.november .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.november .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.november .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}
+
+/*december*/
+.december .photo1-city  {
+    top: 7rem;
+    left: 59.66rem;
+}
+.december .photo2-city  {
+    top: 7rem;
+    left: 119.10rem;
+}
+.december .photo3-city  { 
+    top: 38.90rem;
+    left: 59.66rem;
+}
+.december .photo4-city  { 
+    top: 38.90rem;
+    left: 119.10rem;
+}
+
+.december .photo1-img {
+    top: 7rem;
+    left: 33.33rem;
+}
+.december .photo1-text {
+    top: 5rem;
+    left: 33.33rem;
+}
+
+.december .photo2-img {
+    top: 7rem;
+    left: 92.90rem;
+}
+.december .photo2-text {
+    top: 5rem;
+    left: 92.90rem;
+}
+
+.december .photo3-img {
+    top: 39rem;
+    left: 33.40rem;
+}
+.december .photo3-text {
+    top: 37rem;
+    left: 30.33em;
+}
+
+.december .photo4-img {
+    top: 39rem;
+    left: 92.90rem;
+}
+.december .photo4-text {
+    top: 37rem;
+    left: 92.90rem;
+}

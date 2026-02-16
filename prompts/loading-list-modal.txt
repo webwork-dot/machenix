@@ -1,0 +1,24 @@
+[modal] in this modal I want you to show the list of all products inside that particular PO.. use $param2 to get PO and its products from these tables [table] [table]...
+
+1). Show data in tabular format with the following columns:
+- Sr No.: should be auto incremented.
+- Model No.: item_code 
+- Product Name: product_name
+- Priority List (Qty): quantity
+- Loading Qty (PCS): Editable integer only Input Field with no default value.
+- Official CI Qty: Editable integer only Input Field with no default value (shouldnt be more than Loading Qty (PCS))
+- Black Qty: Readonly Auto Calculated Field (Loading Qty (PCS) - Official CI Qty).
+- Unit Price (RMB): Editable float Input Field with no default value.
+- Total Amount (RMB): Readonly Auto Calculated Field (Loading Qty (PCS) * Unit Price (RMB)).
+- Official CI Unit Price (USD): Readonly Field comes from @database/raw_products.sql field name usd_rate using product_id.
+- Total Amount (USD): Readonly Auto Calculated Field (Official CI Qty * Official CI Unit Price (USD)).
+- Black Total Price: Readonly Auto Calculated Field (Official CI Unit Price (USD) + Black Qty).
+- PKG (ctn): Readonly Field comes from @database/raw_products.sql field name cartoon_qty using product_id.
+- N.W. (kg): Readonly Field comes from @database/raw_products.sql field name net_weight using product_id.
+- Total N.W.: Readonly Auto Calculated Field (N.W. (kg) * Loading Qty (PCS)).
+- G.W. (kg): Readonly Field comes from @database/raw_products.sql field name gross_weight using product_id.
+- Total G.W.: Readonly Auto Calculated Field (G.W. (kg) * Loading Qty (PCS)).
+- L: Readonly Field comes from @database/raw_products.sql field name length using product_id.
+- W: Readonly Field comes from @database/raw_products.sql field name width using product_id.
+- H: Readonly Field comes from @database/raw_products.sql field name height using product_id.
+- Total CBM: Readonly Auto Calculated Field (L * W * H / 1000000000) * PKG (ctn).

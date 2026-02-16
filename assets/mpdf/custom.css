@@ -1,0 +1,243 @@
+@font-face {
+  font-family: 'OpenSans-Bold';
+  font-style: normal;
+  font-weight: 700;
+  src: url("../fonts/OpenSans-Bold.ttf") format('truetype');
+}
+
+@page { margin:10px 15px; }
+body { 
+ margin:0px;width: 100%;height: 100%;page-break-inside: auto;
+}
+
+.table-bordered>tbody>tr>td, .table-bordered>tbody>tr>th,  .table-bordered>thead>tr>td, .table-bordered>thead>tr>th {
+    border: none!important;
+    border-right: 1px solid #000000 !important;
+    border-left: 1px solid #000000 !important;
+}
+.table-bordered>tfoot>tr>td {border: 1px solid #000000;vertical-align: middle;}
+.invoice hr { border-top: 1px solid #000000;}
+.txtup {text-transform: uppercase !important;}
+
+.bold, b, strong{ font-family: 'OpenSans-Bold' !important; font-weight:bold !important;}
+.invoice table td { font-size: 8.5px;padding: 2px !important; color:#000000}
+.invoice p,h3,h1{  color:#000000}
+.mb-0{margin-bottom:0px;}
+.mt-0{margin-top:0px;}
+.no-pad{padding:0px !important}
+.txtup p, .txtup h4 {text-transform: uppercase !important;}
+.clearfix:after {content: "";display: table;clear: both;}
+a {color: #0087C3;text-decoration: none;}
+.font12{font-size:12px !important;}
+@media screen, print { body{ color:#000000;} p{font-family: arial;} .tbold p{ font-size:18px; font-weight:800;color:#000000;font-family: 'OpenSans-Bold';} .bold{font-weight:900;color:#000000;font-family: 'OpenSans-Bold';}  b{font-weight:900 !important;color:#000000 !important;font-family: 'OpenSans-Bold';} .tbold h4{ font-size:24px; font-weight:900;color:#000000;} .tbold hr{border-top: 2px solid #000000;} .invoice p,.invoice h4{font-size:9px !important;} .box h1{ font-size:42px; font-weight:900;color:#000000;}}
+body { width: 100%;height: 100%;margin: 0 auto; color: #000000555;background: #fff; font-family: Arial, sans-serif;font-size: 14px;page-break-inside: auto;}
+header {text-align: center;}
+#page-wraps{width:750px; height:1050px; }
+#logo { margin-top: 0px;}
+#logo img {width: 200px;margin-bottom: 15px;}
+#logo h1 {text-transform: uppercase;font-size: 16px;margin-top: 5px;font-weight: 600;}
+table {width: 100%;border-collapse: collapse;border-spacing: 0;margin-bottom: 0px;}
+table th {padding: 0px;background: #fff;text-align: center;border-bottom: 1px solid #FFFFFF;font-weight:600 !important;}
+table td{padding:10px;background:#fff;text-align:center;border-bottom:1px solid #FFF}
+table th{white-space:nowrap;font-weight:normal}
+table .desc{text-align:center}
+footer{color:#777;width:100%;height:35px;bottom:0;border-top:1px solid #cccaca;padding:8px 0;text-align:center;font-weight:600}
+p{font-size:13px}
+#page-wrap{width:100%;margin:0 auto}
+.border{border-bottom:1px solid #a9a5a5;padding:5px 0px}
+@media screen,print{p,h3{font-family:sans-serif}}
+.head-img img{width:200px}
+.head-img{padding-top:5px}
+#invoice tr th,#invoice_1 tr th,#invoice_3 tr th{vertical-align:top;border-bottom:none;word-wrap: break-word;}
+#invoice{width:100%}
+#invoice_{width:60%}
+#invoice_ td{text-align:left !important}
+.right{text-align:right !important}
+.left{text-align:left !important}
+.center{text-align:center}
+p{margin-bottom:0px;margin-top:0px;font-weight:400;white-space: normal;line-height:12px;}
+.m-t-20{margin-top:20px !important}
+b{font-weight:900 !important}
+#invoice_1{}#invoice_ td,#invoice_ th{padding:5px 10px}
+.m-b-20{margin-bottom:20px}
+.p-l-r{padding-left:10px;padding-right:10px}
+.border-right{border-right:1px solid #000000}
+.border{border:1px solid #000000}
+.product th{background:#eee;text-align:center;  font-size: 10px;}
+.invoice .text-gray{color:#a29e9e;font-size:10px}
+.text-gray{color:#a29e9e;font-size:12px}
+.product tr th {vertical-align: middle !important;}
+.product tr th span {font-size:11px !important;}
+.invoice .product tr th {vertical-align: middle !important;padding:2px !important; color:#000000;line-height: 10px;border-top: 1px solid #000000 !important;border-bottom: 1px solid #000000 !important;}
+.invoice .product tfoot tr th {
+    border-right: 1px solid #000000;
+    border-left:  1px solid #000000;
+}
+.invoice .product tr th span {font-size:9px !important;}
+#invoice_3{ }
+.invoice .box{ border: 2px solid #000000!important;}
+.invoice .box h2{font-size: 34px!important; color: #000000!important; margin: 0px;}
+.invoice .box h3{font-size: 23px!important; color: #000000!important; margin: 0px;}
+small{font-size: 9px!important;}
+.box h1{font-size: 42px!important;font-weight: 700!important;line-height: 44px!important;}
+.box h3{font-size: 30px!important;font-weight: 700!important;line-height: 30px!important;}
+.box h4{font-size: 24px!important;font-weight: 700!important;line-height: 26px!important;}
+.box h5{font-size: 20px!important;font-weight: 700!important;line-height: 20px!important;}
+.box{border: 1px solid #ddd;padding: 10px; text-align: center; border: 2px solid #000000; padding: 10px; text-align: center;  margin-bottom: 5px;}
+.order_no{vertical-align: middle!important;}
+.order_no h4{font-size: 40px;line-height: 42px;}
+.table>tbody>tr>td{overflow: hidden;word-break: break-all!important;word-wrap:break-word!important }
+
+.print-this #invoice th, .print-this #invoice td {
+    width: 33% !important;color: #000000;
+}
+.print-this .tbold p {
+    font-size: 14px;
+    font-weight: 500;
+    color: #000000;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: rgba(0, 0, 0, 0.85);
+    font-weight: 500;
+}
+.print-this {  color: #000000 !important;}
+.print-this #order_invoice_ table th {padding: 8px;background: #fff;text-align: center;border-bottom: 1px solid #FFFFFF;font-weight:600 !important;}
+.print-this #order_invoice_  table td{padding:10px;background:#fff;text-align:center;border-bottom:1px solid #FFF}
+.print-this #order_invoice_  table th{white-space:nowrap;font-weight:normal}
+.print-this #order_invoice_  table .desc{text-align:center}
+.print-this b {
+    font-weight: 900 !important;
+}
+#order_invoice_ th {
+    background: #f5f5f5;
+}
+#order_invoice_ td, #order_invoice th {
+    border: 1px solid #ddd;
+}
+
+#order_invoice_{
+	border : 1px solid #ddd;
+    color: #000000;
+}
+#order_invoice_ td,#order_invoice_ th{
+	border : 1px solid #ddd;
+}
+#order_invoice_ th{
+	background : #f5f5f5;
+}
+
+.font-18{font-size: 18px;}
+.w-33{
+	width : 33.33% !important;
+}
+.col-md-offset-4{
+	margin-left : 33.33% !important;
+}
+.print-this{
+	padding-top : 50px !important;
+	padding-bottom : 30px !important;
+	padding-left : 40px !important;
+	padding-right : 100px !important;
+	
+}
+.print-this body{
+	overflow: hidden !important;
+}
+.print-this table td {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+.print-this #invoice .head h5{
+    font-size: 31px !important;
+    margin-bottom: 0 !important;
+    line-height: 1.2 !important;
+} 
+.print-this #invoice .head h4{
+    font-size: 31px !important;
+    margin-bottom: 0;
+    line-height: 1.2 !important;
+} 
+.print-this #invoice .head p{
+	font-size: 23px !important;
+    font-weight: 500 !important;
+    color: #1e1e1e !important;
+    line-height: 1.2 !important;
+}
+.print-this #invoice .head .school{
+    word-break: break-word !important;
+    padding-right: 40px !important;
+}
+.print-this #order_invoice thead th,.print-this #order_invoice tbody td{
+	border: 1px solid #1e1e1e !important;
+} 
+.print-this #order_invoice tbody td:first-child{
+	width: 100px !important;
+} 
+.print-this #order_invoice thead th{
+	background: #d9d9d9 !important;
+} 
+.book-pack{
+	font-size: 14px !important;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+.print-this #invoice .head .fs-40{font-size: 50px !important} 
+
+
+.border-r {border-right: 1px dashed #000000 !important;}
+.border-l {border-left: 1px dashed #000000 !important;}
+.border-t {border-top: 1px dashed #000000 !important;}
+.border-b {border-bottom: 1px dashed #000000 !important;}
+
+.wl-20{    
+    text-align: left;
+    display: inline-block;
+    width: 18%;
+    margin: 0px;
+}
+
+.wl-80{  
+    text-align: center;
+    display: inline-block;
+    width: 80%;
+    margin: 0px;
+}
+
+.table {
+    margin-bottom: 10px!important;}
+	
+/* Salary - slip */
+
+.heads-img img{width:160px}
+.heads-img{padding:20px}
+.salary-heading {
+	font-size: 30px;
+    font-weight: 600;
+    font-family: sans-serif !important;
+}
+.salary-subheading {
+	font-size: 16px;
+    font-weight: 600;
+	font-family: sans-serif !important;
+}
+.mt-6 {
+	margin-top: 60px;
+}
+.border-rs {
+	border-right: 2px solid #808080 !important;
+}
+.emp-head {
+	font-size: 13px !important;
+	font-family: sans-serif !important;
+}
+.mt-17{
+	margin-top: 20px;
+}
+.emp-bold {
+	font-weight: 700 !important;
+	font-family: sans-serif !important;
+}
+.mb-1{
+	margin-bottom: 10px
+}

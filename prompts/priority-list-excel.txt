@@ -1,0 +1,19 @@
+[function] In this function I want to generate a excel file from the data I am storing in the $excel_data variable.
+
+The following is the structure of the excel sheet looks like this:
+
+[priority] ----> column span to 6 cells
+[Sr no.] | [Product] | [Model] | [Quantity] | [CBM] | [Total CBM]
+1 | Product 1 | Model 1 | 10 | 10 | 100
+2 | Product 2 | Model 2 | 20 | 20 | 200
+3 | Product 3 | Model 3 | 30 | 30 | 300
+  | Total     |         | 60 |    | 600
+
+[notes] ----> column span to 6 cells
+
+[loading_list] ----> column span to 6 cells
+[Sr no.] | [Product] | [Model] | [Quantity] | [CBM] | [Total CBM]
+1 | Product 1 | Model 1 | 10 | 10 | 100
+2 | Product 2 | Model 2 | 20 | 20 | 200
+3 | Product 3 | Model 3 | 30 | 30 | 300
+  | Total     |         | 60 |    | 600

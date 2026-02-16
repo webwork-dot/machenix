@@ -1,0 +1,72 @@
+.txtup {text-transform: uppercase !important;}
+.invoice table td { font-size: 10px;padding: 4px !important;}
+.mb-0{margin-bottom:0px;}
+.txtup p, .txtup h4 {text-transform: uppercase !important;}
+.clearfix:after {content: "";display: table;clear: both;}
+a {color: #0087C3;text-decoration: none;}
+@media screen, print { p,h3,h1 {font-family: arial;} .tbold p{ font-size:19px; font-weight:800;color:#000;} .tbold h4{ font-size:24px; font-weight:900;color:#000;} .tbold hr{border-top: 2px solid #000;} .invoice p,.invoice h4{font-size:10px !important;} 
+table>tbody>tr>td{overflow: hidden;word-break: break-all!important;padding: 3px 5px !important;} table>tr>td{overflow: hidden;word-break: break-all!important;}}
+
+
+body { width: 100%;height: 100%;margin: 0 auto; color: #555555;background: #fff; font-family: Arial, sans-serif;font-size: 14px;page-break-inside: auto;}
+header {text-align: center;}
+#page-wraps{width:595.28px; height:1050px; }
+#logo { margin-top: 0px;}
+#logo img {width: 120px;margin-bottom: 15px;}
+#logo h1 {text-transform: uppercase;font-size: 16px;margin-top: 5px;font-weight: 600;}
+table {width: 100%;border-collapse: collapse;border-spacing: 0;margin-bottom: 0px;}
+table th {padding: 8px;background: #fff;text-align: center;border-bottom: 1px solid #FFFFFF;font-weight:600 !important;}
+table td{padding:10px;background:#fff;text-align:center;border-bottom:1px solid #FFF}
+table th{white-space:nowrap;font-weight:normal}
+table .desc{text-align:center}
+footer{color:#777;width:100%;height:35px;bottom:0;border-top:1px solid #cccaca;padding:8px 0;text-align:center;font-weight:600}
+p{font-size:13px}
+#page-wrap{width:100%;margin:0 auto}
+.border{border-bottom:1px solid #a9a5a5;padding:5px 0px}
+@media screen,print{p,h3{font-family:sans-serif}}
+.head-img img{width:120px}
+.head-img{padding-top:20px}
+#invoice tr th,#invoice_1 tr th,#invoice_3 tr th{vertical-align:top;border-bottom:none;word-wrap: break-word;}
+#invoice{width:100%}
+#invoice_{width:60%}
+#invoice_ td{text-align:left !important}
+.right{text-align:right !important}
+.left{text-align:left !important}
+.center{text-align:center}
+p{margin-bottom:5px;margin-top:5px;font-weight:400;    white-space: normal;}
+.m-t-20{margin-top:20px !important}
+b{font-weight:900 !important}
+#invoice_1{}#invoice_ td,#invoice_ th{padding:5px 10px}
+.m-b-20{margin-bottom:20px}
+.p-l-r{padding-left:10px;padding-right:10px}
+.border-right{border-right:1px solid #000}
+.border{border:1px solid #000}
+.product th{background:#eee;text-align:center;  font-size: 11px;white-space: nowrap;}
+.product.sm th{ font-size: 10px;}
+.product.sm th small{font-size: 7.5px !important;}
+.invoice .text-gray{color:#a29e9e;font-size:10px}
+.text-gray{color:#a29e9e;font-size:12px}
+.product tr th {vertical-align: middle !important;}
+.product tr th span {font-size:12px !important;}
+.invoice .product tr th {vertical-align: middle !important;padding:4px !important;;}
+.invoice .product tr th span {font-size:10px !important;}
+#invoice_3{ }
+.box h4{font-size: 24px;font-weight: 700;line-height: 26px;}
+.box{border: 1px solid #ddd;padding: 10px; text-align: center; border: 2px solid #555; padding: 10px; text-align: center;  margin-bottom: 5px;}
+
+table { overflow: visible !important; }
+thead { display: table-header-group }
+tfoot { display: table-row-group }
+tr { page-break-inside: avoid }
+.table>tbody>tr>td{overflow: hidden;word-break: break-all!important;word-wrap:break-word!important }
+.table>tr>td{overflow: hidden;word-break: break-all!important;word-wrap:break-word!important }
+.bold{font-weight:800;color:#000;}
+br{
+  display: block;
+  font-size:1px;
+  line-height: 1.2 !important;
+}
+span{
+  line-height: 1.2 !important;
+}
+b{font-weight:800;color:#000;}
