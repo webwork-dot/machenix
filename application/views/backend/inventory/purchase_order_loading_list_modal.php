@@ -667,7 +667,8 @@
                                         <td class="metric-cell">
                                             <input type="number" step="0.01" class="form-control form-control-sm pkg-ctn" 
                                                 id="pkg_ctn_<?php echo $product['id']; ?>"
-                                                value="1" name="pkg_ctn[<?php echo $product['id']; ?>][<?php echo $variation_index; ?>]" readonly>
+                                                value="1" name="pkg_ctn[<?php echo $product['id']; ?>][<?php echo $variation_index; ?>]" 
+                                                onclick="calculateCTN(<?php echo $product['id']; ?>)" onkeyup="calculateCTN(<?php echo $product['id']; ?>)">
                                         </td>
                                         <td class="metric-cell">
                                             <input type="number" step="0.01" class="form-control form-control-sm nw-kg" 
@@ -1402,6 +1403,13 @@ function calculateOfficial(rowId) {
     $mainRow.find('.unit-price-rmb').val(rateRMB);
     $mainRow.find('.official-ci-qty').val(loadingQty.toFixed(0));
     $mainRow.find('.black-qty').val(0);
+
+    // For each variation row (including main row), calculate weights and CBM
+    $('[data-row-id="' + rowId + '"]').each(function() {
+        var $row = $(this);
+        $row.find('.pkg-ctn').val(loadingQty);
+    });
+
     calculateRow(rowId);
 }
 
@@ -1511,16 +1519,15 @@ function calculateRow(rowId) {
         var width = parseFloat($row.find('.width').val()) || 0;
         var height = parseFloat($row.find('.height').val()) || 0;
 
-        // Calculate Total N.W.
-        var totalNW = nwKg * loadingQty;
-        $row.find('.pkg-ctn').val(loadingQty);
+
+        // $row.find('.pkg-ctn').val(loadingQty);
 
         // Calculate Total N.W.
-        var totalNW = nwKg * loadingQty;
+        var totalNW = nwKg * pkgQty;
         $row.find('.total-nw').val(totalNW.toFixed(2));
         
         // Calculate Total G.W.
-        var totalGW = gwKg * loadingQty;
+        var totalGW = gwKg * pkgQty;
         $row.find('.total-gw').val(totalGW.toFixed(2));
         
         // Calculate Total CBM: (L * W * H / 1000000000) * PKG (ctn)
@@ -1533,11 +1540,14 @@ function calculateRow(rowId) {
         var totalCBM;
         if (pkgCtn > 0 && loadingQty > 0) {
             var cbmPerCarton = volumeM3PerUnit * pkgCtn; // CBM per carton
-            var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
-            totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
+            totalCBM = cbmPerCarton // Total CBM
+            // var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
+            // totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
         } else {
             // Fallback: direct calculation if PKG is 0
-            totalCBM = volumeM3PerUnit * loadingQty;
+            var cbmPerCarton = volumeM3PerUnit * pkgCtn;
+            totalCBM = cbmPerCarton;
+            // totalCBM = volumeM3PerUnit * loadingQty;
         }
 
         $row.find('.total-cbm').val(totalCBM.toFixed(6));

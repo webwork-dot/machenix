@@ -1351,7 +1351,8 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
                 } else {
                     mergedProducts.forEach(function(product) {
                         var productId = (product.id || '').toString();
-                        if (productId && existingProductIds.indexOf(productId) === -1) {
+                        let findLoad = loadProducts.find((e) => e == productId);
+                        if (productId && existingProductIds.indexOf(productId) === -1 && findLoad) {
                             appendLoadingListProductRow($section, product);
                             existingProductIds.push(productId);
                             newCount++;
@@ -1557,6 +1558,12 @@ function calculateOfficial(rowId) {
     $mainRow.find('.official-ci-qty').val(loadingQty.toFixed(0));
     $mainRow.find('.black-qty').val(0);
 
+    // For each variation row (including main row), calculate weights and CBM
+    $('[data-row-id="' + rowId + '"]').each(function() {
+        var $row = $(this);
+        $row.find('.pkg-ctn').val(loadingQty);
+    });
+
     calculateRow(rowId);
 }
 
@@ -1665,13 +1672,13 @@ function calculateRow(rowId) {
         var width = parseFloat($row.find('.width').val()) || 0;
         var height = parseFloat($row.find('.height').val()) || 0;
 
-        $row.find('.pkg-ctn').val(loadingQty);
+        // $row.find('.pkg-ctn').val(loadingQty);
         // Calculate Total N.W.
-        var totalNW = nwKg * loadingQty;
+        var totalNW = nwKg * pkgCtn;
         $row.find('.total-nw').val(totalNW.toFixed(2));
         
         // Calculate Total G.W.
-        var totalGW = gwKg * loadingQty;
+        var totalGW = gwKg * pkgCtn;
         $row.find('.total-gw').val(totalGW.toFixed(2));
         
         // Calculate Total CBM: (L * W * H / 1000000000) * PKG (ctn)
@@ -1684,11 +1691,14 @@ function calculateRow(rowId) {
         var totalCBM;
         if (pkgCtn > 0 && loadingQty > 0) {
             var cbmPerCarton = volumeM3PerUnit * pkgCtn; // CBM per carton
-            var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
-            totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
+            totalCBM = cbmPerCarton // Total CBM
+            // var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
+            // totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
         } else {
             // Fallback: direct calculation if PKG is 0
-            totalCBM = volumeM3PerUnit * loadingQty;
+            var cbmPerCarton = volumeM3PerUnit * pkgCtn;
+            totalCBM = cbmPerCarton;
+            // totalCBM = volumeM3PerUnit * loadingQty;
         }
 
         $row.find('.total-cbm').val(totalCBM.toFixed(6));
