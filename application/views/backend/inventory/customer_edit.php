@@ -34,6 +34,7 @@
           'onsubmit' => 'return checkForm(this);'
         ]);?>
 
+        <input type="hidden" name="type" value="<?php echo $navigation; ?>">
         <!-- General Details -->
         <fieldset class="form-fieldset">
           <legend>General Details</legend>
@@ -69,7 +70,7 @@
               </div>
             </div>
 
-            <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+            <?php if($this->session->userdata('super_type') == 'Inventory' && $navigation != 'leads'){ ?>
               <div class="col-12 col-sm-3 mb-1" id="staff_div">
                 <div class="form-group">
                   <label>Staff <span class="required">*</span></label>
@@ -84,7 +85,7 @@
                   </select>
                 </div>
               </div>
-            <?php } else { ?>
+            <?php } elseif($navigation != 'leads') { ?>
               <input type="hidden" name="staff_id" value="<?php echo $this->session->userdata('super_user_id');?>">
             <?php } ?>
 
@@ -171,9 +172,14 @@
 
             <div class="col-12 col-sm-3 mb-1">
               <div class="form-group">
-                <label>Owner Email <span class="required">*</span></label>
+                <label>
+                  Owner Email 
+                  <?php if($navigation != 'leads'){ ?>
+                    <span class="required">*</span>
+                  <?php } ?>
+                </label>
                 <input type="email" class="form-control" placeholder="Enter Owner Email" name="owner_email"
-                  value="<?php echo $data['owner_email'] ?? ''; ?>" required>
+                  value="<?php echo $data['owner_email'] ?? ''; ?>" <?php if($navigation != 'leads'){ echo 'required'; }?> >
               </div>
             </div>
 
@@ -189,11 +195,16 @@
 
             <div class="col-12 col-sm-3 mb-1">
               <div class="form-group">
-                <label>Owner Whatsapp Number <span class="required">*</span></label>
+                <label>
+                  Owner Whatsapp Number 
+                  <?php if($navigation != 'leads'){ ?>
+                    <span class="required">*</span>
+                  <?php } ?>
+                </label>
                 <input type="text" class="form-control" placeholder="Enter Owner Whatsapp" name="owner_whatsapp"
                   inputmode="numeric" maxlength="10" minlength="10"
                   oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
-                  value="<?php echo $data['owner_whatsapp'] ?? ''; ?>" required>
+                  value="<?php echo $data['owner_whatsapp'] ?? ''; ?>" <?php if($navigation != 'leads'){ echo 'required'; } ?>>
               </div>
             </div>
           </div>

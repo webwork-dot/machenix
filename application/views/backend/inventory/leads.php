@@ -11,29 +11,29 @@
 <div class="row" id="table-bordered">
    <div class="col-12">
       <div class="card">
-         <div class="card-body">
-            <div class="row">
-               <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total Customer <span id="total_count"> (0)</span></b>
-				  </h5>
-               </div>
-            </div>
-         </div>
+        <div class="card-body">
+          <div class="row">
+              <div class="col-md-12 mt-10">
+                <h5 class="mb-0"><b>Total Leads <span id="total_count"> (0)</span></b></h5>
+              </div>
+          </div>
+        </div>
         <div class="card-datatable d-report mb-2">
 		       
-		   <a href="<?php echo site_url('inventory/customer/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_customer');?></span></a>          
+		   <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>          
      
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-					<th>#</th>
-					<th>Company Name</th>
-					<th>GST Name</th>
-					<th>GST Number</th>
+                    <th>#</th>
+                    <th>Company Name</th>
+                    <th>GST Name</th>
+                    <th>GST Number</th>
                     <th>Pincode</th>
                     <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-                        <th>Added By</th>
-					<?php } ?>
+                      <th>Staff</th>
+                      <th>Added By</th>
+                    <?php } ?>
                     <th>Actions</th>
                   </tr>
                </thead>
@@ -68,14 +68,14 @@
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
-                       var date_range="";		
-                       data.type = "customer";				
+                  var date_range="";			
+                  data.type = "leads";			
                 },
                 "beforeSend": function() {
-                    $('.loader').show();
+                  $('.loader').show();
                 },
                 "complete": function() {
-                    $('.loader').hide();
+                  $('.loader').hide();
                 }
             },   
                      
@@ -86,6 +86,7 @@
                 { "data": "gst_no" },
                 { "data": "pincode" },
                 <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                    { "data": "staff" },
                     { "data": "added_by_name" },
                 <?php } ?>
                 { "data": "action" },

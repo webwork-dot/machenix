@@ -12,7 +12,7 @@
                   <div class="col-md-4">
                       <div class="form-group">
                          <label><?php echo get_phrase('name'); ?><span class="required">*</span></label>
-                         <input type="text" class="form-control" placeholder="Name" name="first_name"  onkeyup="this.value=this.value.replace(/[^A-z]/g,'');" required>
+                         <input type="text" class="form-control" placeholder="Name" name="first_name" onkeyup="this.value = this.value.replace(/[^A-Za-z ]/g, '');" required>
                       </div>
                   </div>
 

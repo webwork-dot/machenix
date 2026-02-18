@@ -8,36 +8,59 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.html5.min.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
 
+<style>
+  .sub-link {
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    margin-right: 4px;
+    background: white;
+    padding: 8px 10px;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .sub-link.active {
+    background: #5a79c0 !important;
+    color: white;
+  }
+</style>
+
+<div class="col-12 d-flex">
+    <a href="<?php echo site_url('inventory/leads/new'); ?>" class="sub-link <?php echo ($status == 'new') ? 'active' : ''; ?>">New Leads</a>
+    <a href="<?php echo site_url('inventory/leads/today'); ?>" class="sub-link <?php echo ($status == 'today') ? 'active' : ''; ?>">Todays Follow-up</a>
+    <a href="<?php echo site_url('inventory/leads/upcoming'); ?>" class="sub-link <?php echo ($status == 'upcoming') ? 'active' : ''; ?>">Upcoming Follow-up</a>
+    <a href="<?php echo site_url('inventory/leads/lost'); ?>" class="sub-link <?php echo ($status == 'lost') ? 'active' : ''; ?>">Lost Leads</a>
+    <a href="<?php echo site_url('inventory/leads/missed'); ?>" class="sub-link <?php echo ($status == 'missed') ? 'active' : ''; ?>">Missed Leads</a>
+</div>
+
 <div class="row" id="table-bordered">
    <div class="col-12">
-      <div class="card">
-         <div class="card-body">
-            <div class="row">
-               <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total Customer <span id="total_count"> (0)</span></b>
-				  </h5>
-               </div>
-            </div>
-         </div>
+      <div class="card" style="border-top-left-radius: 0px;">
+        <div class="card-body">
+          <div class="row">
+              <div class="col-md-12 mt-10">
+                <h5 class="mb-0"><b>Total Leads <span id="total_count"> (0)</span></b></h5>
+              </div>
+          </div>
+        </div>
         <div class="card-datatable d-report mb-2">
-		       
-		   <a href="<?php echo site_url('inventory/customer/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_customer');?></span></a>          
-     
-          <table class="table leads-table" id="report-datatable">
-               <thead>
-                  <tr>
-					<th>#</th>
-					<th>Company Name</th>
-					<th>GST Name</th>
-					<th>GST Number</th>
-                    <th>Pincode</th>
-                    <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-                        <th>Added By</th>
-					<?php } ?>
-                    <th>Actions</th>
-                  </tr>
-               </thead>
-            </table>
+		    <!-- <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>           -->
+        <table class="table leads-table" id="report-datatable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Company Name</th>
+                  <th>GST Name</th>
+                  <th>GST Number</th>
+                  <th>Pincode</th>
+                  <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                    <th>Staff</th>
+                    <th>Added By</th>
+                  <?php } ?>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+          </table>
          </div>
       </div>
    </div>
@@ -68,14 +91,15 @@
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
-                       var date_range="";		
-                       data.type = "customer";				
+                  var date_range="";			
+                  data.type = "leads";
+                  data.status = "<?php echo $status; ?>";
                 },
                 "beforeSend": function() {
-                    $('.loader').show();
+                  $('.loader').show();
                 },
                 "complete": function() {
-                    $('.loader').hide();
+                  $('.loader').hide();
                 }
             },   
                      
@@ -86,6 +110,7 @@
                 { "data": "gst_no" },
                 { "data": "pincode" },
                 <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                    { "data": "staff" },
                     { "data": "added_by_name" },
                 <?php } ?>
                 { "data": "action" },

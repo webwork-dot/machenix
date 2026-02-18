@@ -1,9 +1,10 @@
 <?php 
 
+$customers = $this->common_model->getRowById('customer', '*', ['id' => $param2]); 
 $customer_history = $this->common_model->getResultById('customer_log', '*', ['customer_id' => $param2]); 
 // echo json_encode($customer_history); exit;
+$customer_history = array_reverse($customer_history);
 ?>
-
 
 <style>
   .history-item:last-child{ margin-bottom: 0; }
@@ -38,6 +39,7 @@ $customer_history = $this->common_model->getResultById('customer_log', '*', ['cu
 </style>
 
 <?php foreach($customer_history as $history){ ?>
+  <?php if($customers['type'] == "customer"){ ?>
   <?php if($history['action'] == "create"){ ?>
     <div class="history-item">
       <div class="card history-card">
@@ -77,5 +79,7 @@ $customer_history = $this->common_model->getResultById('customer_log', '*', ['cu
         </div>
       </div>
     </div>
+  <?php } ?>
+  <?php } else { ?>
   <?php } ?>
 <?php } ?>

@@ -1866,6 +1866,7 @@ class Inventory extends CI_Controller
             $this->inventory_model->replicate_customer();
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'customer';
             $page_data['page_name']  = 'customer';
             $page_data['page_title'] = get_phrase('customer');
             $this->load->view('backend/index', $page_data);
@@ -1880,6 +1881,7 @@ class Inventory extends CI_Controller
 
         $page_data['states']     = $this->crud_model->get_states();
         $page_data['companies'] = $this->common_model->getSessionCompanies();
+        $page_data['navigation']  = 'customer';
 
         if ($param1 == 'customer_add') {
             $page_data['page_name']  = 'customer_add';
@@ -1918,7 +1920,57 @@ class Inventory extends CI_Controller
     }
 
     /* Customer End */
+    
+    /* Leads Start */
+    public function leads($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'leads';
+            $page_data['page_name']  = 'leads';
+            $page_data['page_title'] = get_phrase('leads');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
 
+    public function leads_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['states']    = $this->crud_model->get_states();
+        $page_data['companies'] = $this->common_model->getSessionCompanies();
+        $page_data['navigation']  = 'leads';
+
+        if ($param1 == 'leads_add') {
+            $page_data['page_name']  = 'customer_add';
+            $page_data['page_title'] = 'Add Leads';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'leads_edit') {
+            $data               = $this->inventory_model->get_customer_by_id($param2)->row_array();
+            $page_data['data']  = $data;
+            $page_data['citys'] = $this->crud_model->get_city_by_state($data['state_id']);
+            $page_data['staffs'] = $this->inventory_model->get_staff_by_company_ids(explode(',', $data['company_id']), 'array');
+
+            $page_data['page_name']  = 'customer_edit';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Leads';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'leads') {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']    = 'leads';
+            $page_data['page_name']     = 'leads_data';
+            $page_data['status']        = $param2;
+            $page_data['page_title']    = get_phrase('leads');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    
+    /* Leads End */
 
     /* Sales Order End */
 

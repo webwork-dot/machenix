@@ -6709,14 +6709,10 @@ class Inventory_model extends CI_Model
 	/* Customer Start */
 	public function add_customer()
 	{
-		$resultpost = array(
-			"status"  => 200,
-			"message" => get_phrase('customer_added_successfully'),
-			"url"     => $this->session->userdata('previous_url'),
-		);
-
 		$company_id 				= $this->input->post('company_id');
-		$staff_id 				  = $this->input->post('staff_id');
+		$type 							= $this->input->post('type');
+		$staff_id 				  = ($type == 'leads') ? 0 : $this->input->post('staff_id');
+		
 		$user_id            = (int) $this->session->userdata('super_user_id');
 		$user_name          = (string) $this->session->userdata('super_name');
 
@@ -6770,7 +6766,7 @@ class Inventory_model extends CI_Model
 		 * - Other mobile == Other whatsapp is allowed
 		 * BUT numbers must NOT match across groups (Owner vs PM vs Other).
 		 */
-		$ownerNums = array_values(array_unique([$owner_mobile_digits, $owner_whatsapp_digits])); // mandatory now
+		$ownerNums = array_values(array_unique(array_filter([$owner_mobile_digits, $owner_whatsapp_digits]))); 
 		$pmNums    = array_values(array_unique(array_filter([$pm_mobile_digits, $pm_whatsapp_digits])));
 		$otherNums = array_values(array_unique(array_filter([$other_mobile_digits, $other_whatsapp_digits])));
 
@@ -6807,7 +6803,7 @@ class Inventory_model extends CI_Model
 		 * for any other customer (is_deleted = 0).
 		 */
 		$allNums = array_values(array_unique(array_merge($ownerNums, $pmNums, $otherNums)));
-
+		
 		$this->db->from('customer');
 		$this->db->where('is_deleted', 0);
 
@@ -6846,7 +6842,8 @@ class Inventory_model extends CI_Model
 
 			return simple_json_output([
 				"status"  => 400,
-				"message" => "Phone/Whatsapp number {$matchedNumber} already exists for {$existing_staff}."
+				// "message" => "Phone/Whatsapp number {$matchedNumber} already exists in {$existing_staff}."
+				"message" => "Phone/Whatsapp number {$matchedNumber} already exists in " . get_phrase($exists['type']) . "."
 			]);
 		}
 
@@ -6854,6 +6851,7 @@ class Inventory_model extends CI_Model
 
 		$data = array(
 			"company_id"     => implode(',', $company_id),
+			"type"   				 => $type,
 			"company_name"   => $company_name,
 			"address"        => $address,
 			"address_2"      => $address_2,
@@ -6893,7 +6891,7 @@ class Inventory_model extends CI_Model
 			$logs = [
 				"customer_id" 		=> $customer_id,
 				"action"      		=> "create",
-				"message"     		=> "Customer Added By {$user_name}",
+				"message"     		=> get_phrase($type) . " Added By {$user_name}",
 				"json"  					=> json_encode($data),
 				"added_by"				=> $user_id,
 				"added_by_name"		=> get_phrase($user_name),
@@ -6903,22 +6901,25 @@ class Inventory_model extends CI_Model
 			$this->db->insert('customer_log', $logs);
 		};
 
-		$this->session->set_flashdata('flash_message', get_phrase('customer_added_successfully'));
+		$this->session->set_flashdata('flash_message', get_phrase($type . '_added_successfully'));
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => get_phrase($type . '_added_successfully'),
+			"url"     => $this->agent->referrer(),
+		);
+
 		return simple_json_output($resultpost);
 	}
 
 	public function edit_customer($id = "")
 	{
-		$resultpost = array(
-			"status"  => 200,
-			"message" => get_phrase('customer_updated_successfully'),
-			"url"     => $this->session->userdata('previous_url'),
-		);
-
+		
 		$id = (int) $id;
 
 		$user_id   = (int) $this->session->userdata('super_user_id');
 		$user_name = (string) $this->session->userdata('super_name');
+		$type			 = $this->input->post('type');
 
 		// Current row (to detect changes)
 		$old = $this->db->where('id', $id)->where('is_deleted', 0)->get('customer')->row_array();
@@ -6931,7 +6932,7 @@ class Inventory_model extends CI_Model
 
 		// --- inputs (same as add) ---
 		$company_id = $this->input->post('company_id'); // array
-		$staff_id   = $this->input->post('staff_id');
+		$staff_id   = ($type == 'leads') ? 0 : $this->input->post('staff_id');
 
 		$company_name = clean_and_escape($this->input->post('company_name'));
 		$address      = clean_and_escape($this->input->post('address'));
@@ -6976,7 +6977,7 @@ class Inventory_model extends CI_Model
 		$city_name  = ($city_id > 0)  ? (string) $this->common_model->selectByidParam($city_id, 'city_list', 'district') : '';
 
 		// --- phone rules (same as add) ---
-		$ownerNums = array_values(array_unique([$owner_mobile_digits, $owner_whatsapp_digits])); // mandatory (as in add)
+		$ownerNums = array_values(array_unique(array_filter([$owner_mobile_digits, $owner_whatsapp_digits]))); // mandatory (as in add)
 		$pmNums    = array_values(array_unique(array_filter([$pm_mobile_digits, $pm_whatsapp_digits]))); // optional
 		$otherNums = array_values(array_unique(array_filter([$other_mobile_digits, $other_whatsapp_digits]))); // optional
 
@@ -7035,7 +7036,7 @@ class Inventory_model extends CI_Model
 
 			return simple_json_output([
 				"status"  => 400,
-				"message" => "Phone/Whatsapp number {$matchedNumber} already exists for {$existing_staff}."
+				"message" => "Phone/Whatsapp number {$matchedNumber} already exists in " . get_phrase($type) . "."
 			]);
 		}
 
@@ -7044,6 +7045,7 @@ class Inventory_model extends CI_Model
 
 		// --- data (same as add) ---
 		$data = array(
+			"type"   				 => $type,
 			"company_id"     => is_array($company_id) ? implode(',', $company_id) : (string) $company_id,
 			"company_name"   => $company_name,
 			"address"        => $address,
@@ -7072,10 +7074,12 @@ class Inventory_model extends CI_Model
 			"other_email"    => $other_email,
 			"other_mobile"   => $other_mobile_digits,
 			"other_whatsapp" => $other_whatsapp_digits,
-
-			"added_by_id"    => $staff_id,
-			"added_by_name"  => $staff_name,
 		);
+
+		if($type != 'leads') {
+			$data["added_by_id"] = $staff_id;
+			$data["added_by_name"] = $staff_name;
+		}
 
 		// changed fields for logs (only updated fields)
 		$changed = [];
@@ -7098,7 +7102,7 @@ class Inventory_model extends CI_Model
 			$logs = [
 				"customer_id"    => $id,
 				"action"         => "update",
-				"message"        => "Customer Updated By {$user_name}",
+				"message"        => get_phrase($type) . " Updated By {$user_name}",
 				"json"           => json_encode($changed),
 				"added_by"       => $user_id,
 				"added_by_name"  => get_phrase($user_name),
@@ -7107,7 +7111,13 @@ class Inventory_model extends CI_Model
 			$this->db->insert('customer_log', $logs);
 		}
 
-		$this->session->set_flashdata('flash_message', get_phrase('customer_updated_successfully'));
+		$this->session->set_flashdata('flash_message', get_phrase($type . '_updated_successfully'));
+		$resultpost = array(
+			"status"  => 200,
+			"message" => get_phrase($type . '_updated_successfully'),
+			"url"     => $this->agent->referrer(),
+		);
+
 		return simple_json_output($resultpost);
 	}
 
@@ -7228,41 +7238,57 @@ class Inventory_model extends CI_Model
 
 	public function reassign_customer()
 	{
+		$user_id   = (int) $this->session->userdata('super_user_id');
+		$user_name = (string) $this->session->userdata('super_name');
+
 		$resultpost = array(
 			"status" => 200,
 			"message" => get_phrase('customer_reassigned_successfully'),
 			"url" => $this->session->userdata('previous_url'),
 		);
 
-		
 		$customer_id = clean_and_escape($this->input->post('customer_id'));
 		$target_company_id = clean_and_escape($this->input->post('target_company_id'));
 		$target_staff_id = clean_and_escape($this->input->post('target_staff_id'));
 
 		$original_customer = $this->get_customer_by_id($customer_id)->row_array();
-
+		$staff_name = $this->common_model->selectByidParam($target_staff_id, 'sys_users', 'first_name');
+		
 		// Update customer company and staff
 		$data = array(
-			// 'company_id' => $target_company_id,
 			'added_by_id' => $target_staff_id,
+			'added_by_name' => $staff_name,
 		);
+
+		if($original_customer['type'] == 'leads') {
+			$data['status'] = 'fresh';
+			$action = "assign";
+			$message = "Staff assign by {$user_name}";
+			$json_data = [
+				"status" 					=> 'fresh',
+				"added_by_id" 		=> $target_staff_id,
+				"added_by_name" => $staff_name,
+			];
+		} else {
+			$action = "reassign";
+			$message = "Customer Staff reassign by {$user_name}";
+			$json_data = [
+				"old_added_by_name" => $original_customer['added_by_name'],
+				"added_by_name" => $staff_name,
+				"old_added_by_id" => $original_customer['added_by_id'],
+				"added_by_id" 		=> $target_staff_id,
+			];
+		}
 
 		$this->db->where('id', $customer_id);
 		$updated = $this->db->update('customer', $data);
 
 		if ($updated) {
-			$user_id   = (int) $this->session->userdata('super_user_id');
-			$user_name = (string) $this->session->userdata('super_name');
-
 			$logs = [
 				"customer_id"     => $customer_id,
-				"action"          => "reassign",
-				"message"         => "Customer Staff & Comapany reassign By {$user_name}",
-				"json"            => json_encode([
-					// "company_id" => $original_customer['company_id'],
-					"old_added_by_id" => $original_customer['added_by_id'],
-					"added_by_id" 		=> $target_staff_id,
-				]),
+				"action"          => $action,
+				"message"         => $message,
+				"json"            => json_encode($json_data),
 				"added_by"        => $user_id,
 				"added_by_name"   => get_phrase($user_name),
 				"added_date"      => date("Y-m-d H:i:s"),
@@ -7272,7 +7298,6 @@ class Inventory_model extends CI_Model
 		}
 
 		$this->session->set_flashdata('flash_message', get_phrase('customer_reassigned_successfully'));
-		
 		return simple_json_output($resultpost);
 	}
 
@@ -7298,18 +7323,39 @@ class Inventory_model extends CI_Model
 		if($company_id && $type == 'staff') {
 				$keyword_filter .= " AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "'";
 		}
+		
+		$data_type = $_REQUEST['type'];
+		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
+			$status        = $_REQUEST['status'];
+			$date =  date('Y-m-d');
+			if($status == 'new') {
+				$keyword_filter .= " AND status='fresh'";
+			} elseif($status == 'today') {
+				$keyword_filter .= " AND status='follow' AND (DATE(status_date) = '$date')";
+			} elseif($status == 'upcoming') {
+				$keyword_filter .= " AND status='follow' AND (DATE(status_date) > '$date')";
+			} elseif($status == 'missed') {
+				$keyword_filter .= " AND status='follow' AND (DATE(status_date) < '$date')";
+			} elseif($status == 'lost') {
+				$keyword_filter .= " AND status='lost'";
+			} else {
+				$keyword_filter .= " AND 1!=1";
+			}
+		endif;
 
-		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		// echo $this->db->last_query(); exit();
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/customer/delete/" . $id . "','Are you sure want to delete!')";
-				$edit_url = base_url() . 'inventory/customer/edit/' . $id;
+				$edit_url = base_url() . 'inventory/' . $data_type . '/edit/' . $id;
 				$replicate_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_replicate_modal/" . $id . "','Replicate Customer')";
-				$reassign_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_reinitiate_modal/" . $id . "','Reassign Staff')";
+				$reassign_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_reinitiate_modal/" . $id . "','" . (($data_type == 'leads') ? "Assign" : "Reassign") . " Staff')";
 				$timeline_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_customer_timeline/" . $id . "','Timeline')";
 
 				$action = '';
@@ -7320,7 +7366,7 @@ class Inventory_model extends CI_Model
 
         <a href="javascript:void(0);" class="d-none" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
 
-				<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="Reassign Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
+				<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
 
         <a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
         ';
@@ -7336,6 +7382,7 @@ class Inventory_model extends CI_Model
 					"city_name"				=> ($item['city_name']) ? $item['city_name'] : '-',
 					"state_name"			=> ($item['state_name']) ? $item['state_name'] : '-',
 					"pincode"					=> ($item['pincode']) ? $item['pincode'] : '-',
+					"staff"						=> ($item['added_by_name']) ? $item['added_by_name'] : '-',
 					"added_by_name"		=> $log['added_by_name'] ?? '-',
 					"action"      		=> $action,
 				);

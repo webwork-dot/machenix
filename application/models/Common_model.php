@@ -199,7 +199,7 @@ class Common_model extends CI_Model{
         $this->db->where('id', $id);
         $query = $this->db->get();
         $row=$query->result();
-        return $row[0]->$param;
+        return $row[0]->$param ?? '';
     }
 
     //-- select by ids with parametes

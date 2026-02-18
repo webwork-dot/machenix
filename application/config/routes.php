@@ -62,6 +62,11 @@ $route[$r_inventory . '/customer'] = 'inventory/customer';
 $route[$r_inventory . '/customer/add']    = 'inventory/customer_form/customer_add';
 $route[$r_inventory . '/customer/edit/(:num)'] = 'inventory/customer_form/customer_edit/$1';
 
+$route[$r_inventory . '/leads']                   = 'inventory/leads';
+$route[$r_inventory . '/leads/add']               = 'inventory/leads_form/leads_add';
+$route[$r_inventory . '/leads/edit/(:num)']       = 'inventory/leads_form/leads_edit/$1';
+$route[$r_inventory . '/leads/(:any)']            = 'inventory/leads_form/leads/$1';
+
 $route[$r_inventory . '/category']                      	= 'inventory/categories';
 $route[$r_inventory . '/category/add']                  	= 'inventory/category_form/add';
 $route[$r_inventory . '/category/edit/(:num)']          	= 'inventory/category_form/edit/$1';

@@ -246,10 +246,16 @@
         <?php } ?>
        
         <?php if($user_id == 4 || in_array('36',$access_array)) {?>
-        <li class="nav-item <?php if($page_name == 'customer' || $page_name == 'customer_add' || $page_name == 'customer_edit') echo 'active'; ?>">
+        <li class="nav-item <?php if($navigation == 'customer') echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/customer">
                 <i class="feather icon-layers"></i>
                 <span class="menu-title text-truncate">Customer</span>
+            </a>
+        </li>
+        <li class="nav-item <?php if($navigation == 'leads') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">Leads</span>
             </a>
         </li>
         <?php } ?>

@@ -41,7 +41,7 @@
 
         <div class="col-12">
           <button type="submit" id="reassign_submit_btn" class="btn btn-primary waves-effect waves-float waves-light">
-            <i class="fa fa-refresh"></i> Reassign
+            <i class="fa fa-refresh"></i> Assign
           </button>
           <button type="button" class="btn btn-secondary waves-effect waves-float waves-light" data-bs-dismiss="modal">
             Cancel
