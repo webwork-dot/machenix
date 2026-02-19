@@ -1496,7 +1496,7 @@ class Inventory extends CI_Controller
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
 
-            $page_data['warehouse_list']     = $this->common_model->get_all_warehouse_list();
+            $page_data['warehouse_list']     = $this->common_model->getSessionWarehouse();
             $total = $this->inventory_model->get_stock_totals();
             $page_data['total']  = $total;
 
@@ -1516,11 +1516,13 @@ class Inventory extends CI_Controller
             $result = $this->common_model->get_batch_product_1($param1, $param2);
             $quantity = $result['quantity'];
             $quantity = $result['quantity'];
-            $name = $result['warehouse_name'] . ' - ' . $result['item_code'] . ' - ' . $result['product_name'];
+            $name = $result['warehouse_name'] . ' - ' . $result['category'] . ' - ' . $result['product_name'];
             $page_data['product_id']  = $param1;
             $page_data['warehouse_id']  = $param2;
             $page_data['page_name']  = 'my_stock_batch';
             $page_data['page_title'] = get_phrase($name) . ' (' . $quantity . ') ';
+
+            // echo $name; exit();
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -1858,12 +1860,16 @@ class Inventory extends CI_Controller
             $this->inventory_model->add_customer($param2);
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_customer($param2);
+        } elseif ($param1 == "move_post") {
+            $this->inventory_model->move_to_customer($param2);
         } elseif ($param1 == "delete") {
             $this->inventory_model->delete_customer($param2);
         } elseif ($param1 == "reassign") {
             $this->inventory_model->reassign_customer();
         } elseif ($param1 == "replicate_post") {
             $this->inventory_model->replicate_customer();
+        } elseif ($param1 == "follow") {
+            $this->inventory_model->follow_customer();
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'customer';
@@ -1929,7 +1935,9 @@ class Inventory extends CI_Controller
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'leads';
-            $page_data['page_name']  = 'leads';
+            $page_data['status']        = ($param1 == '') ? 'all' : $param1;
+            $page_data['page_name']     = 'leads_data';
+            // $page_data['page_name']  = 'leads';
             $page_data['page_title'] = get_phrase('leads');
             $this->load->view('backend/index', $page_data);
         }
@@ -1958,6 +1966,16 @@ class Inventory extends CI_Controller
             $page_data['page_name']  = 'customer_edit';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Leads';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'leads_move') {
+            $data               = $this->inventory_model->get_customer_by_id($param2)->row_array();
+            $page_data['data']  = $data;
+            $page_data['citys'] = $this->crud_model->get_city_by_state($data['state_id']);
+            $page_data['staffs'] = $this->inventory_model->get_staff_by_company_ids(explode(',', $data['company_id']), 'array');
+
+            $page_data['page_name']  = 'leads_move';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Move to Customer';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'leads') {
             $this->session->set_userdata('previous_url', currentUrl());
@@ -2016,7 +2034,7 @@ class Inventory extends CI_Controller
         }
         $where = array('is_deleted' => '0');
         $page_data['warehouse_list']     = $this->common_model->selectWhere('warehouse', $where, 'ASC', 'name');
-        $page_data['customer_list']     = $this->common_model->selectWhere('customer', $where, 'ASC', 'name');
+        $page_data['customer_list']     = $this->common_model->getSessionCustomers();
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
 
         if ($param1 == 'add') {

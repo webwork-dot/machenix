@@ -2639,7 +2639,7 @@ class Inventory_model extends CI_Model
 			$number = $row['number'] + 1;
 			$voucher_no = $row['prefix'] . '/' . $row['year'] . '/' . $number;
 		} else {
-			$voucher_no = 'GPSO' . '/' . $year . '/' . '1';
+			$voucher_no = 'MACH' . '/' . $year . '/' . '1';
 		}
 		return $voucher_no;
 	}
@@ -4529,121 +4529,25 @@ class Inventory_model extends CI_Model
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 				$product_id = $item['product_id'];
-				$item_code = $item['item_code'];
-				$pro_listed = array();
-				$prod = $this->db->query("SELECT costing_price,gst,sizes,is_variation,image,listed_1,listed_2,listed_3,listed_4,listed_5 FROM raw_products WHERE id='$product_id' limit 1")->row_array();
-
-				$yrs = [];
-				foreach (explode(',', $prod['sizes']) as $size) {
-					$size_id = $this->db->select('color_code')->where('id', $size)->get('oc_attribute_values')->row_array();
-					$yrs[] = $size_id['color_code'];
-				}
-
-				usort($yrs, function ($a, $b) {
-					$diff = intval($a) - intval($b);
-					if ($diff === 0) {
-						$lenDiff = strlen($b) - strlen($a);
-						if ($lenDiff !== 0) {
-							return $lenDiff;
-						}
-
-						return strcmp($a, $b);
-					}
-					return $diff;
-				});
-
-				$size_label = '';
-				// if (count($yrs) == 1) {
-				// 	$size_label = $yrs[0];
-				// } else {
-				// 	$size_label = $yrs[0] . ' - ' . $yrs[count($yrs) - 1];
-				// }
 				
+				$size_label = '';
 				$category = $this->common_model->getRowById('categories', 'name', ['id' => $item['categories']]);
-                $size_label = $category['name'] ?? '-';
-                
-				$is_variation = $prod['is_variation'];
-				$image_url = '';
-				// $image_url = base_url().'uploads/user_image/dafault-grey-image.jpg';
-				if ($is_variation == 0) {
-					$prod_v = $this->db->query("SELECT image,listed_1,listed_2,listed_3,listed_4,listed_5 FROM product_variation WHERE product_id='$product_id' and sku_code='$item_code' limit 1")->row_array();
-					$last_query  = $this->db->last_query();
-					if ($prod_v['image'] != '' && $prod_v['image'] != null) {
-						$image_url = base_url() . $prod_v['image'];
-					} else {
-						$image_url = base_url() . 'uploads/user_image/dafault-grey-image.jpg';
-					}
-					if ($prod_v['listed_1'] == '1') {
-						$pro_listed[] =  'Amazon';
-					}
-					if ($prod_v['listed_2'] == '1') {
-						$pro_listed[] =  'Snapdeal';
-					}
-					if ($prod_v['listed_3'] == '1') {
-						$pro_listed[] =  'Flipkart';
-					}
-					if ($prod_v['listed_4'] == '1') {
-						$pro_listed[] =  'JIO';
-					}
-					if ($prod_v['listed_5'] == '1') {
-						$pro_listed[] =  'KIDSISLAND';
-					}
-				} else {
-					if ($prod['image'] != '' && $prod['image'] != null) {
-						$image_url = base_url() . $prod['image'];
-					}
+        $size_label = $category['name'] ?? '-';
+           
 
-					if ($prod['listed_1'] == '1') {
-						$pro_listed[] =  'Amazon';
-					}
-					if ($prod['listed_2'] == '1') {
-						$pro_listed[] =  'Snapdeal';
-					}
-					if ($prod['listed_3'] == '1') {
-						$pro_listed[] =  'Flipkart';
-					}
-					if ($prod['listed_4'] == '1') {
-						$pro_listed[] =  'JIO';
-					}
-					if ($prod['listed_5'] == '1') {
-						$pro_listed[] =  'KIDSISLAND';
-					}
-				}
-
-				$image	= '-';
-				if ($image_url != '') {
-					$image	= '<a href="' . $image_url . '" data-fancybox data-caption="' . $item['product_name'] . '">
-                                  <u>Image</u>
-                                </a>';
-				}
-
-				$item_code_x = base64_encode($item['item_code']);
-				$edit_url = base_url() . 'inventory/my-stock-history/' . $id;
+				$edit_url = base_url() . 'inventory/my-stock-batch/' . $id  . '/' . $warehouse_id;
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
 				 
-				$modal_url = base_url() . 'modal/popup_inventory/inventory_update_modal/' . $id;
-				$action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . $modal_url . '\',\'Update Stock\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Update Stock"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-stumbleupon" aria-hidden="true"></i></button></a>';
+				// $modal_url = base_url() . 'modal/popup_inventory/inventory_update_modal/' . $id;
+				// $action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . $modal_url . '\',\'Update Stock\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Update Stock"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-stumbleupon" aria-hidden="true"></i></button></a>';
 				
-				$pro_listed = implode(', ', $pro_listed);
 
 				$data[] = array(
 					"sr_no"             => ++$start,
-					"image"             => $image,
-					"id"                => $item['id'],
-					"size_label"        => $size_label,
-					"warehouse_name"    => $item['warehouse_name'],
-					"item_code"         => $item['item_code'],
-					"size_name"         => $item['size_name'],
-					"costing_price"     => $prod['costing_price'],
-					"gst"               => $prod['gst'] . '%',
+					"category"        => $size_label,
 					"product_name"      => $item['product_name'],
 					"quantity"          => $item['quantity'],
-					"group_id"          => $item['group_id'],
-					"color_name"        => $item['color_name'],
-					"total_price"       => number_format(($prod['costing_price'] + ($prod['costing_price'] *  $prod['gst'] / 100)) * $item['quantity'], 2),
-					"pro_listed"        => $pro_listed,
-					"last_query"        => $last_query,
 					"action"            => $action,
 				);
 			}
@@ -4729,13 +4633,13 @@ class Inventory_model extends CI_Model
 		endif;
 
 		if (isset($_REQUEST['product_id']) && $_REQUEST['product_id'] != ""):
-			if ($product_id != 'All') {
+			if ($_REQUEST['product_id'] != 'All') {
 				$product_id        = $_REQUEST['product_id'];
 				//$product_id = base64_decode($product_id);
 				$result = $this->common_model->get_batch_product_1($product_id, $warehouse_id);
 				//echo $this->db->last_query();exit();
-				$item_code = $result['item_code'];
-				$keyword_filter .= " AND (item_code='" . $item_code . "')";
+				$product_id = $result['product_id'];
+				$keyword_filter .= " AND (product_id='" . $product_id . "')";
 			}
 		endif;
 
@@ -4746,26 +4650,31 @@ class Inventory_model extends CI_Model
 
 		$total_count = $this->db->query("SELECT id FROM inventory WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
 		//echo $this->db->last_query();
-		$query = $this->db->query("SELECT id,warehouse_name,item_code,product_name,product_id,quantity,batch_no FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,warehouse_name,item_code,categories,product_name,product_id,quantity,batch_no FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 				$product_id = $item['product_id'];
 
+				$size_label = '';
+				$category = $this->common_model->getRowById('categories', 'name', ['id' => $item['categories']]);
+				$size_label = $category['name'] ?? '-';
+
 				$edit_url = base_url() . 'inventory/my-stock-history/' . $id;
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
 
 				$data[] = array(
-					"sr_no"       => ++$start,
-					"id"          => $item['id'],
-					"warehouse_name"        => $item['warehouse_name'],
-					"item_code"        => $item['item_code'],
-					"product_name"        => $item['product_name'],
+					"sr_no"       		=> ++$start,
+					"id"          		=> $item['id'],
+					"warehouse_name"	=> $item['warehouse_name'],
+					"category"				=> $size_label,
+					"item_code"				=> $item['item_code'],
+					"product_name"		=> $item['product_name'],
 					"quantity"        => $item['quantity'],
 					"batch_no"        => ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
-					"action"        => $action,
+					"action"        	=> $action,
 				);
 			}
 		}
@@ -6710,6 +6619,7 @@ class Inventory_model extends CI_Model
 	public function add_customer()
 	{
 		$company_id 				= $this->input->post('company_id');
+		$company_id 				= isset($company_id) ? $company_id : [];
 		$type 							= $this->input->post('type');
 		$staff_id 				  = ($type == 'leads') ? 0 : $this->input->post('staff_id');
 		
@@ -6891,6 +6801,7 @@ class Inventory_model extends CI_Model
 			$logs = [
 				"customer_id" 		=> $customer_id,
 				"action"      		=> "create",
+				"label"          => json_encode(["badge" => "success", "message" => get_phrase($type) . " Added"]),
 				"message"     		=> get_phrase($type) . " Added By {$user_name}",
 				"json"  					=> json_encode($data),
 				"added_by"				=> $user_id,
@@ -6931,7 +6842,8 @@ class Inventory_model extends CI_Model
 		}
 
 		// --- inputs (same as add) ---
-		$company_id = $this->input->post('company_id'); // array
+		$company_id 				= $this->input->post('company_id');
+		$company_id 				= isset($company_id) ? $company_id : [];
 		$staff_id   = ($type == 'leads') ? 0 : $this->input->post('staff_id');
 
 		$company_name = clean_and_escape($this->input->post('company_name'));
@@ -7102,6 +7014,7 @@ class Inventory_model extends CI_Model
 			$logs = [
 				"customer_id"    => $id,
 				"action"         => "update",
+				"label"          => json_encode(["badge" => "warning", "message" => get_phrase($type) . " Updated"]),
 				"message"        => get_phrase($type) . " Updated By {$user_name}",
 				"json"           => json_encode($changed),
 				"added_by"       => $user_id,
@@ -7121,6 +7034,215 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
+	public function move_to_customer($id = "")
+	{
+		$id = (int) $id;
+
+		$user_id   = (int) $this->session->userdata('super_user_id');
+		$user_name = (string) $this->session->userdata('super_name');
+		$type			 = $this->input->post('type');
+
+		// Current row (to detect changes)
+		$old = $this->db->where('id', $id)->where('is_deleted', 0)->get('customer')->row_array();
+		if (empty($old)) {
+			return simple_json_output([
+				"status"  => 404,
+				"message" => "Customer not found."
+			]);
+		}
+
+		// --- inputs (same as add) ---
+		$company_id = $this->input->post('company_id');
+		$staff_id   = $this->input->post('staff_id');
+
+		$company_name = clean_and_escape($this->input->post('company_name'));
+		$address      = clean_and_escape($this->input->post('address'));
+		$address_2    = clean_and_escape($this->input->post('address_2'));
+
+		$state_id = (int) $this->input->post('state_id');
+		$city_id  = (int) $this->input->post('city_id');
+
+		$pincode  = clean_and_escape($this->input->post('pincode'));
+		$gst_name = clean_and_escape($this->input->post('gst_name'));
+		$gst_no   = clean_and_escape($this->input->post('gst_no'));
+
+		$owner_name     = clean_and_escape($this->input->post('owner_name'));
+		$owner_email    = clean_and_escape($this->input->post('owner_email'));
+		$owner_mobile   = clean_and_escape($this->input->post('owner_mobile'));
+		$owner_whatsapp = clean_and_escape($this->input->post('owner_whatsapp'));
+
+		$pm_name        = clean_and_escape($this->input->post('pm_name'));
+		$pm_email       = clean_and_escape($this->input->post('pm_email'));
+		$pm_mobile      = clean_and_escape($this->input->post('pm_mobile'));
+		$pm_whatsapp    = clean_and_escape($this->input->post('pm_whatsapp'));
+
+		$other_name     = clean_and_escape($this->input->post('other_name'));
+		$other_email    = clean_and_escape($this->input->post('other_email'));
+		$other_mobile   = clean_and_escape($this->input->post('other_mobile'));
+		$other_whatsapp = clean_and_escape($this->input->post('other_whatsapp'));
+
+		// digits only
+		$pincode_digits = preg_replace('/[^0-9]/', '', $pincode);
+
+		$owner_mobile_digits   = preg_replace('/[^0-9]/', '', $owner_mobile);
+		$owner_whatsapp_digits = preg_replace('/[^0-9]/', '', $owner_whatsapp);
+
+		$pm_mobile_digits      = preg_replace('/[^0-9]/', '', $pm_mobile);
+		$pm_whatsapp_digits    = preg_replace('/[^0-9]/', '', $pm_whatsapp);
+
+		$other_mobile_digits   = preg_replace('/[^0-9]/', '', $other_mobile);
+		$other_whatsapp_digits = preg_replace('/[^0-9]/', '', $other_whatsapp);
+
+		// names
+		$state_name = ($state_id > 0) ? (string) $this->common_model->selectByidParam($state_id, 'state_list', 'state') : '';
+		$city_name  = ($city_id > 0)  ? (string) $this->common_model->selectByidParam($city_id, 'city_list', 'district') : '';
+
+		// --- phone rules (same as add) ---
+		$ownerNums = array_values(array_unique(array_filter([$owner_mobile_digits, $owner_whatsapp_digits]))); // mandatory (as in add)
+		$pmNums    = array_values(array_unique(array_filter([$pm_mobile_digits, $pm_whatsapp_digits]))); // optional
+		$otherNums = array_values(array_unique(array_filter([$other_mobile_digits, $other_whatsapp_digits]))); // optional
+
+		$conflict = array_values(array_intersect($ownerNums, $pmNums));
+		if (!empty($conflict)) {
+			return simple_json_output(["status" => 400, "message" => "Number {$conflict[0]} cannot be used in both Owner and Purchase Manager."]);
+		}
+
+		$conflict = array_values(array_intersect($ownerNums, $otherNums));
+		if (!empty($conflict)) {
+			return simple_json_output(["status" => 400, "message" => "Number {$conflict[0]} cannot be used in both Owner and Other."]);
+		}
+
+		$conflict = array_values(array_intersect($pmNums, $otherNums));
+		if (!empty($conflict)) {
+			return simple_json_output(["status" => 400, "message" => "Number {$conflict[0]} cannot be used in both Purchase Manager and Other."]);
+		}
+
+		$allNums = array_values(array_unique(array_merge($ownerNums, $pmNums, $otherNums)));
+
+		$this->db->from('customer');
+		$this->db->where('is_deleted', 0);
+		$this->db->where('id !=', $id);
+
+		$this->db->group_start();
+		$this->db->or_where_in('owner_mobile', $allNums);
+		$this->db->or_where_in('owner_whatsapp', $allNums);
+		$this->db->or_where_in('pm_mobile', $allNums);
+		$this->db->or_where_in('pm_whatsapp', $allNums);
+		$this->db->or_where_in('other_mobile', $allNums);
+		$this->db->or_where_in('other_whatsapp', $allNums);
+		$this->db->group_end();
+
+		$exists_phone = $this->db->get();
+		if ($exists_phone->num_rows() > 0) {
+			$exists = $exists_phone->row_array();
+
+			$matchedNumber = '';
+			$dbNums = [
+				(string) $exists['owner_mobile'],
+				(string) $exists['owner_whatsapp'],
+				(string) $exists['pm_mobile'],
+				(string) $exists['pm_whatsapp'],
+				(string) $exists['other_mobile'],
+				(string) $exists['other_whatsapp'],
+			];
+
+			foreach ($allNums as $n) {
+				if (in_array((string) $n, $dbNums, true)) {
+					$matchedNumber = (string) $n;
+					break;
+				}
+			}
+
+			$existing_staff = $this->common_model->selectByidParam($exists['added_by'], 'sys_users', 'first_name');
+
+			return simple_json_output([
+				"status"  => 400,
+				"message" => "Phone/Whatsapp number {$matchedNumber} already exists in " . get_phrase($type) . "."
+			]);
+		}
+
+		// staff name (same as add)
+		$staff_name = $this->common_model->selectByidParam($staff_id, 'sys_users', 'first_name');
+
+		// --- data (same as add) ---
+		$data = array(
+			"type"   				 => $type,
+			"company_id"     => is_array($company_id) ? implode(',', $company_id) : (string) $company_id,
+			"company_name"   => $company_name,
+			"address"        => $address,
+			"address_2"      => $address_2,
+
+			"state_id"       => $state_id,
+			"state_name"     => $state_name,
+			"city_id"        => $city_id,
+			"city_name"      => $city_name,
+
+			"pincode"        => $pincode_digits,
+			"gst_name"       => $gst_name,
+			"gst_no"         => $gst_no,
+
+			"owner_name"     => $owner_name,
+			"owner_email"    => $owner_email,
+			"owner_mobile"   => $owner_mobile_digits,
+			"owner_whatsapp" => $owner_whatsapp_digits,
+
+			"pm_name"        => $pm_name,
+			"pm_email"       => $pm_email,
+			"pm_mobile"      => $pm_mobile_digits,
+			"pm_whatsapp"    => $pm_whatsapp_digits,
+
+			"other_name"     => $other_name,
+			"other_email"    => $other_email,
+			"other_mobile"   => $other_mobile_digits,
+			"other_whatsapp" => $other_whatsapp_digits,
+
+			"added_by_id" 	=> $staff_id,
+			"added_by_name" => $staff_name,
+			"is_move"			 	=> 1,
+			"move_date"			=> date("Y-m-d H:i:s"),
+		);
+
+		// changed fields for logs (only updated fields)
+		$changed = [];
+		foreach ($data as $key => $val) {
+			$oldVal = isset($old[$key]) ? (string) $old[$key] : '';
+			$newVal = (string) $val;
+
+			if ($oldVal !== $newVal) {
+				$changed[$key] = [
+					"old" => $old[$key] ?? null,
+					"new" => $val,
+				];
+			}
+		}
+
+		$this->db->where('id', $id);
+		$updated = $this->db->update('customer', $data);
+
+		if ($updated && !empty($changed)) {
+			$logs = [
+				"customer_id"    => $id,
+				"action"         => "move",
+				"label"          => json_encode(["badge" => "success", "message" => "Moved to customer"]),
+				"message"        => get_phrase($type) . " Updated By {$user_name}",
+				"json"           => json_encode($changed),
+				"added_by"       => $user_id,
+				"added_by_name"  => get_phrase($user_name),
+				"added_date"     => date("Y-m-d H:i:s"),
+			];
+
+			$this->db->insert('customer_log', $logs);
+		}
+
+		$this->session->set_flashdata('flash_message', get_phrase('successfully_moved_to_customer'));
+		$resultpost = array(
+			"status"  => 200,
+			"message" => get_phrase('successfully_moved_to_customer'),
+			"url"     => $this->agent->referrer(),
+		);
+
+		return simple_json_output($resultpost);
+	}
 
 	public function delete_customer($id)
 	{
@@ -7141,6 +7263,7 @@ class Inventory_model extends CI_Model
 			$logs = [
 				"customer_id"     => $id,
 				"action"          => "delete",
+				"label"          => json_encode(["badge" => "danger", "message" => "Customer Deleted"]),
 				"message"         => "Customer Deleted By {$user_name}",
 				"json"            => null,
 				"added_by"        => $user_id,
@@ -7243,7 +7366,7 @@ class Inventory_model extends CI_Model
 
 		$resultpost = array(
 			"status" => 200,
-			"message" => get_phrase('customer_reassigned_successfully'),
+			"message" => get_phrase('staff_assigned_successfully'),
 			"url" => $this->session->userdata('previous_url'),
 		);
 
@@ -7262,10 +7385,14 @@ class Inventory_model extends CI_Model
 
 		if($original_customer['type'] == 'leads') {
 			$data['status'] = 'fresh';
+			$data['company_id'] = $target_company_id;
+			$data['status_label'] = 'Fresh Lead';
 			$action = "assign";
 			$message = "Staff assign by {$user_name}";
 			$json_data = [
 				"status" 					=> 'fresh',
+				"company_id" 					=>  $target_company_id,
+				"status_label" 					=> 'Fresh Lead',
 				"added_by_id" 		=> $target_staff_id,
 				"added_by_name" => $staff_name,
 			];
@@ -7287,6 +7414,63 @@ class Inventory_model extends CI_Model
 			$logs = [
 				"customer_id"     => $customer_id,
 				"action"          => $action,
+				"label"          => json_encode(["badge" => "warning", "message" => ($action == "reassign") ? "Staff Reassign" : "Staff Assign"]),
+				"message"         => $message,
+				"json"            => json_encode($json_data),
+				"added_by"        => $user_id,
+				"added_by_name"   => get_phrase($user_name),
+				"added_date"      => date("Y-m-d H:i:s"),
+			];
+
+			$this->db->insert('customer_log', $logs);
+		}
+
+		$this->session->set_flashdata('flash_message', get_phrase('staff_assigned_successfully'));
+		return simple_json_output($resultpost);
+	}
+
+	public function follow_customer()
+	{
+		$user_id   = (int) $this->session->userdata('super_user_id');
+		$user_name = (string) $this->session->userdata('super_name');
+
+		$resultpost = array(
+			"status" => 200,
+			"message" => get_phrase('follow_up_added_successfully'),
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		$customer_id = clean_and_escape($this->input->post('customer_id'));
+		$status_date = clean_and_escape($this->input->post('status_date'));
+		$status = clean_and_escape($this->input->post('status'));
+		$status = explode(' | ', $status);
+		$remark = clean_and_escape($this->input->post('remark'));
+		
+		// Update customer company and staff
+		$data = array(
+			'status_date' => ($status[0] == 'lost') ? date("Y-m-d H:i:s") : $status_date,
+			'status' => $status[0],
+			'status_label' => $status[1],
+			'remark' => $remark,
+		);
+
+		$this->db->where('id', $customer_id);
+		$updated = $this->db->update('customer', $data);
+
+		if ($updated) {
+			$action = $status[0];
+			$message = "Leads Moved To " . get_phrase($status[0]) . " by {$user_name}";
+			$json_data = [
+				'status_date' => ($status[0] == 'lost') ? date("Y-m-d H:i:s") : $status_date,
+				'status' => $status[0],
+				'status_label' => $status[1],
+				'remark' => $remark,
+			];
+
+			$logs = [
+				"customer_id"     => $customer_id,
+				"action"          => $action,
+				"label"          => json_encode(["badge" => ($status[0] == 'lost') ? "danger" : "warning", "message" => ($status[0] == 'lost') ? "Lead Lost" : "Follow Up Added"]),
 				"message"         => $message,
 				"json"            => json_encode($json_data),
 				"added_by"        => $user_id,
@@ -7317,14 +7501,19 @@ class Inventory_model extends CI_Model
             OR contact_name like '%" . $keyword . "%')";
 		endif;
 
+		$data_type = $_REQUEST['type'];
+
 		$user_id = $this->session->userdata('super_user_id');
 		$type = $this->session->userdata('super_type');
 		$company_id = $this->session->userdata('company_id');
 		if($company_id && $type == 'staff') {
-				$keyword_filter .= " AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "'";
+				if($data_type == 'leads') {
+					$keyword_filter .= " AND added_by_id = '" . $user_id . "'";
+				} else {
+					$keyword_filter .= " AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "'";
+				}
 		}
 		
-		$data_type = $_REQUEST['type'];
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
 			$status        = $_REQUEST['status'];
 			$date =  date('Y-m-d');
@@ -7338,38 +7527,80 @@ class Inventory_model extends CI_Model
 				$keyword_filter .= " AND status='follow' AND (DATE(status_date) < '$date')";
 			} elseif($status == 'lost') {
 				$keyword_filter .= " AND status='lost'";
+			} elseif($status == 'moved') {
+				$data_type = 'customer';
+				$keyword_filter .= " AND is_move = '1'";
 			} else {
-				$keyword_filter .= " AND 1!=1";
+				$keyword_filter .= " AND (status='' OR status IS NULL)";
 			}
 		endif;
 
 		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
-
+		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name, owner_name, owner_mobile, status, status_label, move_date FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 		// echo $this->db->last_query(); exit();
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
+				$badge        = '';
+				if($item['status'] == 'fresh') {
+					$badge        = '<span class="badge badge-primary">' . $item['status_label'] . '</span>';
+				} elseif($item['status'] == 'follow') {
+					$badge        = '<span class="badge badge-warning">' . $item['status_label'] . '</span>';
+				} elseif($item['status'] == 'lost') {
+					$badge        = '<span class="badge badge-danger">' . $item['status_label'] . '</span>';
+				}
 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/customer/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/' . $data_type . '/edit/' . $id;
+				$move_url = base_url() . 'inventory/' . $data_type . '/move/' . $id;
 				$replicate_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_replicate_modal/" . $id . "','Replicate Customer')";
 				$reassign_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_reinitiate_modal/" . $id . "','" . (($data_type == 'leads') ? "Assign" : "Reassign") . " Staff')";
+				$followup_url = "smallAjaxModal('" . base_url() . "modal/popup_inventory/customer_followup_modal/" . $id . "','" . "Add Follow-Up')";
 				$timeline_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_customer_timeline/" . $id . "','Timeline')";
 
 				$action = '';
-				$action .= '
-				<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+				if($data_type == 'customer') {
+					if($_REQUEST['status'] == 'moved') {
+						$action .= '
+							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
+						';
+					} else {
+						$action .= '
+							<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+			
+							<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
+			
+							<a href="javascript:void(0);" class="d-none" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
+			
+							<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
+			
+							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
+						';
+					}
+				} else {
+					if($_REQUEST['status'] == 'all') {
+						$action .= '
+							<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+			
+							<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
+			
+							<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
+						';
+					} else if ($_REQUEST['status'] == 'new') {
+						$action .= '
+							<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
+						';
+					} else if (in_array($_REQUEST['status'], ['today', 'upcoming', 'missed'])) {
+						$action .= '
+							<a href="' . $move_url . '" data-toggle="tooltip" data-bs-placement="top" title="Move To Customer"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-chevron-right" aria-hidden="true"></i></button></a>
+						';
+					}
 
-        <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-
-        <a href="javascript:void(0);" class="d-none" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
-
-				<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
-
-        <a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
-        ';
+					$action .= '
+						<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
+					';
+				}
 
 				$log = $this->common_model->getRowById('customer_log', 'added_by_name', ['customer_id' => $item['id'], 'action' => 'create']);
 
@@ -7379,10 +7610,14 @@ class Inventory_model extends CI_Model
 					"name"        		=> $item['company_name'],
 					"gst_name"				=> ($item['gst_name']) ? $item['gst_name'] : '-',
 					"gst_no"					=> ($item['gst_no']) ? $item['gst_no'] : '-',
+					"owner_name"			=> ($item['owner_name']) ? $item['owner_name'] : '-',
+					"owner_no"				=> ($item['owner_mobile']) ? $item['owner_mobile'] : '-',
 					"city_name"				=> ($item['city_name']) ? $item['city_name'] : '-',
 					"state_name"			=> ($item['state_name']) ? $item['state_name'] : '-',
 					"pincode"					=> ($item['pincode']) ? $item['pincode'] : '-',
 					"staff"						=> ($item['added_by_name']) ? $item['added_by_name'] : '-',
+					"move_date"				=> date('d-m-Y', strtotime($item['move_date'])),
+					"status"					=> $badge,
 					"added_by_name"		=> $log['added_by_name'] ?? '-',
 					"action"      		=> $action,
 				);

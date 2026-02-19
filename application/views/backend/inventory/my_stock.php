@@ -49,8 +49,8 @@
        $type = $this->input->get('type', true);
     }
 ?>
+
 <div class="row" id="table-bordered">
-	
 	<div class="col-md-12 mb-1">
 		<div class="fixedElement" id="fixedElement">
 			<ul class="nav nav-pills bg-nav-pills nav-justified ">
@@ -90,16 +90,8 @@
                   <tr>
 					<th>#</th>
 					<th>Category</th>
-					<th>SKU Code</th>
-					<th>Group ID</th>
-					<th>Size</th>
-					<th>Color</th>
+					<th>Product Name</th>
 					<th>Quantity</th>
-					<th>CP</th>
-					<th>GST</th>
-					<th>Total Amount</th>
-					<!--<th>Product Listed On</th>-->
-					
 					<th>Actions</th>
                   </tr>
                </thead>
@@ -148,16 +140,9 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "size_label" },
-                { "data": "item_code" },
-                { "data": "group_id" },
-                { "data": "size_name" },
-                { "data": "color_name" },
+                { "data": "category" },
+                { "data": "product_name" },
                 { "data": "quantity" },
-                { "data": "costing_price" },
-                { "data": "gst" },
-                { "data": "total_price" },
-                // { "data": "pro_listed" },
                 { "data": "action" },
             ], 
            

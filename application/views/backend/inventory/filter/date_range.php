@@ -41,24 +41,6 @@
 										</div>
 										<?php }?>
 
-										<?php if ($page_name == 'sales_order') {?>
-										<div class="col-md-3 col-12">
-											<div class="form-group mb-0">   
-												<label>Customer</label>
-												<select class="form-control select2" name="customer_id">
-													<option value="">All Customer</option>
-													<?php 
-													$companys = $this->db->query("SELECT id, name FROM customer WHERE is_deleted='0' ORDER BY name ASC")->result_array();
-													foreach($companys as $supplier): 
-															$selected = (isset($_GET['customer_id']) && $_GET['customer_id'] == $supplier['id']) ? 'selected' : '';
-													?>
-													<option value="<?= $supplier['id'] ?>" <?= $selected ?>><?= $supplier['name'] ?></option>
-													<?php endforeach; ?>
-												</select>
-											</div>
-										</div>
-										<?php }?>
-										
 										<?php if ($page_name == 'sales_reports') {?>
 										<div class="col-md-3 col-12">
 											<div class="form-group mb-0">   

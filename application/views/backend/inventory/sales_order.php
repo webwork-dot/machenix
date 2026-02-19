@@ -30,8 +30,7 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-		       
-		   <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>   
+		   <!-- <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>    -->
 		   
 		   <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>          
      
@@ -41,7 +40,7 @@
                   <tr>
 					<th>#</th>
 					<th>Date</th>
-					<th>Company Name</th>
+					<!-- <th>Company Name</th> -->
 					<!--<th>Reference Number</th>-->
 					<th>Customer Name</th>
 					<th>Order NO</th>
@@ -97,7 +96,7 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "date" },
-                { "data": "company_name" },
+                // { "data": "company_name" },
                 // { "data": "refrence_no" },
                 { "data": "customer_name" },
                 { "data": "order_no" },

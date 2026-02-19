@@ -38,48 +38,37 @@ $customer_history = array_reverse($customer_history);
   }
 </style>
 
-<?php foreach($customer_history as $history){ ?>
-  <?php if($customers['type'] == "customer"){ ?>
-  <?php if($history['action'] == "create"){ ?>
-    <div class="history-item">
-      <div class="card history-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="badge bg-success history-pill">Customer Added</span>
-            <small class="history-meta"><?php echo formatHistoryTime($history['added_date']); ?></small>
-          </div>
+<?php 
+  foreach($customer_history as $history){ 
+    $json = [];
+    $label = [];
+    if($history['json']) {
+      $json = json_decode($history['json'], true);
+      $label = json_decode($history['label'], true);
+    }
+?>
 
-          <div class="history-title">Added By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
-        </div>
+<div class="history-item">
+  <div class="card history-card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="badge bg-<?php echo $label['badge']; ?> history-pill"><?php echo $label['message']; ?></span>
+        <small class="history-meta"><?php echo formatHistoryTime($history['added_date']); ?></small>
       </div>
-    </div>
-  <?php } elseif($history['action'] == "update") { ?>
-    <div class="history-item">
-      <div class="card history-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="badge bg-warning history-pill">Customer Updated</span>
-            <small class="history-meta"><?php echo formatHistoryTime($history['added_date']); ?></small>
-          </div>
 
-          <div class="history-title">Updated By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
-        </div>
-      </div>
-    </div>
-  <?php } elseif($history['action'] == "reassign") { ?>
-    <div class="history-item">
-      <div class="card history-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="badge bg-danger history-pill">Customer Reassign</span>
-            <small class="history-meta"><?php echo formatHistoryTime($history['added_date']); ?></small>
-          </div>
+      <?php if($history['action'] == "create" || $history['action'] == "follow" || $history['action'] == "lost"){ ?>
+        <div class="history-title">Added By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
+      <?php } elseif($history['action'] == "reassign" || $history['action'] == "update") { ?>
+        <div class="history-title">Updated By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
+      <?php } elseif($history['action'] == "assign") { ?>
+        <div class="history-title">Assigned To: <span class="text-primary"><?php echo $json['added_by_name']; ?></span></div>
+      <?php } elseif($history['action'] == "move") { ?>
+        <div class="history-title">Moved By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
+      <?php } ?>
 
-          <div class="history-title">Updated By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
-        </div>
-      </div>
     </div>
-  <?php } ?>
-  <?php } else { ?>
-  <?php } ?>
+  </div>
+</div>
+
+  
 <?php } ?>

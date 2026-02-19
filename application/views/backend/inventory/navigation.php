@@ -115,7 +115,7 @@
         <?php } ?>
         
         <?php if($user_id == 4 || in_array('26',$access_array)) {?>
-	    <li class="nav-item hidden <?php if($page_name == 'sales_order' || $page_name == 'sales_order_add' || $page_name == 'sales_order_view'|| $page_name == 'sales_order_products') echo 'active'; ?>">
+	    <li class="nav-item <?php if($page_name == 'sales_order' || $page_name == 'sales_order_add' || $page_name == 'sales_order_view'|| $page_name == 'sales_order_products') echo 'active'; ?>">
            <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-order'); ?>">
                <i data-feather="align-left"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales</span>
@@ -252,8 +252,11 @@
                 <span class="menu-title text-truncate">Customer</span>
             </a>
         </li>
+        <?php } ?>
+
+        <?php if($user_id == 4 || in_array('2',$access_array)) {?>
         <li class="nav-item <?php if($navigation == 'leads') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads/<?php echo ($this->session->userdata('super_type') == 'Inventory') ? 'all' : 'new';?>">
                 <i class="feather icon-layers"></i>
                 <span class="menu-title text-truncate">Leads</span>
             </a>

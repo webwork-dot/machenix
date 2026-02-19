@@ -48,10 +48,11 @@
               </div>
             </div>
 
+            <?php if($navigation != 'leads'){ ?>
             <div class="col-12 col-sm-3 mb-1">
               <div class="form-group">
                 <label>Company <span class="required">*</span></label>
-                <select class="form-select select2" name="company_id[]" id="company_id" onchange="get_staff();" multiple>
+                <select class="form-select select2" name="company_id[]" id="company_id" onchange="get_staff();" required multiple>
                   <?php
                     $selected_company_ids = [];
                     if (!empty($data['company_id'])) {
@@ -69,6 +70,7 @@
                 </select>
               </div>
             </div>
+            <?php } ?>
 
             <?php if($this->session->userdata('super_type') == 'Inventory' && $navigation != 'leads'){ ?>
               <div class="col-12 col-sm-3 mb-1" id="staff_div">

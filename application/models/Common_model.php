@@ -452,31 +452,6 @@ class Common_model extends CI_Model{
         }
     }
     
-    public function getSessionCompanies() {
-        $user_id = $this->session->userdata('super_user_id');
-        $type = $this->session->userdata('super_type');
-
-        $user = $this->getRowById('sys_users', 'company_id', array('id' => $user_id));
-        if($user != ''){
-            $company_id = $user['company_id'];
-
-            $keyword = '';
-            if($type == 'staff') {
-                $keyword = " AND id IN ('".$company_id."')";
-            }
-
-            $query = $this->db->query("SELECT * FROM company WHERE is_deleted = '0' $keyword");
-            if($query->num_rows()>0){
-                $sql = $query->result_array();
-                return $sql;
-            } else {
-                return '';
-            }
-        } else{
-           return '';
-        }
-    }
-
     public function getCountsById($table,$where) {
         $this->db->select('id');
         $this->db->where($where);
@@ -754,17 +729,23 @@ class Common_model extends CI_Model{
 	
 	public function get_batch_product_1($product_id,$warehouse_id)   {
         $resultdata = array();
-       $query = $this->db->query("SELECT warehouse_name,product_name,item_code,SUM(quantity) as quantity FROM inventory WHERE warehouse_id='$warehouse_id' and id='$product_id' group by product_id LIMIT 1");
-	   //echo $this->db->last_query();
+       $query = $this->db->query("SELECT warehouse_name,product_name,product_id,categories,item_code,SUM(quantity) as quantity FROM inventory WHERE warehouse_id='$warehouse_id' and id='$product_id' group by product_id LIMIT 1");
+	//    echo $this->db->last_query(); exit();
         if ($query->num_rows() > 0) {
             $item = $query->row_array();
-                $resultdata= array(
-                    "warehouse_name" => $item['warehouse_name'],
-                    "product_name" => $item['product_name'],
-                    "item_code" => $item['item_code'],
-                    "quantity" => $item['quantity']
-                );
-            
+
+            $size_label = '';
+            $category = $this->common_model->getRowById('categories', 'name', ['id' => $item['categories']]);
+            $size_label = $category['name'] ?? '-';
+
+            $resultdata= array(
+                "warehouse_name" => $item['warehouse_name'],
+                "product_name" => $item['product_name'],
+                "product_id" => $item['product_id'],
+                "category" => $size_label,
+                "item_code" => $item['item_code'],
+                "quantity" => $item['quantity']
+            );
         }
         return $resultdata;
     }
@@ -809,6 +790,62 @@ class Common_model extends CI_Model{
 			   $this->displayTreeOptions($category['children'], $selectedValues, $name, $level + 1);
 			}
 		}
+    }
+
+    public function getSessionCompanies() {
+        $user_id = $this->session->userdata('super_user_id');
+        $type = $this->session->userdata('super_type');
+
+        $user = $this->getRowById('sys_users', 'company_id', array('id' => $user_id));
+        if($user != ''){
+            $company_id = $user['company_id'];
+
+            $keyword = '';
+            if($type == 'staff') {
+                $keyword = " AND id IN ('".$company_id."')";
+            }
+
+            $query = $this->db->query("SELECT * FROM company WHERE is_deleted = '0' $keyword");
+            if($query->num_rows()>0){
+                $sql = $query->result_array();
+                return $sql;
+            } else {
+                return '';
+            }
+        } else{
+           return '';
+        }
+    }
+    
+    public function getSessionCustomers() {
+        $user_id = $this->session->userdata('super_user_id');
+        $company_id = $this->session->userdata('company_id');
+        $type = $this->session->userdata('super_type');
+        $customers = [];
+        if($type == 'Inventory') {
+            $query = $this->db->query("SELECT * FROM customer WHERE type='customer' AND is_deleted = '0' AND FIND_IN_SET('" . $company_id . "', company_id) ");
+        } else {
+            $query = $this->db->query("SELECT * FROM customer WHERE type='customer' AND is_deleted = '0' AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "' ");
+        }
+
+        if($query->num_rows() > 0) {
+            $customers = $query->result_array();
+        }
+
+        return $customers;
+    }
+
+    public function getSessionWarehouse() {
+        $warehouse = [];
+        $company_id = $this->session->userdata('company_id');
+
+        $query = $this->db->query("SELECT * FROM warehouse WHERE is_deleted = '0' AND company_id = '" . $company_id . "' ORDER BY sort ASC");
+
+        if($query->num_rows() > 0) {
+            $warehouse = $query->result_array();
+        }
+
+        return $warehouse;
     }
     
 }

@@ -26,11 +26,15 @@
 </style>
 
 <div class="col-12 d-flex">
+    <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+      <a href="<?php echo site_url('inventory/leads/all'); ?>" class="sub-link <?php echo ($status == 'all') ? 'active' : ''; ?>">All Leads</a>
+    <?php } ?>
     <a href="<?php echo site_url('inventory/leads/new'); ?>" class="sub-link <?php echo ($status == 'new') ? 'active' : ''; ?>">New Leads</a>
     <a href="<?php echo site_url('inventory/leads/today'); ?>" class="sub-link <?php echo ($status == 'today') ? 'active' : ''; ?>">Todays Follow-up</a>
     <a href="<?php echo site_url('inventory/leads/upcoming'); ?>" class="sub-link <?php echo ($status == 'upcoming') ? 'active' : ''; ?>">Upcoming Follow-up</a>
-    <a href="<?php echo site_url('inventory/leads/lost'); ?>" class="sub-link <?php echo ($status == 'lost') ? 'active' : ''; ?>">Lost Leads</a>
     <a href="<?php echo site_url('inventory/leads/missed'); ?>" class="sub-link <?php echo ($status == 'missed') ? 'active' : ''; ?>">Missed Leads</a>
+    <a href="<?php echo site_url('inventory/leads/lost'); ?>" class="sub-link <?php echo ($status == 'lost') ? 'active' : ''; ?>">Lost Leads</a>
+    <a href="<?php echo site_url('inventory/leads/moved'); ?>" class="sub-link <?php echo ($status == 'moved') ? 'active' : ''; ?>">Move To Customer</a>
 </div>
 
 <div class="row" id="table-bordered">
@@ -44,24 +48,31 @@
           </div>
         </div>
         <div class="card-datatable d-report mb-2">
-		    <!-- <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>           -->
-        <table class="table leads-table" id="report-datatable">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Company Name</th>
-                  <th>GST Name</th>
-                  <th>GST Number</th>
-                  <th>Pincode</th>
-                  <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-                    <th>Staff</th>
-                    <th>Added By</th>
-                  <?php } ?>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+        <?php if($status == 'all'){ ?>
+		      <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>          
+        <?php } ?>
+          <table class="table leads-table" id="report-datatable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Company Name</th>
+                <th>Name</th>
+                <th>Number</th>
+                <?php if($status != 'all' && $status != 'moved'){ ?>
+                  <th>Status</th>
+                <?php } ?>
+                <?php if($status == 'moved'){ ?>
+                  <th>Move Date</th>
+                <?php } ?>
+                <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                  <th>Staff</th>
+                  <th>Added By</th>
+                <?php } ?>
+                <th>Actions</th>
+              </tr>
+            </thead>
           </table>
-         </div>
+        </div>
       </div>
    </div>
 </div>
@@ -106,9 +117,14 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "name" },
-                { "data": "gst_name" },
-                { "data": "gst_no" },
-                { "data": "pincode" },
+                { "data": "owner_name" },
+                { "data": "owner_no" },
+                <?php if($status != 'all' && $status != 'moved'){ ?>
+                  { "data": "status" },
+                <?php } ?>
+                <?php if($status == 'moved'){ ?>
+                  { "data": "move_date" },
+                <?php } ?>
                 <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
                     { "data": "staff" },
                     { "data": "added_by_name" },

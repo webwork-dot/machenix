@@ -40,8 +40,8 @@
                <thead>
                   <tr>
 					<th>#</th>
+					<th>Category</th>
 					<th>Product Name</th>
-					<th>SKU Code</th>
 					<th>Batch No</th>
 					<th>Quantity</th>
 					<th>Actions</th>
@@ -77,8 +77,8 @@
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
-                       data.product_id = '<?php echo $product_id; ?>';			
-                       data.warehouse_id = '<?php echo $warehouse_id; ?>';			
+                    data.product_id = '<?php echo $product_id; ?>';			
+                    data.warehouse_id = '<?php echo $warehouse_id; ?>';			
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -90,8 +90,8 @@
                      
             "columns": [
                  { "data": "sr_no" },
+                 { "data": "category" },
                 { "data": "product_name" },
-                { "data": "item_code" },
                 { "data": "batch_no" },
                 { "data": "quantity" },
                 { "data": "action" },
