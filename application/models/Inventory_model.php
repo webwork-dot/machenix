@@ -2859,7 +2859,7 @@ class Inventory_model extends CI_Model
 					</div>';
 				}
 
-				// Loading List Action
+				// Purchase In Action
 				$purchase_in_action ='-';
 				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs')";
 				
@@ -4151,6 +4151,21 @@ class Inventory_model extends CI_Model
 
 // 		return $result;
 // 	}
+
+	public function update_purchase_order_inr(){
+		$resultpost = array(
+			"status" => 200,
+			"message" => get_phrase('inr_updated_successfully'),
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		$po_id = $this->input->post('po_id');
+		$inr_rate = $this->input->post('inr_rate');
+		$this->db->where('id', $po_id);
+		$this->db->update('purchase_order', ['inr_rate' => $inr_rate]);
+
+		return simple_json_output($resultpost);
+	}
 
 	public function update_purchase_order_priority_list() {
 		if ($this->session->userdata('inventory_login') != true) {
@@ -12521,6 +12536,7 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 				$this->session->set_flashdata('flash_message', get_phrase('product_size_updated_successfully'));
 			}
 		}
+		
 		return simple_json_output($resultpost);
 	}
 

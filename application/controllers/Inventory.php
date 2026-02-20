@@ -1158,7 +1158,6 @@ class Inventory extends CI_Controller
 
     public function view_purchase_order($param1 = "", $param2 = "")
     {
-
         $id = $param1;
         $receipt_no = sprintf('%05d', $id);
         $page_data['data'] =  $this->inventory_model->get_puchase_order_details($param1);

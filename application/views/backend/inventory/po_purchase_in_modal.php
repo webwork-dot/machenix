@@ -79,7 +79,7 @@ foreach ($products_raw as $product) {
                                 <tbody>
                                     <?php
                                     $sr_no = 1;
-                                    foreach ($supplier_data['products'] as $product):
+                                    foreach ($supplier_data['products'] as $ind => $product):
                                         $inr_rate = isset($po_raw['inr_rate']) ? (float)$po_raw['inr_rate'] : 0;
                                         $actual_qty = isset($product['loading_qty']) ? (float)$product['loading_qty'] : 0;
                                         if ($actual_qty <= 0) {
@@ -104,121 +104,124 @@ foreach ($products_raw as $product) {
                                         $gst_amt = $taxable_value * 0.18;
                                         $total_amt = $taxable_value + $gst_amt;
                                     ?>
+                                    <?php $row_id = (int)($product['id'] ?? 0); ?>
                                     <tr>
                                         <td class="text-center"><?php echo $sr_no++; ?></td>
+
+                                        <!-- optional: helps if you want a flat list too -->
+                                        <input type="hidden" name="row_id[]" value="<?php echo $row_id; ?>">
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                value="<?php echo htmlspecialchars($product_name); ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm"
+                                            name="product_name[<?php echo $row_id; ?>]"
+                                            value="<?php echo htmlspecialchars($product_name); ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm"
-                                                value="<?php echo htmlspecialchars($item_code); ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm"
+                                            name="item_code[<?php echo $row_id; ?>]"
+                                            value="<?php echo htmlspecialchars($item_code); ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right"
-                                                value="<?php echo $actual_qty !== 0.0 ? number_format($actual_qty, 0) : ''; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right actual-qty"
+                                            name="actual_qty[<?php echo $row_id; ?>]"
+                                            value="<?php echo $actual_qty !== 0.0 ? number_format($actual_qty, 0) : ''; ?>"
+                                            onkeyup="calculateActual(this)">
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right"
-                                                value="<?php echo $actual_rmb !== 0.0 ? number_format($actual_rmb, 2, '.', '') : ''; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right actual-rmb"
+                                            name="actual_rmb[<?php echo $row_id; ?>]"
+                                            value="<?php echo $actual_rmb !== 0.0 ? number_format($actual_rmb, 2, '.', '') : ''; ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right"
-                                                value="<?php echo $total_rmb !== 0.0 ? number_format($total_rmb, 2, '.', '') : ''; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right total-rmb"
+                                            name="total_rmb[<?php echo $row_id; ?>]"
+                                            value="<?php echo $total_rmb !== 0.0 ? number_format($total_rmb, 2, '.', '') : ''; ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right official-qty"
-                                                value="<?php echo $official_qty !== 0.0 ? number_format($official_qty, 0) : ''; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right official-qty"
+                                            name="official_qty[<?php echo $row_id; ?>]"
+                                            value="<?php echo $official_qty !== 0.0 ? number_format($official_qty, 0) : ''; ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right official-rate"
-                                                value="<?php echo $official_rate_rs !== 0.0 ? number_format($official_rate_rs, 2, '.', '') : '0'; ?>"
-                                                data-usd-rate="<?php echo $product['official_ci_unit_price_usd']; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right official-rate"
+                                            name="official_rate_rs[<?php echo $row_id; ?>]"
+                                            value="<?php echo $official_rate_rs !== 0.0 ? number_format($official_rate_rs, 2, '.', '') : '0'; ?>"
+                                            data-usd-rate="<?php echo $product['official_ci_unit_price_usd']; ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right official-total"
-                                                value="<?php echo $official_total_rs !== 0.0 ? number_format($official_total_rs, 2, '.', '') : '0'; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right official-total"
+                                            name="official_total_rs[<?php echo $row_id; ?>]"
+                                            value="<?php echo $official_total_rs !== 0.0 ? number_format($official_total_rs, 2, '.', '') : '0'; ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right duty-percent"
-                                                value="<?php echo number_format($duty_percent, 1); ?>"
-                                                data-duty-percent="<?php echo $duty_percent; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right duty-percent"
+                                            name="duty_percent[<?php echo $row_id; ?>]"
+                                            value="<?php echo number_format($duty_percent, 1); ?>"
+                                            onkeyup="calculateDuty(this)">
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right duty-amt"
-                                                value="<?php echo $duty_amt !== 0.0 ? number_format($duty_amt, 2, '.', '') : '0'; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right duty-amt"
+                                            name="duty_amt[<?php echo $row_id; ?>]"
+                                            value="<?php echo $duty_amt !== 0.0 ? number_format($duty_amt, 2, '.', '') : '0'; ?>"
+                                            onkeyup="calculateDutyChrg(this)">
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right duty-surcharge"
-                                                value="<?php echo $duty_surcharge !== 0.0 ? number_format($duty_surcharge, 2, '.', '') : '0'; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right duty-surcharge"
+                                            name="duty_surcharge[<?php echo $row_id; ?>]"
+                                            value="<?php echo $duty_surcharge !== 0.0 ? number_format($duty_surcharge, 2, '.', '') : '0'; ?>"
+                                            onkeyup="calculateDutySur(this)">
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right taxable-value"
-                                                value="<?php echo $taxable_value !== 0.0 ? number_format($taxable_value, 2, '.', '') : '0'; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right taxable-value"
+                                            name="taxable_value[<?php echo $row_id; ?>]"
+                                            value="<?php echo $taxable_value !== 0.0 ? number_format($taxable_value, 2, '.', '') : '0'; ?>"
+                                            readonly>
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right gst-amt"
-                                                value="<?php echo $gst_amt !== 0.0 ? number_format($gst_amt, 2, '.', '') : '0'; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right gst-amt"
+                                            name="gst_amt[<?php echo $row_id; ?>]"
+                                            value="<?php echo $gst_amt !== 0.0 ? number_format($gst_amt, 2, '.', '') : '0'; ?>"
+                                            onkeyup="calculateGST(this)">
                                         </td>
+
                                         <td>
-                                            <input
-                                                type="text"
-                                                class="form-control form-control-sm text-right total-amt"
-                                                value="<?php echo $total_amt !== 0.0 ? number_format($total_amt, 2, '.', '') : '0'; ?>"
-                                                readonly
-                                            >
+                                            <input type="text"
+                                            class="form-control form-control-sm text-right total-amt"
+                                            name="total_amt[<?php echo $row_id; ?>]"
+                                            value="<?php echo $total_amt !== 0.0 ? number_format($total_amt, 2, '.', '') : '0'; ?>"
+                                            readonly>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -241,49 +244,129 @@ foreach ($products_raw as $product) {
 </form>	
 
 <script>
+
+function toNum(v) {
+  if (v === null || v === undefined) return 0;
+  v = ('' + v).replace(/,/g, '').trim();
+  var n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+
+function setNum($el, n, decimals) {
+  if (!$el || !$el.length) return;
+  if (decimals === undefined) decimals = 2;
+  $el.val((toNum(n)).toFixed(decimals));
+}
+
+function getRow(el) {
+  return $(el).closest('tr');
+}
+
+function getInrRate() {
+  return toNum($('.supplier-inr-rate').val());
+}
+
+// Recalculate all "official" columns based on current row + inr rate
+function recalcOfficialAndTotals($row) {
+  var inrRate = getInrRate();
+  if (inrRate <= 0) return;
+
+  var officialQty = toNum($row.find('.official-qty').val());
+  var usdRate = toNum($row.find('.official-rate').data('usd-rate')); // USD
+  if (officialQty <= 0 || usdRate <= 0) return;
+
+  var unitInr = usdRate * inrRate;           // official_rate_rs
+  var officialTotal = officialQty * unitInr; // official_total_rs
+
+  var dutyPercent = toNum($row.find('.duty-percent').val()); // use input value (not data-*)
+  var dutyAmt = officialTotal * dutyPercent / 100;
+  var dutySurcharge = dutyAmt * 0.10;
+  var taxableValue = officialTotal + dutyAmt + dutySurcharge;
+  var gstAmt = taxableValue * 0.18;
+  var totalAmt = taxableValue + gstAmt;
+
+  setNum($row.find('.official-rate'), unitInr, 2);
+  setNum($row.find('.official-total'), officialTotal, 2);
+  setNum($row.find('.duty-amt'), dutyAmt, 2);
+  setNum($row.find('.duty-surcharge'), dutySurcharge, 2);
+  setNum($row.find('.taxable-value'), taxableValue, 2);
+  setNum($row.find('.gst-amt'), gstAmt, 2);
+  setNum($row.find('.total-amt'), totalAmt, 2);
+}
+
+// Actual Qty -> Total RMB
+function calculateActual(el) {
+  var $row = getRow(el);
+
+  var qty = toNum($row.find('.actual-qty').val());
+  var unitRmb = toNum($row.find('.actual-rmb').val());
+  var totalRmb = qty * unitRmb;
+
+  setNum($row.find('.total-rmb'), totalRmb, 2);
+}
+
+// Duty % changed -> recompute duty, surcharge, taxable, gst, total (full chain)
+function calculateDuty(el) {
+  var $row = getRow(el);
+  recalcOfficialAndTotals($row);
+}
+
+// Duty Amt manually changed -> surcharge (10%) + taxable + gst(18%) + total
+function calculateDutyChrg(el) {
+  var $row = getRow(el);
+
+  var officialTotal = toNum($row.find('.official-total').val());
+  var dutyAmt = toNum($row.find('.duty-amt').val());
+
+  var dutySurcharge = dutyAmt * 0.10;
+  var taxableValue = officialTotal + dutyAmt + dutySurcharge;
+  var gstAmt = taxableValue * 0.18;
+  var totalAmt = taxableValue + gstAmt;
+
+  setNum($row.find('.duty-surcharge'), dutySurcharge, 2);
+  setNum($row.find('.taxable-value'), taxableValue, 2);
+  setNum($row.find('.gst-amt'), gstAmt, 2);
+  setNum($row.find('.total-amt'), totalAmt, 2);
+}
+
+// Duty Surcharge manually changed -> taxable + gst(18%) + total
+function calculateDutySur(el) {
+  var $row = getRow(el);
+
+  var officialTotal = toNum($row.find('.official-total').val());
+  var dutyAmt = toNum($row.find('.duty-amt').val());
+  var dutySurcharge = toNum($row.find('.duty-surcharge').val());
+
+  var taxableValue = officialTotal + dutyAmt + dutySurcharge;
+  var gstAmt = taxableValue * 0.18;
+  var totalAmt = taxableValue + gstAmt;
+
+  setNum($row.find('.taxable-value'), taxableValue, 2);
+  setNum($row.find('.gst-amt'), gstAmt, 2);
+  setNum($row.find('.total-amt'), totalAmt, 2);
+}
+
+// GST manually changed -> total = taxable + gst
+function calculateGST(el) {
+  var $row = getRow(el);
+
+  var taxableValue = toNum($row.find('.taxable-value').val());
+  var gstAmt = toNum($row.find('.gst-amt').val());
+  var totalAmt = taxableValue + gstAmt;
+
+  setNum($row.find('.total-amt'), totalAmt, 2);
+}
+
 $(document).ready(function () {
-    $('.supplier-inr-rate').on('keyup change', function () {
-        var inrRate = parseFloat($(this).val());
+  // INR Rate change -> update all rows using current duty % input values
+  $('.supplier-inr-rate').on('keyup change', function () {
+    var inrRate = getInrRate();
+    if (inrRate <= 0) return;
 
-        if (!inrRate || inrRate <= 0) {
-            return;
-        }
-
-        $('tbody tr').each(function () {
-            var $row = $(this);
-
-            var officialQty = parseFloat(
-                ($row.find('.official-qty').val() || '').toString().replace(/,/g, '')
-            ) || 0;
-
-            var usdRate = parseFloat($row.find('.official-rate').data('usd-rate')) || 0;
-
-            if (!officialQty || !usdRate) {
-                return;
-            }
-
-            var unitInr = usdRate * inrRate;
-            var officialTotal = officialQty * unitInr;
-
-            var dutyPercent = parseFloat(
-                $row.find('.duty-percent').data('duty-percent')
-            ) || 0;
-
-            var dutyAmt = officialTotal * dutyPercent / 100;
-            var dutySurcharge = dutyAmt * 0.10;
-            var taxableValue = officialTotal + dutyAmt + dutySurcharge;
-            var gstAmt = taxableValue * 0.18;
-            var totalAmt = taxableValue + gstAmt;
-
-            $row.find('.official-rate').val(unitInr.toFixed(2));
-            $row.find('.official-total').val(officialTotal.toFixed(2));
-            $row.find('.duty-amt').val(dutyAmt.toFixed(2));
-            $row.find('.duty-surcharge').val(dutySurcharge.toFixed(2));
-            $row.find('.taxable-value').val(taxableValue.toFixed(2));
-            $row.find('.gst-amt').val(gstAmt.toFixed(2));
-            $row.find('.total-amt').val(totalAmt.toFixed(2));
-        });
+    $('tbody tr').each(function () {
+      recalcOfficialAndTotals($(this));
     });
+  });
 });
 
 $(document).ready(function() {
