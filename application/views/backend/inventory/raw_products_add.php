@@ -179,7 +179,7 @@
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
               <label>Alias Name </label>
-              <input type="text" class="form-control" placeholder="Enter Alias Name" name="alias" >
+              <input type="text" class="form-control alias-name" placeholder="Enter Alias Name" name="alias" >
             </div>
           </div>
 
@@ -189,7 +189,7 @@
               <?php 
               $category_ = array(); 
               if(isset($product)){  $category_ = explode(',',$product->category_id); } ?>
-              <select name="category_id" class="select2" required="" >
+              <select name="category_id" class="category-select select2" onchange="detectType(this.value)" required="" >
                 <?php $this->common_model->displayTreeOptions($category_tree,$category_);?>
               </select>
             </div>
@@ -207,25 +207,25 @@
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-3 mb-1 " >
             <div class="form-group">
-              <label>Model No. <span class="required">*</span></label>
-              <input type="text" class="form-control old-sku" placeholder="Enter Model No." name="item_code"
+              <label>Model No. <span class="required req-cont">*</span></label>
+              <input type="text" class="form-control old-sku req-inp" placeholder="Enter Model No." name="item_code"
                 id="item_code" required>
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>HSN Code <span class="required">*</span></label>
-              <input type="text" class="form-control" placeholder="Enter HSN Code" name="hsn_code" required>
+              <label>HSN Code <span class="required req-cont">*</span></label>
+              <input type="text" class="form-control req-inp" placeholder="Enter HSN Code" name="hsn_code" required>
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Tax Rate (in %)<span class="required">*</span></label>
-              <input type="number" class="form-control" placeholder="Enter Tax Rate" name="gst" value="0">
+              <label>Tax Rate (in %)<span class="required req-cont">*</span></label>
+              <input type="number" class="form-control req-inp" placeholder="Enter Tax Rate" name="gst" value="0">
             </div>
           </div>
 
@@ -412,6 +412,20 @@
 </div>
 
 <script>
+
+// Tab Open select2
+$(document).on('keydown', '.alias-name', function (e) {
+  if (e.key !== 'Tab' || e.shiftKey) return;
+  const $row = $(this).closest('tr');
+  const $productSelect = $('.category-select');
+
+  setTimeout(() => {
+    if ($productSelect.length) {
+      $productSelect.select2('open');
+    }
+  }, 0);
+});
+
 var variationRowCount = 1;
 
 $(document).ready(function() {
@@ -523,6 +537,34 @@ function removeVariationRow(btn) {
     updateVariationHeadings();
     variationRowCount = $('.variation-row').length;
   });
+}
+
+function detectType(val) {
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url(); ?>inventory/get_category_by_id",
+    data: {id: val},
+    dataType: 'JSON',
+    success: function(res) {
+      if(res.type == 'spare') {
+        document.querySelectorAll('.req-cont').forEach((ele) => {
+            ele.classList.add('d-none');
+        })
+
+        document.querySelectorAll('.req-inp').forEach((ele) => {
+            ele.removeAttribute('required');
+        })
+      } else {
+        document.querySelectorAll('.req-cont').forEach((ele) => {
+          ele.classList.remove('d-none')
+        })
+
+        document.querySelectorAll('.req-inp').forEach((ele) => {
+          ele.setAttribute('required', 'true')
+        })
+      }
+    }
+  })
 }
 
 $(document).on("click", ".btn-delete-product-img-session", function() {

@@ -1135,7 +1135,7 @@ function appendLoadingListProductRow($section, productData) {
             </td>
 
             <td rowspan="${rowSpan}">
-                <input type="number" min="0" step="1" class="form-control form-control-sm loading-qty" name="loading_qty[${rowKey}]" id="loading_qty_${rowKey}" value="0" onkeyup="calculateOfficial('${rowKey}');" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onchange="calculateOfficial('${rowKey}');" >
+                <input type="number" min="0" step="1" class="form-control form-control-sm loading-qty" name="loading_qty[${rowKey}]" id="loading_qty_${rowKey}" value="0" onkeyup="calculateOfficial('${rowKey}');" oninput="this.value = this.value.replace(/[^0-9]/g, '');" data-rate-rmb="${rateRmb}" onchange="calculateOfficial('${rowKey}');" >
             </td>
 
             <td rowspan="${rowSpan}">
@@ -1318,7 +1318,8 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
                     let body = '';
                     mergedProducts.forEach(function(product) {
                         var productId = (product.id || '').toString();
-                        if (productId && existingProductIds.indexOf(productId) === -1) {
+                        // if (productId && existingProductIds.indexOf(productId) === -1) {
+                        if (productId) {
                             body += `
                                 <tr>
                                 <td>
@@ -1352,7 +1353,8 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
                     mergedProducts.forEach(function(product) {
                         var productId = (product.id || '').toString();
                         let findLoad = loadProducts.find((e) => e == productId);
-                        if (productId && existingProductIds.indexOf(productId) === -1 && findLoad) {
+                        // if (productId && existingProductIds.indexOf(productId) === -1 && findLoad) {
+                        if (productId && findLoad) {
                             appendLoadingListProductRow($section, product);
                             existingProductIds.push(productId);
                             newCount++;
@@ -1555,6 +1557,7 @@ function updateInvoiceSuppliers() {
 function calculateOfficial(rowId) {
     var $mainRow = $('#loading_row_' + rowId);
     var loadingQty = parseFloat($mainRow.find('.loading-qty').val()) || 0;
+
     $mainRow.find('.official-ci-qty').val(loadingQty.toFixed(0));
     $mainRow.find('.black-qty').val(0);
 

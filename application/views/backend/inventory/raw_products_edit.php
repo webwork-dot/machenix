@@ -189,7 +189,7 @@ function formatNumber($value) {
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
               <label>Alias Name </label>
-              <input type="text" class="form-control" placeholder="Enter Alias Name"
+              <input type="text" class="form-control alias-name" placeholder="Enter Alias Name"
                 value="<?php echo $data['alias']; ?>" name="alias">
             </div>
           </div>
@@ -200,7 +200,7 @@ function formatNumber($value) {
               <?php 
                 $category_ = array(); 
                 if(isset($data)){  $category_ = explode(',', $data['categories']); } ?>
-              <select name="category_id" class="select2" required="">
+              <select name="category_id" class="select2 category-select" onchange="detectType(this.value)" required="">
                 <?php  $this->common_model->displayTreeOptions($category_tree,$category_);?>
               </select>
             </div>
@@ -220,24 +220,24 @@ function formatNumber($value) {
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Model No. <span class="required">*</span></label>
-              <input type="text" class="form-control old-sku" placeholder="Enter Model No." onkeyup="checkSKU(this)"
+              <label>Model No. <span class="required req-cont">*</span></label>
+              <input type="text" class="form-control old-sku req-inp" placeholder="Enter Model No." onkeyup="checkSKU(this)"
                 value="<?php echo $data['item_code']; ?>" name="item_code" id="item_code" required="">
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>HSN Code <span class="required">*</span></label>
-              <input type="text" class="form-control" placeholder="Enter HSN Code" name="hsn_code"
+              <label>HSN Code <span class="required req-cont">*</span></label>
+              <input type="text" class="form-control req-inp" placeholder="Enter HSN Code" name="hsn_code"
                 value="<?php echo $data['hsn_code']; ?>" required="">
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Tax Rate (in %)<span class="required">*</span></label>
-              <input type="number" class="form-control" placeholder="Enter Tax Rate (in %)" name="gst"
+              <label>Tax Rate (in %)<span class="required req-cont">*</span></label>
+              <input type="number" class="form-control req-inp" placeholder="Enter Tax Rate (in %)" name="gst"
                 value="<?php echo $data['gst']; ?>">
             </div>
           </div>
@@ -570,6 +570,19 @@ function formatNumber($value) {
 
 
 <script>
+// Tab Open select2
+$(document).on('keydown', '.alias-name', function (e) {
+  if (e.key !== 'Tab' || e.shiftKey) return;
+  const $row = $(this).closest('tr');
+  const $productSelect = $('.category-select');
+
+  setTimeout(() => {
+    if ($productSelect.length) {
+      $productSelect.select2('open');
+    }
+  }, 0);
+});
+
 var variationRowCount = <?php echo !empty($variations) ? count($variations) : 1; ?>;
 
 $(document).ready(function() {
@@ -822,6 +835,36 @@ function checkSKU(ele) {
     });
   }
 }
+
+function detectType(val) {
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url(); ?>inventory/get_category_by_id",
+    data: {id: val},
+    dataType: 'JSON',
+    success: function(res) {
+      if(res.type == 'spare') {
+        document.querySelectorAll('.req-cont').forEach((ele) => {
+            ele.classList.add('d-none');
+        })
+
+        document.querySelectorAll('.req-inp').forEach((ele) => {
+            ele.removeAttribute('required');
+        })
+      } else {
+        document.querySelectorAll('.req-cont').forEach((ele) => {
+          ele.classList.remove('d-none')
+        })
+
+        document.querySelectorAll('.req-inp').forEach((ele) => {
+          ele.setAttribute('required', 'true')
+        })
+      }
+    }
+  })
+}
+
+detectType('<?php echo $data['categories']; ?>');
 
 $(document).on("click", ".btn-delete-product-img", function() {
   var b = $(this).attr("data-file-id");

@@ -146,6 +146,14 @@
     </div>
   </div>
 </div>
+
+<?php
+$po_products_entries = [];
+foreach ($po_products as $supplierId => $supplierData) {
+    $po_products_entries[] = [(string)$supplierId, $supplierData]; // preserves PHP order
+}
+?>
+
 <script>
 var supplierRowCount = 0;
 var productRowCounts = {}; // Track product row counts per supplier and section
@@ -155,7 +163,20 @@ productRowCounts['ready'] = {};
 productRowCounts['spare'] = {};
 
 // PO Products data from PHP
-var poProductsData = <?php echo json_encode($po_products); ?>;
+// var poProductsData = <?php echo json_encode($po_products); ?>;
+var poProductsEntries = <?php echo json_encode($po_products_entries); ?>;
+
+// same object format as before
+var poProductsData = {};
+// ordered supplier ids
+var poProductsKeys = [];
+
+poProductsEntries.forEach(function(pair) {
+  var supplierId = pair[0];
+  var supplierData = pair[1];
+  poProductsKeys.push(supplierId);
+  poProductsData[supplierId] = supplierData;
+});
 
 // Generate product options for JavaScript
 var readyProductsOptions = '';
@@ -801,8 +822,11 @@ function calculateGrandTotalCBM() {
 // Initialize existing PO data on page load
 $(document).ready(function() {
   // Populate suppliers and products from existing PO data
-  if (poProductsData && Object.keys(poProductsData).length > 0) {
-    Object.keys(poProductsData).forEach(function(supplierId) {
+  // if (poProductsData && Object.keys(poProductsData).length > 0) {
+  if (poProductsKeys && poProductsKeys.length > 0) {
+    // console.log(poProductsData)
+    // Object.keys(poProductsData).forEach(function(supplierId) {
+    poProductsKeys.forEach(function(supplierId) {
       var supplierData = poProductsData[supplierId];
       
       // Add supplier row

@@ -427,6 +427,22 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_category_by_id(){
+        $id = $this->input->post('id');
+        $data = $this->common_model->getRowById('categories', '*', ['id' => $id]);
+        if($data == '') {
+            echo json_encode(["type" => "ready"]);
+        } else {
+            if($data['parent_name'] == 'Ready Goods') {
+                echo json_encode(["type" => "ready"]);
+            } elseif($data['name'] == 'Spare Parts') {
+                echo json_encode(["type" => "spare"]);
+            } else {
+                echo json_encode(["type" => "spare"]);
+            }
+        }
+    }
+
     public function get_subcategories()
     {
         $parent_id = $this->input->post('parent_id', true);

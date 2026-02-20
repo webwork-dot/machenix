@@ -1195,7 +1195,8 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
                     let body = '';
                     mergedProducts.forEach(function(product) {
                         var productId = (product.id || '').toString();
-                        if (productId && existingProductIds.indexOf(productId) === -1) {
+                        // if (productId && existingProductIds.indexOf(productId) === -1) {
+                        if (productId) {
                             body += `
                                 <tr>
                                 <td>
@@ -1229,7 +1230,8 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
                     mergedProducts.forEach(function(product) {
                         var productId = (product.id || '').toString();
                         let findLoad = loadProducts.find((e) => e == productId);
-                        if (productId && existingProductIds.indexOf(productId) === -1 && findLoad) {
+                        // if (productId && existingProductIds.indexOf(productId) === -1 && findLoad) {
+                        if (productId && findLoad) {
                             appendLoadingListProductRow($section, product);
                             existingProductIds.push(productId);
                             newCount++;

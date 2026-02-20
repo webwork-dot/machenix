@@ -1299,6 +1299,7 @@ class Inventory_model extends CI_Model
 						$data['cbm']			= 0;
 					}
 
+					$data['rate']  					= clean_and_escape($this->input->post('rate'));
 					$data['usd_rate']  		= clean_and_escape($this->input->post('usd_rate'));
 					$data['product_mrp']     = clean_and_escape($this->input->post('product_mrp'));
 					$data['costing_price']   = clean_and_escape($this->input->post('costing_price'));
@@ -1525,6 +1526,7 @@ class Inventory_model extends CI_Model
 			$data['width']					= clean_and_escape($this->input->post('width'));
 			$data['height']  				= clean_and_escape($this->input->post('height'));
 			$data['cbm']						= clean_and_escape($this->input->post('cbm'));
+			$data['rate']  					= clean_and_escape($this->input->post('rate'));
 			$data['usd_rate']  			= clean_and_escape($this->input->post('usd_rate'));
 
 			$supplier_id = $this->input->post('supplier_id');
@@ -2188,7 +2190,6 @@ class Inventory_model extends CI_Model
 			LEFT JOIN supplier s ON s.id = pop.supplier_id
 			LEFT JOIN raw_products rp ON rp.id = pop.product_id
 			WHERE pop.parent_id = '$po_id'
-			ORDER BY pop.supplier_id ASC, pop.product_type ASC, pop.id ASC
 		")->result_array();
 
 		// Group products by supplier and product_type
@@ -2704,7 +2705,7 @@ class Inventory_model extends CI_Model
 					LEFT JOIN supplier s ON s.id = pop.supplier_id
 					WHERE pop.parent_id = '$id'
 					GROUP BY pop.supplier_id, s.name
-					ORDER BY pop.supplier_id ASC
+					ORDER BY pop.id
 				";
 
 				$rows = $this->db->query($sql)->result_array();
@@ -2742,7 +2743,7 @@ class Inventory_model extends CI_Model
 					LEFT JOIN supplier s ON s.id = pop.supplier_id
 					WHERE pop.parent_id = '$id'
 					GROUP BY pop.supplier_id, s.name
-					ORDER BY pop.supplier_id ASC
+					ORDER BY pop.id
 				";
 
 				$rows = $this->db->query($sql)->result_array();
