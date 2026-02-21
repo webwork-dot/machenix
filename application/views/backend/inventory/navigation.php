@@ -37,7 +37,7 @@
             </li>
         <?php } ?>
 
-        <?php if($user_id == 4 || in_array('19', $access_array) || in_array('20', $access_array) || in_array('21', $access_array) || in_array('22', $access_array)) {?>
+        <?php if($user_id == 4 || in_array('19', $access_array) || in_array('20', $access_array) || in_array('21', $access_array) || in_array('22', $access_array)) { ?>
 		<!-- <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'product_color' || $page_name == 'product_color_add' || $page_name == 'product_color_edit' || $page_name == 'categories' || $page_name == 'category_add' || $page_name == 'category_edit' || $page_name == 'product_size_add' || $page_name == 'product_size_edit' || $page_name == 'raw_products_import') echo 'active'; ?>">   
             <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
