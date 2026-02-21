@@ -2836,6 +2836,7 @@ class Inventory_model extends CI_Model
 				$loading_list_view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_loading_list_view_modal/" . $id . "','View Loading List')";
 				$delete_loading_list_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_loading_list/" . $id . "','Are you sure want to delete the loading list!')";
 				$move_to_purchase_in_url = "confirm_modal('" . base_url() . "inventory/purchase_order/move_to_purchase_in/" . $id . "','Are you sure want to this PO to Purchase In & Customs!')";
+				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs')";
 				if ($delivery_status == 'loading') {
 					$loading_list_action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
@@ -2845,7 +2846,8 @@ class Inventory_model extends CI_Model
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Loading List</a>
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Loading List</a>
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_loading_list_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete Loading List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $move_to_purchase_in_url . '"><i class="fa fa-check" aria-hidden="true"></i> Move to Purchase In</a>
+							<a href="javascript:void(0)" class="dropdown-item d-none" onclick="' . $move_to_purchase_in_url . '"><i class="fa fa-check" aria-hidden="true"></i> Move to Purchase In</a>
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i>Purchase In</a>
 						</div>
 					</div>';
 				} else {
@@ -2861,14 +2863,14 @@ class Inventory_model extends CI_Model
 
 				// Purchase In Action
 				$purchase_in_action ='-';
-				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs')";
+				
 				
 				if ($delivery_status == 'purchase_in') {
 					$purchase_in_action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i>Purchase In</a>
+							-
 						</div>
 					</div>';
 				} else {
@@ -4152,19 +4154,188 @@ class Inventory_model extends CI_Model
 // 		return $result;
 // 	}
 
-	public function update_purchase_order_inr(){
+	public function update_purchase_order_in(){
 		$resultpost = array(
 			"status" => 200,
-			"message" => get_phrase('inr_updated_successfully'),
+			"message" => get_phrase('stock_in_successfully'),
 			"url" => $this->session->userdata('previous_url'),
 		);
 
-		$po_id = $this->input->post('po_id');
-		$inr_rate = $this->input->post('inr_rate');
-		$this->db->where('id', $po_id);
-		$this->db->update('purchase_order', ['inr_rate' => $inr_rate]);
+		// Start transaction
+		$this->db->trans_start();
 
-		return simple_json_output($resultpost);
+		$po_id = $this->input->post('po_id');
+		$po_row = $this->common_model->getRowById('purchase_order', '*', ['id' => $po_id]);
+
+		$inr_rate = $this->input->post('inr_rate');
+		$boe_no = $this->input->post('boe_no');
+		$boe_date = $this->input->post('boe_date');
+		
+		$po = [
+			"inr_rate" => $inr_rate,
+			"boe_no" => $boe_no,
+			"boe_date" => $boe_date,
+			"delivery_status" => 'purchase_in',
+			"completed_date" => date("Y-m-d H:i:s"),
+			"net_sales_value_1" => 0,
+			"transport_gst_amount" => 0,
+			"grand_total" => 0,
+		];
+		
+		// base key list (must exist)
+		$row_ids = $this->input->post('row_id'); // array
+		$product_name      = $this->input->post('product_name');
+		$item_code         = $this->input->post('item_code');
+		$actual_qty        = $this->input->post('actual_qty');
+		$actual_rmb        = $this->input->post('actual_rmb');
+		$total_rmb         = $this->input->post('total_rmb');
+		$official_qty      = $this->input->post('official_qty');
+		$official_rate_rs  = $this->input->post('official_rate_rs');
+		$official_total_rs = $this->input->post('official_total_rs');
+		$duty_percent      = $this->input->post('duty_percent');
+		$duty_amt          = $this->input->post('duty_amt');
+		$duty_surcharge    = $this->input->post('duty_surcharge');
+		$taxable_value     = $this->input->post('taxable_value');
+		$gst_amt           = $this->input->post('gst_amt');
+		$total_amt         = $this->input->post('total_amt');
+
+		$rows = [];
+
+		if (is_array($row_ids)) {
+				foreach ($row_ids as $i => $row_id) {
+						$row_id = (int) $row_id;
+						$po_prod_row = $this->common_model->getRowById('po_products', '*', ['id' => $row_id]);
+
+						// PO total
+						$row["net_sales_value_1"]  = $row["net_sales_value_1"] + ($taxable_value[$i] ?? 0);
+						$row["transport_gst_amount"]  = $row["transport_gst_amount"] + ($gst_amt[$i] ?? 0);
+						$row["grand_total"]  = $row["grand_total"] + ($total_amt[$i] ?? 0);
+
+						// PO Prod Update
+						$po_prods = [
+								'actual_qty'        => (int) ($actual_qty[$i] ?? 0),
+								'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
+								'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+								'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
+								'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
+								'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
+								'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
+								'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
+								'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
+								'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
+								'total_amt'         => (float) ($total_amt[$i] ?? 0),
+						];
+
+						$this->db->where('id', $row_id)->update('po_products', $po_prods);
+
+						// Inventory In
+						$inv = [
+							'company_id' 				=> $po_row["company_id"],
+							'warehouse_id' 			=> $po_row["warehouse_id"],
+							'supplier_id' 			=> $po_row["supplier_id"],
+							'warehouse_name' 		=> $po_row["warehouse_name"],
+							'product_id' 				=> $po_prod_row["product_id"],
+							'categories' 				=> $po_prod_row["categories"],
+							'batch_no' 					=> $po_row["voucher_no"],
+							'product_name'			=> $product_name[$i]      ?? '',
+							'item_code'					=> $item_code[$i]         ?? '',
+							'sku'         			=> $item_code[$i]         ?? '',
+							'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
+
+							'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
+							'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+							'official_qty'      => (int) ($official_qty[$i] ?? 0),
+							'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
+							'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
+							'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
+							'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
+							'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
+							'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
+							'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
+							'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
+							'total_amt'         => (float) ($total_amt[$i] ?? 0),	
+						];
+
+						$check_inv = $this->common_model->getRowById('inventory', '*', ['product_id' => $po_prod_row["product_id"], 'warehouse_id' => $po_row["warehouse_id"], 'company_id' => $po_row["company_id"], 'batch_no' => $po_row["voucher_no"]]);
+
+						if($check_inv == "") {
+							$this->db->insert('inventory', $inv);
+							$inventory_id = $this->db->insert_id();
+						} else {
+							$updated_inv = [
+								'quantity'        	=> $check_inv['quantity'] + $inv['quantity'],
+								'actual_rmb'        => $check_inv['actual_rmb'] + $inv['actual_rmb'],
+								'total_rmb'         => $check_inv['total_rmb'] + $inv['total_rmb'],
+								'official_qty'      => $check_inv['official_qty'] + $inv['official_qty'],
+								'official_rate_rs'  => $check_inv['official_rate_rs'] + $inv['official_rate_rs'],
+								'official_total_rs' => $check_inv['official_total_rs'] + $inv['official_total_rs'],
+								'black_qty'         => $check_inv['black_qty'] + $inv['black_qty'],
+								'duty_percent'      => $check_inv['duty_percent'] + $inv['duty_percent'],
+								'duty_amt'          => $check_inv['duty_amt'] + $inv['duty_amt'],
+								'duty_surcharge'    => $check_inv['duty_surcharge'] + $inv['duty_surcharge'],
+								'taxable_value'     => $check_inv['taxable_value'] + $inv['taxable_value'],
+								'gst_amt'           => $check_inv['gst_amt'] + $inv['gst_amt'],
+								'total_amt'         => $check_inv['total_amt'] + $inv['total_amt'],
+							];
+
+							$this->db->where('id', $check_inv['id'])->update('inventory', $updated_inv);
+							$inventory_id = $check_inv['id'];
+						}
+
+						// Inventory History
+						$inv_his = [
+							'supplier_id' 			=> $po_row["supplier_id"],
+							'parent_id' 				=> $inventory_id,
+							'company_id' 				=> $po_row["company_id"],
+							'warehouse_id' 			=> $po_row["warehouse_id"],
+							'warehouse_name' 		=> $po_row["warehouse_name"],
+							'product_id' 				=> $po_prod_row["product_id"],
+							'categories' 				=> $po_prod_row["categories"],
+							'batch_no' 					=> $po_row["voucher_no"],
+							'product_name'			=> $product_name[$i] ?? '',
+							'item_code'					=> $item_code[$i] ?? '',
+							'sku'         			=> $item_code[$i] ?? '',
+							'order_id'        	=> $po_id,
+							'status'        		=> 'in',
+							'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
+
+							'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
+							'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+							'official_qty'      => (int) ($official_qty[$i] ?? 0),
+							'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
+							'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
+							'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
+							'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
+							'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
+							'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
+							'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
+							'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
+							'total_amt'         => (float) ($total_amt[$i] ?? 0),	
+							
+							'received_date'							=> date('Y-m-d'),
+							'invoice_no'         	=> $po_prod_row['invoice_no'],	
+							'added_date'         	=> date('Y-m-d H:i:s'),
+							"added_by_id" => $this->session->userdata('super_user_id'),
+	        		"added_by_name" => $this->session->userdata('super_name'),
+						];
+
+						$this->db->insert('inventory_history', $inv_his);
+
+				}
+		}
+
+		$this->db->where('id', $po_id)->update('purchase_order', $po);
+		if ($this->db->trans_status() === FALSE) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('some_error_occured'),
+			);
+
+			return simple_json_output($resultpost);
+		} else {
+			$this->db->trans_complete();
+			return simple_json_output($resultpost);
+		}
 	}
 
 	public function update_purchase_order_priority_list() {
@@ -4539,7 +4710,7 @@ class Inventory_model extends CI_Model
 		endif;
 
 		$total_count = $this->db->query("SELECT id FROM inventory WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,warehouse_name,product_name,item_code,size_name,group_id,color_name,product_id,SUM(quantity) as quantity,categories FROM inventory WHERE (id!='') $keyword_filter group by id ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,warehouse_name,product_name,item_code,product_id,SUM(quantity) as quantity,categories FROM inventory WHERE (id!='') $keyword_filter group by product_id ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -4666,7 +4837,7 @@ class Inventory_model extends CI_Model
 
 		$total_count = $this->db->query("SELECT id FROM inventory WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
 		//echo $this->db->last_query();
-		$query = $this->db->query("SELECT id,warehouse_name,item_code,categories,product_name,product_id,quantity,batch_no FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,warehouse_name,item_code,categories,black_qty,product_name,product_id,quantity,batch_no FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -4689,6 +4860,7 @@ class Inventory_model extends CI_Model
 					"item_code"				=> $item['item_code'],
 					"product_name"		=> $item['product_name'],
 					"quantity"        => $item['quantity'],
+					"black_qty"				=> $item['black_qty'],
 					"batch_no"        => ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
 					"action"        	=> $action,
 				);

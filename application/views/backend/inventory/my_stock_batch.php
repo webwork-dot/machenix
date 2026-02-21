@@ -44,6 +44,7 @@
 					<th>Product Name</th>
 					<th>Batch No</th>
 					<th>Quantity</th>
+					<th>Black Quantity</th>
 					<th>Actions</th>
                   </tr>
                </thead>
@@ -94,6 +95,7 @@
                 { "data": "product_name" },
                 { "data": "batch_no" },
                 { "data": "quantity" },
+                { "data": "black_qty" },
                 { "data": "action" },
             ], 
            

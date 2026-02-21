@@ -901,8 +901,8 @@ class Inventory extends CI_Controller
         }
     }
 
-    public function update_purchase_order_inr() {
-        $this->inventory_model->update_purchase_order_inr();
+    public function update_purchase_order_in() {
+        $this->inventory_model->update_purchase_order_in();
     }
 
     // Priority PO Ends

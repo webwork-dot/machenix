@@ -46,9 +46,9 @@
 					<th>Quantity</th>
 					<th>Status</th>
 					<th>Voucher No</th>
-					<th>From</th>
-					<th>To</th>
-					<th>Staff Name</th>
+					<!-- <th>From</th>
+					<th>To</th> -->
+					<th>Added By</th>
                   </tr>
                </thead>
             </table>
@@ -98,8 +98,8 @@
                 { "data": "quantity" },
                 { "data": "status" },
                 { "data": "voucher_no" },
-                { "data": "supplier_name" },
-                { "data": "to" },
+                // { "data": "supplier_name" },
+                // { "data": "to" },
                 { "data": "added_by_name" },
             ], 
            
