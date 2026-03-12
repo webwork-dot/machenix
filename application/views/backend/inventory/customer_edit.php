@@ -52,7 +52,7 @@
             <div class="col-12 col-sm-3 mb-1">
               <div class="form-group">
                 <label>Company <span class="required">*</span></label>
-                <select class="form-select select2" name="company_id[]" id="company_id" onchange="get_staff();" required multiple>
+                <select class="form-select select2 company_id" name="company_id[]" id="company_id" onchange="get_staff();" required multiple>
                   <?php
                     $selected_company_ids = [];
                     if (!empty($data['company_id'])) {
@@ -350,4 +350,29 @@
       }
     });
   }
+
+  $(document).ready(function () {
+      $(document).on('focus', '#staff_id + .select2 .select2-selection', function () {
+         $('#staff_id').select2('open');
+      });
+      $(document).on('focus', '#state_id + .select2 .select2-selection', function () {
+         $('#state_id').select2('open');
+      });
+      $(document).on('focus', '#city_id + .select2 .select2-selection', function () {
+         $('#city_id').select2('open');
+      });
+      
+      $(document).on('keydown', function(e) {
+         if (e.key === 'Tab') {
+            setTimeout(function () {
+               let el = document.activeElement;
+               let container = $(el).closest('.select2-container');
+
+               if (container.length && container.prev('select').hasClass('company_id')) {
+                  container.prev('select').select2('open');
+               }
+            }, 0);
+         }
+      });
+   });
 </script>

@@ -570,17 +570,15 @@ function formatNumber($value) {
 
 
 <script>
-// Tab Open select2
-$(document).on('keydown', '.alias-name', function (e) {
-  if (e.key !== 'Tab' || e.shiftKey) return;
-  const $row = $(this).closest('tr');
-  const $productSelect = $('.category-select');
 
-  setTimeout(() => {
-    if ($productSelect.length) {
-      $productSelect.select2('open');
-    }
-  }, 0);
+$(document).ready(function () {
+    $(document).on('focus', '.category-select + .select2 .select2-selection', function () {
+        $('.category-select').select2('open');
+    });
+    
+    $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
+        $('#supplier_id').select2('open');
+    });
 });
 
 var variationRowCount = <?php echo !empty($variations) ? count($variations) : 1; ?>;

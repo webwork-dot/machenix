@@ -390,19 +390,19 @@
 
 <script>
 // Tab Open select2
-$(document).on('keydown', '.type-select, .loading-type-select', function (e) {
-  if (e.key !== 'Tab' || e.shiftKey) return;
-  const $row = $(this).closest('tr');
-  const $productSelect = $row
-    .find('.product-select.select2, .loading-product-select.select2')
-    .first();
+// $(document).on('keydown', '.type-select, .loading-type-select', function (e) {
+//   if (e.key !== 'Tab' || e.shiftKey) return;
+//   const $row = $(this).closest('tr');
+//   const $productSelect = $row
+//     .find('.product-select.select2, .loading-product-select.select2')
+//     .first();
 
-  setTimeout(() => {
-    if ($productSelect.length) {
-      $productSelect.select2('open');
-    }
-  }, 0);
-});
+//   setTimeout(() => {
+//     if ($productSelect.length) {
+//       $productSelect.select2('open');
+//     }
+//   }, 0);
+// });
 
 var rowCounter = <?php echo count($priority_products); ?>;
 var newRowCounter = 0;
@@ -1268,7 +1268,7 @@ function addNewRow() {
                 <input type="hidden" name="old_product_id[${newRowId}]" value="0">
             </td>
             <td>
-                <select class="form-control form-control-sm supplier-select" name="supplier_id[${newRowId}]" 
+                <select class="form-control form-control-sm supplier-select select2 supplier-${newRowId}" name="supplier_id[${newRowId}]" 
                     onchange="handleSupplierChange(this, '${newRowId}')" required>
                     <option value="">Select Supplier</option>
                     <?php foreach($supplier_list as $supplier): ?>
@@ -1277,7 +1277,7 @@ function addNewRow() {
                 </select>
             </td>
             <td>
-                <select class="form-control form-control-sm type-select" name="product_type[${newRowId}]" 
+                <select class="form-control form-control-sm type-select select2 type-${newRowId}" name="product_type[${newRowId}]" 
                     onchange="handleTypeChange(this, '${newRowId}')" required>
                     <option value="">Select Type</option>
                     <option value="ready">Ready Goods</option>
@@ -1285,7 +1285,7 @@ function addNewRow() {
                 </select>
             </td>
             <td>
-                <select class="form-control form-control-sm product-select select2" name="product_id[${newRowId}]" 
+                <select class="form-control form-control-sm product-select select2 product-${newRowId}" name="product_id[${newRowId}]" 
                     id="product_select_${newRowId}" onchange="handleProductChange(this, '${newRowId}')" required>
                     <option value="">Select Product</option>
                 </select>
@@ -1339,6 +1339,17 @@ function addNewRow() {
   $('.select2').select2({
     dropdownParent: $('#large-modal .modal-content')
   });
+
+  $(document).on('focus', '.supplier-' + newRowId + ' + .select2 .select2-selection', function () {
+      $('.supplier-' + newRowId).select2('open');
+  });
+  $(document).on('focus', '.type-' + newRowId + ' + .select2 .select2-selection', function () {
+      $('.type-' + newRowId).select2('open');
+  });
+  $(document).on('focus', '.product-' + newRowId + ' + .select2 .select2-selection', function () {
+      $('.product-' + newRowId).select2('open');
+  });
+  
   updateRowNumbers();
 }
 
@@ -1719,7 +1730,7 @@ function addLoadingProductRow() {
                 <input type="hidden" name="loading_old_product_id[${loadingRowId}]" value="0">
             </td>
             <td>
-                <select class="form-control form-control-sm loading-supplier-select" name="loading_supplier_id[${loadingRowId}]" 
+                <select class="form-control form-control-sm loading-supplier-select select2 l-supplier-${loadingRowId}" name="loading_supplier_id[${loadingRowId}]" 
                     onchange="handleLoadingSupplierChange(this, '${loadingRowId}')" required>
                     <option value="">Select Supplier</option>
                     <?php foreach($supplier_list as $supplier): ?>
@@ -1728,7 +1739,7 @@ function addLoadingProductRow() {
                 </select>
             </td>
             <td>
-                <select class="form-control form-control-sm loading-type-select" name="loading_product_type[${loadingRowId}]" 
+                <select class="form-control form-control-sm loading-type-select select2 l-type-${loadingRowId}" name="loading_product_type[${loadingRowId}]" 
                     onchange="handleLoadingTypeChange(this, '${loadingRowId}')" required>
                     <option value="">Select Type</option>
                     <option value="ready">Ready Goods</option>
@@ -1736,7 +1747,7 @@ function addLoadingProductRow() {
                 </select>
             </td>
             <td>
-                <select class="form-control form-control-sm loading-product-select select2" name="loading_product_id[${loadingRowId}]" 
+                <select class="form-control form-control-sm loading-product-select select2 l-product-${loadingRowId}" name="loading_product_id[${loadingRowId}]" 
                     id="loading_product_select_${loadingRowId}" onchange="handleLoadingProductChange(this, '${loadingRowId}')" required>
                     <option value="">Select Product</option>
                 </select>
@@ -1790,6 +1801,17 @@ function addLoadingProductRow() {
   $('.select2').select2({
     dropdownParent: $('#large-modal .modal-content')
   });
+
+  $(document).on('focus', '.l-supplier-' + loadingRowId + ' + .select2 .select2-selection', function () {
+      $('.l-supplier-' + loadingRowId).select2('open');
+  });
+  $(document).on('focus', '.l-type-' + loadingRowId + ' + .select2 .select2-selection', function () {
+      $('.l-type-' + loadingRowId).select2('open');
+  });
+  $(document).on('focus', '.l-product-' + loadingRowId + ' + .select2 .select2-selection', function () {
+      $('.l-product-' + loadingRowId).select2('open');
+  });
+
   updateLoadingRowNumbers();
 }
 

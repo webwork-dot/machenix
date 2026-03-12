@@ -722,7 +722,8 @@
                                                 <td class="metric-cell">
                                                     <input type="number" step="0.01" class="form-control form-control-sm pkg-ctn" 
                                                         id="pkg_ctn_<?php echo $product['id']; ?>"
-                                                        value="1" name="pkg_ctn[<?php echo $product['id']; ?>][<?php echo $var_index; ?>]" readonly>
+                                                        value="1" name="pkg_ctn[<?php echo $product['id']; ?>][<?php echo $var_index; ?>]" 
+                                                        onclick="calculateCTN(<?php echo $product['id']; ?>)" onkeyup="calculateCTN(<?php echo $product['id']; ?>)">
                                                 </td>
                                                 <td class="metric-cell">
                                                     <input type="number" step="0.01" class="form-control form-control-sm nw-kg" 
@@ -1049,7 +1050,8 @@ function appendLoadingListProductRow($section, productData) {
         html += `
             <td class="metric-cell">
                 <input type="hidden" name="variation_id[${rowKey}][${i}]" value="${variationId}" />
-                <input type="number" step="0.01" class="form-control form-control-sm pkg-ctn" id="pkg_ctn_${rowKey}_${i}" name="pkg_ctn[${rowKey}][${i}]" value="0" readonly />
+                <input type="number" step="0.01" class="form-control form-control-sm pkg-ctn" id="pkg_ctn_${rowKey}_${i}" name="pkg_ctn[${rowKey}][${i}]" value="0" 
+                onclick="calculateCTN('${rowKey}')" onkeyup="calculateCTN('${rowKey}')" />
             </td>
 
             <td class="metric-cell">
@@ -1418,6 +1420,7 @@ function calculateOfficial(rowId) {
 // Calculate CTN for a product
 function calculateCTN(rowId) {
     var $mainRow = $('#loading_row_' + rowId);
+    console.log($mainRow, rowId)
     var loadingQty = parseFloat($mainRow.find('.loading-qty').val()) || 0;
     var officialCIQty = parseFloat($mainRow.find('.official-ci-qty').val()) || 0;
     var pkgCtn = parseFloat($mainRow.find('.pkg-ctn').val()) || 0;
@@ -1513,6 +1516,8 @@ function calculateRow(rowId) {
     // For each variation row (including main row), calculate weights and CBM
     $('[data-row-id="' + rowId + '"]').each(function() {
         var $row = $(this);
+
+        $row.find('.pkg-ctn').val(officialCIQty)
 
         var pkgQty = parseFloat($row.find('.pkg-ctn').val()) || 0;
         var nwKg = parseFloat($row.find('.nw-kg').val()) || 0;

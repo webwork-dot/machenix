@@ -25,7 +25,7 @@ $company_ids = explode(',', $data['company_id']);
                   <div class="col-md-4">
                      <div class="form-group">
                         <label><?php echo get_phrase('staff_type'); ?> <span class="required">*</span></label>
-                        <select class="form-control" name="staff_access" required>
+                        <select class="form-control select2 staff_access" name="staff_access" required>
                            <option value=""><?php echo get_phrase('select_staff_type'); ?></option>
                            <?php foreach($staff_access as $item){?>
                            <option value="<?php echo $item['id']?>" <?php echo ($data['staff_access'] == $item['id']) ? 'selected':'';?>><?php echo $item['name']?></option>
@@ -44,7 +44,7 @@ $company_ids = explode(',', $data['company_id']);
                   <div class="col-md-4">
                     <div class="form-group">
                      <label><?php echo get_phrase('company'); ?> <span class="required">*</span></label>
-                     <select class="form-control select2" name="company_id[]" multiple required>
+                     <select class="form-control select2 company_id" name="company_id[]" multiple required>
                         <?php foreach($company_list as $item){?>
                         <option value="<?php echo $item->id?>" <?php echo in_array($item->id, $company_ids) ? 'selected' : '';?>><?php echo $item->name?></option>
                         <?php } ?>
@@ -127,3 +127,23 @@ $company_ids = explode(',', $data['company_id']);
    </div>
 </div>
 
+<script>
+   $(document).ready(function () {
+      $(document).on('focus', '.staff_access + .select2 .select2-selection', function () {
+         $('.staff_access').select2('open');
+      });
+      
+      $(document).on('keydown', function(e) {
+         if (e.key === 'Tab') {
+            setTimeout(function () {
+               let el = document.activeElement;
+               let container = $(el).closest('.select2-container');
+
+               if (container.length && container.prev('select').hasClass('company_id')) {
+                  container.prev('select').select2('open');
+               }
+            }, 0);
+         }
+      });     
+   });
+</script>

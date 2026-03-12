@@ -96,7 +96,7 @@
           <div class="col-md-4 mb-1">
             <div class="form-group">
               <label>Payment type <span class="required">*</span></label>
-              <select class="form-control" name="payment_type" id="payment_type" required>
+              <select class="form-control select2" name="payment_type" id="payment_type" required>
                 <option value="">Select</option>
                 <option value="official"   <?php echo ($payment_type === 'official') ? 'selected' : ''; ?>>Official</option>
                 <option value="unofficial" <?php echo ($payment_type === 'unofficial') ? 'selected' : ''; ?>>Unofficial</option>
@@ -169,5 +169,17 @@
 
     // run once on page load
     toggleBankAccount();
+  });
+
+  $(document).ready(function () {
+    $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
+        $('#supplier_id').select2('open');
+    });
+    $(document).on('focus', '#batch_no + .select2 .select2-selection', function () {
+        $('#batch_no').select2('open');
+    });
+    $(document).on('focus', '#payment_type + .select2 .select2-selection', function () {
+        $('#payment_type').select2('open');
+    });
   });
 </script>

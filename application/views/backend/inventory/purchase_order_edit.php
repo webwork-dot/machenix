@@ -971,4 +971,10 @@ function get_warehouse_details(warehouseId) {
     }
   })
 }
+
+$(document).ready(function () {
+  $(document).on('focus', '#warehouse_id + .select2 .select2-selection', function () {
+      $('#warehouse_id').select2('open');
+  });
+});
 </script>

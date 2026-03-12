@@ -189,7 +189,7 @@
               <?php 
               $category_ = array(); 
               if(isset($product)){  $category_ = explode(',',$product->category_id); } ?>
-              <select name="category_id" class="category-select select2" onchange="detectType(this.value)" required="" >
+              <select name="category_id" class="category-select select2" onchange="detectType(this)" required="" >
                 <?php $this->common_model->displayTreeOptions($category_tree,$category_);?>
               </select>
             </div>
@@ -413,18 +413,29 @@
 
 <script>
 
-// Tab Open select2
-$(document).on('keydown', '.alias-name', function (e) {
-  if (e.key !== 'Tab' || e.shiftKey) return;
-  const $row = $(this).closest('tr');
-  const $productSelect = $('.category-select');
-
-  setTimeout(() => {
-    if ($productSelect.length) {
-      $productSelect.select2('open');
-    }
-  }, 0);
+$(document).ready(function () {
+    $(document).on('focus', '.category-select + .select2 .select2-selection', function () {
+        $('.category-select').select2('open');
+    });
+    
+    $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
+        $('#supplier_id').select2('open');
+    });
 });
+
+// document.addEventListener('DOMContentLoaded', () => {
+//   let timeout = setInterval(() => {
+//     let categoryTarget = document.querySelector('.category-select').parentNode.children[1];
+//     if(categoryTarget) {
+//       clearInterval(timeout)
+//       console.log(categoryTarget)
+//       categoryTarget.addEventListener('keyup', (e) => {
+//         console.log(e.classList)
+        
+//       })
+//     }
+//   }, 200);
+// })
 
 var variationRowCount = 1;
 
@@ -539,11 +550,12 @@ function removeVariationRow(btn) {
   });
 }
 
+
 function detectType(val) {
   $.ajax({
     type: "POST",
     url: "<?php echo base_url(); ?>inventory/get_category_by_id",
-    data: {id: val},
+    data: {id: val.value},
     dataType: 'JSON',
     success: function(res) {
       if(res.type == 'spare') {

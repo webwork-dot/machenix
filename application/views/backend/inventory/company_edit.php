@@ -78,7 +78,7 @@
             
             <div class="col-12 col-sm-4 mb-1">
               <label class="form-label" for="state">Select State </label>
-              <select class="form-select select2" name="state_id" onchange="get_city_(this.value);"  >
+              <select class="form-select select2 state_id" name="state_id" onchange="get_city_(this.value);"  >
                 <option value="">Select State</option>
                 <?php foreach($states as $state){?>
                 <option value="<?php echo $state['id']; ?>" <?php if($state['id']== $data['state_id']) { echo 'selected';} ?>><?php echo $state['name'] ?></option>';
@@ -88,7 +88,7 @@
             
             <div class="col-12 col-sm-4 mb-1">
               <label class="form-label" for="city">Select City </label>
-              <select class="form-select select2" name="city_id"  id="states_" >
+              <select class="form-select select2 city_id" name="city_id"  id="states_" >
                 <option value="">Select City</option>
                 <?php foreach($citys as $cit){?>
                 <option value="<?php echo $cit['id'];?>" <?php if($cit['id'] == $data['city_id']){ echo 'selected'; } ?>><?php echo $cit['name'];?></option>
@@ -128,6 +128,16 @@
            }
        })
    } 
+
+    $(document).ready(function () {
+        $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
+            $('.state_id').select2('open');
+        });
+        
+        $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
+            $('.city_id').select2('open');
+        });
+   });
 </script>   
  
     
