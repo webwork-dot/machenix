@@ -192,7 +192,7 @@
             <div id="requirement_area">
               <?php 
                 $i = 1; 
-                foreach($data['products'] as $item){ 
+                foreach($data['products'] as $item) { 
               ?>
               <div class="d-block mt-2 element-1 fx-border" id="product_<?php echo $i;?>" data-id="<?php echo $i;?>">
                 <b class="jsr-no"><?php echo $i;?></b>
@@ -280,10 +280,16 @@
                         
                       </div>
 
+                      <div class="col-md-12 mt-2 d-flex justify-content-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="appendBatch('<?php echo $i;?>')">
+                          <i class="fa fa-plus"></i> Add Batch
+                        </button>
+                      </div>
+
                   </div>
                 </div>
               </div>
-              <?php $i++; }?>
+              <?php $i++; } ?>
 
             </div>
           </div>
@@ -435,125 +441,190 @@
 </div>
 
 <script>
-function get_per_total(amount, percent) {
-  var final_amount = (amount * percent) / 100;
-  return parseFloat(final_amount.toFixed(2));
-}
+  function appendBatch(productIndex) {
+    let product = $('#product_id_' + productIndex).val();
+    let container = $("#batch_" + productIndex);
+    if(product) {
+      let total_batch = container.find(".batch-row").length;
+      let nextBatch = total_batch + 1;
+  
+      container.append(`
+        <div class="row mt-2 batch-row " id="batch_${productIndex}_${nextBatch}">
+  
+          <div class="col-md-4 pl-0">
+            <div class="form-group">
+              <label>Batch</label>
+              <select class="form-control select2"
+                name="batch_id[${productIndex}][]"
+                id="batch_select_${productIndex}_${nextBatch}"
+                onchange="get_batch_details(this.value,'${productIndex}','${nextBatch}')">
+                <option value="">Select Batch</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2 pl-0">
+            <div class="form-group">
+              <label>Expiry</label>
+              <input type="text"
+                class="form-control"
+                name="batch_expiry[${productIndex}][]"
+                id="batch_expiry_${productIndex}_${nextBatch}"
+                readonly>
+            </div>
+          </div>
+          <div class="col-md-2 pl-0">
+            <div class="form-group">
+              <label>Qty</label>
+              <input type="number"
+                step="any"
+                class="form-control"
+                name="batch_qty[${productIndex}][]"
+                id="batch_qty_${productIndex}_${nextBatch}">
+            </div>
+          </div>
+          <div class="col-md-2 pl-0">
+            <div class="form-group">
+              <label>Available</label>
+              <input type="number"
+                step="any"
+                class="form-control"
+                name="batch_available[${productIndex}][]"
+                id="batch_available_${productIndex}_${nextBatch}"
+                readonly>
+            </div>
+          </div>
+          <div class="col-md-2 d-flex align-items-end pl-0">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="removeBatch(${productIndex},${nextBatch})">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+  
+        </div>
+      `);
+  
+      $(".select2").select2();
+    } else {
+      Swal.fire({
+        title: 'Please Select Product',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
 
-function subtotal_cal() {
-  var gst_type = $('#gst_type').val();
-  var total_element = $(".element-1").length;
-  var base_total = 0;
-  var total_gst_amount = 0;
-  var igst_per = 0;
-  var cgst_per = 0;
-  var cgst_amt = 0;
-  var sgst_amt = 0;
-  var igst_amt = 0;
-  var net_sales_value_1 = 0;
-  var discount_per = 0;
-  var discount = 0;
-  var other_tax_per = 0;
-  var other_tax = 0;
-  var tcs_per = 0;
-  var tcs = 0;
-  var grand_total = 0;
-
-  let whiteAmt = document.querySelectorAll('[name="white_amount[]"]');
-  let gstTax = document.querySelectorAll('[name="gst[]"]');
-  whiteAmt.forEach((element, index)=> {
-    var master_price = element.value;
-    master_price = isNaN(master_price) ? 0 : Number(master_price);
-    var total_amount = master_price;
-    base_total += Number(total_amount);
-
-    var gst = gstTax[index].value;
-    gst = isNaN(gst) ? 0 : Number(gst);
-    var gst_amount = (master_price * gst) / 100;
-    total_gst_amount += Number(gst_amount);
-  });
-
-  console.log(base_total, total_gst_amount);
-
-  $("#basic_value").val(isNaN(base_total) ? 0 : base_total.toFixed(2));
-  net_sales_value_1 = base_total;
-  $("#net_sales_value_1").val(isNaN(net_sales_value_1) ? 0 : net_sales_value_1.toFixed(2));
-
-  if (gst_type == 'IGST') {
-    $('#igst').val(total_gst_amount.toFixed(2));
-  } else if (gst_type == 'Central GST / State GST') {
-    $('#central_gst').val((total_gst_amount / 2).toFixed(2));
-    $('#state_gst').val((total_gst_amount / 2).toFixed(2));
+      $("#batch_" + productIndex).html('');
+    }
   }
 
-  net_sales_value_2 = net_sales_value_1 + total_gst_amount;
-  $("#net_sales_value_2").val(isNaN(net_sales_value_2) ? 0 : net_sales_value_2.toFixed(2));
-
-  var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
-  var round_of = parseFloat($("#round_of").val()) || 0;
-
-  grand_total = net_sales_value_2 + round_of + other_charges_amount;
-  $('#grand_total').val(grand_total.toFixed(2));
-}
-
-function recalculate() {
-  subtotal_cal();
-};
-
-function change_gst(value) {
-  let cgst_gst = document.querySelector("#cgst_gst");
-  let sgst_gst = document.querySelector("#sgst_gst");
-  let igst_gst = document.querySelector("#igst_gst");
-
-  if (value == "Central GST / State GST") {
-    sgst_gst.classList.remove('hidden')
-    cgst_gst.classList.remove('hidden')
-    igst_gst.classList.add('hidden')
-  } else if (value == "IGST") {
-    sgst_gst.classList.add('hidden')
-    cgst_gst.classList.add('hidden')
-    igst_gst.classList.remove('hidden')
-  } else {
-    sgst_gst.classList.add('hidden')
-    cgst_gst.classList.add('hidden')
-    igst_gst.classList.add('hidden')
+  function removeBatch(productIndex,batchIndex){
+    $("#batch_"+productIndex+"_"+batchIndex).remove();
   }
-}
 
+  function get_per_total(amount, percent) {
+    var final_amount = (amount * percent) / 100;
+    return parseFloat(final_amount.toFixed(2));
+  }
 
-function appendRequirement() {
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var customer_id = $('#customer_id').find(":selected").val();
-
-  if (customer_id == '') {
-    Swal.fire({
-      title: "Error!",
-      text: "Please Select Customer !!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
-  } else if (warehouse_id == '') {
-    Swal.fire({
-      title: "Error!",
-      text: "Please Select Warehouse !!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
-  } else {
+  function subtotal_cal() {
+    var gst_type = $('#gst_type').val();
     var total_element = $(".element-1").length;
-    var lastid = $(".element-1:last").attr("id");
-    var split_id = lastid.split("_");
-    var nextindex = Number(split_id[1]) + 1;
-    if ($('#product_id_' + split_id[1]).find(":selected").val() == '') {
+    var base_total = 0;
+    var total_gst_amount = 0;
+    var igst_per = 0;
+    var cgst_per = 0;
+    var cgst_amt = 0;
+    var sgst_amt = 0;
+    var igst_amt = 0;
+    var net_sales_value_1 = 0;
+    var discount_per = 0;
+    var discount = 0;
+    var other_tax_per = 0;
+    var other_tax = 0;
+    var tcs_per = 0;
+    var tcs = 0;
+    var grand_total = 0;
+
+    let whiteAmt = document.querySelectorAll('[name="white_amount[]"]');
+    let gstTax = document.querySelectorAll('[name="gst[]"]');
+    whiteAmt.forEach((element, index)=> {
+      var master_price = element.value;
+      master_price = isNaN(master_price) ? 0 : Number(master_price);
+      var total_amount = master_price;
+      base_total += Number(total_amount);
+
+      var gst = gstTax[index].value;
+      gst = isNaN(gst) ? 0 : Number(gst);
+      var gst_amount = (master_price * gst) / 100;
+      total_gst_amount += Number(gst_amount);
+    });
+
+    console.log(base_total, total_gst_amount);
+
+    $("#basic_value").val(isNaN(base_total) ? 0 : base_total.toFixed(2));
+    net_sales_value_1 = base_total;
+    $("#net_sales_value_1").val(isNaN(net_sales_value_1) ? 0 : net_sales_value_1.toFixed(2));
+
+    if (gst_type == 'IGST') {
+      $('#igst').val(total_gst_amount.toFixed(2));
+    } else if (gst_type == 'Central GST / State GST') {
+      $('#central_gst').val((total_gst_amount / 2).toFixed(2));
+      $('#state_gst').val((total_gst_amount / 2).toFixed(2));
+    }
+
+    net_sales_value_2 = net_sales_value_1 + total_gst_amount;
+    $("#net_sales_value_2").val(isNaN(net_sales_value_2) ? 0 : net_sales_value_2.toFixed(2));
+
+    var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
+    var round_of = parseFloat($("#round_of").val()) || 0;
+
+    grand_total = net_sales_value_2 + round_of + other_charges_amount;
+    $('#grand_total').val(grand_total.toFixed(2));
+  }
+
+  function recalculate() {
+    subtotal_cal();
+  };
+
+  function change_gst(value) {
+    let cgst_gst = document.querySelector("#cgst_gst");
+    let sgst_gst = document.querySelector("#sgst_gst");
+    let igst_gst = document.querySelector("#igst_gst");
+
+    if (value == "Central GST / State GST") {
+      sgst_gst.classList.remove('hidden')
+      cgst_gst.classList.remove('hidden')
+      igst_gst.classList.add('hidden')
+    } else if (value == "IGST") {
+      sgst_gst.classList.add('hidden')
+      cgst_gst.classList.add('hidden')
+      igst_gst.classList.remove('hidden')
+    } else {
+      sgst_gst.classList.add('hidden')
+      cgst_gst.classList.add('hidden')
+      igst_gst.classList.add('hidden')
+    }
+  }
+
+  function appendRequirement() {
+    var warehouse_id = $('#warehouse_id').find(":selected").val();
+    var customer_id = $('#customer_id').find(":selected").val();
+
+    if (customer_id == '') {
       Swal.fire({
         title: "Error!",
-        text: "Please Select Previous Product !!",
+        text: "Please Select Customer !!",
+        icon: "error",
+        customClass: {
+          confirmButton: "btn btn-primary"
+        },
+        buttonsStyling: !1
+      });
+    } else if (warehouse_id == '') {
+      Swal.fire({
+        title: "Error!",
+        text: "Please Select Warehouse !!",
         icon: "error",
         customClass: {
           confirmButton: "btn btn-primary"
@@ -561,281 +632,306 @@ function appendRequirement() {
         buttonsStyling: !1
       });
     } else {
-      $(".loader").show();
-      var extra_val = "'" + nextindex + "_1'"
-    
-      $('#requirement_area').append(`
-        <div class="d-block mt-2 element-1 fx-border" id="product_${nextindex}" data-id="${nextindex}">
-          <b class="jsr-no">${nextindex}</b>
+      var total_element = $(".element-1").length;
+      var lastid = $(".element-1:last").attr("id");
+      var split_id = lastid.split("_");
+      var nextindex = Number(split_id[1]) + 1;
+      if ($('#product_id_' + split_id[1]).find(":selected").val() == '') {
+        Swal.fire({
+          title: "Error!",
+          text: "Please Select Previous Product !!",
+          icon: "error",
+          customClass: {
+            confirmButton: "btn btn-primary"
+          },
+          buttonsStyling: !1
+        });
+      } else {
+        $(".loader").show();
+        var extra_val = "'" + nextindex + "_1'"
+      
+        $('#requirement_area').append(`
+          <div class="d-block mt-2 element-1 fx-border" id="product_${nextindex}" data-id="${nextindex}">
+            <b class="jsr-no">${nextindex}</b>
 
-          <div class="flex-grow-1 px-0 ml-15">
-            <div class="row">
+            <div class="flex-grow-1 px-0 ml-15">
+              <div class="row">
 
-              <div class="col-md-4 pl-0">
-                <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
-                <div class="form-group">
-                  <label>Select Product - SKU<span class="required">*</span></label>
-                  <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_batch_by_product(this.value,'${nextindex}_1');" required>
-                    <option value="">Select Product - SKU</option>
-                  </select>
+                <div class="col-md-4 pl-0">
+                  <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
+                  <div class="form-group">
+                    <label>Select Product - SKU<span class="required">*</span></label>
+                    <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_batch_by_product(this.value,'${nextindex}_1');" required>
+                      <option value="">Select Product - SKU</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>Amount <span class="required">*</span></label>
-                  <input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>Amount <span class="required">*</span></label>
+                    <input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>Qty <span class="required">*</span></label>
-                  <input type="number" step="any" id="quantity_${nextindex}_1" name="quantity[]" placeholder="Qty" value="1"
-                    class="form-control quantity_${nextindex}" onkeyup="check_available_qty(this.value,'${nextindex}')"
-                    required>
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>Qty <span class="required">*</span></label>
+                    <input type="number" step="any" id="quantity_${nextindex}_1" name="quantity[]" placeholder="Qty" value="1"
+                      class="form-control quantity_${nextindex}" onkeyup="check_available_qty(this.value,'${nextindex}')"
+                      required>
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>Avail. Qty</label>
-                  <input type="number" step="any" id="available_${nextindex}" name="available[]" value="0" class="form-control"
-                    readonly>
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>Avail. Qty</label>
+                    <input type="number" step="any" id="available_${nextindex}" name="available[]" value="0" class="form-control"
+                      readonly>
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>Black Amt <span class="required">*</span></label>
-                  <input type="number" step="any" id="black_amount_${nextindex}" name="black_amount[]" class="form-control"
-                    readonly>
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>Black Amt <span class="required">*</span></label>
+                    <input type="number" step="any" id="black_amount_${nextindex}" name="black_amount[]" class="form-control"
+                      readonly>
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>White Amt <span class="required">*</span></label>
-                  <input type="number" step="any" id="white_amount_${nextindex}" name="white_amount[]" class="form-control" onkeyup="calculate_gst('${nextindex}')">
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>White Amt <span class="required">*</span></label>
+                    <input type="number" step="any" id="white_amount_${nextindex}" name="white_amount[]" class="form-control" onkeyup="calculate_gst('${nextindex}')">
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>GST <span class="required">*</span></label>
-                  <input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control"
-                    onkeyup="calculate_gst('${nextindex}')">
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>GST <span class="required">*</span></label>
+                    <input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control"
+                      onkeyup="calculate_gst('${nextindex}')">
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>White Total</label>
-                  <input type="number" step="any" id="white_total_${nextindex}" name="white_total[]" class="form-control"
-                    readonly>
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>White Total</label>
+                    <input type="number" step="any" id="white_total_${nextindex}" name="white_total[]" class="form-control"
+                      readonly>
+                  </div>
                 </div>
-              </div>
 
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>&nbsp;</label><br>
-                  <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
-                    onclick="removeRequirement(this,${nextindex})">
-                    <i class="fa fa-times"></i>
+                <div class="col-md-1 pl-0">
+                  <div class="form-group">
+                    <label>&nbsp;</label><br>
+                    <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
+                      onclick="removeRequirement(this,${nextindex})">
+                      <i class="fa fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="col-md-12" id="batch_${nextindex}">
+                  
+                </div>
+
+                <div class="col-md-12 mt-2 d-flex justify-content-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="appendBatch('${nextindex}')">
+                    <i class="fa fa-plus"></i> Add Batch
                   </button>
                 </div>
-              </div>
 
+              </div>
             </div>
           </div>
-        </div>
-      `);
+        `);
 
-      $(".loader").fadeOut("slow");
-      $(".select2").select2();
-      var warehouse_id = $('#warehouse_id').val();
-      get_product_by_warehouse(warehouse_id, nextindex);
-    }
-  }
-}
-
-function calculate_amt(index) {
-  var total_amount = Number($('#total_amount_' + index).val()) || 0;
-  var quantity = Number($('#quantity_' + index + '_1').val()) || 0;
-  $('#black_amount_' + index).val(total_amount * quantity);
-  $('#white_amount_' + index).val(total_amount * quantity);
-  var gst = Number($('#gst_' + index).val()) || 0;
-  $('#white_total_' + index).val((total_amount * quantity) + ((total_amount * quantity) * gst / 100));
-  recalculate();
-}
-
-function calculate_gst(index) {
-  var white_amount = Number($('#white_amount_' + index).val()) || 0;
-  var gst = Number($('#gst_' + index).val()) || 0;
-
-  console.log(white_amount, gst);
-  $('#white_total_' + index).val(white_amount + (white_amount * gst / 100));
-  recalculate();
-}
-
-function removeRequirement(requirementElem) {
-  if(document.querySelector('#requirement_area').children.length > 1){
-    $(requirementElem).parent().parent().parent().parent().parent().remove();
-  } else {
-    alert('Atleast one line item is required');
-  }
-}
-
-function check_available_qty(value, id) {
-  var qty = Number($("#quantity_" + id + "_1").val()) || 0;
-  var available_qty = Number($("#available_" + id).val()) || 0;
-
-  if(qty > available_qty){
-    alert('Quantity cannot greater than Available Quantity');
-    $("#quantity_" + id + "_1").val(0);
-  }
-
-  calculate_amt(id);
-}
-
-function get_product_by_warehouse(b, nextindex) {
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var a = {
-    warehouse_id: b
-  };
-  $.ajax({
-    type: "POST",
-    url: "<?php echo base_url()?>inventory/get_product_by_warehouse",
-    data: a,
-    success: function(res) {
-      $('#product_id_' + nextindex).children("option:not(:first)").remove();
-      $('#product_id_' + nextindex).append(res);
-    }
-  });
-}
-
-function get_batch_by_product(b, nextindex) {
-  var new_value = nextindex.split('_');
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var product_id = $('#product_id_' + new_value[0]).find(":selected").val();
-  var is_disabled = 0;
-  var total_element = $(".element-1").length + 1;
-
-  // Check Same Selected Product
-  for (let i = 1; i < total_element ; i++) {
-    var old_product_id = $("#product_id_"+i).val();
-    if(old_product_id == product_id && i != new_value[0]){
-      $('#product_id_'+new_value[0]).prop("selected", false);
-      $(".select2").select2();
-      is_disabled = 1 ;
-    }
-  }
-
-  console.log('is_disabled:',nextindex);
-
-  if (is_disabled == 0) {
-    $("#batch_no_" + nextindex + " option").prop("selected", false);
-    $(".select2").select2();
-    $('#available_' + nextindex).val(0);
-    var a = {
-      warehouse_id: warehouse_id,
-      product_id: product_id,
-    };
-
-    $.ajax({
-      type: "POST",
-      url: "<?php echo base_url()?>inventory/get_qty_by_product",
-      data: a,
-      success: function(res) {
-        $('#available_' + new_value[0]).val(res.quantity);
-        $('#quantity_' + new_value[0] + '_1').val(0);
-        $('#gst_' + new_value[0]).val(res.tax);
-        $('#total_amount_' + new_value[0]).val(res.rate);
-        $('#black_amount_' + new_value[0]).val(0);
-        $('#white_amount_' + new_value[0]).val(0);
-        $('#white_total_' + new_value[0]).val(0);
-      }
-    });
-
-    $(':input[type="submit"]').prop('disabled', false);
-  } else {
-    Swal.fire({
-      title: "Error!",
-      text: "Product Can't Be Same!!!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
-
-    $(':input[type="submit"]').prop('disabled', true);
-    // $('#product_id_'+new_value[0]).prop("selected", false);
-    $("#product_id_" + new_value[0] + " option").prop("selected", false);
-    $(".select2").select2();
-
-    $('#available_' + new_value[0]).val(0);
-    $('#quantity_' + new_value[0] + '_1').val(0);
-    $('#gst_' + new_value[0]).val(0);
-    $('#total_amount_' + new_value[0]).val(0);
-    $('#black_amount_' + new_value[0]).val(0);
-    $('#white_amount_' + new_value[0]).val(0);
-    $('#white_total_' + new_value[0]).val(0);
-  }
-
-  recalculate();
-}
-
-function get_product_details(b, nextindex) {
-  var new_value = nextindex.split('_');
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var product_id = $('#product_id_' + new_value[0]).find(":selected").val();
-  var batch_no = $('#batch_no_' + nextindex).find(":selected").val();
-  is_disabled = 0;
-  var total_element = $(".batch_no_" + new_value[0]).length + 1;
-  for (let i = 1; i < total_element; i++) {
-    if ($("#product_id_" + new_value[0]).val() && new_value[1] != i) {
-      var old_product_id = $("#product_id_" + new_value[0]).val();
-      var old_batch_no = $("#batch_no_" + new_value[0] + "_" + i).val();
-      if (old_product_id == product_id && batch_no == old_batch_no) {
-        $("#batch_no_" + new_value[0] + "_" + i + " option").prop("selected", false);
+        $(".loader").fadeOut("slow");
         $(".select2").select2();
-        $('#available_' + nextindex).val(0);
-        is_disabled = 1;
+        var warehouse_id = $('#warehouse_id').val();
+        get_product_by_warehouse(warehouse_id, nextindex);
       }
     }
   }
 
-  if (is_disabled == 0) {
-    $(':input[type="submit"]').prop('disabled', false);
+  function calculate_amt(index) {
+    var total_amount = Number($('#total_amount_' + index).val()) || 0;
+    var quantity = Number($('#quantity_' + index + '_1').val()) || 0;
+    $('#black_amount_' + index).val(total_amount * quantity);
+    $('#white_amount_' + index).val(total_amount * quantity);
+    var gst = Number($('#gst_' + index).val()) || 0;
+    $('#white_total_' + index).val((total_amount * quantity) + ((total_amount * quantity) * gst / 100));
+    recalculate();
+  }
+
+  function calculate_gst(index) {
+    var white_amount = Number($('#white_amount_' + index).val()) || 0;
+    var gst = Number($('#gst_' + index).val()) || 0;
+
+    console.log(white_amount, gst);
+    $('#white_total_' + index).val(white_amount + (white_amount * gst / 100));
+    recalculate();
+  }
+
+  function removeRequirement(requirementElem) {
+    if(document.querySelector('#requirement_area').children.length > 1){
+      $(requirementElem).parent().parent().parent().parent().parent().remove();
+    } else {
+      alert('Atleast one line item is required');
+    }
+  }
+
+  function check_available_qty(value, id) {
+    var qty = Number($("#quantity_" + id + "_1").val()) || 0;
+    var available_qty = Number($("#available_" + id).val()) || 0;
+
+    if(qty > available_qty){
+      alert('Quantity cannot greater than Available Quantity');
+      $("#quantity_" + id + "_1").val(0);
+    }
+
+    calculate_amt(id);
+  }
+
+  function get_product_by_warehouse(b, nextindex) {
+    var warehouse_id = $('#warehouse_id').find(":selected").val();
     var a = {
-      warehouse_id: warehouse_id,
-      product_id: product_id,
-      batch_no: batch_no,
+      warehouse_id: b
     };
     $.ajax({
       type: "POST",
-      url: "<?php echo base_url()?>inventory/get_available_qty",
+      url: "<?php echo base_url()?>inventory/get_product_by_warehouse",
       data: a,
       success: function(res) {
-        $('#available_' + nextindex).val(res.quantity);
+        $('#product_id_' + nextindex).children("option:not(:first)").remove();
+        $('#product_id_' + nextindex).append(res);
       }
     });
-  } else {
-    Swal.fire({
-      title: "Error!",
-      text: "Product Batch No. Can't Be Same!!!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
-    $(':input[type="submit"]').prop('disabled', true);
-    //$('#product_id_'+nextindex).prop("selected", false);
-    //$(".select2").select2();
-
   }
 
-}
+  function get_batch_by_product(b, nextindex) {
+    var new_value = nextindex.split('_');
+    var warehouse_id = $('#warehouse_id').find(":selected").val();
+    var product_id = $('#product_id_' + new_value[0]).find(":selected").val();
+    var is_disabled = 0;
+    var total_element = $(".element-1").length + 1;
+
+    // Check Same Selected Product
+    for (let i = 1; i < total_element ; i++) {
+      var old_product_id = $("#product_id_"+i).val();
+      if(old_product_id == product_id && i != new_value[0]){
+        $('#product_id_'+new_value[0]).prop("selected", false);
+        $(".select2").select2();
+        is_disabled = 1 ;
+      }
+    }
+
+    console.log('is_disabled:',nextindex);
+
+    if (is_disabled == 0) {
+      $("#batch_no_" + nextindex + " option").prop("selected", false);
+      $(".select2").select2();
+      $('#available_' + nextindex).val(0);
+      var a = {
+        warehouse_id: warehouse_id,
+        product_id: product_id,
+      };
+
+      $.ajax({
+        type: "POST",
+        url: "<?php echo base_url()?>inventory/get_qty_by_product",
+        data: a,
+        success: function(res) {
+          $('#available_' + new_value[0]).val(res.quantity);
+          $('#quantity_' + new_value[0] + '_1').val(0);
+          $('#gst_' + new_value[0]).val(res.tax);
+          $('#total_amount_' + new_value[0]).val(res.rate);
+          $('#black_amount_' + new_value[0]).val(0);
+          $('#white_amount_' + new_value[0]).val(0);
+          $('#white_total_' + new_value[0]).val(0);
+        }
+      });
+
+      $(':input[type="submit"]').prop('disabled', false);
+    } else {
+      Swal.fire({
+        title: "Error!",
+        text: "Product Can't Be Same!!!",
+        icon: "error",
+        customClass: {
+          confirmButton: "btn btn-primary"
+        },
+        buttonsStyling: !1
+      });
+
+      $(':input[type="submit"]').prop('disabled', true);
+      // $('#product_id_'+new_value[0]).prop("selected", false);
+      $("#product_id_" + new_value[0] + " option").prop("selected", false);
+      $(".select2").select2();
+
+      $('#available_' + new_value[0]).val(0);
+      $('#quantity_' + new_value[0] + '_1').val(0);
+      $('#gst_' + new_value[0]).val(0);
+      $('#total_amount_' + new_value[0]).val(0);
+      $('#black_amount_' + new_value[0]).val(0);
+      $('#white_amount_' + new_value[0]).val(0);
+      $('#white_total_' + new_value[0]).val(0);
+    }
+
+    recalculate();
+  }
+
+  function get_product_details(b, nextindex) {
+    var new_value = nextindex.split('_');
+    var warehouse_id = $('#warehouse_id').find(":selected").val();
+    var product_id = $('#product_id_' + new_value[0]).find(":selected").val();
+    var batch_no = $('#batch_no_' + nextindex).find(":selected").val();
+    is_disabled = 0;
+    var total_element = $(".batch_no_" + new_value[0]).length + 1;
+    for (let i = 1; i < total_element; i++) {
+      if ($("#product_id_" + new_value[0]).val() && new_value[1] != i) {
+        var old_product_id = $("#product_id_" + new_value[0]).val();
+        var old_batch_no = $("#batch_no_" + new_value[0] + "_" + i).val();
+        if (old_product_id == product_id && batch_no == old_batch_no) {
+          $("#batch_no_" + new_value[0] + "_" + i + " option").prop("selected", false);
+          $(".select2").select2();
+          $('#available_' + nextindex).val(0);
+          is_disabled = 1;
+        }
+      }
+    }
+
+    if (is_disabled == 0) {
+      $(':input[type="submit"]').prop('disabled', false);
+      var a = {
+        warehouse_id: warehouse_id,
+        product_id: product_id,
+        batch_no: batch_no,
+      };
+      $.ajax({
+        type: "POST",
+        url: "<?php echo base_url()?>inventory/get_available_qty",
+        data: a,
+        success: function(res) {
+          $('#available_' + nextindex).val(res.quantity);
+        }
+      });
+    } else {
+      Swal.fire({
+        title: "Error!",
+        text: "Product Batch No. Can't Be Same!!!",
+        icon: "error",
+        customClass: {
+          confirmButton: "btn btn-primary"
+        },
+        buttonsStyling: !1
+      });
+      $(':input[type="submit"]').prop('disabled', true);
+      //$('#product_id_'+nextindex).prop("selected", false);
+      //$(".select2").select2();
+
+    }
+
+  }
 </script>
