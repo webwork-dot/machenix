@@ -75,8 +75,9 @@
                <div class="col-md-12 mt-10">
                   <h5 class="mb-0">
                     <b>Total Product <span id="total_count">(0)</span></b> |
-                    <b>Total Qty: <span id="total_qty"><?php echo $total['qty']; ?></span></b> |
-                    <b>Total Amount: ₹<span id="total_amount"><?php echo $total['total']; ?></span></b>
+                    <b>Total Qty: <span id="total_qty"><?php echo $total['qty']; ?></span></b> 
+                    <!-- |
+                    <b>Total Amount: ₹<span id="total_amount"><?php echo $total['total']; ?></span></b> -->
 				  </h5>
                </div>
             </div>

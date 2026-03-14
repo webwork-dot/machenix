@@ -36,7 +36,7 @@ class Login extends CI_Controller {
         $email = $this->input->post('email');
         $password = sha1($this->input->post('password'));
         
-         $query = $this->db->query("SELECT id,role_id,email,phone,access_code,type,first_name,last_name,warehouse_id FROM sys_users WHERE (email = '$email' AND email != '' || phone='$email') AND password = '$password' AND status='1'");
+         $query = $this->db->query("SELECT id,role_id,email,phone,access_code,staff_access,type,first_name,last_name,warehouse_id FROM sys_users WHERE (email = '$email' AND email != '' || phone='$email') AND password = '$password' AND status='1'");
         //echo $this->db->last_query();
        // exit();
         if ($query->num_rows() > 0) {
@@ -50,12 +50,13 @@ class Login extends CI_Controller {
             $this->session->set_userdata('is_birthday_read', 0);
             $this->session->set_userdata('super_user_id', $row->id);
             $this->session->set_userdata('super_role_id', $row->role_id);
+            $this->session->set_userdata('super_type_id', $row->staff_access);
             $this->session->set_userdata('super_email', $row->email);
             $this->session->set_userdata('super_mobile', $row->phone);
             $this->session->set_userdata('access_code', $row->access_code);
             $this->session->set_userdata('super_type', $row->type);
             $this->session->set_userdata('super_name', $row->first_name.' '.$row->last_name);
-            $this->session->set_flashdata('flash_message', get_phrase('welcome').' '.$row->first_name.' '.$row->last_name); 
+            $this->session->set_flashdata('flash_message', get_phrase('welcome') . ' ' . $row->first_name . ' ' . $row->last_name); 
                 
             if ($row->role_id == 1) {
                  $this->session->set_userdata('super_role', 'admin');

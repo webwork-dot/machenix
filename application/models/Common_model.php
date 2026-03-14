@@ -825,7 +825,11 @@ class Common_model extends CI_Model{
         if($type == 'Inventory') {
             $query = $this->db->query("SELECT * FROM customer WHERE type='customer' AND is_deleted = '0' AND FIND_IN_SET('" . $company_id . "', company_id) ");
         } else {
-            $query = $this->db->query("SELECT * FROM customer WHERE type='customer' AND is_deleted = '0' AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "' ");
+            if($user_id != 7) {
+                $query = $this->db->query("SELECT * FROM customer WHERE type='customer' AND is_deleted = '0' AND FIND_IN_SET('" . $company_id . "', company_id) ");
+            } else {
+                $query = $this->db->query("SELECT * FROM customer WHERE type='customer' AND is_deleted = '0' AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "' ");
+            }
         }
 
         if($query->num_rows() > 0) {

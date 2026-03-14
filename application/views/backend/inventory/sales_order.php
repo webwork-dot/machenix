@@ -16,7 +16,10 @@
     }
 </style>
 
-	<?php include('filter/date_range.php'); ?>	
+<?php 
+    // echo json_encode($this->session->userdata());
+    include('filter/date_range.php');
+?>	
 	
 <div class="row" id="table-bordered">
    <div class="col-12">
@@ -31,8 +34,9 @@
          </div>
         <div class="card-datatable d-report mb-2">
 		   <!-- <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>    -->
-		   
-		   <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>          
+           <?php if($this->session->userdata('super_type_id') == 7) { ?>
+		    <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
+           <?php } ?>       
      
 		
           <table class="table leads-table" id="report-datatable">
@@ -49,7 +53,9 @@
 					<th>Total Products</th>
 					<th>Total Amount</th>
 				    <!--<th>Remark</th>-->
-					<th>Actions</th>
+                    <?php if($this->session->userdata('super_type_id') != 7) { ?>
+					   <th>Actions</th>
+                    <?php } ?>
                   </tr>
                </thead>
             </table>
@@ -105,7 +111,9 @@
                 { "data": "total_pro" },
                 { "data": "grand_total" },
                 // { "data": "remark" },
-                { "data": "action" },
+                <?php if($this->session->userdata('super_type_id') != 7) { ?>
+                   { "data": "action" },
+                <?php } ?>
             ], 
            
             "buttons": [

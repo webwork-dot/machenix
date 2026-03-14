@@ -132,14 +132,14 @@
             <div class="form-group">
               <label>Order No <span class="required">*</span></label>
               <input type="text" class="form-control" placeholder="Order No" name="order_no"
-                value="<?php echo $order_no;?>" required="" readonly>
+                value="<?php echo $data['order_no'];?>" readonly>
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
               <label>Refrence Order No </label>
-              <input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no">
+              <input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no" value="<?php echo $data['refrence_no'];?>">
             </div>
           </div>
 
@@ -147,7 +147,7 @@
             <div class="form-group">
               <label>Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
-                value="<?php echo date('Y-m-d');?>" id="date_picker">
+                value="<?php echo $data['date'];?>" id="date_picker">
             </div>
           </div>
 
@@ -156,7 +156,7 @@
             <select class=" form-select select2" name="customer_id" id="customer_id" required>
               <option value="">Select Customer </option>
               <?php foreach($customer_list as $item){?>
-              	<option value="<?php echo $item['id'];?>"><?php echo $item['owner_name'];?></option>
+              	<option value="<?php echo $item['id'];?>" <?php echo $data['customer_id'] == $item['id'] ? 'selected' : '';?> ><?php echo $item['owner_name'];?></option>
               <?php }?>
             </select>
           </div>
@@ -167,42 +167,47 @@
               onchange="get_product_by_warehouse(this.value,'1');" required>
               <option value="">Select Warehouse </option>
               <?php foreach($warehouse_list as $item){?>
-              <option value="<?php echo $item->id;?>"><?php echo $item->name;?></option>
+              <option value="<?php echo $item->id;?>" <?php echo $data['warehouse_id'] == $item->id ? 'selected' : '';?>><?php echo $item->name;?></option>
               <?php }?>
             </select>
           </div>
 
-					<input type="hidden" name="company_id" value="<?php echo $this->session->userdata('company_id'); ?>">
+					<input type="hidden" name="company_id" value="<?php echo $data['company_id']; ?>">
           
           <div class="col-12 col-sm-12 mb-1 mt-1">
             <div class="form-group">
               <label>Narration</label>
-              <textarea class="form-control" placeholder="" rows="1" name="narration" id="narration"></textarea>
+              <textarea class="form-control" placeholder="" rows="1" name="narration" id="narration"><?php echo $data['narration'];?></textarea>
             </div>
           </div>
 
           <div class="col-12 col-sm-12 mb-1">
             <div class="form-group">
               <label>Remark</label>
-              <textarea class="form-control" placeholder="" rows="1" name="remark" id="remark"></textarea>
+              <textarea class="form-control" placeholder="" rows="1" name="remark" id="remark"><?php echo $data['remark'];?></textarea>
             </div>
           </div>
 
           <div class="col-12">
             <div id="requirement_area">
-
-              <div class="d-block mt-2 element-1 fx-border" id="product_1" data-id="1">
-                <b class="jsr-no">1</b>
+              <?php 
+                $i = 1; 
+                foreach($data['products'] as $item){ 
+              ?>
+              <div class="d-block mt-2 element-1 fx-border" id="product_<?php echo $i;?>" data-id="<?php echo $i;?>">
+                <b class="jsr-no"><?php echo $i;?></b>
                 <div class="flex-grow-1 px-0 ml-15">
                   <div class="row">
 
                       <div class="col-md-4 pl-0">
-                        <input type="hidden" name="x_value[]" id="x_value_1" value="1">
+                        <input type="hidden" name="x_value[]" id="x_value_<?php echo $i;?>" value="<?php echo $i;?>">
                         <div class="form-group">
                           <label>Select Product - SKU<span class="required">*</span></label>
-                          <select class="form-control select2 product_id" name="product_id[]" id="product_id_1"
-                            data-toggle="select2" onchange="get_batch_by_product(this.value,'1_1');" required>
+                          <select class="form-control select2 product_id" name="product_id[]" id="product_id_<?php echo $i;?>" data-toggle="select2" onchange="get_batch_by_product(this.value,'<?php echo $i;?>_1');" required>
                             <option value="">Select Product - SKU</option>
+                            <?php foreach($products_list as $p_item){?>
+                              <option value="<?php echo $p_item['id'];?>" <?php echo $p_item['id'] == $item['product_id'] ? 'selected' : '';?>><?php echo $p_item['name'];?></option>
+                            <?php }?>
                           </select>
                         </div>
                       </div>
@@ -210,16 +215,16 @@
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label> Amount <span class="required">*</span></label>
-                          <input type="number" step="any" id="total_amount_1" name="total_amount[]"
-                            onkeyup="calculate_amt('1')" value="" class="form-control">
+                          <input type="number" step="any" id="total_amount_<?php echo $i;?>" name="total_amount[]"
+                            onkeyup="calculate_amt('<?php echo $i;?>')" value="<?php echo $item['total_amount'];?>" class="form-control">
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label>Qty <span class="required">*</span></label>
-                          <input type="number" step="any" id="quantity_1_1" name="quantity[]" placeholder="Qty"
-                            onkeyup="check_available_qty(this.value,'1')" value="1" class="form-control quantity_1"
+                          <input type="number" step="any" id="quantity_<?php echo $i;?>_1" name="quantity[]" placeholder="Qty"
+                            onkeyup="check_available_qty(this.value,'<?php echo $i;?>')" value="<?php echo $item['qty'];?>" class="form-control quantity_<?php echo $i;?>"
                             required="">
                         </div>
                       </div>
@@ -227,7 +232,7 @@
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label>Avail. Qty</label>
-                          <input type="number" step="any" id="available_1" name="available[]" placeholder="Available Qty" value="0" class="form-control"
+                          <input type="number" step="any" id="available_<?php echo $i;?>_1" name="available[]" placeholder="Available Qty" value="<?php echo $item['available'];?>" class="form-control"
                           readonly>
                         </div>
                       </div>
@@ -235,30 +240,30 @@
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label> Black Amt <span class="required">*</span></label>
-                          <input type="number" step="any" id="black_amount_1" name="black_amount[]" value="" class="form-control" readonly>
+                          <input type="number" step="any" id="black_amount_<?php echo $i;?>" name="black_amount[]" value="<?php echo $item['black_amount'];?>" class="form-control" readonly>
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label> White Amt <span class="required">*</span></label>
-                          <input type="number" step="any" id="white_amount_1" name="white_amount[]"
-                            onkeyup="calculate_gst('1')" value="" class="form-control">
+                          <input type="number" step="any" id="white_amount_<?php echo $i;?>" name="white_amount[]"
+                            onkeyup="calculate_gst('<?php echo $i;?>')" value="<?php echo $item['white_amount'];?>" class="form-control">
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label> GST <span class="required">*</span></label>
-                          <input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_gst('1')" value="" class="form-control">
+                          <input type="number" step="any" id="gst_<?php echo $i;?>" name="gst[]" onkeyup="calculate_gst('<?php echo $i;?>')" value="<?php echo $item['gst'];?>" class="form-control">
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label> White Total</label>
-                          <input type="number" step="any" id="white_total_1" name="white_total[]"
-                              class="form-control" readonly>
+                          <input type="number" step="any" id="white_total_<?php echo $i;?>" name="white_total[]"
+                              value="<?php echo $item['white_total'];?>" class="form-control" readonly>
                         </div>
                       </div>
 
@@ -266,22 +271,28 @@
                         <div class="form-group">
                           <label>&nbsp;</label><br />
                           <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
-                            style="" name="button" onclick="removeRequirement(this,1)"> <i class="fa fa-times"
+                            style="" name="button" onclick="removeRequirement(this,'<?php echo $i;?>')"> <i class="fa fa-times"
                               aria-hidden="true"></i> </button>
                         </div>
+                      </div>
+
+                      <div class="col-md-12" id="batch_<?php echo $i;?>">
+                        
                       </div>
 
                   </div>
                 </div>
               </div>
+              <?php $i++; }?>
 
             </div>
           </div>
 
           <center>
             <div class="col-md-12  pl-0 m-auto">
-              <button type="button" class="btn btn-outline-primary waves-effect" onclick="appendRequirement()"> <i
-                  class="fa fa-plus" aria-hidden="true"></i> Add New Product</button>
+              <button type="button" class="btn btn-outline-primary waves-effect" onclick="appendRequirement()"> 
+                <i class="fa fa-plus" aria-hidden="true"></i> Add New Product
+              </button>
             </div>
           </center>
 
@@ -297,7 +308,7 @@
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value"
-                            value="0" placeholder="Basic Value" class="form-control" readonly></p>
+                            value="<?php echo $data['basic_value'];?>" placeholder="Basic Value" class="form-control" readonly></p>
                       </td>
                     </tr>
 
@@ -315,7 +326,7 @@
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="net_sales_value_1"
-                            id="net_sales_value_1" value="0" placeholder="Basic Net Sales Value (Excl. GST)"
+                            id="net_sales_value_1" value="<?php echo $data['net_sales_value_1'];?>" placeholder="Basic Net Sales Value (Excl. GST)"
                             class="form-control" readonly></p>
                       </td>
                     </tr>
@@ -325,12 +336,12 @@
                         <b class="mb-0 text-capitalize">Add : IN: Central GST</b>
                         <input type="text"
                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="cgst_per" id="cgst_per" onkeyup="recalculate()" placeholder="in(%)" value="0"
+                          name="cgst_per" id="cgst_per" onkeyup="recalculate()" placeholder="in(%)" value="<?php echo $data['cgst_per'];?>"
                           class="form-control dis-input">
                       </th>
                       <th colspan="1">
                         <p class="td-blank"><b><input type="number" step="any" name="central_gst" id="central_gst"
-                              value="0" placeholder="Add : IN: Central GST" class="form-control" readonly></b></p>
+                              value="<?php echo $data['central_gst'];?>" placeholder="Add : IN: Central GST" class="form-control" readonly></b></p>
                       </th>
                     </tr>
 
@@ -339,11 +350,11 @@
                         <b class="mb-0 text-capitalize">Add : IN: State GST</b>
                         <input type="text"
                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="sgst_per" id="sgst_per" onkeyup="recalculate()" placeholder="in(%)" value="0"
+                          name="sgst_per" id="sgst_per" onkeyup="recalculate()" placeholder="in(%)" value="<?php echo $data['sgst_per'];?>"
                           class="form-control dis-input" readonly>
                       </th>
                       <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="state_gst" id="state_gst" value="0"
+                        <p class="td-blank"><b><input type="number" step="any" name="state_gst" id="state_gst" value="<?php echo $data['state_gst'];?>"
                               placeholder="Add : IN: State GST" class="form-control" readonly></b></p>
                       </th>
                     </tr>
@@ -353,11 +364,11 @@
                         <b class="mb-0 text-capitalize">Add : IN: IGST</b>
                         <input type="text"
                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="igst_per" id="igst_per" onkeyup="recalculate()" placeholder="in(%)" value="0"
+                          name="igst_per" id="igst_per" onkeyup="recalculate()" placeholder="in(%)" value="<?php echo $data['igst_per'];?>"
                           class="form-control dis-input">
                       </th>
                       <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="igst" id="igst" value="0"
+                        <p class="td-blank"><b><input type="number" step="any" name="igst" id="igst" value="<?php echo $data['igst'];?>"
                               placeholder="Add : IN: IGST" class="form-control" readonly></b></p>
                       </th>
                     </tr>
@@ -368,7 +379,7 @@
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="net_sales_value_2"
-                            id="net_sales_value_2" value="0" placeholder="Basic Net Sales Value (Inc. GST)"
+                            id="net_sales_value_2" value="<?php echo $data['net_sales_value_2'];?>" placeholder="Basic Net Sales Value (Inc. GST)"
                             class="form-control" readonly></p>
 
                       </td>
@@ -376,12 +387,12 @@
                     <tr>
                       <td colspan="4" class="text-right">
                         <label>Add : Other Charges</label>
-                        <input type="text" step="any" name="other_charges_name" id="other_charges_name" value=""
+                        <input type="text" step="any" name="other_charges_name" id="other_charges_name" value="<?php echo $data['other_charges_name'];?>"
                           placeholder="Charge Name" class="form-control dis-input-1">
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="other_charges_amount"
-                            id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="0"
+                            id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo $data['other_charges_amount'];?>"
                             onkeyup="recalculate()"></p>
                       </td>
                     </tr>
@@ -391,7 +402,7 @@
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="round_of" id="round_of"
-                            placeholder="Round Of" class="form-control" value="0" onkeyup="recalculate()"></p>
+                            placeholder="Round Of" class="form-control" value="<?php echo $data['round_of'];?>" onkeyup="recalculate()"></p>
                       </td>
                     </tr>
                     <tr>
@@ -400,7 +411,7 @@
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total"
-                            placeholder="" class="form-control" readonly></p>
+                            placeholder="" class="form-control" value="<?php echo $data['grand_total'];?>" readonly></p>
                       </td>
                     </tr>
                   </tbody>
@@ -448,23 +459,6 @@ function subtotal_cal() {
   var tcs = 0;
   var grand_total = 0;
 
-  // if (gst_type == 'IGST') {
-  //   igst_per = parseFloat($("#igst_per").val()) || 0;
-  // } else if (gst_type == 'Central GST / State GST') {
-  //   cgst_per = parseFloat($("#cgst_per").val()) || 0;
-  //   sgst_per = cgst_per;
-  //   $("#sgst_per").val(isNaN(cgst_per) ? 0 : Math.round(cgst_per));
-  // }
-
-  // for (let i = 1; i <= total_element; i++) {
-  //   if ($("#white_amount_" + i).val()) {
-  //     var master_price = parseFloat($("#white_amount_" + i).val());
-  //     master_price = isNaN(master_price) ? 0 : master_price;
-  //     var total_amount = master_price;
-  //     base_total += total_amount;
-  //   }
-  // }
-
   let whiteAmt = document.querySelectorAll('[name="white_amount[]"]');
   let gstTax = document.querySelectorAll('[name="gst[]"]');
   whiteAmt.forEach((element, index)=> {
@@ -486,16 +480,8 @@ function subtotal_cal() {
   $("#net_sales_value_1").val(isNaN(net_sales_value_1) ? 0 : net_sales_value_1.toFixed(2));
 
   if (gst_type == 'IGST') {
-    // igst_amt = get_per_total(net_sales_value_1, igst_per);
-    // total_gst_amount = igst_amt;
-    // $('#igst').val(igst_amt.toFixed(2));
     $('#igst').val(total_gst_amount.toFixed(2));
   } else if (gst_type == 'Central GST / State GST') {
-    // cgst_amt = get_per_total(net_sales_value_1, cgst_per);
-    // sgst_amt = cgst_amt;
-    // total_gst_amount = cgst_amt + sgst_amt;
-    // $('#central_gst').val(cgst_amt.toFixed(2));
-    // $('#state_gst').val(sgst_amt.toFixed(2));
     $('#central_gst').val((total_gst_amount / 2).toFixed(2));
     $('#state_gst').val((total_gst_amount / 2).toFixed(2));
   }
@@ -507,7 +493,6 @@ function subtotal_cal() {
   var round_of = parseFloat($("#round_of").val()) || 0;
 
   grand_total = net_sales_value_2 + round_of + other_charges_amount;
-  //console.log('grand_total: ' + grand_total);
   $('#grand_total').val(grand_total.toFixed(2));
 }
 

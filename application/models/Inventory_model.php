@@ -5103,13 +5103,12 @@ class Inventory_model extends CI_Model
 
 	public function get_product_id_by_warehouse($warehouse_id)
 	{
-		$query = $this->db->query("SELECT product_id,id,item_code,product_name,size_id,size_name FROM inventory WHERE warehouse_id='$warehouse_id' order by product_name asc");
+		$query = $this->db->query("SELECT product_id,id,item_code,product_name FROM inventory WHERE warehouse_id='$warehouse_id' GROUP BY product_id order by product_name asc");
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$resultdata[] = array(
-					"id" => $item['product_id'] . '|' . $item['size_id'],
-					// "name" => trim($item['item_code']),
-					"name" => trim($item['item_code']) . ' - ' . trim($item['size_name']),
+					"id" => $item['product_id'],
+					"name" => trim($item['product_name']) . ' - ' . trim($item['item_code']),
 				);
 			}
 		}
@@ -5153,22 +5152,35 @@ class Inventory_model extends CI_Model
 	{
 		$pro = explode('|', $prod);
 		$product_id = $pro[0];
-		$size_id = $pro[1];
-		$query = $this->db->query("SELECT SUM(quantity) as quantity FROM inventory WHERE warehouse_id='$warehouse_id' and product_id='$product_id' and size_id='$size_id' AND quantity>0 group by item_code order by product_name asc limit 1");
+		$query = $this->db->query("SELECT SUM(quantity) as quantity, product_id FROM inventory WHERE warehouse_id='$warehouse_id' and product_id='$product_id' AND quantity > 0 group by product_id order by product_name asc limit 1");
+
 		if (!empty($query)) {
 			$item = $query->row_array();
+			$product = $this->common_model->getRowById('raw_products', '*', ['id' => $item['product_id']]);
+			if($product != ""){
+				$rate = $product['rate'];
+				$gst = $product['gst'];
+			}else{
+				$rate = $product['rate'];
+				$gst = $product['gst'];
+			}
+
 			header('Content-Type: application/json');
 			echo json_encode(array(
 				'status' => 200,
 				'message' => 'success',
 				"quantity" => $item['quantity'],
+				"tax" => $gst,
+				"rate" => $rate,
 			));
 		} else {
 			header('Content-Type: application/json');
 			echo json_encode(array(
 				'status' => 400,
 				'message' => 'success',
-				"quantity" => '',
+				"quantity" => '0',
+				"tax" => '0',
+				"rate" => '0',
 			));
 		}
 	}
@@ -7883,6 +7895,18 @@ class Inventory_model extends CI_Model
 		}
 	}
 
+	public function get_sales_order_details($id)
+	{
+		$data = [];
+		$this->db->where('id', $id);
+		$data = $this->db->get('sales_order')->row_array();
+
+		$this->db->where('order_id', $id);
+		$data['products'] = $this->db->get('sales_order_product')->result_array();
+		
+		return $data;
+	}
+
 	public function add_sales_order()
 	{
 		$this->db->trans_begin();
@@ -7909,7 +7933,7 @@ class Inventory_model extends CI_Model
 			} else {
 				$customer_id = $this->input->post('customer_id');
 				if ($customer_id != '') {
-					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'contact_name');
+					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'owner_name');
 				} else {
 					$customer_name = '';
 				}
@@ -7920,7 +7944,8 @@ class Inventory_model extends CI_Model
 					$warehouse_name = '';
 				}
 
-				$company_id = $this->input->post('company_id');
+				// $company_id = $this->input->post('company_id');
+				$company_id = $this->session->userdata('company_id');
 				$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
 
 				$round_of       	= ($this->input->post('round_of') != '') ? $this->input->post('round_of') : 0;
@@ -7930,55 +7955,54 @@ class Inventory_model extends CI_Model
 				$other_charges_amount = ($this->input->post('other_charges_amount') != '') ? $this->input->post('other_charges_amount') : 0;
 
 				$data = array();
-				$data['order_no']          = $order_no;
-				$data['refrence_no']       = clean_and_escape($this->input->post('refrence_no'));
-				$data['date']     		   = ($this->input->post('date'));
-				$data['customer_id']       = $customer_id;
-				$data['customer_name']     = $customer_name;
-				$data['warehouse_id']      = $warehouse_id;
-				$data['warehouse_name']    = $warehouse_name;
-				$data['company_id']      = $company_id;
-				$data['company_name']    = $company_name;
-				$data['remark'] 		   = ($this->input->post('remark'));
-				$data['narration']         = ($this->input->post('narration'));
-				$data['gst_type']     	   	= $gst_type;
+				$data['order_no']          		= $order_no;
+				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
+				$data['date']     		   	 		= ($this->input->post('date'));
+				$data['customer_id']       		= $customer_id;
+				$data['customer_name']     		= $customer_name;
+				$data['warehouse_id']      		= $warehouse_id;
+				$data['warehouse_name']    		= $warehouse_name;
+				$data['company_id']        		= $company_id;
+				$data['company_name']      		= $company_name;
+				$data['remark'] 		   		 		= ($this->input->post('remark'));
+				$data['narration']         		= ($this->input->post('narration'));
+				$data['gst_type']     	   		= $gst_type;
 				$data['other_charges_name']   = $other_charges_name;
 				$data['other_charges_amount'] = $other_charges_amount;;
 				$data['added_by_id']          = $this->session->userdata('super_user_id');
 				$data['added_by_name']        = $this->session->userdata('super_name');
 				$data['added_date']   	      = date("Y-m-d H:i:s");
 				if ($this->db->insert('sales_order', $data)) {
-
 					$order_id = $this->db->insert_id();
 					$this->update_order_no($order_no);
 
 					$product_id_arr     = ($this->input->post('product_id'));
 					$total_amount_arr   = ($this->input->post('total_amount'));
 					$quantity_arr       = ($this->input->post('quantity'));
-					$porder_id_arr      = ($this->input->post('porder_id'));
-					$x_value_arr        = ($this->input->post('x_value'));
-					$customer_name_arr        = ($this->input->post('customer_name'));
-					$pincode_arr        = ($this->input->post('pincode'));
-					$state_arr        = ($this->input->post('state'));
+
+					// 
+					$available_arr			= ($this->input->post('available'));
+					$black_amount_arr		= ($this->input->post('black_amount'));
+					$white_amount_arr		= ($this->input->post('white_amount'));
+					$gst_arr       			= ($this->input->post('gst'));
+					$white_total_arr		= ($this->input->post('white_total'));
 
 					$basic_value = $total_gst_amount = $net_sales_value_1 = $transport_gst_amount = $igst = $net_total = $other_tax = $price_after_discount = $gst_amt = $price_after_gst = $price_total = $grand_total = 0;
 					$order_items_logs = array();
-					//echo json_encode($quantity_arr);exit();
+					// echo json_encode($quantity_arr); exit();
 					for ($i = 0; $i < count($product_id_arr); $i++) {
 						if ($quantity_arr[$i] > 0) {
 							$data_p = array();
 							$xpro 			=  explode('|', $product_id_arr[$i]);
 							$product_id 	= $xpro[0];
-							$size_id 	= $xpro[1];
 
-							$inv_prod = $this->db->where('product_id', $product_id)->where('size_id', $size_id)->get('inventory');
+							$inv_prod = $this->db->where('product_id', $product_id)->get('inventory');
 							if ($inv_prod->num_rows() > 0) {
 								$inv_prod = $inv_prod->row_array();
 								$item_code 	= $inv_prod['item_code'];
 
 								$total_amount 	= $total_amount_arr[$i];
 								$quantity 	= $quantity_arr[$i];
-								$x_value 	= $x_value_arr[$i];
 								$product    	= $this->crud_model->get_raw_products_by_id($product_id)->row_array();
 								$product_name = $product['name'];
 								$data_product = array();
@@ -7987,17 +8011,13 @@ class Inventory_model extends CI_Model
 									'product_id'        => $product_id,
 									'item_code'         => $item_code,
 									'product_name'      => $product['name'],
-									'product_order_id'  => $porder_id_arr[$i],
-									'customer_name'     => $customer_name_arr[$i],
-									'pincode'           => $pincode_arr[$i],
-									'state'             => $state_arr[$i],
 									'qty'               => $quantity,
-									'size_id'           => $size_id,
-									'size_name'         => $inv_prod['size_name'],
-									'group_id'          => $inv_prod['group_id'],
-									'color_id'          => $inv_prod['color_id'],
-									'color_name'        => $inv_prod['color_name'],
 									'total_amount'      => $total_amount,
+									'available'         => $available_arr[$i],
+									'black_amount'      => $black_amount_arr[$i],
+									'white_amount'      => $white_amount_arr[$i],
+									'gst'               => $gst_arr[$i],
+									'white_total'       => $white_total_arr[$i],
 								);
 
 								$this->db->insert('sales_order_product', $data_product);
@@ -8016,60 +8036,6 @@ class Inventory_model extends CI_Model
 									);
 
 									$this->db->insert('sales_order_product_batch', $data_product_bat);
-
-									// Inventory start
-									$check_inv = $this->db->query("SELECT id,quantity FROM inventory WHERE product_id = '$product_id' and size_id = '$size_id' and warehouse_id = '$warehouse_id' and quantity > 0 limit 1");
-
-									$stocks = 0;
-									if ($check_inv->num_rows() > 0) {
-										$stocks = $check_inv->row()->quantity ?? 0;
-									}
-
-									if ($stocks < $batch_qty || $stocks == 0) {
-										//$product_name = $product_name;
-										//$this->db->query("UNLOCK TABLES");
-										throw new Exception('Insufficient stock for ' . $product_name . '. Available Live Qty: ' . $stocks . '.');
-									} else {
-										$row_inv = $check_inv->row_array();
-										$old_id = $row_inv['id'];
-										$old_quantity = intval($row_inv['quantity']);
-
-										$final_qty = $old_quantity - $batch_qty;
-
-										$data_history = array();
-										$data_history = array(
-											'quantity'       	=> $final_qty,
-										);
-
-										$this->db->where('id', $old_id);
-										$this->db->update('inventory', $data_history);
-
-										$limit_history = array();
-										$limit_history['parent_id']   	  	= $old_id;
-										$limit_history['warehouse_id']   	= $warehouse_id;
-										$limit_history['warehouse_name']   	= $warehouse_name;
-										$limit_history['product_id']   	  	= $product_id;
-										$limit_history['product_order_id']  = $porder_id_arr[$i];
-										$limit_history['product_name']   	= $product_name;
-										$limit_history['item_code']   	  	= $item_code;
-										$limit_history['size_id']   	  	= $size_id;
-										$limit_history['size_name']         = $inv_prod['size_name'];
-										$limit_history['group_id']          = $inv_prod['group_id'];
-										$limit_history['color_id']          = $inv_prod['color_id'];
-										$limit_history['color_name']        = $inv_prod['color_name'];
-										$limit_history['sku']               = $inv_prod['sku'];
-										$limit_history['categories']        = $inv_prod['categories'];
-										$limit_history['order_id'] 	   		= $order_id;
-										$limit_history['status'] 	   		= 'out';
-										$limit_history['quantity'] 			= $batch_qty;
-										$limit_history['received_date']     = $this->input->post('date');
-										$limit_history['batch_no'] 			= NULL;
-										$limit_history['added_by_id'] 		= $this->session->userdata('super_user_id');
-										$limit_history['added_by_name'] 	= $this->session->userdata('super_name');
-										$limit_history['added_date'] 		= date("Y-m-d H:i:s");
-										$this->db->insert('inventory_history', $limit_history);
-									}
-									// Inventory End
 								}
 							} else {
 								throw new Exception('No Product Found');
@@ -8080,22 +8046,17 @@ class Inventory_model extends CI_Model
 					$net_sales_value_1 = floatval($basic_value);
 
 					if ($gst_type == 'CGST/SGST') {
-						$gst_total   = price_format_decimal($this->input->post('central_gst')) + price_format_decimal($this->input->post('state_gst'));
-						$central_gst = price_format_decimal($this->input->post('central_gst'));
-						$state_gst   = price_format_decimal($this->input->post('state_gst'));
-						$igst 	     = 0;
-						$igst_per 	     = 0;
-						$cgst_per 	     = $this->input->post('cgst_per');
-						$sgst_per 	     = $this->input->post('sgst_per');
+						$gst_total   		= price_format_decimal($this->input->post('central_gst')) + price_format_decimal($this->input->post('state_gst'));
 					} else {
-						$gst_total   = price_format_decimal($this->input->post('igst'));
-						$central_gst = 0;
-						$state_gst   = 0;
-						$cgst_per   = 0;
-						$sgst_per   = 0;
-						$igst 	     = price_format_decimal($this->input->post('igst'));
-						$igst_per 	     = $this->input->post('igst_per');
+						$gst_total   	= price_format_decimal($this->input->post('igst'));
 					}
+
+					$central_gst 		= price_format_decimal($this->input->post('central_gst'));
+					$state_gst   		= price_format_decimal($this->input->post('state_gst'));
+					$igst 	     		= price_format_decimal($this->input->post('igst'));
+					$cgst_per   		= 0;
+					$sgst_per   		= 0;
+					$igst_per				= 0;
 
 					$net_sales_value_2 = $net_sales_value_1 + $total_gst_amount;
 					$grand_total = $net_sales_value_2 + $round_of +  $other_charges_amount;
@@ -8195,6 +8156,7 @@ class Inventory_model extends CI_Model
 				$view_url = base_url() . 'inventory/sales-order/view/' . $id;
 				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
 				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
+				$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
 				$action = '';
 
 				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
@@ -8207,6 +8169,7 @@ class Inventory_model extends CI_Model
 
 				$action .= '
     			 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
+				   <a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
     			 ';
 				//$action .='
 				//<a href="'.$products_url.'" data-toggle="tooltip" data-bs-placement="top" title="Products"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>

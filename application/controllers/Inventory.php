@@ -2087,8 +2087,9 @@ class Inventory extends CI_Controller
             $page_data['page_title'] = 'View Sales Products';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'edit') {
-            $data                    = $this->inventory_model->get_purchase_order_by_id($param2)->row_array();
+            $data                    = $this->inventory_model->get_sales_order_details($param2);
             $page_data['data']       = $data;
+            $page_data['products_list']   = $this->inventory_model->get_product_id_by_warehouse($data['warehouse_id']);
             $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
             $page_data['page_name']  = 'sales_order_edit';
             $page_data['id']         = $param2;
