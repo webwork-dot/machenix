@@ -2098,6 +2098,26 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_product_batch()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_product_batch();
+        }
+    }
+
+    public function get_batch_details()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_batch_details();
+        }
+    }
+
     public function get_sales_order()
     {
         if ($this->session->userdata('inventory_login') != true) {

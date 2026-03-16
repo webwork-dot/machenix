@@ -7907,6 +7907,249 @@ class Inventory_model extends CI_Model
 		return $data;
 	}
 
+	public function edit_sales_order($id)
+	{
+		$this->db->trans_begin();
+		try {
+			$resultpost = array(
+				"status" => 200,
+				"message" => get_phrase('sales_order_updated_successfully'),
+				"url" => $this->session->userdata('previous_url'),
+			);
+
+			$sales_record = $this->common_model->getRowById('sales_order', '*', ['id' => $id]);
+			$sales_products = $this->common_model->getResultById('sales_order_product', '*', ['order_id' => $id]);
+			$sales_batches = $this->common_model->getResultById('sales_order_product_batch', '*', ['order_id' => $id]);
+
+			$this->db->insert('sales_history', [
+				'parent_id' => $id,
+				'json' => json_encode([
+					'sales' => $sales_record,
+					'products' => $sales_products,
+					'batches' => $sales_batches,
+				])
+			]);
+
+			$this->db->where('order_id', $id);
+			$this->db->delete('sales_order_product');
+
+			$this->db->where('order_id', $id);
+			$this->db->delete('sales_order_product_batch');
+
+			$order_no = clean_and_escape($this->input->post('order_no'));
+			$customer_id = $this->input->post('customer_id');
+			if ($customer_id != '') {
+				$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'owner_name');
+			} else {
+				$customer_name = '';
+			}
+			
+			$warehouse_id = $this->input->post('warehouse_id');
+			if ($warehouse_id != '') {
+				$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+			} else {
+				$warehouse_name = '';
+			}
+
+			$round_of       	= ($this->input->post('round_of') != '') ? $this->input->post('round_of') : 0;
+			$gst_type       	= clean_and_escape($this->input->post('gst_type'));
+
+			$other_charges_name   = clean_and_escape($this->input->post('other_charges_name'));
+			$other_charges_amount = ($this->input->post('other_charges_amount') != '') ? $this->input->post('other_charges_amount') : 0;
+
+			$data = array();
+			$data['order_no']          		= $order_no;
+			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
+			$data['date']     		   	 		= ($this->input->post('date'));
+			$data['customer_id']       		= $customer_id;
+			$data['customer_name']     		= $customer_name;
+			$data['warehouse_id']      		= $warehouse_id;
+			$data['warehouse_name']    		= $warehouse_name;
+			$data['remark'] 		   		 		= ($this->input->post('remark'));
+			$data['narration']         		= ($this->input->post('narration'));
+			$data['is_approved']					= 1;
+			$data['gst_type']     	   		= $gst_type;
+			$data['other_charges_name']   = $other_charges_name;
+			$data['other_charges_amount'] = $other_charges_amount;
+			$this->db->where('id', $id)->update('sales_order', $data);
+			$order_id = $id;
+
+			$product_id_arr     = ($this->input->post('product_id'));
+			$total_amount_arr   = ($this->input->post('total_amount'));
+			$quantity_arr       = ($this->input->post('quantity'));
+			$x_value_arr			  = ($this->input->post('x_value'));
+			$available_arr			= ($this->input->post('available'));
+			$black_amount_arr		= ($this->input->post('black_amount'));
+			$white_amount_arr		= ($this->input->post('white_amount'));
+			$gst_arr       			= ($this->input->post('gst'));
+			$white_total_arr		= ($this->input->post('white_total'));
+
+			$batch_id_arr		  	= ($this->input->post('batch_id'));
+			$batch_qty_arr			= ($this->input->post('batch_qty'));
+
+			$basic_value = $total_gst_amount = $net_sales_value_1 = $transport_gst_amount = $igst = $net_total = $other_tax = $price_after_discount = $gst_amt = $price_after_gst = $price_total = $grand_total = 0;
+			$order_items_logs = array();
+			// echo json_encode($quantity_arr); exit();
+			for ($i = 0; $i < count($product_id_arr); $i++) {
+				if ($quantity_arr[$i] > 0) {
+					$data_p 		= array();
+					$xpro 			=  explode('|', $product_id_arr[$i]);
+					$product_id	= $xpro[0];
+
+					$inv_prod = $this->db->where('product_id', $product_id)->get('inventory');
+					if ($inv_prod->num_rows() > 0) {
+						$inv_prod = $inv_prod->row_array();
+						$item_code 	= $inv_prod['item_code'];
+
+						$total_amount 	= $total_amount_arr[$i];
+						$quantity 	= $quantity_arr[$i];
+						$product    	= $this->crud_model->get_raw_products_by_id($product_id)->row_array();
+						$product_name = $product['name'];
+						$data_product = array();
+						$data_product = array(
+							'order_id'          => $order_id,
+							'product_id'        => $product_id,
+							'item_code'         => $item_code,
+							'product_name'      => $product['name'],
+							'qty'               => $quantity,
+							'total_amount'      => $total_amount,
+							'available'         => $available_arr[$i],
+							'black_amount'      => $black_amount_arr[$i],
+							'white_amount'      => $white_amount_arr[$i],
+							'gst'               => $gst_arr[$i],
+							'white_total'       => $white_total_arr[$i],
+						);
+
+						$this->db->insert('sales_order_product', $data_product);
+						$order_product_id = $this->db->insert_id();
+						$basic_value += $total_amount;
+
+						$batch_no 	= NULL;
+						$batch_qty 	= intval($quantity);
+						if ($batch_qty > 0) {
+							$data_product_bat = array();
+							$data_product_bat = array(
+								'order_id'          => $order_id,
+								'order_product_id'  => $order_product_id,
+								'batch_no'      		=> $batch_no,
+								'batch_qty'       	=> $batch_qty,
+							);
+
+							$this->db->insert('sales_order_product_batch', $data_product_bat);
+						}
+
+						$batch_ids = $batch_id_arr[$x_value_arr[$i]];
+						$batch_qtys = $batch_qty_arr[$x_value_arr[$i]];
+						foreach($batch_ids as $key => $batch){
+							$batch_id = $batch;
+							$batch_qty = $batch_qtys[$key];
+
+							$stocks = 0;
+							$check_inv = $this->db->query("SELECT * FROM inventory WHERE id = '$batch' and quantity > 0 limit 1");
+							if ($check_inv->num_rows() > 0) {
+								$stocks = $check_inv->row()->quantity ?? 0;
+								$check_inv = $check_inv->row_array();
+							}
+
+							if ($stocks < $batch_qty || $stocks == 0) {
+								throw new Exception('Insufficient stock for ' . $product_name . '. Available Live Qty: ' . $stocks . '.');
+							} else {
+								$final_qty = $stocks - $batch_qty;
+								$data_history = array(
+									'quantity'       	=> $final_qty,
+								);
+								
+								$this->db->where('id', $batch_id);
+								$this->db->update('inventory', $data_history);
+
+								$limit_history = array();
+								$limit_history['parent_id']   	  	= $check_inv['id'];
+								$limit_history['warehouse_id']   	  = $check_inv['warehouse_id'];
+								$limit_history['warehouse_name']   	= $check_inv['warehouse_name'];
+								$limit_history['product_id']   	  	= $check_inv['product_id'];
+								$limit_history['product_name']   	  = $check_inv['product_name'];
+								$limit_history['item_code']   	  	= $check_inv['item_code'];
+								$limit_history['sku']               = $check_inv['sku'];
+								$limit_history['categories']        = $check_inv['categories'];
+								$limit_history['order_id'] 	   		  = $order_id;
+								$limit_history['status'] 	   		    = 'out';
+								$limit_history['quantity'] 			    = $batch_qty;
+								$limit_history['received_date']     = $this->input->post('date');
+								$limit_history['batch_no'] 					= NULL;
+								$limit_history['added_by_id'] 			= $this->session->userdata('super_user_id');
+								$limit_history['added_by_name'] 		= $this->session->userdata('super_name');
+								$limit_history['added_date'] 				= date("Y-m-d H:i:s");
+								$this->db->insert('inventory_history', $limit_history);
+							}
+						}
+					} else {
+						throw new Exception('No Product Found');
+					}
+				}
+			}
+
+			$net_sales_value_1 = floatval($basic_value);
+
+			if ($gst_type == 'CGST/SGST') {
+				$gst_total   		= price_format_decimal($this->input->post('central_gst')) + price_format_decimal($this->input->post('state_gst'));
+			} else {
+				$gst_total   	= price_format_decimal($this->input->post('igst'));
+			}
+
+			$central_gst 		= price_format_decimal($this->input->post('central_gst'));
+			$state_gst   		= price_format_decimal($this->input->post('state_gst'));
+			$igst 	     		= price_format_decimal($this->input->post('igst'));
+			$cgst_per   		= 0;
+			$sgst_per   		= 0;
+			$igst_per				= 0;
+
+			$net_sales_value_2 = $net_sales_value_1 + $total_gst_amount;
+			$grand_total = $net_sales_value_2 + $round_of +  $other_charges_amount;
+			$update_data = array();
+			$update_data = array(
+				'net_sales_value_1' 	=> $net_sales_value_1,
+				'igst_per' 						=> $igst_per,
+				'cgst_per' 						=> $cgst_per,
+				'sgst_per' 						=> $sgst_per,
+				'central_gst'					=> $central_gst,
+				'state_gst' 					=> $state_gst,
+				'igst' 								=> $igst,
+				'gst_total'						=> $gst_total,
+				'net_sales_value_2' 	=> $net_sales_value_2,
+				'round_of' 	  				=> $round_of,
+				'grand_total' 				=> $grand_total,
+			);
+			$this->db->where('id', $order_id);
+			$this->db->update('sales_order', $update_data);
+
+			$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost = array(
+					"status" => 400,
+					"message" => "Error occurred while adding Sales Order",
+				);
+			} else {
+				$this->db->trans_commit();
+				$resultpost = array(
+					"status" => 200,
+					"message" => get_phrase('sales_order_added_successfully'),
+					"url" => $this->session->userdata('previous_url'),
+				);
+			}
+			
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" =>  "Exception occurred: " . $e->getMessage(),
+			);
+		}
+
+		return simple_json_output($resultpost);
+	}
+
 	public function add_sales_order()
 	{
 		$this->db->trans_begin();
@@ -8282,7 +8525,36 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function get_batch_details() {
+		$batch_id = $this->input->post('batch_id');
 
+		$batch = $this->db->query("SELECT id, quantity FROM inventory WHERE id='$batch_id'");
+		$res = array('quantity' => 0);
+		if($batch->num_rows() > 0){
+			$row = $batch->row_array();
+			$res['quantity'] = $row['quantity'];
+		}
+
+		echo json_encode($res);
+	}
+
+	public function get_product_batch()
+	{
+		$prod_id = $this->input->post('product_id');
+
+		$batch = $this->db->query("SELECT id, batch_no FROM inventory WHERE quantity > 0 AND product_id='$prod_id'");
+		
+		$data = array();
+		if($batch->num_rows() > 0){
+			foreach($batch->result_array() as $item){
+				$data[] = array(
+					"id" => $item['id'],
+					"batch_no" => $item['batch_no'],
+				);
+			}
+		}
+		echo json_encode($data);
+	}
 
 	function import_orders_excel_insert($fetchData)
 	{

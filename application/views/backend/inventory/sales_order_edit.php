@@ -126,7 +126,7 @@
     <div class="card">
       <div class="card-body py-1 my-0">
 
-        <?php echo form_open('inventory/sales_order/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
+        <?php echo form_open('inventory/sales_order/edit_post/' . $id, ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
         <div class="row">
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
@@ -447,22 +447,37 @@
     if(product) {
       let total_batch = container.find(".batch-row").length;
       let nextBatch = total_batch + 1;
+      var html = "";
   
+      $.ajax({
+        type: "POST",
+        url: "<?php echo base_url()?>inventory/get_product_batch",
+        data: {product_id: product},
+        async: false,
+        dataType: "JSON",
+        success: function(res) {
+          res.forEach(function(batch) {
+            html += "<option value='" + batch.id + "'>" + batch.batch_no + "</option>";
+          });
+        }
+      });
+
       container.append(`
         <div class="row mt-2 batch-row " id="batch_${productIndex}_${nextBatch}">
   
-          <div class="col-md-4 pl-0">
+          <div class="col-md-6 pl-0">
             <div class="form-group">
               <label>Batch</label>
-              <select class="form-control select2"
+              <select class="form-control product-batch select2"
                 name="batch_id[${productIndex}][]"
                 id="batch_select_${productIndex}_${nextBatch}"
                 onchange="get_batch_details(this.value,'${productIndex}','${nextBatch}')">
                 <option value="">Select Batch</option>
+                ${html}
               </select>
             </div>
           </div>
-          <div class="col-md-2 pl-0">
+          <div class="col-md-2 pl-0 d-none">
             <div class="form-group">
               <label>Expiry</label>
               <input type="text"
@@ -482,7 +497,7 @@
                 id="batch_qty_${productIndex}_${nextBatch}">
             </div>
           </div>
-          <div class="col-md-2 pl-0">
+          <div class="col-md-2  pl-0">
             <div class="form-group">
               <label>Available</label>
               <input type="number"
@@ -516,6 +531,20 @@
 
       $("#batch_" + productIndex).html('');
     }
+  }
+
+  function get_batch_details(batch_id, product, batch){
+    $.ajax({
+      url: "<?php echo base_url()?>inventory/get_batch_details",
+      type:"POST",
+      dataType: "JSON",
+      data:{batch_id: batch_id},
+      success:function(res){
+        var data = res;
+        // $("#batch_expiry_"+product+"_"+batch).val(data.expiry);
+        $("#batch_available_" + product + "_" + batch).val(data.quantity);
+      }
+    });
   }
 
   function removeBatch(productIndex,batchIndex){
