@@ -2032,6 +2032,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->add_sales_order($param2);
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_sales_order($param2);
+        } elseif ($param1 == "invoice") {
+            $this->inventory_model->create_sales_invoice($param2);
         } elseif ($param1 == "delete") {
             $this->inventory_model->delete_sales_order($param2);
         } else {

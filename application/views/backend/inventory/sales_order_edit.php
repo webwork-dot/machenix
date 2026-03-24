@@ -468,7 +468,7 @@
           <div class="col-md-6 pl-0">
             <div class="form-group">
               <label>Batch</label>
-              <select class="form-control product-batch select2"
+              <select class="form-control product-batch-${productIndex} select2"
                 name="batch_id[${productIndex}][]"
                 id="batch_select_${productIndex}_${nextBatch}"
                 onchange="get_batch_details(this.value,'${productIndex}','${nextBatch}')">
@@ -533,18 +533,40 @@
     }
   }
 
-  function get_batch_details(batch_id, product, batch){
-    $.ajax({
-      url: "<?php echo base_url()?>inventory/get_batch_details",
-      type:"POST",
-      dataType: "JSON",
-      data:{batch_id: batch_id},
-      success:function(res){
-        var data = res;
-        // $("#batch_expiry_"+product+"_"+batch).val(data.expiry);
-        $("#batch_available_" + product + "_" + batch).val(data.quantity);
+  function get_batch_details(batch_id, product, batch) {
+    let batchSelect = $(".product-batch-" + product);
+    let isValid = true;
+
+    batchSelect.forEach((e) => {
+      if(e.id != ('batch_select_' + product + '_' + batch)) {
+        if(e.value == batch_id) {
+          isValid = false;
+        }
       }
     });
+
+    if(isValid) {
+      $.ajax({
+        url: "<?php echo base_url()?>inventory/get_batch_details",
+        type:"POST",
+        dataType: "JSON",
+        data:{batch_id: batch_id},
+        success:function(res){
+          var data = res;
+          // $("#batch_expiry_"+product+"_"+batch).val(data.expiry);
+          $("#batch_available_" + product + "_" + batch).val(data.quantity);
+        }
+      });
+    } else {
+      Swal.fire({
+        title: 'Cannot select the same batch',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+
+      $("#batch_select_" + product + "_" + batch).val('');
+      $("#batch_available_" + product + "_" + batch).val('');
+    }
   }
 
   function removeBatch(productIndex,batchIndex){
@@ -907,6 +929,11 @@
       $('#white_amount_' + new_value[0]).val(0);
       $('#white_total_' + new_value[0]).val(0);
     }
+
+    let batchSelect = $(".product-batch-" + new_value[0]);
+    batchSelect.forEach((e) => {
+      e.innerHTML = '<option value="">Select Batch</option>';
+    });
 
     recalculate();
   }

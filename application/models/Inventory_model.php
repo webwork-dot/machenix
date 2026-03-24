@@ -7937,18 +7937,17 @@ class Inventory_model extends CI_Model
 			$this->db->delete('sales_order_product_batch');
 
 			$order_no = clean_and_escape($this->input->post('order_no'));
+
 			$customer_id = $this->input->post('customer_id');
+			$customer_name = '';
 			if ($customer_id != '') {
 				$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'owner_name');
-			} else {
-				$customer_name = '';
 			}
 			
 			$warehouse_id = $this->input->post('warehouse_id');
+			$warehouse_name = '';
 			if ($warehouse_id != '') {
 				$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
-			} else {
-				$warehouse_name = '';
 			}
 
 			$round_of       	= ($this->input->post('round_of') != '') ? $this->input->post('round_of') : 0;
@@ -8388,7 +8387,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,date,customer_id,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_approved,date,customer_id,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -8400,9 +8399,10 @@ class Inventory_model extends CI_Model
 				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
 				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
 				$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
-				$action = '';
-
+				$invoice_url = base_url() . 'inventory/sales_order/invoice/' . $id;
 				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
+
+				$action = '';
 
 				if ($customer_id != '') {
 					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'name');
@@ -8412,16 +8412,29 @@ class Inventory_model extends CI_Model
 
 				$action .= '
     			 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
-				   <a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
     			 ';
-				//$action .='
-				//<a href="'.$products_url.'" data-toggle="tooltip" data-bs-placement="top" title="Products"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
-				//';
+
+				if($this->session->userdata('super_type_id') != 4) {
+					$action .= '
+						<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
+						';
+				}
+
+				if($item['is_approved'] == 1) {
+					$action .= '
+						<a href="' . $invoice_url . '" data-toggle="tooltip" data-bs-placement="top" title="Download Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-file-excel-o" aria-hidden="true"></i></button></a>
+					';
+				}
+
+				// $action .='
+				// <a href="'.$products_url.'" data-toggle="tooltip" data-bs-placement="top" title="Products"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
+				// ';
 
 
 				if ($order_type == 'excel') {
 					$action .= '<a href="' . $not_url . '" data-toggle="tooltip" data-bs-placement="top" title="Not Upload"><button type="button" class="btn mr-2 mb-1 icon-btn-edit"><i class="fa fa-times" aria-hidden="true"></i></button></a>';
 				}
+
 				// $action .= '<a href="#" onclick="confirm_modal(\'' . $delete_url . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" data-bs-placement="top" title="" data-bs-original-title="Delete" aria-label="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
 
 
@@ -13812,7 +13825,7 @@ public function get_sales_return_reports()
 				$invoice_numbers = array_column($total_invoice->result_array(), 'invoice_no');
 				foreach($invoice_numbers as $invoice) {
 						// Fetching All product with invoice no
-						$product_data = $this->db->query("SELECT * FROM po_products WHERE parent_id='$id' AND invoice_no='$invoice'");
+						$product_data = $this->db->query("SELECT * FROM po_products WHERE parent_id='$id' AND invoice_no='$invoice' ORDER BY supplier_id DESC, id ASC");
 						if($product_data->num_rows() > 0) {
 								$single_row_prod = $product_data->row_array();
 								// Fetching Supplier Info
@@ -13953,4 +13966,35 @@ public function get_sales_return_reports()
 		}
 	}
 
+	public function create_sales_invoice($id) {
+		$export_data = [];
+		
+		$path = FCPATH . 'uploads/sales/';
+		if (!is_dir($path)) {
+				mkdir($path, 0777, true);
+		}
+
+		$this->load->library('pdf');
+		
+		/* ================= PACKING LIST ================= */
+		// ob_clean();
+		$page_data['data'] = [];
+		$html = $this->load->view('invoice/sales/sales_invoice', $page_data, true);
+		echo $html;
+		exit;
+		$pdf = $this->pdf->create();
+		$pdf->setPaper('A4', 'portrait');
+		$pdf->loadHtml($html);
+		$pdf->render();
+
+		// $pdfname = 'PL_12.pdf';
+		// file_put_contents($path . $pdfname, $pdf->output());
+		// return $pdf->output();
+		// unset($pdf);
+
+		$pdfname = 'PL_' . $receipt_no . '.pdf';
+		file_put_contents($path . $pdfname, $pdf->output());
+		$path_info[] = 'uploads/invoices/' . $pdfname;
+		unset($pdf);
+	}
 }

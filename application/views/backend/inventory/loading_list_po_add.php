@@ -721,6 +721,8 @@ function handleSupplierChange(selectElement, supplierRowId) {
             mergedProducts.forEach(function(item) {
               createProductRowWithData(item.sectionType, supplierRowId, item.product);
             });
+            
+            createProductTotalRow(supplierRowId);
           } else {
             $('#products_' + supplierRowId).html('<tr><td colspan="20" class="text-center p-2 text-muted">No products found</td></tr>');
           }
@@ -826,6 +828,8 @@ function refreshSupplierProducts(supplierRowId) {
             newProductsAdded++;
           }
         });
+
+        createProductTotalRow(supplierRowId);
 
         // Show message if no new products were added
         if (newProductsAdded === 0) {
@@ -1031,28 +1035,28 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
           <span class="model-no-display">${itemCode}</span>
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" min="0" step="1" class="form-control form-control-sm" name="${inputPrefix}_qty[${supplierKey}][]" id="${inputPrefix}_qty_${supplierRowId}_${productRowId}" value="0" oninput="sanitizeNonNegativeIntegerInput(this); updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
+          <input type="number" min="0" step="1" class="form-control form-control-sm qty-input-${supplierRowId}" name="${inputPrefix}_qty[${supplierKey}][]" id="${inputPrefix}_qty_${supplierRowId}_${productRowId}" value="0" oninput="sanitizeNonNegativeIntegerInput(this); updateQtyCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_unit_price_rmb[${supplierKey}][]" id="${inputPrefix}_unit_price_rmb_${supplierRowId}_${productRowId}" value="${rate.toFixed(5)}" oninput="updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
+          <input type="number" step="any" class="form-control form-control-sm unit-rmb-input-${supplierRowId}" name="${inputPrefix}_unit_price_rmb[${supplierKey}][]" id="${inputPrefix}_unit_price_rmb_${supplierRowId}_${productRowId}" value="${rate.toFixed(5)}" oninput="updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" min="0" step="1" class="form-control form-control-sm" name="${inputPrefix}_official_qty[${supplierKey}][]" id="${inputPrefix}_official_qty_${supplierRowId}_${productRowId}" value="0" oninput="sanitizeNonNegativeIntegerInput(this); updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
+          <input type="number" min="0" step="1" class="form-control form-control-sm official-qty-input-${supplierRowId}" name="${inputPrefix}_official_qty[${supplierKey}][]" id="${inputPrefix}_official_qty_${supplierRowId}_${productRowId}" value="0" oninput="sanitizeNonNegativeIntegerInput(this); updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" class="form-control form-control-sm" name="${inputPrefix}_black_qty[${supplierKey}][]" id="${inputPrefix}_black_qty_${supplierRowId}_${productRowId}" value="0" readonly>
+          <input type="number" class="form-control form-control-sm black-qty-input-${supplierRowId}" name="${inputPrefix}_black_qty[${supplierKey}][]" id="${inputPrefix}_black_qty_${supplierRowId}_${productRowId}" value="0" readonly>
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_total_amount_rmb[${supplierKey}][]" id="${inputPrefix}_total_amount_rmb_${supplierRowId}_${productRowId}" value="0.00" readonly>
+          <input type="number" step="any" class="form-control form-control-sm total-amount-input-${supplierRowId}" name="${inputPrefix}_total_amount_rmb[${supplierKey}][]" id="${inputPrefix}_total_amount_rmb_${supplierRowId}_${productRowId}" value="0.00" readonly>
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_official_ci_unit_price_usd[${supplierKey}][]" id="${inputPrefix}_official_ci_unit_price_usd_${supplierRowId}_${productRowId}" value="${usdRate.toFixed(5)}" oninput="updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
+          <input type="number" step="any" class="form-control form-control-sm official-ci-usd-input-${supplierRowId}" name="${inputPrefix}_official_ci_unit_price_usd[${supplierKey}][]" id="${inputPrefix}_official_ci_unit_price_usd_${supplierRowId}_${productRowId}" value="${usdRate.toFixed(5)}" oninput="updateProductCalculations('${sectionType}', ${supplierRowId}, ${productRowId});">
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_total_amount_usd[${supplierKey}][]" id="${inputPrefix}_total_amount_usd_${supplierRowId}_${productRowId}" value="0.00" readonly>
+          <input type="number" step="any" class="form-control form-control-sm usd-input-${supplierRowId}" name="${inputPrefix}_total_amount_usd[${supplierKey}][]" id="${inputPrefix}_total_amount_usd_${supplierRowId}_${productRowId}" value="0.00" readonly>
         </td>
         <td rowspan="${variationCount}">
-          <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_black_total_price[${supplierKey}][]" id="${inputPrefix}_black_total_price_${supplierRowId}_${productRowId}" value="0.00" readonly>
+          <input type="number" step="any" class="form-control form-control-sm black-price-input-${supplierRowId}" name="${inputPrefix}_black_total_price[${supplierKey}][]" id="${inputPrefix}_black_total_price_${supplierRowId}_${productRowId}" value="0.00" readonly>
           <input type="hidden" name="${inputPrefix}_cbm[${supplierKey}][]" id="${inputPrefix}_cbm_${supplierRowId}_${productRowId}" value="${cbm.toFixed(6)}">
           <input type="hidden" name="${inputPrefix}_total_cbm[${supplierKey}][]" id="${inputPrefix}_total_cbm_${supplierRowId}_${productRowId}" value="0">
           <input type="hidden" name="${inputPrefix}_pending_po_qty[${supplierKey}][]" id="${inputPrefix}_pending_po_qty_${supplierRowId}_${productRowId}" value="${pendingPoQty}">
@@ -1066,31 +1070,31 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
     productRowHtml += `
       <td>
         <input type="hidden" name="${inputPrefix}_variation_id[${supplierKey}][${productKey}][]" value="${variationId}">
-        <input type="number" class="form-control form-control-sm pkg-qty-${supplierRowId}-${productRowId}" name="${inputPrefix}_pkg_ctn[${supplierKey}][${productKey}][]" id="${inputPrefix}_pkg_${supplierRowId}_${productRowId}_${i}" value="0" readonly>
+        <input type="number" class="form-control form-control-sm pkg-qty-${supplierRowId}-${productRowId} pkg-qty-input-${supplierRowId}" name="${inputPrefix}_pkg_ctn[${supplierKey}][${productKey}][]" id="${inputPrefix}_pkg_${supplierRowId}_${productRowId}_${i}" value="0" readonly>
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_net_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_net_weight_${supplierRowId}_${productRowId}_${i}" value="${netWeight.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
+        <input type="number" step="any" class="form-control form-control-sm net-weight-input-${supplierRowId}" name="${inputPrefix}_net_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_net_weight_${supplierRowId}_${productRowId}_${i}" value="${netWeight.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_total_net_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_net_weight_${supplierRowId}_${productRowId}_${i}" value="0.00000" readonly>
+        <input type="number" step="any" class="form-control form-control-sm total-net-weight-input-${supplierRowId}" name="${inputPrefix}_total_net_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_net_weight_${supplierRowId}_${productRowId}_${i}" value="0.00000" readonly>
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_gross_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_gross_weight_${supplierRowId}_${productRowId}_${i}" value="${grossWeight.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
+        <input type="number" step="any" class="form-control form-control-sm gross-weight-input-${supplierRowId}" name="${inputPrefix}_gross_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_gross_weight_${supplierRowId}_${productRowId}_${i}" value="${grossWeight.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_total_gross_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_gross_weight_${supplierRowId}_${productRowId}_${i}" value="0.00000" readonly>
+        <input type="number" step="any" class="form-control form-control-sm total-gross-weight-input-${supplierRowId}" name="${inputPrefix}_total_gross_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_gross_weight_${supplierRowId}_${productRowId}_${i}" value="0.00000" readonly>
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_length[${supplierKey}][${productKey}][]" id="${inputPrefix}_length_${supplierRowId}_${productRowId}_${i}" value="${length.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
+        <input type="number" step="any" class="form-control form-control-sm length-input-${supplierRowId}" name="${inputPrefix}_length[${supplierKey}][${productKey}][]" id="${inputPrefix}_length_${supplierRowId}_${productRowId}_${i}" value="${length.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_width[${supplierKey}][${productKey}][]" id="${inputPrefix}_width_${supplierRowId}_${productRowId}_${i}" value="${width.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
+        <input type="number" step="any" class="form-control form-control-sm width-input-${supplierRowId}" name="${inputPrefix}_width[${supplierKey}][${productKey}][]" id="${inputPrefix}_width_${supplierRowId}_${productRowId}_${i}" value="${width.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm" name="${inputPrefix}_height[${supplierKey}][${productKey}][]" id="${inputPrefix}_height_${supplierRowId}_${productRowId}_${i}" value="${height.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
+        <input type="number" step="any" class="form-control form-control-sm height-input-${supplierRowId}" name="${inputPrefix}_height[${supplierKey}][${productKey}][]" id="${inputPrefix}_height_${supplierRowId}_${productRowId}_${i}" value="${height.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm var-total-cbm-${supplierRowId}-${productRowId}" name="${inputPrefix}_variation_total_cbm[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_cbm_var_${supplierRowId}_${productRowId}_${i}" value="0.000000" readonly>
+        <input type="number" step="any" class="form-control form-control-sm var-total-cbm-${supplierRowId}-${productRowId} total-cbm-input-${supplierRowId}" name="${inputPrefix}_variation_total_cbm[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_cbm_var_${supplierRowId}_${productRowId}_${i}" value="0.000000" readonly>
       </td>
     `;
 
@@ -1098,6 +1102,114 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
   }
 
   $('#products_' + supplierRowId).append(productRowHtml);
+  updateProductCalculations(sectionType, supplierRowId, productRowId);
+}
+
+function sumByClass(className) {
+  let total = 0;
+
+  document.querySelectorAll(className).forEach(el => {
+    total += parseFloat(el.value) || 0;
+  });
+
+  return total;
+}
+
+function createProductTotalRow(supplierRowId) {
+   // Total Row
+  $('#product_total_' + supplierRowId).remove();
+
+  let qtySum = sumByClass(`.qty-input-${supplierRowId}`);
+  let unitRmbSum = sumByClass(`.unit-rmb-input-${supplierRowId}`);
+  let officialQtySum = sumByClass(`.official-qty-input-${supplierRowId}`);
+  let blackQtySum = sumByClass(`.black-qty-input-${supplierRowId}`);
+  let totalAmountSum = sumByClass(`.total-amount-input-${supplierRowId}`);
+  let officialCiUsdSum = sumByClass(`.official-ci-usd-input-${supplierRowId}`);
+  let usdSum = sumByClass(`.usd-input-${supplierRowId}`);
+  let blackPriceSum = sumByClass(`.black-price-input-${supplierRowId}`);
+  let pkgQtySum = sumByClass(`.pkg-qty-input-${supplierRowId}`);
+  let netWeightSum = sumByClass(`.net-weight-input-${supplierRowId}`);
+  let totalNetWeightSum = sumByClass(`.total-net-weight-input-${supplierRowId}`);
+  let grossWeightSum = sumByClass(`.gross-weight-input-${supplierRowId}`);
+  let totalGrossWeightSum = sumByClass(`.total-gross-weight-input-${supplierRowId}`);
+  let lengthSum = sumByClass(`.length-input-${supplierRowId}`);
+  let widthSum = sumByClass(`.width-input-${supplierRowId}`);
+  let heightSum = sumByClass(`.height-input-${supplierRowId}`);
+  let totalCbmSum = sumByClass(`.total-cbm-input-${supplierRowId}`);
+
+  var productRowHtml = `
+  <tr id="product_total_${supplierRowId}">
+    <td colspan="3" style="text-align: right; padding: 10px;">
+      <strong>Total:</strong>
+    </td>
+    <td>
+      <span class="stotal-qty-${supplierRowId}">${qtySum}</span>
+    </td>
+    <td>
+      <span class="stotal-unit-rmb-${supplierRowId}">${unitRmbSum}</span>
+    </td>
+    <td>
+      <span class="stotal-official-${supplierRowId}">${officialQtySum}</span>
+    </td>
+    <td>
+      <span class="stotal-black-${supplierRowId}">${blackQtySum}</span>
+    </td>
+    <td>
+      <span class="stotal-rmb-${supplierRowId}">${totalAmountSum}</span>
+    </td>
+    <td>
+      <span class="stotal-ci-${supplierRowId}">${officialCiUsdSum}</span>
+    </td>
+    <td>
+      <span class="stotal-amount-${supplierRowId}">${usdSum}</span>
+    </td>
+    <td>
+      <span class="stotal-black-price-${supplierRowId}">${blackPriceSum}</span>
+    </td>
+    <td>
+      <span class="stotal-pkg-${supplierRowId}">${pkgQtySum}</span>
+    </td>
+    <td>
+      <span class="stotal-nw-${supplierRowId}">${netWeightSum}</span>
+    </td>
+    <td>
+      <span class="stotal-total-nw-${supplierRowId}">${totalNetWeightSum}</span>
+    </td>
+    <td>
+      <span class="stotal-gw-${supplierRowId}">${grossWeightSum}</span>
+    </td>
+    <td>
+      <span class="stotal-total-gw-${supplierRowId}">${totalGrossWeightSum}</span>
+    </td>
+    <td>
+      <span class="stotal-l-${supplierRowId}">${lengthSum}</span>
+    </td>
+    <td>
+      <span class="stotal-w-${supplierRowId}">${widthSum}</span>
+    </td>
+    <td>
+      <span class="stotal-h-${supplierRowId}">${heightSum}</span>
+    </td>
+    <td>
+      <span class="stotal-cbm-${supplierRowId}">${totalCbmSum}</span>
+    </td>
+    </tr>
+  `;
+  $('#products_' + supplierRowId).append(productRowHtml);
+}
+
+function updateQtyCalculations(sectionType, supplierRowId, productRowId) {
+  var inputPrefix = 'product';
+
+  var qtySelector = '#' + inputPrefix + '_qty_' + supplierRowId + '_' + productRowId;
+  var officialQtySelector = '#' + inputPrefix + '_official_qty_' + supplierRowId + '_' + productRowId;
+  
+
+  var quantity = parseInt(toNumber($(qtySelector).val()), 10);
+  if (quantity < 0) quantity = 0;
+  $(qtySelector).val(quantity);
+  $(officialQtySelector).val(quantity);
+  
   updateProductCalculations(sectionType, supplierRowId, productRowId);
 }
 
@@ -1115,9 +1227,12 @@ function updateProductCalculations(sectionType, supplierRowId, productRowId) {
 
   var officialQuantity = parseInt(toNumber($(officialQtySelector).val()), 10);
   if (officialQuantity < 0) officialQuantity = 0;
-  if (quantity === 0) {
-    officialQuantity = 0;
-  } else if (officialQuantity > quantity) {
+  // if (quantity === 0) {
+  //   officialQuantity = 0;
+  // } else if (officialQuantity > quantity) {
+  //   officialQuantity = quantity;
+  // }
+  if (officialQuantity > quantity) {
     officialQuantity = quantity;
   }
   $(officialQtySelector).val(officialQuantity);
@@ -1132,7 +1247,7 @@ function updateProductCalculations(sectionType, supplierRowId, productRowId) {
   $('#' + inputPrefix + '_black_total_price_' + supplierRowId + '_' + productRowId).val((unitPriceUsd * blackQty).toFixed(2));
 
   $('[id^="' + inputPrefix + '_pkg_' + supplierRowId + '_' + productRowId + '_"]').each(function() {
-    $(this).val(quantity);
+    $(this).val(officialQuantity);
     var idParts = this.id.split('_');
     var variationIndex = parseInt(idParts[idParts.length - 1], 10);
     updateVariationCalculations(sectionType, supplierRowId, productRowId, variationIndex, false);
@@ -1162,6 +1277,8 @@ function updateVariationCalculations(sectionType, supplierRowId, productRowId, v
   if (shouldUpdateProductTotal !== false) {
     updateProductTotalCBM(sectionType, supplierRowId, productRowId);
   }
+
+  createProductTotalRow(supplierRowId);
 }
 
 function updateProductTotalCBM(sectionType, supplierRowId, productRowId) {

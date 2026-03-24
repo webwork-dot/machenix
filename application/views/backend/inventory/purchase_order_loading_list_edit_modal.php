@@ -449,7 +449,7 @@
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
       WHERE pop.parent_id = '$po_id'
-      ORDER BY pop.id ASC, pv.id ASC
+      ORDER BY pop.supplier_id DESC, pop.id ASC, pv.id ASC
   ")->result_array();
 
   // Get existing loading_product_total data for this PO
@@ -1613,11 +1613,13 @@ function calculateCTN(rowId) {
         var totalCBM;
         if (pkgCtn > 0 && loadingQty > 0) {
             var cbmPerCarton = volumeM3PerUnit * pkgCtn; // CBM per carton
-            var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
-            totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
+            // var numberOfCartons = loadingQty / pkgCtn; // Number of cartons
+            // totalCBM = cbmPerCarton * numberOfCartons; // Total CBM
+            totalCBM = cbmPerCarton; // Total CBM
         } else {
             // Fallback: direct calculation if PKG is 0
-            totalCBM = volumeM3PerUnit * loadingQty;
+            // totalCBM = volumeM3PerUnit * loadingQty;
+            totalCBM = volumeM3PerUnit * pkgCtn;
         }
 
         $row.find('.total-cbm').val(totalCBM.toFixed(6));
@@ -1923,8 +1925,9 @@ $(document).ready(function() {
                 rowId = idAttr.replace('loading_row_', '');
             }
         }
+
         if (rowId) {
-            calculateRow(rowId);
+            calculateCTN(rowId);
         }
     });
     
