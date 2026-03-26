@@ -2679,7 +2679,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name  FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -2836,7 +2836,7 @@ class Inventory_model extends CI_Model
 				$loading_list_view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_loading_list_view_modal/" . $id . "','View Loading List')";
 				$delete_loading_list_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_loading_list/" . $id . "','Are you sure want to delete the loading list!')";
 				$move_to_purchase_in_url = "confirm_modal('" . base_url() . "inventory/purchase_order/move_to_purchase_in/" . $id . "','Are you sure want to this PO to Purchase In & Customs!')";
-				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs')";
+				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs - " . $item['voucher_no'] . "')";
 				if ($delivery_status == 'loading') {
 					$loading_list_action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
@@ -2881,6 +2881,8 @@ class Inventory_model extends CI_Model
 					"sr_no"       						=> ++$start,
 					"id"          						=> $item['id'],
 					"date"       							=> date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
+					"boe_no"									=> $item['boe_no'],
+					"boe_date"								=> date('d M, Y', strtotime($item['boe_date'])),
 					"delivery_date"       		=> date('d M, Y', strtotime($delivery_date)),
 					"suppliers"        				=> array_to_list($po['supplier']),
 					"spare_parts_count"       => array_to_list($po['spare']),

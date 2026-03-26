@@ -1070,7 +1070,7 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
     productRowHtml += `
       <td>
         <input type="hidden" name="${inputPrefix}_variation_id[${supplierKey}][${productKey}][]" value="${variationId}">
-        <input type="number" class="form-control form-control-sm pkg-qty-${supplierRowId}-${productRowId} pkg-qty-input-${supplierRowId}" name="${inputPrefix}_pkg_ctn[${supplierKey}][${productKey}][]" id="${inputPrefix}_pkg_${supplierRowId}_${productRowId}_${i}" value="0" readonly>
+        <input type="number" class="form-control form-control-sm pkg-qty-${supplierRowId}-${productRowId} pkg-qty-input-${supplierRowId}" name="${inputPrefix}_pkg_ctn[${supplierKey}][${productKey}][]" id="${inputPrefix}_pkg_${supplierRowId}_${productRowId}_${i}" value="0" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
         <input type="number" step="any" class="form-control form-control-sm net-weight-input-${supplierRowId}" name="${inputPrefix}_net_weight[${supplierKey}][${productKey}][]" id="${inputPrefix}_net_weight_${supplierRowId}_${productRowId}_${i}" value="${netWeight.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">

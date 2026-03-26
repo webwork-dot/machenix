@@ -69,6 +69,8 @@
             <tr>
               <th>#</th>
               <th>Date / Batch No.</th>
+              <th>BOE No.</th>
+              <th>BOE Date.</th>
               <th>Supplier Name</th>
               <th>No of Spare Parts</th>
               <th>No of Ready Goods</th>
@@ -126,6 +128,12 @@ $(document).ready(function($) {
       },
       {
         "data": "date"
+      },
+      {
+        "data": "boe_no"
+      },
+      {
+        "data": "boe_date"
       },
       {
         "data": "pl_suppliers"

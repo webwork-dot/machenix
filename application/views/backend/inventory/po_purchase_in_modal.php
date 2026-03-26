@@ -72,7 +72,17 @@ foreach ($products_raw as $product) {
         </div>
         <div class="col-md-12 mt-2">
             <?php if (!empty($supplier_products)): ?>
-                <?php foreach ($supplier_products as $supplier_id => $supplier_data): ?>
+                <?php 
+                    $g_actual_qty        = 0;
+                    $g_total_rmb         = 0;
+                    $g_official_qty      = 0;
+                    $g_official_total_rs = 0;
+                    $g_duty_amt          = 0;
+                    $g_duty_surcharge    = 0;
+                    $g_taxable_value     = 0;
+                    $g_gst_amt           = 0;
+                    $g_total_amt         = 0;
+                    foreach ($supplier_products as $supplier_id => $supplier_data): ?>
                     <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                         <h5>Supplier: <?php echo htmlspecialchars($supplier_data['supplier_name']); ?></h5>
                         <div class="table-responsive">
@@ -145,6 +155,16 @@ foreach ($products_raw as $product) {
                                         $t_taxable_value     += $taxable_value;
                                         $t_gst_amt           += $gst_amt;
                                         $t_total_amt         += $total_amt;
+
+                                        $g_actual_qty          += $actual_qty;
+                                        $g_total_rmb           += $total_rmb;
+                                        $g_official_qty        += $official_qty;
+                                        $g_official_total_rs   += $official_total_rs;
+                                        $g_duty_amt            += $duty_amt;
+                                        $g_duty_surcharge      += $duty_surcharge;
+                                        $g_taxable_value       += $taxable_value;
+                                        $g_gst_amt             += $gst_amt;
+                                        $g_total_amt           += $total_amt;
                                     ?>
                                     <?php $row_id = (int)($product['id'] ?? 0); ?>
                                     <tr>
@@ -289,6 +309,48 @@ foreach ($products_raw as $product) {
                         </div>
                     </div>
                 <?php endforeach; ?>
+
+                <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
+                    <h5>Grand Total</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th colspan="3" style="width: 225px;">#</th>
+                                    <th>Actual Qty</th>
+                                    <th>Actual RMB</th>
+                                    <th>Total RMB</th>
+                                    <th>Official Qty</th>
+                                    <th>Official Rate Rs.</th>
+                                    <th>Official Total Rs.</th>
+                                    <th>Duty %</th>
+                                    <th>Duty Amt</th>
+                                    <th>Duty Surcharge 10%</th>
+                                    <th>Taxable Value</th>
+                                    <th>GST Amt</th>
+                                    <th>Total Amt</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr class="font-weight-bold js-totals-row">
+                                    <td colspan="3" class="text-right fw-bold">Total</td>
+                                    <td class="text-right"><span id="grand-sum-actual-qty"><?php echo number_format($g_actual_qty, 0); ?></span></td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-total-rmb"><?php echo number_format($g_total_rmb, 2, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-official-qty"><?php echo number_format($g_official_qty, 0); ?></span></td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-official-total"><?php echo number_format($g_official_total_rs, 2, '.', ''); ?></span></td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-duty-amt"><?php echo number_format($g_duty_amt, 2, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-duty-surcharge"><?php echo number_format($g_duty_surcharge, 2, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-taxable"><?php echo number_format($g_taxable_value, 2, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-gst"><?php echo number_format($g_gst_amt, 2, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-total-amt"><?php echo number_format($g_total_amt, 2, '.', ''); ?></span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
             <?php else: ?>
                 <div class="alert alert-info">No loading list data found for this Purchase Order.</div>
             <?php endif; ?>
@@ -356,15 +418,34 @@ function updateTableTotals($table) {
 
   $table.find('.js-sum-actual-qty').text(fmtQty(sum.actual_qty));
   $table.find('.js-sum-total-rmb').text(fmtAmt(sum.total_rmb));
-
   $table.find('.js-sum-official-qty').text(fmtQty(sum.official_qty));
   $table.find('.js-sum-official-total').text(fmtAmt(sum.official_total));
-
   $table.find('.js-sum-duty-amt').text(fmtAmt(sum.duty_amt));
   $table.find('.js-sum-duty-surcharge').text(fmtAmt(sum.duty_surcharge));
   $table.find('.js-sum-taxable').text(fmtAmt(sum.taxable));
   $table.find('.js-sum-gst').text(fmtAmt(sum.gst));
   $table.find('.js-sum-total-amt').text(fmtAmt(sum.total_amt));
+
+  // Grand Total
+  const totalActualQty = [...document.querySelectorAll('.actual-qty')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalRmb = [...document.querySelectorAll('.total-rmb')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalOfficialQty = [...document.querySelectorAll('.official-qty')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalOfficialTotal = [...document.querySelectorAll('.official-total')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalDutyAmt = [...document.querySelectorAll('.duty-amt')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalDutySurcharge = [...document.querySelectorAll('.duty-surcharge')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalTaxableValue = [...document.querySelectorAll('.taxable-value')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalGstAmt = [...document.querySelectorAll('.gst-amt')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalAmt = [...document.querySelectorAll('.total-amt')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+
+  $('#grand-sum-actual-qty').text(totalActualQty);
+  $('#grand-sum-total-rmb').text(totalRmb);
+  $('#grand-sum-official-qty').text(totalOfficialQty);
+  $('#grand-sum-official-total').text(totalOfficialTotal);
+  $('#grand-sum-duty-amt').text(totalDutyAmt);
+  $('#grand-sum-duty-surcharge').text(totalDutySurcharge);
+  $('#grand-sum-taxable').text(totalTaxableValue);
+  $('#grand-sum-gst').text(totalGstAmt);
+  $('#grand-sum-total-amt').text(totalAmt);
 }
 
 function updateAllSupplierTotals() {
