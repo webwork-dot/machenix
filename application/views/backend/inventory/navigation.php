@@ -9,7 +9,9 @@
     } else {
         $access_array = array();
     }
-    
+
+    $navigation = isset($navigation) ? $navigation : '';
+    $page_folder = isset($page_folder) ? $page_folder : '';
 ?>
 
 <div class="main-menu-content">
@@ -110,6 +112,12 @@
            <a class="d-flex align-items-center " href="<?php echo site_url('inventory/my-stock'); ?>">
                <i data-feather="database"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">My Stock</span>
+           </a>
+        </li>
+        <li class="nav-item <?php if($page_name == 'overall_stock') echo 'active'; ?>">
+           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/overall-stock'); ?>">
+               <i data-feather="grid"></i>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Overall Stock</span>
            </a>
         </li>
         <?php } ?>

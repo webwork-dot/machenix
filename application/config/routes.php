@@ -129,6 +129,9 @@ $route[$r_inventory . '/damage-stock-product'] = 'inventory/damage_stock_product
 $route[$r_inventory . '/scrap-product'] = 'inventory/scrap_product';
 
 $route[$r_inventory . '/my-stock'] = 'inventory/my_stock';
+$route[$r_inventory . '/overall-stock'] = 'inventory/overall_stock';
+$route[$r_inventory . '/get-overall-stock'] = 'inventory/get_overall_stock';
+$route[$r_inventory . '/get-product-po-list'] = 'inventory/get_product_po_list';
 $route[$r_inventory . '/my-stock-batch/(:any)/(:any)'] = 'inventory/my_stock_batch/$1/$2';
 $route[$r_inventory . '/my-stock-history/(:any)'] = 'inventory/my_stock_history/$1';
 $route[$r_inventory . '/qc-pending'] = 'inventory/qc_pending';

@@ -1,6 +1,7 @@
 <?php
  $system_title ="Machenix CRM";
  $logged_in_user_role = strtolower($this->session->userdata('super_role'));
+ $phpvariable = isset($phpvariable) ? $phpvariable : '';
 ?>
 <!DOCTYPE html>
 

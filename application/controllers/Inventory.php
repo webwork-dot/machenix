@@ -1592,6 +1592,47 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function overall_stock()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        
+        $page_data['page_name']  = 'overall_stock';
+        $page_data['page_title'] = 'Overall Stock';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function get_overall_stock()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            return;
+        }
+        
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_overall_stock();
+        }
+    }
+
+    public function get_product_po_list()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            return;
+        }
+
+        $product_id = $this->input->post('product_id');
+        $company_id = $this->input->post('company_id');
+        $status = $this->input->post('status');
+        $warehouse_id = $this->input->post('warehouse_id');
+
+        $data['pos'] = $this->inventory_model->get_product_po_list($product_id, $company_id, $status, $warehouse_id);
+        $data['status'] = $status;
+        
+        $this->load->view('backend/inventory/modal_product_po_list', $data);
+    }
+
     public function qc_pending($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {

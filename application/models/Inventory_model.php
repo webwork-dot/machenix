@@ -13999,4 +13999,237 @@ public function get_sales_return_reports()
 		$path_info[] = 'uploads/invoices/' . $pdfname;
 		unset($pdf);
 	}
+
+	public function get_overall_stock()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (p.name like '%" . $keyword . "%' OR w.name like '%" . $keyword . "%' OR c.name like '%" . $keyword . "%')";
+		endif;
+
+		$total_count_query = "SELECT i.id 
+							  FROM inventory i 
+							  LEFT JOIN raw_products p ON i.product_id = p.id 
+							  LEFT JOIN warehouse w ON i.warehouse_id = w.id 
+							  LEFT JOIN company c ON i.company_id = c.id 
+							  WHERE 1=1 $keyword_filter 
+							  GROUP BY i.product_id, i.warehouse_id, i.company_id";
+		$total_count = $this->db->query($total_count_query)->num_rows();
+
+		$data_query = "SELECT i.product_id, i.warehouse_id, i.company_id, SUM(i.quantity) as quantity, 
+							  p.name as product_name, w.name as warehouse_name, c.name as company_name 
+					   FROM inventory i 
+					   LEFT JOIN raw_products p ON i.product_id = p.id 
+					   LEFT JOIN warehouse w ON i.warehouse_id = w.id 
+					   LEFT JOIN company c ON i.company_id = c.id 
+					   WHERE 1=1 $keyword_filter 
+					   GROUP BY i.product_id, i.warehouse_id, i.company_id 
+					   ORDER BY p.name ASC LIMIT $start, $length";
+		$query = $this->db->query($data_query);
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$pid = $item['product_id'];
+				$wid = $item['warehouse_id'];
+				$cid = $item['company_id'];
+
+				// PO Qty should include:
+				// 1) pending PO quantity from pending orders (legacy table)
+				// 2) pending_po_qty saved in priority/loading list flow (new table)
+				$po_qty_pending = $this->db->query("SELECT SUM(pop.quantity) as total
+												   FROM purchase_order_product pop
+												   JOIN purchase_order po ON po.id = pop.parent_id
+												   WHERE pop.product_id = '$pid'
+												   AND po.company_id = '$cid'
+												   AND po.warehouse_id = '$wid'
+												   AND po.delivery_status = 'pending'
+												   AND po.is_deleted = '0'")->row()->total;
+				$po_qty_priority_flow = $this->db->query("SELECT SUM(pp.pending_po_qty) as total
+														 FROM po_products pp
+														 JOIN purchase_order po ON po.id = pp.parent_id
+														 WHERE pp.product_id = '$pid'
+														 AND po.company_id = '$cid'
+														 AND po.warehouse_id = '$wid'
+														 AND po.delivery_status IN ('priority', 'loading')
+														 AND po.is_deleted = '0'")->row()->total;
+				$po_qty = (float)($po_qty_pending ?? 0) + (float)($po_qty_priority_flow ?? 0);
+
+				// Priority Qty from new priority-list flow, fallback to legacy table
+				$priority_qty = $this->db->query("SELECT SUM(pp.quantity) as total
+												 FROM po_products pp
+												 JOIN purchase_order po ON po.id = pp.parent_id
+												 WHERE pp.product_id = '$pid'
+												 AND po.company_id = '$cid'
+												 AND po.warehouse_id = '$wid'
+												 AND po.delivery_status = 'priority'
+												 AND po.is_deleted = '0'")->row()->total;
+				if (!$priority_qty) {
+					$priority_qty = $this->db->query("SELECT SUM(pop.quantity) as total
+													 FROM purchase_order_product pop
+													 JOIN purchase_order po ON po.id = pop.parent_id
+													 WHERE pop.product_id = '$pid'
+													 AND po.company_id = '$cid'
+													 AND po.warehouse_id = '$wid'
+													 AND po.delivery_status = 'priority'
+													 AND po.is_deleted = '0'")->row()->total;
+				}
+				$priority_qty = ($priority_qty) ? $priority_qty : 0;
+
+				// Loading Qty should follow loading_list_qty saved in priority/loading flow
+				$loading_qty = $this->db->query("SELECT SUM(pp.loading_list_qty) as total
+												FROM po_products pp
+												JOIN purchase_order po ON po.id = pp.parent_id
+												WHERE pp.product_id = '$pid'
+												AND po.company_id = '$cid'
+												AND po.warehouse_id = '$wid'
+												AND po.delivery_status IN ('priority', 'loading')
+												AND po.is_deleted = '0'")->row()->total;
+				if (!$loading_qty) {
+					$loading_qty = $this->db->query("SELECT SUM(pop.loading_list_qty) as total
+													FROM purchase_order_product pop
+													JOIN purchase_order po ON po.id = pop.parent_id
+													WHERE pop.product_id = '$pid'
+													AND po.company_id = '$cid'
+													AND po.warehouse_id = '$wid'
+													AND po.delivery_status = 'loading'
+													AND po.is_deleted = '0'")->row()->total;
+				}
+				$loading_qty = ($loading_qty) ? $loading_qty : 0;
+
+				// Calculate cost columns from new PO item table (po_products)
+				$cost_data = $this->db->query("SELECT 
+													SUM(pp.total_amt) AS with_exp_cost,
+													SUM(pp.total_val) AS without_exp_cost,
+													SUM(pp.official_total_rs) AS official_cost_inr
+											   FROM po_products pp
+											   JOIN purchase_order po ON po.id = pp.parent_id
+											   WHERE pp.product_id = '$pid'
+											   AND po.company_id = '$cid'
+											   AND po.warehouse_id = '$wid'
+											   AND po.delivery_status IN ('pending', 'priority', 'loading')
+											   AND po.is_deleted = '0'")->row_array();
+				$with_exp_cost = (float)($cost_data['with_exp_cost'] ?? 0);
+				$without_exp_cost = (float)($cost_data['without_exp_cost'] ?? 0);
+				$official_cost_inr = (float)($cost_data['official_cost_inr'] ?? 0);
+
+				$po_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'po\',' . $wid . ')">' . $po_qty . '</a>';
+				$priority_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'priority\',' . $wid . ')">' . $priority_qty . '</a>';
+				$loading_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'loading\',' . $wid . ')">' . $loading_qty . '</a>';
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"company"     => $item['company_name'] ?? '-',
+					"warehouse"   => $item['warehouse_name'] ?? '-',
+					"product_name"=> $item['product_name'] ?? 'Unknown Product (ID: '.$pid.')',
+					"quantity"    => $item['quantity'],
+					"po_qty"      => $po_link,
+					"priority_qty"=> $priority_link,
+					"loading_qty" => $loading_link,
+					"with_exp_cost" => number_format($with_exp_cost, 2),
+					"without_exp_cost" => number_format($without_exp_cost, 2),
+					"official_cost_inr" => number_format($official_cost_inr, 2)
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_product_po_list($product_id, $company_id, $status, $warehouse_id = '')
+	{
+		$where_wid = ($warehouse_id != '') ? " AND po.warehouse_id = '$warehouse_id'" : "";
+		if ($status == 'po') {
+			// PO list = pending orders + pending_po_qty from priority/loading list flow
+			$query = $this->db->query("SELECT
+											x.id,
+											x.voucher_no,
+											x.date,
+											x.supplier_name,
+											SUM(x.quantity) as quantity
+										FROM (
+											SELECT
+												po.id,
+												po.voucher_no,
+												po.date,
+												po.supplier_name,
+												pop.quantity as quantity
+											FROM purchase_order po
+											JOIN purchase_order_product pop ON po.id = pop.parent_id
+											WHERE pop.product_id = '$product_id'
+											AND po.company_id = '$company_id'
+											AND po.delivery_status = 'pending'
+											AND po.is_deleted = '0'
+											$where_wid
+
+											UNION ALL
+
+											SELECT
+												po.id,
+												po.voucher_no,
+												po.date,
+												po.supplier_name,
+												pp.pending_po_qty as quantity
+											FROM purchase_order po
+											JOIN po_products pp ON po.id = pp.parent_id
+											WHERE pp.product_id = '$product_id'
+											AND po.company_id = '$company_id'
+											AND po.delivery_status IN ('priority', 'loading')
+											AND po.is_deleted = '0'
+											AND pp.pending_po_qty > 0
+											$where_wid
+										) x
+										GROUP BY x.id, x.voucher_no, x.date, x.supplier_name
+										ORDER BY x.date DESC, x.id DESC");
+		} elseif ($status == 'loading') {
+			// Loading list should follow loading_list_qty saved in po_products
+			$query = $this->db->query("SELECT
+											po.id,
+											po.voucher_no,
+											po.date,
+											po.supplier_name,
+											SUM(pp.loading_list_qty) as quantity
+										FROM purchase_order po
+										JOIN po_products pp ON po.id = pp.parent_id
+										WHERE pp.product_id = '$product_id'
+										AND po.company_id = '$company_id'
+										AND po.delivery_status IN ('priority', 'loading')
+										AND po.is_deleted = '0'
+										AND pp.loading_list_qty > 0
+										$where_wid
+										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
+										ORDER BY po.date DESC, po.id DESC");
+		} else {
+			// Priority list quantity from po_products
+			$query = $this->db->query("SELECT
+											po.id,
+											po.voucher_no,
+											po.date,
+											po.supplier_name,
+											SUM(pp.quantity) as quantity
+										FROM purchase_order po
+										JOIN po_products pp ON po.id = pp.parent_id
+										WHERE pp.product_id = '$product_id'
+										AND po.company_id = '$company_id'
+										AND po.delivery_status = 'priority'
+										AND po.is_deleted = '0'
+										$where_wid
+										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
+										ORDER BY po.date DESC, po.id DESC");
+		}
+		return $query->result_array();
+	}
 }
