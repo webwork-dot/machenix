@@ -5706,6 +5706,12 @@ class Inventory_model extends CI_Model
 		}
 	}
 
+	public function soft_delete_loading_list_item($id)
+	{
+		$this->db->where('id', $id);
+		return $this->db->update('po_products', ['is_deleted' => 1]);
+	}
+
 	public function add_loading_list_po()
 	{
 		$this->db->trans_begin();

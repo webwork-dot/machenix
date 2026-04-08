@@ -448,7 +448,7 @@
       LEFT JOIN raw_products rp ON rp.id = pop.product_id
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
-      WHERE pop.parent_id = '$po_id'
+      WHERE pop.parent_id = '$po_id' AND pop.is_deleted = '0'
       ORDER BY pop.supplier_id DESC, pop.id ASC, pv.id ASC
   ")->result_array();
 
@@ -611,6 +611,7 @@
                                         <th style="width: 70px;">W</th>
                                         <th style="width: 70px;">H</th>
                                         <th style="width: 110px;">Total CBM</th>
+                                        <th style="width: 50px;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="loading_list_tbody">
@@ -803,6 +804,11 @@
                                             <input type="number" step="0.01" class="form-control form-control-sm total-cbm" 
                                                 name="total_cbm[<?php echo $product['id']; ?>][<?php echo $variation_index; ?>]"
                                                 value="<?php echo $total_cbm_val; ?>" readonly>
+                                        </td>
+                                        <td rowspan="<?php echo $rowspan; ?>" class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeLoadingRow(this, '<?php echo $product['id']; ?>')">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
 
@@ -1213,6 +1219,12 @@ function appendLoadingListProductRow($section, productData) {
             <td class="metric-cell">
                 <input type="number" step="0.01" class="form-control form-control-sm total-cbm" name="total_cbm[${rowKey}][${i}]" readonly >
             </td>
+            ${i === 0 ? `
+            <td rowspan="${rowSpan}" class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeLoadingRow(this, '${rowKey}')">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>` : ''}
         `;
 
         html += `</tr>`;
@@ -1261,6 +1273,61 @@ function supplierProducts(id) {
     }
 }
 
+function removeLoadingRow(btn, poProductId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to remove this item from the loading list?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, remove it!',
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-outline-danger ms-1'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            var $row = $(btn).closest('tr');
+            var $section = $row.closest('.supplier-section');
+            var sectionId = $section.data('supplier-id');
+            
+            // Check if it's a new (unsaved) row
+            if (poProductId.toString().startsWith('new_')) {
+                $row.remove();
+                // variations rows
+                $section.find('tr.variation-row[data-row-id="' + poProductId + '"]').remove();
+                updateSupplierTotals($section);
+                updateGrandTotals();
+            } else {
+                // Soft delete from database
+                $.ajax({
+                    type: "POST",
+                    url: "<?php echo base_url(); ?>inventory/delete_loading_list_item",
+                    data: { id: poProductId },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status == 200) {
+                            $row.remove();
+                            $section.find('tr.variation-row[data-row-id="' + poProductId + '"]').remove();
+                            updateSupplierTotals($section);
+                            updateGrandTotals();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Removed!',
+                                text: 'Item removed successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire('Error!', res.message || 'Failed to remove item.', 'error');
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
+
 function reloadSupplierProducts(buttonEl, loadProducts = []) {
     document.querySelector('#close-sub-modal').click();
     var $btn = $(buttonEl);
@@ -1288,8 +1355,43 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
         }
     });
 
+    // Duplicate Check with SweetAlert
+    if (loadProducts.length > 0) {
+        var duplicates = loadProducts.filter(id => existingProductIds.includes(id.toString()));
+        if (duplicates.length > 0) {
+            Swal.fire({
+                title: "Warning!",
+                text: "Some selected products already exist in the list. Do you still want to add them?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, add them!",
+                cancelButtonText: "No, cancel",
+                customClass: {
+                    confirmButton: "btn btn-primary",
+                    cancelButton: "btn btn-outline-danger ms-1"
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processReloadSupplierProducts(buttonEl, loadProducts, existingProductIds);
+                } else {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+            return;
+        }
+    }
+
+    processReloadSupplierProducts(buttonEl, loadProducts, existingProductIds);
+}
+
+function processReloadSupplierProducts(buttonEl, loadProducts, existingProductIds) {
+    var $btn = $(buttonEl);
+    var $section = $btn.closest('.supplier-section');
+    var supplierId = $section.data('supplier-id');
     var originalHtml = $btn.html();
-    $btn.prop('disabled', true).html('<i class="fa fa-refresh"></i> Loading');
+    
+    // We already have existingProductIds passed in
 
     $.ajax({
         type: "POST",

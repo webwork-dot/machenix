@@ -891,6 +891,20 @@ class Inventory extends CI_Controller
         $this->inventory_model->update_purchase_order_loading_list();
     }
 
+    public function delete_loading_list_item() {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['status' => 401, 'message' => 'Unauthorized']);
+            return;
+        }
+        $id = $this->input->post('id');
+        if ($id) {
+            $this->inventory_model->soft_delete_loading_list_item($id);
+            echo json_encode(['status' => 200, 'message' => 'Success']);
+        } else {
+            echo json_encode(['status' => 400, 'message' => 'Invalid ID']);
+        }
+    }
+
     public function get_priority_po()
     {
         if ($this->session->userdata('inventory_login') != true) {
