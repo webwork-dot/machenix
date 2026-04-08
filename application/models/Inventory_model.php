@@ -14015,23 +14015,111 @@ public function get_sales_return_reports()
 			$keyword_filter .= " AND (p.name like '%" . $keyword . "%' OR w.name like '%" . $keyword . "%' OR c.name like '%" . $keyword . "%')";
 		endif;
 
-		$total_count_query = "SELECT i.id 
-							  FROM inventory i 
-							  LEFT JOIN raw_products p ON i.product_id = p.id 
-							  LEFT JOIN warehouse w ON i.warehouse_id = w.id 
-							  LEFT JOIN company c ON i.company_id = c.id 
-							  WHERE 1=1 $keyword_filter 
-							  GROUP BY i.product_id, i.warehouse_id, i.company_id";
+		$base_ids_query = "
+			SELECT product_id, warehouse_id, company_id, batch_no FROM inventory
+			UNION
+			SELECT pop.product_id, po.warehouse_id, po.company_id, '' as batch_no 
+			FROM purchase_order_product pop 
+			JOIN purchase_order po ON po.id = pop.parent_id 
+			WHERE po.delivery_status != 'purchase_in' AND po.is_deleted = 0
+		";
+
+		$total_count_query = "SELECT base.product_id
+							  FROM ($base_ids_query) base
+							  LEFT JOIN raw_products p ON p.id = base.product_id
+							  LEFT JOIN warehouse w ON w.id = base.warehouse_id
+							  LEFT JOIN company c ON c.id = base.company_id
+							  WHERE 1=1 $keyword_filter
+							  GROUP BY base.company_id, base.warehouse_id, base.product_id, base.batch_no";
 		$total_count = $this->db->query($total_count_query)->num_rows();
 
-		$data_query = "SELECT i.product_id, i.warehouse_id, i.company_id, SUM(i.quantity) as quantity, 
-							  p.name as product_name, w.name as warehouse_name, c.name as company_name 
-					   FROM inventory i 
-					   LEFT JOIN raw_products p ON i.product_id = p.id 
-					   LEFT JOIN warehouse w ON i.warehouse_id = w.id 
-					   LEFT JOIN company c ON i.company_id = c.id 
-					   WHERE 1=1 $keyword_filter 
-					   GROUP BY i.product_id, i.warehouse_id, i.company_id 
+		$data_query = "SELECT 
+							  base.company_id, base.warehouse_id, base.product_id, base.batch_no,
+							  (SELECT MAX(id) FROM inventory inv WHERE inv.product_id = base.product_id AND inv.company_id = base.company_id AND inv.warehouse_id = base.warehouse_id AND inv.batch_no = base.batch_no LIMIT 1) AS inv_id,
+							  (SELECT COALESCE(SUM(inv.quantity),0) FROM inventory inv WHERE inv.product_id = base.product_id AND inv.company_id = base.company_id AND inv.warehouse_id = base.warehouse_id AND inv.batch_no = base.batch_no) AS current_qty,
+							  (SELECT COALESCE(SUM(pop.quantity),0) FROM purchase_order_product pop JOIN purchase_order po ON po.id = pop.parent_id WHERE pop.product_id = base.product_id AND po.company_id = base.company_id AND po.warehouse_id = base.warehouse_id AND po.delivery_status != 'purchase_in' AND po.is_deleted = 0 AND base.batch_no = '') AS po_qty,
+							  (
+								  SELECT COALESCE(SUM(t.priority_qty), 0)
+								  FROM (
+									  SELECT pp.parent_id, pp.product_id, SUM(pp.quantity) as priority_qty
+									  FROM po_products pp
+									  GROUP BY pp.parent_id, pp.product_id
+								  ) t
+								  JOIN purchase_order po ON po.id = t.parent_id
+								  WHERE t.product_id = base.product_id
+								  AND po.company_id = base.company_id
+								  AND po.warehouse_id = base.warehouse_id
+								  AND po.delivery_status != 'purchase_in'
+								  AND po.is_deleted = 0
+								  AND base.batch_no = ''
+							  ) AS priority_qty,
+							  (
+								  SELECT COALESCE(SUM(t.loading_qty), 0)
+								  FROM (
+									  SELECT pp.parent_id, pp.product_id, SUM(pp.loading_qty) as loading_qty
+									  FROM po_products pp
+									  GROUP BY pp.parent_id, pp.product_id
+								  ) t
+								  JOIN purchase_order po ON po.id = t.parent_id
+								  WHERE t.product_id = base.product_id
+								  AND po.company_id = base.company_id
+								  AND po.warehouse_id = base.warehouse_id
+								  AND po.delivery_status != 'purchase_in'
+								  AND po.is_deleted = 0
+								  AND base.batch_no = ''
+							  ) AS loading_qty,
+							  (
+								  SELECT COALESCE(SUM(t.with_exp_cost), 0)
+								  FROM (
+									  SELECT pp.parent_id, pp.product_id, SUM(pp.total_amt) as with_exp_cost
+									  FROM po_products pp
+									  GROUP BY pp.parent_id, pp.product_id
+								  ) t
+								  JOIN purchase_order po ON po.id = t.parent_id
+								  WHERE t.product_id = base.product_id
+								  AND po.company_id = base.company_id
+								  AND po.warehouse_id = base.warehouse_id
+								  AND po.delivery_status != 'purchase_in'
+								  AND po.is_deleted = 0
+								  AND base.batch_no = ''
+							  ) AS with_exp_cost,
+							  (
+								  SELECT COALESCE(SUM(t.without_exp_cost), 0)
+								  FROM (
+									  SELECT pp.parent_id, pp.product_id, SUM(pp.total_val) as without_exp_cost
+									  FROM po_products pp
+									  GROUP BY pp.parent_id, pp.product_id
+								  ) t
+								  JOIN purchase_order po ON po.id = t.parent_id
+								  WHERE t.product_id = base.product_id
+								  AND po.company_id = base.company_id
+								  AND po.warehouse_id = base.warehouse_id
+								  AND po.delivery_status != 'purchase_in'
+								  AND po.is_deleted = 0
+								  AND base.batch_no = ''
+							  ) AS without_exp_cost,
+							  (
+								  SELECT COALESCE(SUM(t.official_cost_inr), 0)
+								  FROM (
+									  SELECT pp.parent_id, pp.product_id, SUM(pp.official_total_rs) as official_cost_inr
+									  FROM po_products pp
+									  GROUP BY pp.parent_id, pp.product_id
+								  ) t
+								  JOIN purchase_order po ON po.id = t.parent_id
+								  WHERE t.product_id = base.product_id
+								  AND po.company_id = base.company_id
+								  AND po.warehouse_id = base.warehouse_id
+								  AND po.delivery_status != 'purchase_in'
+								  AND po.is_deleted = 0
+								  AND base.batch_no = ''
+							  ) AS official_cost_inr,
+							  p.name as product_name, w.name as warehouse_name, c.name as company_name
+					   FROM ($base_ids_query) base
+					   LEFT JOIN raw_products p ON p.id = base.product_id
+					   LEFT JOIN warehouse w ON w.id = base.warehouse_id
+					   LEFT JOIN company c ON c.id = base.company_id
+					   WHERE 1=1 $keyword_filter
+					   GROUP BY base.company_id, base.warehouse_id, base.product_id, base.batch_no 
 					   ORDER BY p.name ASC LIMIT $start, $length";
 		$query = $this->db->query($data_query);
 
@@ -14041,101 +14129,37 @@ public function get_sales_return_reports()
 				$wid = $item['warehouse_id'];
 				$cid = $item['company_id'];
 
-				// PO Qty should include:
-				// 1) pending PO quantity from pending orders (legacy table)
-				// 2) pending_po_qty saved in priority/loading list flow (new table)
-				$po_qty_pending = $this->db->query("SELECT SUM(pop.quantity) as total
-												   FROM purchase_order_product pop
-												   JOIN purchase_order po ON po.id = pop.parent_id
-												   WHERE pop.product_id = '$pid'
-												   AND po.company_id = '$cid'
-												   AND po.warehouse_id = '$wid'
-												   AND po.delivery_status = 'pending'
-												   AND po.is_deleted = '0'")->row()->total;
-				$po_qty_priority_flow = $this->db->query("SELECT SUM(pp.pending_po_qty) as total
-														 FROM po_products pp
-														 JOIN purchase_order po ON po.id = pp.parent_id
-														 WHERE pp.product_id = '$pid'
-														 AND po.company_id = '$cid'
-														 AND po.warehouse_id = '$wid'
-														 AND po.delivery_status IN ('priority', 'loading')
-														 AND po.is_deleted = '0'")->row()->total;
-				$po_qty = (float)($po_qty_pending ?? 0) + (float)($po_qty_priority_flow ?? 0);
+				$po_qty = (float)($item['po_qty'] ?? 0);
+				$priority_qty = (float)($item['priority_qty'] ?? 0);
+				$loading_qty = (float)($item['loading_qty'] ?? 0);
+				$with_exp_cost = (float)($item['with_exp_cost'] ?? 0);
+				$without_exp_cost = (float)($item['without_exp_cost'] ?? 0);
+				$official_cost_inr = (float)($item['official_cost_inr'] ?? 0);
 
-				// Priority Qty from new priority-list flow, fallback to legacy table
-				$priority_qty = $this->db->query("SELECT SUM(pp.quantity) as total
-												 FROM po_products pp
-												 JOIN purchase_order po ON po.id = pp.parent_id
-												 WHERE pp.product_id = '$pid'
-												 AND po.company_id = '$cid'
-												 AND po.warehouse_id = '$wid'
-												 AND po.delivery_status = 'priority'
-												 AND po.is_deleted = '0'")->row()->total;
-				if (!$priority_qty) {
-					$priority_qty = $this->db->query("SELECT SUM(pop.quantity) as total
-													 FROM purchase_order_product pop
-													 JOIN purchase_order po ON po.id = pop.parent_id
-													 WHERE pop.product_id = '$pid'
-													 AND po.company_id = '$cid'
-													 AND po.warehouse_id = '$wid'
-													 AND po.delivery_status = 'priority'
-													 AND po.is_deleted = '0'")->row()->total;
+				$po_link = $po_qty > 0 ? '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'po\',' . $wid . ')">' . $po_qty . '</a>' : '0';
+				$priority_link = $priority_qty > 0 ? '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'priority\',' . $wid . ')">' . $priority_qty . '</a>' : '0';
+				$loading_link = $loading_qty > 0 ? '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'loading\',' . $wid . ')">' . $loading_qty . '</a>' : '0';
+
+				$action = '-';
+				if (!empty($item['inv_id'])) {
+					$history_url = base_url() . 'inventory/my-stock-history/' . $item['inv_id'];
+					$action = '<a href="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="View History"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
 				}
-				$priority_qty = ($priority_qty) ? $priority_qty : 0;
-
-				// Loading Qty should follow loading_list_qty saved in priority/loading flow
-				$loading_qty = $this->db->query("SELECT SUM(pp.loading_list_qty) as total
-												FROM po_products pp
-												JOIN purchase_order po ON po.id = pp.parent_id
-												WHERE pp.product_id = '$pid'
-												AND po.company_id = '$cid'
-												AND po.warehouse_id = '$wid'
-												AND po.delivery_status IN ('priority', 'loading')
-												AND po.is_deleted = '0'")->row()->total;
-				if (!$loading_qty) {
-					$loading_qty = $this->db->query("SELECT SUM(pop.loading_list_qty) as total
-													FROM purchase_order_product pop
-													JOIN purchase_order po ON po.id = pop.parent_id
-													WHERE pop.product_id = '$pid'
-													AND po.company_id = '$cid'
-													AND po.warehouse_id = '$wid'
-													AND po.delivery_status = 'loading'
-													AND po.is_deleted = '0'")->row()->total;
-				}
-				$loading_qty = ($loading_qty) ? $loading_qty : 0;
-
-				// Calculate cost columns from new PO item table (po_products)
-				$cost_data = $this->db->query("SELECT 
-													SUM(pp.total_amt) AS with_exp_cost,
-													SUM(pp.total_val) AS without_exp_cost,
-													SUM(pp.official_total_rs) AS official_cost_inr
-											   FROM po_products pp
-											   JOIN purchase_order po ON po.id = pp.parent_id
-											   WHERE pp.product_id = '$pid'
-											   AND po.company_id = '$cid'
-											   AND po.warehouse_id = '$wid'
-											   AND po.delivery_status IN ('pending', 'priority', 'loading')
-											   AND po.is_deleted = '0'")->row_array();
-				$with_exp_cost = (float)($cost_data['with_exp_cost'] ?? 0);
-				$without_exp_cost = (float)($cost_data['without_exp_cost'] ?? 0);
-				$official_cost_inr = (float)($cost_data['official_cost_inr'] ?? 0);
-
-				$po_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'po\',' . $wid . ')">' . $po_qty . '</a>';
-				$priority_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'priority\',' . $wid . ')">' . $priority_qty . '</a>';
-				$loading_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'loading\',' . $wid . ')">' . $loading_qty . '</a>';
 
 				$data[] = array(
 					"sr_no"       => ++$start,
 					"company"     => $item['company_name'] ?? '-',
 					"warehouse"   => $item['warehouse_name'] ?? '-',
 					"product_name"=> $item['product_name'] ?? 'Unknown Product (ID: '.$pid.')',
-					"quantity"    => $item['quantity'],
+					"batch_no"    => ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
+					"quantity"    => $item['current_qty'],
 					"po_qty"      => $po_link,
 					"priority_qty"=> $priority_link,
 					"loading_qty" => $loading_link,
 					"with_exp_cost" => number_format($with_exp_cost, 2),
 					"without_exp_cost" => number_format($without_exp_cost, 2),
-					"official_cost_inr" => number_format($official_cost_inr, 2)
+					"official_cost_inr" => number_format($official_cost_inr, 2),
+					"action"      => $action
 				);
 			}
 		}
@@ -14153,67 +14177,42 @@ public function get_sales_return_reports()
 	{
 		$where_wid = ($warehouse_id != '') ? " AND po.warehouse_id = '$warehouse_id'" : "";
 		if ($status == 'po') {
-			// PO list = pending orders + pending_po_qty from priority/loading list flow
-			$query = $this->db->query("SELECT
-											x.id,
-											x.voucher_no,
-											x.date,
-											x.supplier_name,
-											SUM(x.quantity) as quantity
-										FROM (
-											SELECT
-												po.id,
-												po.voucher_no,
-												po.date,
-												po.supplier_name,
-												pop.quantity as quantity
-											FROM purchase_order po
-											JOIN purchase_order_product pop ON po.id = pop.parent_id
-											WHERE pop.product_id = '$product_id'
-											AND po.company_id = '$company_id'
-											AND po.delivery_status = 'pending'
-											AND po.is_deleted = '0'
-											$where_wid
-
-											UNION ALL
-
-											SELECT
-												po.id,
-												po.voucher_no,
-												po.date,
-												po.supplier_name,
-												pp.pending_po_qty as quantity
-											FROM purchase_order po
-											JOIN po_products pp ON po.id = pp.parent_id
-											WHERE pp.product_id = '$product_id'
-											AND po.company_id = '$company_id'
-											AND po.delivery_status IN ('priority', 'loading')
-											AND po.is_deleted = '0'
-											AND pp.pending_po_qty > 0
-											$where_wid
-										) x
-										GROUP BY x.id, x.voucher_no, x.date, x.supplier_name
-										ORDER BY x.date DESC, x.id DESC");
-		} elseif ($status == 'loading') {
-			// Loading list should follow loading_list_qty saved in po_products
+			// PO list = all orders except purchase_in, using quantities from purchase_order_product
 			$query = $this->db->query("SELECT
 											po.id,
 											po.voucher_no,
 											po.date,
 											po.supplier_name,
-											SUM(pp.loading_list_qty) as quantity
+											SUM(pop.quantity) as quantity
+										FROM purchase_order po
+										JOIN purchase_order_product pop ON po.id = pop.parent_id
+										WHERE pop.product_id = '$product_id'
+										AND po.company_id = '$company_id'
+										AND po.delivery_status != 'purchase_in'
+										AND po.is_deleted = '0'
+										$where_wid
+										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
+										ORDER BY po.date DESC, po.id DESC");
+		} elseif ($status == 'loading') {
+			// Loading list = all orders except purchase_in, using loading_qty from po_products
+			$query = $this->db->query("SELECT
+											po.id,
+											po.voucher_no,
+											po.date,
+											po.supplier_name,
+											SUM(pp.loading_qty) as quantity
 										FROM purchase_order po
 										JOIN po_products pp ON po.id = pp.parent_id
 										WHERE pp.product_id = '$product_id'
 										AND po.company_id = '$company_id'
-										AND po.delivery_status IN ('priority', 'loading')
+										AND po.delivery_status != 'purchase_in'
 										AND po.is_deleted = '0'
-										AND pp.loading_list_qty > 0
+										AND pp.loading_qty > 0
 										$where_wid
 										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
 		} else {
-			// Priority list quantity from po_products
+			// Priority list = all orders except purchase_in, using quantity from po_products
 			$query = $this->db->query("SELECT
 											po.id,
 											po.voucher_no,
@@ -14224,8 +14223,9 @@ public function get_sales_return_reports()
 										JOIN po_products pp ON po.id = pp.parent_id
 										WHERE pp.product_id = '$product_id'
 										AND po.company_id = '$company_id'
-										AND po.delivery_status = 'priority'
+										AND po.delivery_status != 'purchase_in'
 										AND po.is_deleted = '0'
+										AND pp.quantity > 0
 										$where_wid
 										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
