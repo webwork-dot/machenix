@@ -72,8 +72,7 @@
 		height: 30px;
 	}
 
-	#requirement_area .select2-container--default .select2-selection--single .select2-selection__rendered,
-		{
+	#requirement_area .select2-container--default .select2-selection--single .select2-selection__rendered {
 		color: #444;
 		line-height: normal;
 		font-weight: 800;
@@ -81,14 +80,12 @@
 
 	.select2-container--default .select2-selection--single .select2-selection__rendered {
 		line-height: 30px;
-		/* Adjust the line-height to change the height */
 		min-height: 30px;
 		line-height: normal;
 	}
 
 	.select2-container--default .select2-selection--single {
 		height: 30px;
-		/* Adjust the height as needed */
 		min-height: 30px;
 		line-height: normal;
 	}
@@ -122,10 +119,8 @@
 
 <div class="row">
   <div class="col-12">
-    <!-- profile -->
     <div class="card">
       <div class="card-body py-1 my-0">
-
         <?php echo form_open('inventory/sales_order/edit_post/' . $id, ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
         <div class="row">
           <div class="col-12 col-sm-3 mb-1">
@@ -147,7 +142,7 @@
             <div class="form-group">
               <label>Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
-                value="<?php echo $data['date'];?>" id="date_picker">
+                value="<?php echo $data['date'];?>" id="date_picker" readonly>
             </div>
           </div>
 
@@ -283,15 +278,7 @@
                         </div>
                       </div>
 
-                      <div class="col-md-12" id="batch_<?php echo $i;?>">
-                        
-                      </div>
-
-                      <div class="col-md-12 mt-2 d-flex justify-content-center">
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="appendBatch('<?php echo $i;?>')">
-                          <i class="fa fa-plus"></i> Add Batch
-                        </button>
-                      </div>
+                      <!-- Batch assignment restricted for salesmen -->
 
                   </div>
                 </div>
@@ -330,7 +317,6 @@
                         <div class="d-flex flex-column align-items-end">
                           <span class="mb-0 text-capitalize">Basic Net Sales Value (Exclu. GST)</span>
                           <select class="form-control " name="gst_type" id="gst_type" style="width : 200px !important;float:right !important">
-                          <!-- <select class="form-control " name="gst_type" id="gst_type" onchange="change_gst(this.value)" style="width : 200px !important;float:right !important"> -->
                             <option value="">Select GST</option>
                             <option value="Central GST / State GST">Central GST / State GST</option>
                             <option value="IGST">IGST</option>
@@ -394,7 +380,6 @@
                         <p class="td-blank"><input type="number" step="any" name="net_sales_value_2"
                             id="net_sales_value_2" value="<?php echo $data['net_sales_value_2'];?>" placeholder="Basic Net Sales Value (Inc. GST)"
                             class="form-control" readonly></p>
-
                       </td>
                     </tr>
                     <tr>
@@ -441,145 +426,12 @@
           </div>
         </div>
         <?php echo form_close(); ?>
-        <!--/ form -->
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  function appendBatch(productIndex) {
-    let product = $('#product_id_' + productIndex).val();
-    let container = $("#batch_" + productIndex);
-    if(product) {
-      let total_batch = container.find(".batch-row").length;
-      let nextBatch = total_batch + 1;
-      var html = "";
-  
-      $.ajax({
-        type: "POST",
-        url: "<?php echo base_url()?>inventory/get_product_batch",
-        data: {product_id: product},
-        async: false,
-        dataType: "JSON",
-        success: function(res) {
-          res.forEach(function(batch) {
-            html += "<option value='" + batch.id + "'>" + batch.batch_no + "</option>";
-          });
-        }
-      });
-
-      container.append(`
-        <div class="row mt-2 batch-row " id="batch_${productIndex}_${nextBatch}">
-  
-          <div class="col-md-6 pl-0">
-            <div class="form-group">
-              <label>Batch</label>
-              <select class="form-control product-batch-${productIndex} select2"
-                name="batch_id[${productIndex}][]"
-                id="batch_select_${productIndex}_${nextBatch}"
-                onchange="get_batch_details(this.value,'${productIndex}','${nextBatch}')">
-                <option value="">Select Batch</option>
-                ${html}
-              </select>
-            </div>
-          </div>
-          <div class="col-md-2 pl-0 d-none">
-            <div class="form-group">
-              <label>Expiry</label>
-              <input type="text"
-                class="form-control"
-                name="batch_expiry[${productIndex}][]"
-                id="batch_expiry_${productIndex}_${nextBatch}"
-                readonly>
-            </div>
-          </div>
-          <div class="col-md-2 pl-0">
-            <div class="form-group">
-              <label>Qty</label>
-              <input type="number"
-                step="any"
-                class="form-control"
-                name="batch_qty[${productIndex}][]"
-                id="batch_qty_${productIndex}_${nextBatch}">
-            </div>
-          </div>
-          <div class="col-md-2  pl-0">
-            <div class="form-group">
-              <label>Available</label>
-              <input type="number"
-                step="any"
-                class="form-control"
-                name="batch_available[${productIndex}][]"
-                id="batch_available_${productIndex}_${nextBatch}"
-                readonly>
-            </div>
-          </div>
-          <div class="col-md-2 d-flex align-items-end pl-0">
-            <div class="form-group">
-              <label>&nbsp;</label>
-              <button type="button" class="btn btn-danger btn-sm"
-                onclick="removeBatch(${productIndex},${nextBatch})">
-                <i class="fa fa-times"></i>
-              </button>
-            </div>
-          </div>
-  
-        </div>
-      `);
-  
-      $(".select2").select2();
-    } else {
-      Swal.fire({
-        title: 'Please Select Product',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-
-      $("#batch_" + productIndex).html('');
-    }
-  }
-
-  function get_batch_details(batch_id, product, batch) {
-    let batchSelect = $(".product-batch-" + product);
-    let isValid = true;
-
-    batchSelect.forEach((e) => {
-      if(e.id != ('batch_select_' + product + '_' + batch)) {
-        if(e.value == batch_id) {
-          isValid = false;
-        }
-      }
-    });
-
-    if(isValid) {
-      $.ajax({
-        url: "<?php echo base_url()?>inventory/get_batch_details",
-        type:"POST",
-        dataType: "JSON",
-        data:{batch_id: batch_id},
-        success:function(res){
-          var data = res;
-          // $("#batch_expiry_"+product+"_"+batch).val(data.expiry);
-          $("#batch_available_" + product + "_" + batch).val(data.quantity);
-        }
-      });
-    } else {
-      Swal.fire({
-        title: 'Cannot select the same batch',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-
-      $("#batch_select_" + product + "_" + batch).val('');
-      $("#batch_available_" + product + "_" + batch).val('');
-    }
-  }
-
-  function removeBatch(productIndex,batchIndex){
-    $("#batch_"+productIndex+"_"+batchIndex).remove();
-  }
-
     function markManual(index) {
         $('#bill_amount_' + index).attr('data-manual', 'true');
     }
@@ -600,8 +452,6 @@
         var gst_per = Number($('#gst_' + index).val()) || 0;
         var available = Number($('#available_' + index).val()) || 0;
 
-        // Note: For Edit, available stock might need to include current item's qty if we were being strict, 
-        // but keeping it simple as per Add logic.
         if (qty > available && available > 0) {
             Swal.fire({
                 title: "Warning!",
@@ -805,17 +655,13 @@
                     </div>
                 </div>
 
-                <div class="col-md-12" id="batch_${nextindex}"></div>
-                <div class="col-md-12 mt-2 d-flex justify-content-center">
-                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="appendBatch('${nextindex}')">
-                    <i class="fa fa-plus"></i> Add Batch
-                  </button>
-                </div>
+                <!-- Batch assignment logic removed for salesmen -->
               </div>
             </div>
           </div>
         `);
         $(".select2").select2();
+        var company_id = $('[name="company_id"]').val();
         load_products_by_company(company_id, nextindex, true);
     }
   }
@@ -868,9 +714,6 @@
                     if (!skipPriceUpdate) {
                         $('#gst_' + index).val(res.tax);
                         $('#master_amount_' + index).val(res.rate);
-                        
-                        var qty = Number($('#quantity_' + index).val()) || 0;
-                        $('#bill_amount_' + index).val(res.rate * qty);
                         calculate_amt(index);
                     }
                 } else {
@@ -878,6 +721,11 @@
                 }
             }
         });
+    }
+
+    function removeRequirement(e, index) {
+        $(e).closest('.element-1').remove();
+        recalculate();
     }
 
     function showPriceHistory(index) {
@@ -894,7 +742,7 @@
             type: "POST",
             data: { customer_id: customer_id, product_id: product_id },
             success: function(res) {
-                $('#priceHistoryBody').html(res);
+                $('#priceHistoryModalContent').html(res);
                 $('#priceHistoryModal').modal('show');
             }
         });
@@ -905,43 +753,30 @@
         $('.product_id').each(function() {
             var full_id = $(this).attr('id');
             var split_id = full_id.split('_');
-            var id = split_id[split_id.length - 1]; // Get the last part (the numeric index)
+            var id = split_id[split_id.length - 1];
             var current_val = $(this).attr('data-selected') || $(this).val();
             load_products_by_company(company_id, id, false, current_val, true);
         });
 
-        <?php if($this->session->userdata('super_type_id') == '7'): ?>
-            $('#date_picker').prop('readonly', true);
-            $('#date_picker').on('click', function(e){ e.preventDefault(); });
-        <?php endif; ?>
+        // Date is always read-only for salesman in this view
+        $('#date_picker').prop('readonly', true);
+        $('#date_picker').on('click', function(e){ e.preventDefault(); });
+        
+        // Final call to ensure calculations are correct on load
+        recalculate();
     });
 </script>
 
 <!-- Price History Modal -->
 <div class="modal fade" id="priceHistoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Price History (Last 5 Sales)</h5>
+                <h5 class="modal-title">Last Selling Prices</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Qty</th>
-                                <th>Selling Price</th>
-                                <th>Order No</th>
-                            </tr>
-                        </thead>
-                        <tbody id="priceHistoryBody">
-                        </tbody>
-                    </table>
-                </div>
+            <div class="modal-body" id="priceHistoryModalContent">
             </div>
         </div>
     </div>
 </div>
-</script>

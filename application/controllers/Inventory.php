@@ -1870,6 +1870,42 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_product_by_company()
+    {
+        $company_id = $this->input->post('company_id', true);
+        $results = $this->inventory_model->get_product_id_by_company($company_id);
+        foreach ($results as $item) {
+            echo '<option value="' . $item['id'] . '">' . $item['name'] . '</option>';
+        }
+    }
+
+    public function get_qty_by_product_company()
+    {
+        $company_id = $this->input->post('company_id', true);
+        $product_id = $this->input->post('product_id', true);
+        $results = $this->inventory_model->get_qty_by_product_company($company_id, $product_id);
+        header('Content-Type: application/json');
+        echo json_encode($results);
+    }
+
+    public function get_last_selling_price()
+    {
+        $customer_id = $this->input->post('customer_id', true);
+        $product_id = $this->input->post('product_id', true);
+        $results = $this->inventory_model->get_last_price_history($customer_id, $product_id);
+        
+        $html = '<table class="table table-sm table-bordered"><thead><tr><th>Date</th><th>Qty</th><th>Price</th></tr></thead><tbody>';
+        if(empty($results)){
+            $html .= '<tr><td colspan="3" class="text-center">No history found</td></tr>';
+        } else {
+            foreach($results as $row){
+                $html .= '<tr><td>'.$row['order_date'].'</td><td>'.$row['qty'].'</td><td>'.number_format($row['last_price'], 2).'</td></tr>';
+            }
+        }
+        $html .= '</tbody></table>';
+        echo $html;
+    }
+
 
 
     public function get_batch_by_product()
@@ -2097,7 +2133,21 @@ class Inventory extends CI_Controller
 
         if ($param1 == 'add') {
             $page_data['order_no']  = $this->inventory_model->get_sales_order_no();
-            $page_data['page_name']  = 'sales_order_add';
+            
+            // Robust check for salesman role (staff_access == 7)
+            $staff_access = (int)$this->session->userdata('super_type_id');
+            if ($staff_access === 0) {
+                $user_id = $this->session->userdata('super_user_id');
+                $usr_det = $this->db->get_where('sys_users', array('id' => $user_id))->row();
+                $staff_access = (int)($usr_det->staff_access ?? 0);
+            }
+
+            if ($staff_access === 7) {
+                $page_data['page_name']  = 'sales_order_add_salesman';
+            } else {
+                $page_data['page_name']  = 'sales_order_add';
+            }
+
             $page_data['page_title'] = 'Add Sales';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'view') {
@@ -2134,7 +2184,21 @@ class Inventory extends CI_Controller
             $page_data['data']       = $data;
             $page_data['products_list']   = $this->inventory_model->get_product_id_by_warehouse($data['warehouse_id']);
             $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
-            $page_data['page_name']  = 'sales_order_edit';
+            
+            // Robust check for salesman role (staff_access == 7)
+            $staff_access = (int)$this->session->userdata('super_type_id');
+            if ($staff_access === 0) {
+                $user_id = $this->session->userdata('super_user_id');
+                $usr_det = $this->db->get_where('sys_users', array('id' => $user_id))->row();
+                $staff_access = (int)($usr_det->staff_access ?? 0);
+            }
+
+            if ($staff_access === 7) {
+                $page_data['page_name']  = 'sales_order_edit_salesman';
+            } else {
+                $page_data['page_name']  = 'sales_order_edit';
+            }
+
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Sales';
             $this->load->view('backend/index', $page_data);

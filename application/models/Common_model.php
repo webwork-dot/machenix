@@ -802,7 +802,7 @@ class Common_model extends CI_Model{
 
             $keyword = '';
             if($type == 'staff') {
-                $keyword = " AND id IN ('".$company_id."')";
+                $keyword = " AND id IN (".$company_id.")";
             }
 
             $query = $this->db->query("SELECT * FROM company WHERE is_deleted = '0' $keyword");

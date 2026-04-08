@@ -53,9 +53,7 @@
 					<th>Total Products</th>
 					<th>Total Amount</th>
 				    <!--<th>Remark</th>-->
-                    <?php if($this->session->userdata('super_type_id') != 7) { ?>
 					   <th>Actions</th>
-                    <?php } ?>
                   </tr>
                </thead>
             </table>
@@ -111,9 +109,7 @@
                 { "data": "total_pro" },
                 { "data": "grand_total" },
                 // { "data": "remark" },
-                <?php if($this->session->userdata('super_type_id') != 7) { ?>
                    { "data": "action" },
-                <?php } ?>
             ], 
            
             "buttons": [

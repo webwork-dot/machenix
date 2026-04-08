@@ -7,7 +7,7 @@
    }
    // Get selected company from session
    $selected_company_id = $this->session->userdata('company_id');
-   if($selected_company_id == '' || $selected_company_id == null && count($companies) > 0){
+   if(($selected_company_id == '' || $selected_company_id == null) && count($companies) > 0){
       $this->session->set_userdata('company_id', $companies[0]['id']);
       $selected_company_id = $companies[0]['id'];
    }

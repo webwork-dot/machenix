@@ -161,14 +161,10 @@
             </select>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
-            <label class="form-label" for="state">Warehouse <span class="required">*</span></label>
-            <select class=" form-select select2" name="warehouse_id" id="warehouse_id"
-              onchange="get_product_by_warehouse(this.value,'1');" required>
-              <option value="">Select Warehouse </option>
-              <?php foreach($warehouse_list as $item){?>
-              <option value="<?php echo $item->id;?>"><?php echo $item->name;?></option>
-              <?php }?>
+          <div class="col-12 col-sm-3 mb-1 d-none">
+            <label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
+            <select class=" form-select select2" name="warehouse_id" id="warehouse_id">
+              <option value="0">Select Warehouse</option>
             </select>
           </div>
 
@@ -196,69 +192,77 @@
                 <div class="flex-grow-1 px-0 ml-15">
                   <div class="row">
 
-                      <div class="col-md-4 pl-0">
+                      <div class="col-md-3 pl-0">
                         <input type="hidden" name="x_value[]" id="x_value_1" value="1">
                         <div class="form-group">
-                          <label>Select Product - SKU<span class="required">*</span></label>
+                          <label>Select Product (Stock)<span class="required">*</span></label>
                           <select class="form-control select2 product_id" name="product_id[]" id="product_id_1"
-                            data-toggle="select2" onchange="get_batch_by_product(this.value,'1_1');" required>
-                            <option value="">Select Product - SKU</option>
+                            data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
+                            <option value="">Select Product</option>
                           </select>
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
-                          <label> Amount <span class="required">*</span></label>
-                          <input type="number" step="any" id="total_amount_1" name="total_amount[]"
-                            onkeyup="calculate_amt('1')" value="" class="form-control">
-                        </div>
-                      </div>
-
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
                           <label>Qty <span class="required">*</span></label>
-                          <input type="number" step="any" id="quantity_1_1" name="quantity[]" placeholder="Qty"
-                            onkeyup="check_available_qty(this.value,'1')" value="1" class="form-control quantity_1"
-                            required="">
+                          <input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty"
+                            onkeyup="calculate_amt('1')" value="1" class="form-control" required="">
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
-                          <label>Avail. Qty</label>
-                          <input type="number" step="any" id="available_1" name="available[]" placeholder="Available Qty" value="0" class="form-control"
-                          readonly>
+                          <label>Amount <span class="required">*</span></label>
+                          <div class="input-group">
+                            <input type="number" step="any" id="master_amount_1" name="master_amount[]"
+                              onkeyup="calculate_amt('1')" value="" class="form-control">
+                            <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('1')"><i class="fa fa-history px-1"></i></span>
+                          </div>
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
-                          <label> Black Amt <span class="required">*</span></label>
+                          <label>Bill Amt <span class="required">*</span></label>
+                          <input type="number" step="any" id="bill_amount_1" name="bill_amount[]"
+                            onkeyup="markManual('1'); calculate_amt('1')" value="" class="form-control" data-manual="false">
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
+                          <label>GST % <span class="required">*</span></label>
+                          <input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_amt('1')" value="" class="form-control">
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
+                          <label>GST Amt</label>
+                          <input type="number" step="any" id="gst_amount_1" name="gst_amount[]" value="" class="form-control" readonly>
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
+                          <label>Bill Total</label>
+                          <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" readonly>
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
+                          <label>Black Amt</label>
                           <input type="number" step="any" id="black_amount_1" name="black_amount[]" value="" class="form-control" readonly>
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
-                          <label> White Amt <span class="required">*</span></label>
-                          <input type="number" step="any" id="white_amount_1" name="white_amount[]"
-                            onkeyup="calculate_gst('1')" value="" class="form-control">
-                        </div>
-                      </div>
-
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label> GST <span class="required">*</span></label>
-                          <input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_gst('1')" value="" class="form-control">
-                        </div>
-                      </div>
-
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label> White Total</label>
-                          <input type="number" step="any" id="white_total_1" name="white_total[]"
-                              class="form-control" readonly>
+                          <label>Final Total</label>
+                          <input type="number" step="any" id="final_total_1" name="final_total[]" class="form-control" readonly>
+                          <input type="hidden" id="available_1" name="available[]" value="0">
                         </div>
                       </div>
 
@@ -266,8 +270,7 @@
                         <div class="form-group">
                           <label>&nbsp;</label><br />
                           <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
-                            style="" name="button" onclick="removeRequirement(this,1)"> <i class="fa fa-times"
-                              aria-hidden="true"></i> </button>
+                            onclick="removeRequirement(this,1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
                         </div>
                       </div>
 
@@ -434,6 +437,7 @@ function subtotal_cal() {
   var total_element = $(".element-1").length;
   var base_total = 0;
   var total_gst_amount = 0;
+  var total_black_amount = 0;
   var igst_per = 0;
   var cgst_per = 0;
   var cgst_amt = 0;
@@ -465,18 +469,19 @@ function subtotal_cal() {
   //   }
   // }
 
-  let whiteAmt = document.querySelectorAll('[name="white_amount[]"]');
+  let billAmt = document.querySelectorAll('[name="bill_amount[]"]');
+  let blackAmt = document.querySelectorAll('[name="black_amount[]"]');
   let gstTax = document.querySelectorAll('[name="gst[]"]');
-  whiteAmt.forEach((element, index)=> {
-    var master_price = element.value;
-    master_price = isNaN(master_price) ? 0 : Number(master_price);
-    var total_amount = master_price;
-    base_total += Number(total_amount);
+  
+  billAmt.forEach((element, index)=> {
+    var bill_val = Number(element.value) || 0;
+    var black_val = Number(blackAmt[index] ? blackAmt[index].value : 0) || 0;
+    base_total += bill_val;
+    total_black_amount += black_val; // I noticed total_black_amount wasn't being tracked in the original add script but it should be
 
-    var gst = gstTax[index].value;
-    gst = isNaN(gst) ? 0 : Number(gst);
-    var gst_amount = (master_price * gst) / 100;
-    total_gst_amount += Number(gst_amount);
+    var gst = Number(gstTax[index] ? gstTax[index].value : 0) || 0;
+    var gst_amount = (bill_val * gst) / 100;
+    total_gst_amount += gst_amount;
   });
 
   console.log(base_total, total_gst_amount);
@@ -537,7 +542,6 @@ function change_gst(value) {
 
 
 function appendRequirement() {
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
   var customer_id = $('#customer_id').find(":selected").val();
 
   if (customer_id == '') {
@@ -550,34 +554,26 @@ function appendRequirement() {
       },
       buttonsStyling: !1
     });
-  } else if (warehouse_id == '') {
-    Swal.fire({
-      title: "Error!",
-      text: "Please Select Warehouse !!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
   } else {
-    var total_element = $(".element-1").length;
-    var lastid = $(".element-1:last").attr("id");
-    var split_id = lastid.split("_");
-    var nextindex = Number(split_id[1]) + 1;
-    if ($('#product_id_' + split_id[1]).find(":selected").val() == '') {
-      Swal.fire({
-        title: "Error!",
-        text: "Please Select Previous Product !!",
-        icon: "error",
-        customClass: {
-          confirmButton: "btn btn-primary"
-        },
-        buttonsStyling: !1
-      });
-    } else {
-      $(".loader").show();
-      var extra_val = "'" + nextindex + "_1'"
+    var last_row = $("#requirement_area .element-1:last");
+    var nextindex = 1;
+    if (last_row.length > 0) {
+      var lastid = last_row.attr("id");
+      var split_id = lastid.split("_");
+      nextindex = Number(split_id[1]) + 1;
+      
+      var prev_product = $('#product_id_' + split_id[1]).val();
+      if (prev_product == '') {
+        Swal.fire({
+          title: "Error!",
+          text: "Please Select Previous Product !!",
+          icon: "error"
+        });
+        return;
+      }
+    }
+    
+    $(".loader").show();
     
       $('#requirement_area').append(`
         <div class="d-block mt-2 element-1 fx-border" id="product_${nextindex}" data-id="${nextindex}">
@@ -586,68 +582,76 @@ function appendRequirement() {
           <div class="flex-grow-1 px-0 ml-15">
             <div class="row">
 
-              <div class="col-md-4 pl-0">
+              <div class="col-md-3 pl-0">
                 <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
                 <div class="form-group">
-                  <label>Select Product - SKU<span class="required">*</span></label>
-                  <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_batch_by_product(this.value,'${nextindex}_1');" required>
-                    <option value="">Select Product - SKU</option>
+                  <label>Select Product (Stock)<span class="required">*</span></label>
+                  <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
+                    <option value="">Select Product</option>
                   </select>
                 </div>
               </div>
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
-                  <label>Amount <span class="required">*</span></label>
-                  <input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
-                </div>
-              </div>
-
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
                   <label>Qty <span class="required">*</span></label>
-                  <input type="number" step="any" id="quantity_${nextindex}_1" name="quantity[]" placeholder="Qty" value="1"
-                    class="form-control quantity_${nextindex}" onkeyup="check_available_qty(this.value,'${nextindex}')"
-                    required>
+                  <input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1"
+                    class="form-control" onkeyup="calculate_amt('${nextindex}')" required>
                 </div>
               </div>
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
-                  <label>Avail. Qty</label>
-                  <input type="number" step="any" id="available_${nextindex}" name="available[]" value="0" class="form-control"
-                    readonly>
+                  <label>Amount <span class="required">*</span></label>
+                  <div class="input-group">
+                    <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
+                    <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
+                  </div>
                 </div>
               </div>
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
-                  <label>Black Amt <span class="required">*</span></label>
-                  <input type="number" step="any" id="black_amount_${nextindex}" name="black_amount[]" class="form-control"
-                    readonly>
+                  <label>Bill Amt <span class="required">*</span></label>
+                  <input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" 
+                    onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false">
                 </div>
               </div>
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
-                  <label>White Amt <span class="required">*</span></label>
-                  <input type="number" step="any" id="white_amount_${nextindex}" name="white_amount[]" class="form-control" onkeyup="calculate_gst('${nextindex}')">
-                </div>
-              </div>
-
-              <div class="col-md-1 pl-0">
-                <div class="form-group">
-                  <label>GST <span class="required">*</span></label>
+                  <label>GST % <span class="required">*</span></label>
                   <input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control"
-                    onkeyup="calculate_gst('${nextindex}')">
+                    onkeyup="calculate_amt('${nextindex}')">
                 </div>
               </div>
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
-                  <label>White Total</label>
-                  <input type="number" step="any" id="white_total_${nextindex}" name="white_total[]" class="form-control"
-                    readonly>
+                  <label>GST Amt</label>
+                  <input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" readonly>
+                </div>
+              </div>
+
+              <div class="col-md-1 pl-0">
+                <div class="form-group">
+                  <label>Bill Total</label>
+                  <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" readonly>
+                </div>
+              </div>
+
+              <div class="col-md-1 pl-0">
+                <div class="form-group">
+                  <label>Black Amt</label>
+                  <input type="number" step="any" id="black_amount_${nextindex}" name="black_amount[]" class="form-control" readonly>
+                </div>
+              </div>
+
+              <div class="col-md-1 pl-0">
+                <div class="form-group">
+                  <label>Final Total</label>
+                  <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" readonly>
+                  <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
                 </div>
               </div>
 
@@ -665,192 +669,169 @@ function appendRequirement() {
           </div>
         </div>
       `);
-
-      $(".loader").fadeOut("slow");
-      $(".select2").select2();
-      var warehouse_id = $('#warehouse_id').val();
-      get_product_by_warehouse(warehouse_id, nextindex);
+      
+      let company_id = $('[name="company_id"]').val();
+      $.ajax({
+        type: "POST",
+        url: "<?php echo base_url()?>inventory/get_product_by_company",
+        data: { company_id: company_id },
+        success: function(res) {
+          console.log("Products Loaded:", res);
+          var select = $('#product_id_' + nextindex);
+          select.html('<option value="">Select Product</option>' + res).trigger('change');
+          select.select2();
+          $(".loader").fadeOut("slow");
+          
+          $('html, body').animate({
+            scrollTop: $("#product_" + nextindex).offset().top
+          }, 300);
+        },
+        error: function(xhr) {
+          console.log(xhr.responseText);
+          alert("Error loading products");
+          $(".loader").fadeOut("slow");
+        }
+      });
     }
   }
+
+function markManual(index) {
+    $('#bill_amount_' + index).attr('data-manual', 'true');
 }
 
 function calculate_amt(index) {
-  var total_amount = Number($('#total_amount_' + index).val()) || 0;
-  var quantity = Number($('#quantity_' + index + '_1').val()) || 0;
-  $('#black_amount_' + index).val(total_amount * quantity);
-  $('#white_amount_' + index).val(total_amount * quantity);
-  var gst = Number($('#gst_' + index).val()) || 0;
-  $('#white_total_' + index).val((total_amount * quantity) + ((total_amount * quantity) * gst / 100));
-  recalculate();
+    var qty = Number($('#quantity_' + index).val()) || 0;
+    var master_amt = Number($('#master_amount_' + index).val()) || 0;
+    var bill_amt_el = $('#bill_amount_' + index);
+    var is_manual = bill_amt_el.attr('data-manual') === 'true';
+    
+    var gross_total = qty * master_amt;
+
+    if (!is_manual) {
+        bill_amt_el.val(gross_total.toFixed(2));
+    }
+
+    var bill_amt = Number(bill_amt_el.val()) || 0;
+    var gst_per = Number($('#gst_' + index).val()) || 0;
+    var available = Number($('#available_' + index).val()) || 0;
+
+    if (qty > available) {
+        Swal.fire({
+            title: "Error!",
+            text: "Quantity (" + qty + ") cannot exceed available stock (" + available + ")",
+            icon: "warning"
+        });
+        $('#quantity_' + index).val(available);
+        qty = available;
+        // Recalculate gross if qty was capped
+        gross_total = qty * master_amt;
+        if(!is_manual) {
+            bill_amt = gross_total;
+            bill_amt_el.val(bill_amt.toFixed(2));
+        }
+    }
+
+    var black_amt = gross_total - bill_amt;
+    var gst_amt = (bill_amt * gst_per) / 100;
+    var bill_total = bill_amt + gst_amt;
+    var final_total = bill_total + black_amt;
+
+    $('#black_amount_' + index).val(black_amt.toFixed(2));
+    $('#gst_amount_' + index).val(gst_amt.toFixed(2));
+    $('#bill_total_' + index).val(bill_total.toFixed(2));
+    $('#final_total_' + index).val(final_total.toFixed(2));
+
+    recalculate();
 }
 
-function calculate_gst(index) {
-  var white_amount = Number($('#white_amount_' + index).val()) || 0;
-  var gst = Number($('#gst_' + index).val()) || 0;
+function get_details_by_product(product_id, index) {
+    var company_id = $('[name="company_id"]').val();
+    if(!product_id) return;
 
-  console.log(white_amount, gst);
-  $('#white_total_' + index).val(white_amount + (white_amount * gst / 100));
-  recalculate();
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url()?>inventory/get_qty_by_product_company",
+            data: { company_id: company_id, product_id: product_id },
+            success: function(res) {
+                if(res.status == 200) {
+                    $('#available_' + index).val(res.quantity);
+                    $('#gst_' + index).val(res.tax);
+                    $('#master_amount_' + index).val(res.rate);
+                    
+                    var qty = Number($('#quantity_' + index).val()) || 0;
+                    $('#bill_amount_' + index).val(res.rate * qty); // Default bill to master * qty
+                    calculate_amt(index);
+                } else {
+                    alert(res.message);
+                }
+            }
+        });
+}
+
+function showPriceHistory(index) {
+    var customer_id = $('#customer_id').val();
+    var product_id = $('#product_id_' + index).val();
+
+    if (!customer_id) {
+        alert('Please select a customer first');
+        return;
+    }
+    if (!product_id) {
+        alert('Please select a product first');
+        return;
+    }
+
+    $.ajax({
+        type: "POST",
+        url: "<?php echo base_url()?>inventory/get_last_selling_price",
+        data: { customer_id: customer_id, product_id: product_id },
+        success: function(res) {
+            $('#priceHistoryModalContent').html(res);
+            $('#priceHistoryModal').modal('show');
+        }
+    });
 }
 
 function removeRequirement(requirementElem) {
   if(document.querySelector('#requirement_area').children.length > 1){
     $(requirementElem).parent().parent().parent().parent().parent().remove();
+    recalculate();
   } else {
     alert('Atleast one line item is required');
   }
 }
 
-function check_available_qty(value, id) {
-  var qty = Number($("#quantity_" + id + "_1").val()) || 0;
-  var available_qty = Number($("#available_" + id).val()) || 0;
-
-  if(qty > available_qty){
-    alert('Quantity cannot greater than Available Quantity');
-    $("#quantity_" + id + "_1").val(0);
-  }
-
-  calculate_amt(id);
-}
-
-function get_product_by_warehouse(b, nextindex) {
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var a = {
-    warehouse_id: b
-  };
-  $.ajax({
-    type: "POST",
-    url: "<?php echo base_url()?>inventory/get_product_by_warehouse",
-    data: a,
-    success: function(res) {
-      $('#product_id_' + nextindex).children("option:not(:first)").remove();
-      $('#product_id_' + nextindex).append(res);
-    }
-  });
-}
-
-function get_batch_by_product(b, nextindex) {
-  var new_value = nextindex.split('_');
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var product_id = $('#product_id_' + new_value[0]).find(":selected").val();
-  var is_disabled = 0;
-  var total_element = $(".element-1").length + 1;
-
-  // Check Same Selected Product
-  for (let i = 1; i < total_element ; i++) {
-    var old_product_id = $("#product_id_"+i).val();
-    if(old_product_id == product_id && i != new_value[0]){
-      $('#product_id_'+new_value[0]).prop("selected", false);
-      $(".select2").select2();
-      is_disabled = 1 ;
-    }
-  }
-
-  console.log('is_disabled:',nextindex);
-
-  if (is_disabled == 0) {
-    $("#batch_no_" + nextindex + " option").prop("selected", false);
-    $(".select2").select2();
-    $('#available_' + nextindex).val(0);
-    var a = {
-      warehouse_id: warehouse_id,
-      product_id: product_id,
-    };
-
+$(document).ready(function ($) {
+    // Init first product row
+    let company_id = $('[name="company_id"]').val();
     $.ajax({
-      type: "POST",
-      url: "<?php echo base_url()?>inventory/get_qty_by_product",
-      data: a,
-      success: function(res) {
-        $('#available_' + new_value[0]).val(res.quantity);
-        $('#quantity_' + new_value[0] + '_1').val(0);
-        $('#gst_' + new_value[0]).val(res.tax);
-        $('#total_amount_' + new_value[0]).val(res.rate);
-        $('#black_amount_' + new_value[0]).val(0);
-        $('#white_amount_' + new_value[0]).val(0);
-        $('#white_total_' + new_value[0]).val(0);
-      }
+        type: "POST",
+        url: "<?php echo base_url()?>inventory/get_product_by_company",
+        data: { company_id: company_id },
+        success: function(res) {
+            $('.product_id').append(res);
+        }
     });
 
-    $(':input[type="submit"]').prop('disabled', false);
-  } else {
-    Swal.fire({
-      title: "Error!",
-      text: "Product Can't Be Same!!!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
-
-    $(':input[type="submit"]').prop('disabled', true);
-    // $('#product_id_'+new_value[0]).prop("selected", false);
-    $("#product_id_" + new_value[0] + " option").prop("selected", false);
-    $(".select2").select2();
-
-    $('#available_' + new_value[0]).val(0);
-    $('#quantity_' + new_value[0] + '_1').val(0);
-    $('#gst_' + new_value[0]).val(0);
-    $('#total_amount_' + new_value[0]).val(0);
-    $('#black_amount_' + new_value[0]).val(0);
-    $('#white_amount_' + new_value[0]).val(0);
-    $('#white_total_' + new_value[0]).val(0);
-  }
-
-  recalculate();
-}
-
-function get_product_details(b, nextindex) {
-  var new_value = nextindex.split('_');
-  var warehouse_id = $('#warehouse_id').find(":selected").val();
-  var product_id = $('#product_id_' + new_value[0]).find(":selected").val();
-  var batch_no = $('#batch_no_' + nextindex).find(":selected").val();
-  is_disabled = 0;
-  var total_element = $(".batch_no_" + new_value[0]).length + 1;
-  for (let i = 1; i < total_element; i++) {
-    if ($("#product_id_" + new_value[0]).val() && new_value[1] != i) {
-      var old_product_id = $("#product_id_" + new_value[0]).val();
-      var old_batch_no = $("#batch_no_" + new_value[0] + "_" + i).val();
-      if (old_product_id == product_id && batch_no == old_batch_no) {
-        $("#batch_no_" + new_value[0] + "_" + i + " option").prop("selected", false);
-        $(".select2").select2();
-        $('#available_' + nextindex).val(0);
-        is_disabled = 1;
-      }
-    }
-  }
-
-  if (is_disabled == 0) {
-    $(':input[type="submit"]').prop('disabled', false);
-    var a = {
-      warehouse_id: warehouse_id,
-      product_id: product_id,
-      batch_no: batch_no,
-    };
-    $.ajax({
-      type: "POST",
-      url: "<?php echo base_url()?>inventory/get_available_qty",
-      data: a,
-      success: function(res) {
-        $('#available_' + nextindex).val(res.quantity);
-      }
-    });
-  } else {
-    Swal.fire({
-      title: "Error!",
-      text: "Product Batch No. Can't Be Same!!!",
-      icon: "error",
-      customClass: {
-        confirmButton: "btn btn-primary"
-      },
-      buttonsStyling: !1
-    });
-    $(':input[type="submit"]').prop('disabled', true);
-    //$('#product_id_'+nextindex).prop("selected", false);
-    //$(".select2").select2();
-
-  }
-
-}
+    // Restricted access check
+    <?php if($this->session->userdata('super_type_id') == 7): // Salesman role ID ?>
+        $('#date_picker').prop('readonly', true);
+        $('#date_picker').on('mousedown', function(e){ e.preventDefault(); });
+    <?php endif; ?>
+});
 </script>
+
+<!-- Price History Modal -->
+<div class="modal fade" id="priceHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Last Selling Prices</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="priceHistoryModalContent">
+                <!-- Content via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
