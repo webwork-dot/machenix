@@ -131,6 +131,47 @@
 
     // run once on page load (for edit pages too)
     toggleBankAccount();
+
+    // Dynamic Batch Loading
+    function loadSupplierBatches() {
+      const supplierId = $('#supplier_id').val();
+      const $batchSelect = $('#batch_no');
+
+      if (!supplierId) {
+        $batchSelect.html('<option value="">Select Supplier First</option>').trigger('change');
+        return;
+      }
+
+      // Show loading state
+      $batchSelect.html('<option value="">Loading...</option>').trigger('change');
+
+      $.ajax({
+        url: '<?= base_url() ?>inventory/get_supplier_batches/' + supplierId,
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+          let options = '<option value="">Select Batch/Voucher</option>';
+          if (data && data.length > 0) {
+            data.forEach(function(batch) {
+              options += `<option value="${batch.voucher_no}">${batch.voucher_no}</option>`;
+            });
+          } else {
+            options = '<option value="">No Purchase In batches found</option>';
+          }
+          $batchSelect.html(options).trigger('change');
+        },
+        error: function() {
+          $batchSelect.html('<option value="">Error loading batches</option>').trigger('change');
+        }
+      });
+    }
+
+    $('#supplier_id').on('change', loadSupplierBatches);
+
+    // If supplier is pre-selected
+    if ($('#supplier_id').val()) {
+      loadSupplierBatches();
+    }
   });
 
   $(document).ready(function () {

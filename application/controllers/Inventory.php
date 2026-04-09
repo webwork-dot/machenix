@@ -321,7 +321,8 @@ class Inventory extends CI_Controller
             $data                    = $this->inventory_model->get_supplier_by_id($param2)->row_array();
             $page_data['data']       = $data;
             $page_data['id']         = $param2;
-
+            $page_data['outstanding'] = $this->inventory_model->get_supplier_outstanding($param2);
+            $page_data['payments'] = $this->inventory_model->get_supplier_payments($param2);
             $page_data['page_name']  = 'supplier_ledger';
             $page_data['page_title'] = 'Supplier Ledger';
             $this->load->view('backend/index', $page_data);
@@ -754,7 +755,11 @@ class Inventory extends CI_Controller
         $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
         $page_data['bank_accounts'] = ($bank_accounts != '') ? $bank_accounts : [];
 
-        $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['is_deleted' => '0', 'delivery_status' => 'loading', 'method' => 'import', 'company_id' => $company_id]);
+        $pos = $this->db->query("SELECT id, voucher_no FROM purchase_order 
+                                WHERE is_deleted = '0' 
+                                AND delivery_status IN ('loading', 'purchase_in') 
+                                AND method = 'import' 
+                                AND company_id = '$company_id'")->result_array();
         $page_data['po'] = ($pos != '') ? $pos : [];
 
         if ($param1 == 'add') {
@@ -806,6 +811,17 @@ class Inventory extends CI_Controller
         
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_purchase_order(['pending', 'priority', 'loading']);
+        }
+    }
+
+    public function revert_purchase_order_in($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $res = $this->inventory_model->revert_purchase_order_in($id);
+            echo json_encode($res);
         }
     }
 
@@ -2813,9 +2829,13 @@ class Inventory extends CI_Controller
         $this->inventory_model->update_purchase_order_priority_list();
     }
 
-    // public function add_prod()
-    // {
-    //     $this->inventory_model->add_prod();
-    // }
-
+    public function get_supplier_batches($supplier_id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $batches = $this->inventory_model->get_batches_by_supplier($supplier_id);
+        echo json_encode($batches);
+    }
 }

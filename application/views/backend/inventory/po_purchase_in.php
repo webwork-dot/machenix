@@ -204,6 +204,62 @@ function generate_excel(id) {
   window.location.href = "<?php echo base_url(); ?>inventory/generate_priotity_purchase_order_excel/" + id;
 }
 
+function revertPurchaseIn(id) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will move the Po back to the loading list and delete items from inventory. This can only be undone if the stock is still available!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, revert it!',
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-outline-danger ms-1'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $('.loader').show();
+            $.ajax({
+                url: "<?php echo base_url('inventory/revert_purchase_order_in/'); ?>" + id,
+                type: 'POST',
+                dataType: 'json',
+                success: function(res) {
+                    $('.loader').hide();
+                    if (res.status == '200') {
+                        Swal.fire({
+                            title: 'Reverted!',
+                            text: res.message,
+                            icon: 'success',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        }).then(() => {
+                            $('#report-datatable').DataTable().ajax.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: res.message,
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                },
+                error: function() {
+                    $('.loader').hide();
+                    Swal.fire('Error!', 'Something went wrong on the server.', 'error');
+                }
+            });
+        }
+    });
+}
+
 $(document).ready(function() {
   setInterval(function() {
     if (document.querySelector('.cke_notification_close')) {

@@ -775,6 +775,7 @@ class Inventory_model extends CI_Model
 				$replicate_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/supplier_replicate_modal/" . $id . "','Replicate Supplier')";
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+             <a href="' . base_url() . 'inventory/supplier/ledger/' . $id . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 btn-outline-primary" style="padding: 4px 8px;"><i class="fa fa-book" aria-hidden="true"></i></button></a>
              <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
              <a href="javascript:void(0);" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
              ';
@@ -1301,6 +1302,7 @@ class Inventory_model extends CI_Model
 
 					$data['rate']  					= clean_and_escape($this->input->post('rate'));
 					$data['usd_rate']  		= clean_and_escape($this->input->post('usd_rate'));
+					$data['actual_usd_rate']  = clean_and_escape($this->input->post('actual_usd_rate'));
 					$data['product_mrp']     = clean_and_escape($this->input->post('product_mrp'));
 					$data['costing_price']   = clean_and_escape($this->input->post('costing_price'));
 					$data['status']          = clean_and_escape($this->input->post('status'));
@@ -1528,6 +1530,7 @@ class Inventory_model extends CI_Model
 			$data['cbm']						= clean_and_escape($this->input->post('cbm'));
 			$data['rate']  					= clean_and_escape($this->input->post('rate'));
 			$data['usd_rate']  			= clean_and_escape($this->input->post('usd_rate'));
+			$data['actual_usd_rate']  	= clean_and_escape($this->input->post('actual_usd_rate'));
 
 			$supplier_id = $this->input->post('supplier_id');
 			$supplier = $this->common_model->getRowById('supplier', 'name', ['id' => $supplier_id]);
@@ -2870,7 +2873,8 @@ class Inventory_model extends CI_Model
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
-							-
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Purchase In</a>
+							<a href="javascript:void(0)" class="dropdown-item" onclick="revertPurchaseIn(' . $id . ')"><i class="fa fa-undo" aria-hidden="true"></i> Revert Stock In</a>
 						</div>
 					</div>';
 				} else {
@@ -4172,6 +4176,8 @@ class Inventory_model extends CI_Model
 		$inr_rate = $this->input->post('inr_rate');
 		$boe_no = $this->input->post('boe_no');
 		$boe_date = $this->input->post('boe_date');
+
+		$is_edit = ($po_row['delivery_status'] == 'purchase_in');
 		
 		$po = [
 			"inr_rate" => $inr_rate,
@@ -4191,6 +4197,8 @@ class Inventory_model extends CI_Model
 		$actual_qty        = $this->input->post('actual_qty');
 		$actual_rmb        = $this->input->post('actual_rmb');
 		$total_rmb         = $this->input->post('total_rmb');
+		$actual_usd        = $this->input->post('actual_usd');
+		$actual_inr        = $this->input->post('actual_inr');
 		$official_qty      = $this->input->post('official_qty');
 		$official_rate_rs  = $this->input->post('official_rate_rs');
 		$official_total_rs = $this->input->post('official_total_rs');
@@ -4200,24 +4208,63 @@ class Inventory_model extends CI_Model
 		$taxable_value     = $this->input->post('taxable_value');
 		$gst_amt           = $this->input->post('gst_amt');
 		$total_amt         = $this->input->post('total_amt');
+		$invoice_no        = $this->input->post('invoice_no');
+
+		$product_ids       = $this->input->post('product_id');
+		$supplier_ids      = $this->input->post('supplier_id_row');
 
 		$rows = [];
 
 		if (is_array($row_ids)) {
 				foreach ($row_ids as $i => $row_id) {
 						$row_id = (int) $row_id;
-						$po_prod_row = $this->common_model->getRowById('po_products', '*', ['id' => $row_id]);
+						
+						if ($row_id == 0) {
+							// New product added from Purchase In modal
+							$p_id = $product_ids[$i];
+							$s_id = $supplier_ids[$i];
+							$raw_p = $this->common_model->getRowById('raw_products', '*', ['id' => $p_id]);
+							
+							$new_po_prod = [
+								'parent_id' => $po_id,
+								'supplier_id' => $s_id,
+								'product_id' => $p_id,
+								'categories' => $raw_p['categories'] ?? '',
+								'product_name' => $product_name[$i] ?? '',
+								'item_code' => $item_code[$i] ?? '',
+								'hsn_code' => $raw_p['hsn_code'] ?? '',
+								'unit' => $raw_p['unit'] ?? '',
+								'cartoon' => $raw_p['cartoon_qty'] ?? 0,
+								'rate' => $raw_p['product_mrp'] ?? 0,
+								'basic_amount' => $raw_p['costing_price'] ?? 0,
+								'unit_price_rmb' => $raw_p['rate'] ?? 0,
+								'actual_usd' => $raw_p['actual_usd_rate'] ?? 0,
+								'official_ci_unit_price_usd' => $raw_p['usd_rate'] ?? 0,
+								'is_priority' => 0,
+								'loading_list_qty' => 0,
+								'quantity' => 0,
+								'pending' => 0,
+								'black_qty' => 0
+							];
+							$this->db->insert('po_products', $new_po_prod);
+							$row_id = $this->db->insert_id();
+							$po_prod_row = $new_po_prod;
+						} else {
+							$po_prod_row = $this->common_model->getRowById('po_products', '*', ['id' => $row_id]);
+						}
 
 						// PO total
-						$row["net_sales_value_1"]  = $row["net_sales_value_1"] + ($taxable_value[$i] ?? 0);
-						$row["transport_gst_amount"]  = $row["transport_gst_amount"] + ($gst_amt[$i] ?? 0);
-						$row["grand_total"]  = $row["grand_total"] + ($total_amt[$i] ?? 0);
+						$po["net_sales_value_1"]  = $po["net_sales_value_1"] + ($taxable_value[$i] ?? 0);
+						$po["transport_gst_amount"]  = $po["transport_gst_amount"] + ($gst_amt[$i] ?? 0);
+						$po["grand_total"]  = $po["grand_total"] + ($total_amt[$i] ?? 0);
 
 						// PO Prod Update
 						$po_prods = [
 								'actual_qty'        => (int) ($actual_qty[$i] ?? 0),
 								'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
 								'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+								'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
+								'actual_inr'        => (float) ($actual_inr[$i] ?? 0),
 								'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
 								'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
 								'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
@@ -4226,6 +4273,7 @@ class Inventory_model extends CI_Model
 								'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
 								'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
 								'total_amt'         => (float) ($total_amt[$i] ?? 0),
+								'invoice_no'        => $invoice_no[$i] ?? 1,
 						];
 
 						$this->db->where('id', $row_id)->update('po_products', $po_prods);
@@ -4234,7 +4282,7 @@ class Inventory_model extends CI_Model
 						$inv = [
 							'company_id' 				=> $po_row["company_id"],
 							'warehouse_id' 			=> $po_row["warehouse_id"],
-							'supplier_id' 			=> $po_row["supplier_id"],
+							'supplier_id' 			=> $po_prod_row["supplier_id"],
 							'warehouse_name' 		=> $po_row["warehouse_name"],
 							'product_id' 				=> $po_prod_row["product_id"],
 							'categories' 				=> $po_prod_row["categories"],
@@ -4246,6 +4294,8 @@ class Inventory_model extends CI_Model
 
 							'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
 							'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+							'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
+							'actual_inr'        => (float) ($actual_inr[$i] ?? 0),
 							'official_qty'      => (int) ($official_qty[$i] ?? 0),
 							'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
 							'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
@@ -4258,70 +4308,98 @@ class Inventory_model extends CI_Model
 							'total_amt'         => (float) ($total_amt[$i] ?? 0),	
 						];
 
-						$check_inv = $this->common_model->getRowById('inventory', '*', ['product_id' => $po_prod_row["product_id"], 'warehouse_id' => $po_row["warehouse_id"], 'company_id' => $po_row["company_id"], 'batch_no' => $po_row["voucher_no"]]);
+						// Usage Check for Edit Mode
+						$skip_inventory_update = false;
+						if ($is_edit) {
+							$current_inv_row = $this->db->get_where('inventory', [
+								'product_id' => $po_prod_row["product_id"],
+								'warehouse_id' => $po_row["warehouse_id"],
+								'company_id' => $po_row["company_id"],
+								'batch_no' => $po_row["voucher_no"]
+							])->row_array();
 
-						if($check_inv == "") {
-							$this->db->insert('inventory', $inv);
-							$inventory_id = $this->db->insert_id();
-						} else {
-							$updated_inv = [
-								'quantity'        	=> $check_inv['quantity'] + $inv['quantity'],
-								'actual_rmb'        => $check_inv['actual_rmb'] + $inv['actual_rmb'],
-								'total_rmb'         => $check_inv['total_rmb'] + $inv['total_rmb'],
-								'official_qty'      => $check_inv['official_qty'] + $inv['official_qty'],
-								'official_rate_rs'  => $check_inv['official_rate_rs'] + $inv['official_rate_rs'],
-								'official_total_rs' => $check_inv['official_total_rs'] + $inv['official_total_rs'],
-								'black_qty'         => $check_inv['black_qty'] + $inv['black_qty'],
-								'duty_percent'      => $check_inv['duty_percent'] + $inv['duty_percent'],
-								'duty_amt'          => $check_inv['duty_amt'] + $inv['duty_amt'],
-								'duty_surcharge'    => $check_inv['duty_surcharge'] + $inv['duty_surcharge'],
-								'taxable_value'     => $check_inv['taxable_value'] + $inv['taxable_value'],
-								'gst_amt'           => $check_inv['gst_amt'] + $inv['gst_amt'],
-								'total_amt'         => $check_inv['total_amt'] + $inv['total_amt'],
-							];
-
-							$this->db->where('id', $check_inv['id'])->update('inventory', $updated_inv);
-							$inventory_id = $check_inv['id'];
+							if ($current_inv_row && (int)$current_inv_row['quantity'] != (int)$po_prod_row['actual_qty']) {
+								$skip_inventory_update = true;
+							}
 						}
 
-						// Inventory History
-						$inv_his = [
-							'supplier_id' 			=> $po_row["supplier_id"],
-							'parent_id' 				=> $inventory_id,
-							'company_id' 				=> $po_row["company_id"],
-							'warehouse_id' 			=> $po_row["warehouse_id"],
-							'warehouse_name' 		=> $po_row["warehouse_name"],
-							'product_id' 				=> $po_prod_row["product_id"],
-							'categories' 				=> $po_prod_row["categories"],
-							'batch_no' 					=> $po_row["voucher_no"],
-							'product_name'			=> $product_name[$i] ?? '',
-							'item_code'					=> $item_code[$i] ?? '',
-							'sku'         			=> $item_code[$i] ?? '',
-							'order_id'        	=> $po_id,
-							'status'        		=> 'in',
-							'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
+						if (!$skip_inventory_update) {
+							$check_inv = $this->common_model->getRowById('inventory', '*', ['product_id' => $po_prod_row["product_id"], 'warehouse_id' => $po_row["warehouse_id"], 'company_id' => $po_row["company_id"], 'batch_no' => $po_row["voucher_no"]]);
 
-							'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
-							'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
-							'official_qty'      => (int) ($official_qty[$i] ?? 0),
-							'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
-							'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
-							'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
-							'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
-							'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
-							'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
-							'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
-							'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
-							'total_amt'         => (float) ($total_amt[$i] ?? 0),	
-							
-							'received_date'							=> date('Y-m-d'),
-							'invoice_no'         	=> $po_prod_row['invoice_no'],	
-							'added_date'         	=> date('Y-m-d H:i:s'),
-							"added_by_id" => $this->session->userdata('super_user_id'),
-	        		"added_by_name" => $this->session->userdata('super_name'),
-						];
+							if($check_inv == "") {
+								$this->db->insert('inventory', $inv);
+								$inventory_id = $this->db->insert_id();
+							} else {
+								if ($is_edit) {
+									// In Edit Mode, we OVERWRITE the existing batch quantity/costs
+									$updated_inv = $inv;
+									unset($updated_inv['company_id'], $updated_inv['warehouse_id'], $updated_inv['product_id'], $updated_inv['batch_no']);
+								} else {
+									// Original logic for first-time Stock In: Accumulate
+									$updated_inv = [
+										'quantity'        	=> $check_inv['quantity'] + $inv['quantity'],
+										'actual_rmb'        => $check_inv['actual_rmb'] + $inv['actual_rmb'],
+										'total_rmb'         => $check_inv['total_rmb'] + $inv['total_rmb'],
+										'actual_usd'        => $inv['actual_usd'],
+										'actual_inr'        => $inv['actual_inr'],
+										'official_qty'      => $check_inv['official_qty'] + $inv['official_qty'],
+										'official_rate_rs'  => $check_inv['official_rate_rs'] + $inv['official_rate_rs'],
+										'official_total_rs' => $check_inv['official_total_rs'] + $inv['official_total_rs'],
+										'black_qty'         => $check_inv['black_qty'] + $inv['black_qty'],
+										'duty_percent'      => $check_inv['duty_percent'] + $inv['duty_percent'],
+										'duty_amt'          => $check_inv['duty_amt'] + $inv['duty_amt'],
+										'duty_surcharge'    => $check_inv['duty_surcharge'] + $inv['duty_surcharge'],
+										'taxable_value'     => $check_inv['taxable_value'] + $inv['taxable_value'],
+										'gst_amt'           => $check_inv['gst_amt'] + $inv['gst_amt'],
+										'total_amt'         => $check_inv['total_amt'] + $inv['total_amt'],
+									];
+								}
 
-						$this->db->insert('inventory_history', $inv_his);
+								$this->db->where('id', $check_inv['id'])->update('inventory', $updated_inv);
+								$inventory_id = $check_inv['id'];
+							}
+
+							// Inventory History
+							$inv_his = [
+								'supplier_id' 			=> $po_prod_row["supplier_id"],
+								'parent_id' 				=> $inventory_id,
+								'company_id' 				=> $po_row["company_id"],
+								'warehouse_id' 			=> $po_row["warehouse_id"],
+								'warehouse_name' 		=> $po_row["warehouse_name"],
+								'product_id' 				=> $po_prod_row["product_id"],
+								'categories' 				=> $po_prod_row["categories"],
+								'batch_no' 					=> $po_row["voucher_no"],
+								'product_name'			=> $product_name[$i] ?? '',
+								'item_code'					=> $item_code[$i] ?? '',
+								'sku'         			=> $item_code[$i] ?? '',
+								'order_id'        	=> $po_id,
+								'status'        		=> $is_edit ? 'Purchase In Updated' : 'in',
+								'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
+
+								'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
+								'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+								'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
+								'actual_inr'        => (float) ($actual_inr[$i] ?? 0),
+								'official_qty'      => (int) ($official_qty[$i] ?? 0),
+								'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
+								'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
+								'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
+								'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
+								'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
+								'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
+								'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
+								'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
+								'total_amt'         => (float) ($total_amt[$i] ?? 0),	
+								
+								'received_date'							=> date('Y-m-d'),
+								'invoice_no'         	=> $invoice_no[$i] ?? 1,	
+								'added_date'         	=> date('Y-m-d H:i:s'),
+								"added_by_id"         => $this->session->userdata('super_user_id'),
+								"added_by_name"       => $this->session->userdata('super_name'),
+							];
+
+							$this->db->insert('inventory_history', $inv_his);
+						}
 
 				}
 		}
@@ -4337,6 +4415,129 @@ class Inventory_model extends CI_Model
 		} else {
 			$this->db->trans_complete();
 			return simple_json_output($resultpost);
+		}
+	}
+
+	public function revert_purchase_order_in($po_id) {
+		$this->db->trans_start();
+		
+		$po = $this->db->get_where('purchase_order', ['id' => $po_id])->row_array();
+		if (!$po || $po['delivery_status'] != 'purchase_in') {
+			return ['status' => 400, 'message' => 'Invalid PO or PO is not in Stock In status.'];
+		}
+
+		$batch_no = $po['voucher_no'];
+		$warehouse_id = $po['warehouse_id'];
+		$company_id = $po['company_id'];
+
+		// 1. Fetch matching products
+		$po_products = $this->db->get_where('po_products', ['parent_id' => $po_id, 'actual_qty >' => 0])->result_array();
+		
+		if (empty($po_products)) {
+			return ['status' => 400, 'message' => 'No products found with actual quantity in this PO.'];
+		}
+
+		// 2. Strict validation loop
+		foreach ($po_products as $product) {
+			$product_id = $product['product_id'];
+			$stocked_qty = (int)$product['actual_qty'];
+
+			// Check current inventory for this batch
+			$inv = $this->db->get_where('inventory', [
+				'product_id' => $product_id,
+				'warehouse_id' => $warehouse_id,
+				'company_id' => $company_id,
+				'batch_no' => $batch_no
+			])->row_array();
+
+			if (!$inv) {
+				return [
+					'status' => 400, 
+					'message' => "Validation Failed: Product [{$product['product_name']}] not found in inventory for batch {$batch_no}."
+				];
+			}
+
+			if ((int)$inv['quantity'] != $stocked_qty) {
+				return [
+					'status' => 400, 
+					'message' => "Validation Failed: Product [{$product['product_name']}] quantity mismatch. Stocked: {$stocked_qty}, Current Inventory: {$inv['quantity']}. Reversal blocked."
+				];
+			}
+		}
+
+		// 3. Execution (If we reach here, all items matched)
+		foreach ($po_products as $product) {
+			$product_id = $product['product_id'];
+			$stocked_qty = (int)$product['actual_qty'];
+
+			// Log History (Stock Out / Reversion)
+			$inv_his = [
+				'supplier_id' 			=> $product["supplier_id"],
+				'company_id' 				=> $company_id,
+				'warehouse_id' 			=> $warehouse_id,
+				'warehouse_name' 		=> $po["warehouse_name"],
+				'product_id' 				=> $product_id,
+				'categories' 				=> $product["categories"],
+				'batch_no' 					=> $batch_no,
+				'product_name'			=> $product["product_name"],
+				'item_code'					=> $product["item_code"],
+				'sku'         			=> $product["item_code"],
+				'order_id'        	=> $po_id,
+				'status'        		=> 'Purchase In Reverted', // Updated as requested
+				'quantity'        	=> $stocked_qty,
+				'actual_rmb'        => $product['actual_rmb'],
+				'total_rmb'         => $product['total_rmb'],
+				'actual_usd'        => $product['actual_usd'],
+				'actual_inr'        => $product['actual_inr'],
+				'received_date'			=> date('Y-m-d'),
+				'added_date'         	=> date('Y-m-d H:i:s'),
+				"added_by_id"       => $this->session->userdata('super_user_id'),
+				"added_by_name"     => $this->session->userdata('super_name'),
+			];
+			$this->db->insert('inventory_history', $inv_his);
+
+			// Delete from Inventory
+			$this->db->where([
+				'product_id' => $product_id,
+				'warehouse_id' => $warehouse_id,
+				'company_id' => $company_id,
+				'batch_no' => $batch_no
+			])->delete('inventory');
+		}
+
+		// Reset PO Products
+		$this->db->where('parent_id', $po_id)->update('po_products', [
+			'actual_qty' => 0,
+			'actual_rmb' => 0,
+			'total_rmb' => 0,
+			'actual_usd' => 0,
+			'actual_inr' => 0,
+			'total_amt' => 0,
+			'taxable_value' => 0,
+			'gst_amt' => 0,
+			'duty_amt' => 0,
+			'duty_surcharge' => 0,
+			'official_total_rs' => 0,
+			'official_rate_rs' => 0,
+		]);
+
+		// Update PO status back to Loading List and clear BOE
+		$this->db->where('id', $po_id)->update('purchase_order', [
+			'delivery_status' => 'loading',
+			'boe_no' => '',
+			'boe_date' => NULL,
+			'completed_date' => NULL,
+			'net_sales_value_1' => 0,
+			'transport_gst_amount' => 0,
+			'grand_total' => 0
+		]);
+
+		$this->db->trans_complete();
+
+		if ($this->db->trans_status() === FALSE) {
+			return ['status' => 400, 'message' => 'Transaction failed during reversal.'];
+		} else {
+			return ['status' => 200, 'message' => 'Purchase Order successfully moved back to Loading List and Inventory cleared.'];
 		}
 	}
 
@@ -14292,6 +14493,54 @@ public function get_sales_return_reports()
 										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
 		}
+		return $query->result_array();
+	}
+
+	public function get_supplier_outstanding($supplier_id)
+	{
+		$query = $this->db->query("SELECT 
+										po.id,
+										po.voucher_no,
+										po.date,
+										po.delivery_status,
+										SUM(pp.actual_qty * pp.unit_price_rmb) as total_actual_rmb,
+										SUM(pp.actual_qty * pp.actual_usd) as total_actual_usd,
+										SUM(pp.actual_qty * pp.actual_inr) as total_actual_inr,
+										COALESCE(MAX(CONCAT(u.first_name, ' ', IFNULL(u.last_name, ''))), MAX(invh.added_by_name)) as added_by_name
+									FROM purchase_order po
+									JOIN po_products pp ON po.id = pp.parent_id
+									LEFT JOIN inventory_history invh ON po.id = invh.order_id AND invh.status IN ('in', 'Purchase In Updated')
+									LEFT JOIN sys_users u ON invh.added_by_id = u.id
+									WHERE pp.supplier_id = '$supplier_id'
+									AND po.delivery_status = 'purchase_in'
+									AND po.is_deleted = '0'
+									GROUP BY po.id, po.voucher_no, po.date, po.delivery_status
+									ORDER BY po.date DESC, po.id DESC");
+		return $query->result_array();
+	}
+
+	public function get_supplier_payments($supplier_id)
+	{
+		$query = $this->db->query("SELECT 
+										p.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM payments p
+									LEFT JOIN sys_users u ON p.added_by = u.id
+									WHERE p.supplier_id = '$supplier_id'
+									AND p.is_delete = 0
+									ORDER BY p.payment_date DESC, p.id DESC");
+		return $query->result_array();
+	}
+
+	public function get_batches_by_supplier($supplier_id)
+	{
+		$query = $this->db->query("SELECT DISTINCT po.voucher_no
+									FROM purchase_order po
+									JOIN po_products pp ON po.id = pp.parent_id
+									WHERE pp.supplier_id = '$supplier_id'
+									AND po.delivery_status = 'purchase_in'
+									AND po.is_deleted = '0'
+									ORDER BY po.voucher_no ASC");
 		return $query->result_array();
 	}
 }

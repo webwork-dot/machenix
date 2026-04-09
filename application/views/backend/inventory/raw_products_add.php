@@ -295,14 +295,21 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>USD Rate</label>
+              <label>Official USD Rate</label>
               <input type="number" class="form-control" placeholder="Enter USD Rate" name="usd_rate" value="0">
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Rate</label>
+              <label>Actual USD Rate</label>
+              <input type="number" class="form-control" placeholder="Enter USD Rate" name="actual_usd_rate" value="0">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Actual RMB</label>
               <input type="number" class="form-control" placeholder="Enter Rate" name="rate" value="0">
             </div>
           </div>
