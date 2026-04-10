@@ -346,7 +346,7 @@ foreach ($products_raw as $product) {
                                             value="<?php echo $official_total_rs !== 0.0 ? number_format($official_total_rs, 2, '.', '') : '0'; ?>"
                                             readonly>
                                         </td>
-
+                                        
                                         <td>
                                             <input type="text"
                                             class="form-control form-control-sm text-right duty-percent"
@@ -498,7 +498,7 @@ foreach ($products_raw as $product) {
             </button>
         </div>
     </div>
-</form>	
+</form>
 
 <!-- Modal -->
 <div class="modal fade inner-modal" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">

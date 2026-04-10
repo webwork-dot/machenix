@@ -11,7 +11,7 @@ if (!empty($supplier['signature_image'])) {
     // $stamp_image = $supplier['signature_image'];
     $stamp_image = FCPATH . $supplier['signature_image'];
     $stamp_image = "data:image/png;base64," . base64_encode(file_get_contents($stamp_image));
-} 
+}
 
 // Format supplier address
 $supplier_address = '';

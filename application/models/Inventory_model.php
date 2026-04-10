@@ -161,7 +161,7 @@ class Inventory_model extends CI_Model
 		return $result;
 	}
 
-	// public function get_ajax_ranked_products(){
+	// public function get_ajax_ranked_products(){ 
 	//     $sales = $this->db->query("SELECT 
 	//         s.id as sid, sp.id as pid, sp.item_code, sp.product_id 
 	//         FROM sales_order_product as sp INNER JOIN sales_order as s ON s.id = sp.order_id 
@@ -187,9 +187,7 @@ class Inventory_model extends CI_Model
 
 	//         }
 	//     }
-
 	//     return $result;
-
 	// }
 
 	public function check_duplication($action = "", $field = "", $email = "", $table = "", $user_id = "")

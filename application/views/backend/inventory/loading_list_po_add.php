@@ -690,7 +690,7 @@ function handleSupplierChange(selectElement, supplierRowId) {
     // Clear existing products (keep table structure, just clear tbody)
     $('#products_' + supplierRowId + ' tr').remove();
     
-    // Reset product row count
+    // Reset product row count 
     productRowCounts[supplierRowId] = 0;
     calculateGrandTotalCBM();
 
@@ -1013,7 +1013,6 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
     var keyAttr = i === 0 ? `data-product-id="${productData.id}"` : '';
 
     productRowHtml += `<tr class="${rowClass}" id="${rowId}" ${keyAttr}>`;
-
     if (i === 0) {
       productRowHtml += `
       <td rowspan="${variationCount}">
@@ -1066,7 +1065,7 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
         </td>
       `;
     }
-
+    
     productRowHtml += `
       <td>
         <input type="hidden" name="${inputPrefix}_variation_id[${supplierKey}][${productKey}][]" value="${variationId}">
