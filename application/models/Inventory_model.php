@@ -4327,6 +4327,47 @@ class Inventory_model extends CI_Model
 							if($check_inv == "") {
 								$this->db->insert('inventory', $inv);
 								$inventory_id = $this->db->insert_id();
+
+								// Inventory History
+								$inv_his = [
+									'supplier_id' 			=> $po_prod_row["supplier_id"],
+									'parent_id' 				=> $inventory_id,
+									'company_id' 				=> $po_row["company_id"],
+									'warehouse_id' 			=> $po_row["warehouse_id"],
+									'warehouse_name' 		=> $po_row["warehouse_name"],
+									'product_id' 				=> $po_prod_row["product_id"],
+									'categories' 				=> $po_prod_row["categories"],
+									'batch_no' 					=> $po_row["voucher_no"],
+									'product_name'			=> $product_name[$i] ?? '',
+									'item_code'					=> $item_code[$i] ?? '',
+									'sku'         			=> $item_code[$i] ?? '',
+									'order_id'        	=> $po_id,
+									'status'        		=> $is_edit ? 'in' : 'in',
+									'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
+
+									'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
+									'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
+									'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
+									'actual_inr'        => (float) ($actual_inr[$i] ?? 0),
+									'official_qty'      => (int) ($official_qty[$i] ?? 0),
+									'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
+									'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
+									'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
+									'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
+									'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
+									'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
+									'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
+									'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
+									'total_amt'         => (float) ($total_amt[$i] ?? 0),	
+									
+									'received_date'							=> date('Y-m-d'),
+									'invoice_no'         	=> $invoice_no[$i] ?? 1,	
+									'added_date'         	=> date('Y-m-d H:i:s'),
+									"added_by_id"         => $this->session->userdata('super_user_id'),
+									"added_by_name"       => $this->session->userdata('super_name'),
+								];
+
+								$this->db->insert('inventory_history', $inv_his);
 							} else {
 								if ($is_edit) {
 									// In Edit Mode, we OVERWRITE the existing batch quantity/costs
@@ -4355,50 +4396,49 @@ class Inventory_model extends CI_Model
 
 								$this->db->where('id', $check_inv['id'])->update('inventory', $updated_inv);
 								$inventory_id = $check_inv['id'];
+
+								// Inventory History
+								$inv_his = [
+									'supplier_id' 				=> $po_prod_row["supplier_id"],
+									'parent_id' 					=> $inventory_id,
+									'company_id' 					=> $po_row["company_id"],
+									'warehouse_id' 				=> $po_row["warehouse_id"],
+									'warehouse_name' 			=> $po_row["warehouse_name"],
+									'product_id' 					=> $po_prod_row["product_id"],
+									'categories' 					=> $po_prod_row["categories"],
+									'batch_no' 						=> $po_row["voucher_no"],
+									'product_name'				=> $product_name[$i] ?? '',
+									'item_code'						=> $item_code[$i] ?? '',
+									'sku'         				=> $item_code[$i] ?? '',
+									'order_id'        		=> $po_id,
+									'status'        			=> $is_edit ? 'in' : 'in',
+									'quantity'        		=> (int) ($actual_qty[$i] ?? 0),
+
+									'actual_rmb'        	=> (float) ($actual_rmb[$i] ?? 0),
+									'total_rmb'         	=> (float) ($total_rmb[$i] ?? 0),
+									'actual_usd'        	=> (float) ($actual_usd[$i] ?? 0),
+									'actual_inr'        	=> (float) ($actual_inr[$i] ?? 0),
+									'official_qty'      	=> (int) ($official_qty[$i] ?? 0),
+									'official_rate_rs'  	=> (float) ($official_rate_rs[$i] ?? 0),
+									'official_total_rs' 	=> (float) ($official_total_rs[$i] ?? 0),
+									'black_qty'         	=> (int) ($po_prod_row['black_qty'] ?? 0),
+									'duty_percent'      	=> (float) ($duty_percent[$i] ?? 0),
+									'duty_amt'          	=> (float) ($duty_amt[$i] ?? 0),
+									'duty_surcharge'    	=> (float) ($duty_surcharge[$i] ?? 0),
+									'taxable_value'     	=> (float) ($taxable_value[$i] ?? 0),
+									'gst_amt'           	=> (float) ($gst_amt[$i] ?? 0),
+									'total_amt'         	=> (float) ($total_amt[$i] ?? 0),	
+
+									'received_date'				=> date('Y-m-d'),
+									'invoice_no'         	=> $invoice_no[$i] ?? 1,	
+									'added_date'         	=> date('Y-m-d H:i:s'),
+									"added_by_id"         => $this->session->userdata('super_user_id'),
+									"added_by_name"       => $this->session->userdata('super_name'),
+								];
+
+								$this->db->where('parent_id', $check_inv['id'])->update('inventory_history', $inv_his);
 							}
-
-							// Inventory History
-							$inv_his = [
-								'supplier_id' 			=> $po_prod_row["supplier_id"],
-								'parent_id' 				=> $inventory_id,
-								'company_id' 				=> $po_row["company_id"],
-								'warehouse_id' 			=> $po_row["warehouse_id"],
-								'warehouse_name' 		=> $po_row["warehouse_name"],
-								'product_id' 				=> $po_prod_row["product_id"],
-								'categories' 				=> $po_prod_row["categories"],
-								'batch_no' 					=> $po_row["voucher_no"],
-								'product_name'			=> $product_name[$i] ?? '',
-								'item_code'					=> $item_code[$i] ?? '',
-								'sku'         			=> $item_code[$i] ?? '',
-								'order_id'        	=> $po_id,
-								'status'        		=> $is_edit ? 'Purchase In Updated' : 'in',
-								'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
-
-								'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
-								'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
-								'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
-								'actual_inr'        => (float) ($actual_inr[$i] ?? 0),
-								'official_qty'      => (int) ($official_qty[$i] ?? 0),
-								'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
-								'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
-								'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
-								'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
-								'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
-								'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
-								'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
-								'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
-								'total_amt'         => (float) ($total_amt[$i] ?? 0),	
-								
-								'received_date'							=> date('Y-m-d'),
-								'invoice_no'         	=> $invoice_no[$i] ?? 1,	
-								'added_date'         	=> date('Y-m-d H:i:s'),
-								"added_by_id"         => $this->session->userdata('super_user_id'),
-								"added_by_name"       => $this->session->userdata('super_name'),
-							];
-
-							$this->db->insert('inventory_history', $inv_his);
 						}
-
 				}
 		}
 

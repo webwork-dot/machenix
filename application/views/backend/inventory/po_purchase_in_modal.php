@@ -44,6 +44,12 @@ foreach ($products_raw as $product) {
 }
 ?>
 
+<style>
+    .inner-modal {
+        background: rgba(0, 0, 0, 0.25);
+    }
+</style>
+
 <?php echo form_open('inventory/update_purchase_order_in', ['class' => 'priority-list-form', 'onsubmit' => 'return checkForm(this);']); ?>
 <input type="hidden" name="po_id" value="<?php echo $po_id; ?>">
     <div class="row">
@@ -84,10 +90,15 @@ foreach ($products_raw as $product) {
             <?php if (!empty($supplier_products)): ?>
                 <?php 
                     $g_actual_qty        = 0;
+                    $g_actual_rmb        = 0;
                     $g_total_rmb         = 0;
+                    $g_actual_usd        = 0;
                     $g_total_usd         = 0;
+                    $g_actual_inr        = 0;
                     $g_total_inr         = 0;
                     $g_official_qty      = 0;
+                    $g_official_rate_usd = 0;
+                    $g_official_rate_rs  = 0;
                     $g_official_total_rs = 0;
                     $g_duty_amt          = 0;
                     $g_duty_surcharge    = 0;
@@ -138,10 +149,15 @@ foreach ($products_raw as $product) {
 
                                     // totals for this supplier table
                                     $t_actual_qty        = 0;
+                                    $t_actual_rmb        = 0;
                                     $t_total_rmb         = 0;
+                                    $t_actual_usd        = 0;
                                     $t_total_usd         = 0;
+                                    $t_actual_inr        = 0;
                                     $t_total_inr         = 0;
                                     $t_official_qty      = 0;
+                                    $t_official_rate_usd = 0;
+                                    $t_official_rate_rs  = 0;
                                     $t_official_total_rs = 0;
                                     $t_duty_amt          = 0;
                                     $t_duty_surcharge    = 0;
@@ -195,23 +211,33 @@ foreach ($products_raw as $product) {
                                         $total_amt = $taxable_value + $gst_amt;
 
                                         // accumulate totals
-                                        $t_actual_qty        += $actual_qty;
-                                        $t_total_rmb         += $total_rmb;
-                                        $t_total_usd         += $total_usd;
-                                        $t_total_inr         += $total_inr;
-                                        $t_official_qty      += $official_qty;
-                                        $t_official_total_rs += $official_total_rs;
-                                        $t_duty_amt          += $duty_amt;
-                                        $t_duty_surcharge    += $duty_surcharge;
-                                        $t_taxable_value     += $taxable_value;
-                                        $t_gst_amt           += $gst_amt;
-                                        $t_total_amt         += $total_amt;
+                                        $t_actual_qty          += $actual_qty;
+                                        $t_actual_rmb          += $actual_rmb;
+                                        $t_total_rmb           += $total_rmb;
+                                        $t_actual_usd          += $actual_usd;
+                                        $t_total_usd           += $total_usd;
+                                        $t_actual_inr          += $actual_inr;
+                                        $t_total_inr           += $total_inr;
+                                        $t_official_qty        += $official_qty;
+                                        $t_official_rate_usd   += (float)($product['official_ci_unit_price_usd'] ?? 0);
+                                        $t_official_rate_rs    += $official_rate_rs;
+                                        $t_official_total_rs   += $official_total_rs;
+                                        $t_duty_amt            += $duty_amt;
+                                        $t_duty_surcharge      += $duty_surcharge;
+                                        $t_taxable_value       += $taxable_value;
+                                        $t_gst_amt             += $gst_amt;
+                                        $t_total_amt           += $total_amt;
 
                                         $g_actual_qty          += $actual_qty;
+                                        $g_actual_rmb          += $actual_rmb;
                                         $g_total_rmb           += $total_rmb;
+                                        $g_actual_usd          += $actual_usd;
                                         $g_total_usd           += $total_usd;
+                                        $g_actual_inr          += $actual_inr;
                                         $g_total_inr           += $total_inr;
                                         $g_official_qty        += $official_qty;
+                                        $g_official_rate_usd   += (float)($product['official_ci_unit_price_usd'] ?? 0);
+                                        $g_official_rate_rs    += $official_rate_rs;
                                         $g_official_total_rs   += $official_total_rs;
                                         $g_duty_amt            += $duty_amt;
                                         $g_duty_surcharge      += $duty_surcharge;
@@ -325,7 +351,7 @@ foreach ($products_raw as $product) {
 
                                         <td>
                                             <input type="text"
-                                            class="form-control form-control-sm text-right"
+                                            class="form-control form-control-sm text-right official-rate-usd"
                                             value="<?php echo number_format((float)$product['official_ci_unit_price_usd'], 2); ?>"
                                             readonly>
                                         </td>
@@ -410,15 +436,15 @@ foreach ($products_raw as $product) {
                                     <tr class="font-weight-bold js-totals-row">
                                         <td colspan="4" class="text-right">TOTAL</td>
                                         <td class="text-right"><span class="js-sum-actual-qty"><?php echo number_format($t_actual_qty, 0); ?></span></td>
-                                        <td class="text-right">-</td>
+                                        <td class="text-right"><span class="js-sum-actual-rmb"><?php echo number_format($t_actual_rmb, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-total-rmb"><?php echo number_format($t_total_rmb, 2, '.', ''); ?></span></td>
-                                        <td class="text-right">-</td>
+                                        <td class="text-right"><span class="js-sum-actual-usd"><?php echo number_format($t_actual_usd, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-total-usd"><?php echo number_format($t_total_usd, 2, '.', ''); ?></span></td>
-                                        <td class="text-right">-</td>
+                                        <td class="text-right"><span class="js-sum-actual-inr"><?php echo number_format($t_actual_inr, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-total-inr"><?php echo number_format($t_total_inr, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-official-qty"><?php echo number_format($t_official_qty, 0); ?></span></td>
-                                        <td class="text-right">-</td>
-                                        <td class="text-right">-</td>
+                                        <td class="text-right"><span class="js-sum-official-rate-usd"><?php echo number_format($t_official_rate_usd, 2, '.', ''); ?></span></td>
+                                        <td class="text-right"><span class="js-sum-official-rate-rs"><?php echo number_format($t_official_rate_rs, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-official-total"><?php echo number_format($t_official_total_rs, 2, '.', ''); ?></span></td>
                                         <td class="text-right">-</td>
                                         <td class="text-right"><span class="js-sum-duty-amt"><?php echo number_format($t_duty_amt, 2, '.', ''); ?></span></td>
@@ -458,22 +484,21 @@ foreach ($products_raw as $product) {
                                     <th>Taxable Value</th>
                                     <th>GST Amt</th>
                                     <th>Total Amt</th>
-                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tfoot>
                                 <tr class="font-weight-bold js-totals-row">
                                     <td colspan="4" class="text-right fw-bold">Total</td>
                                     <td class="text-right"><span id="grand-sum-actual-qty"><?php echo number_format($g_actual_qty, 0); ?></span></td>
-                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-actual-rmb"><?php echo number_format($g_actual_rmb, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-total-rmb"><?php echo number_format($g_total_rmb, 2, '.', ''); ?></span></td>
-                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-actual-usd"><?php echo number_format($g_actual_usd, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-total-usd"><?php echo number_format($g_total_usd, 2, '.', ''); ?></span></td>
-                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-actual-inr"><?php echo number_format($g_actual_inr, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-total-inr"><?php echo number_format($g_total_inr, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-official-qty"><?php echo number_format($g_official_qty, 0); ?></span></td>
-                                    <td class="text-right">-</td>
-                                    <td class="text-right">-</td>
+                                    <td class="text-right"><span id="grand-sum-official-rate-usd"><?php echo number_format($g_official_rate_usd, 2, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-official-rate-rs"><?php echo number_format($g_official_rate_rs, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-official-total"><?php echo number_format($g_official_total_rs, 2, '.', ''); ?></span></td>
                                     <td class="text-right">-</td>
                                     <td class="text-right"><span id="grand-sum-duty-amt"><?php echo number_format($g_duty_amt, 2, '.', ''); ?></span></td>
@@ -481,7 +506,6 @@ foreach ($products_raw as $product) {
                                     <td class="text-right"><span id="grand-sum-taxable"><?php echo number_format($g_taxable_value, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-gst"><?php echo number_format($g_gst_amt, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-total-amt"><?php echo number_format($g_total_amt, 2, '.', ''); ?></span></td>
-                                    <td class="text-right">-</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -567,10 +591,15 @@ function fmtAmt(n) {
 function updateTableTotals($table) {
   var sum = {
     actual_qty: 0,
+    actual_rmb: 0,
     total_rmb: 0,
+    actual_usd: 0,
     total_usd: 0,
+    actual_inr: 0,
     total_inr: 0,
     official_qty: 0,
+    official_rate_usd: 0,
+    official_rate_rs: 0,
     official_total: 0,
     duty_amt: 0,
     duty_surcharge: 0,
@@ -583,12 +612,17 @@ function updateTableTotals($table) {
     var $r = $(this);
 
     sum.actual_qty     += toNum($r.find('.actual-qty').val());
+    sum.actual_rmb     += toNum($r.find('.actual-rmb').val());
     sum.total_rmb      += toNum($r.find('.total-rmb').val());
+    sum.actual_usd     += toNum($r.find('.actual-usd').val());
     sum.total_usd      += toNum($r.find('.total-usd').val());
+    sum.actual_inr     += toNum($r.find('.actual-inr').val());
     sum.total_inr      += toNum($r.find('.total-inr').val());
 
-    sum.official_qty   += toNum($r.find('.official-qty').val());
-    sum.official_total += toNum($r.find('.official-total').val());
+    sum.official_qty        += toNum($r.find('.official-qty').val());
+    sum.official_rate_usd   += toNum($r.find('.official-rate-usd').val());
+    sum.official_rate_rs    += toNum($r.find('.official-rate').val());
+    sum.official_total      += toNum($r.find('.official-total').val());
 
     sum.duty_amt       += toNum($r.find('.duty-amt').val());
     sum.duty_surcharge += toNum($r.find('.duty-surcharge').val());
@@ -598,10 +632,15 @@ function updateTableTotals($table) {
   });
 
   $table.find('.js-sum-actual-qty').text(fmtQty(sum.actual_qty));
+  $table.find('.js-sum-actual-rmb').text(fmtAmt(sum.actual_rmb));
   $table.find('.js-sum-total-rmb').text(fmtAmt(sum.total_rmb));
+  $table.find('.js-sum-actual-usd').text(fmtAmt(sum.actual_usd));
   $table.find('.js-sum-total-usd').text(fmtAmt(sum.total_usd));
+  $table.find('.js-sum-actual-inr').text(fmtAmt(sum.actual_inr));
   $table.find('.js-sum-total-inr').text(fmtAmt(sum.total_inr));
   $table.find('.js-sum-official-qty').text(fmtQty(sum.official_qty));
+  $table.find('.js-sum-official-rate-usd').text(fmtAmt(sum.official_rate_usd));
+  $table.find('.js-sum-official-rate-rs').text(fmtAmt(sum.official_rate_rs));
   $table.find('.js-sum-official-total').text(fmtAmt(sum.official_total));
   $table.find('.js-sum-duty-amt').text(fmtAmt(sum.duty_amt));
   $table.find('.js-sum-duty-surcharge').text(fmtAmt(sum.duty_surcharge));
@@ -611,10 +650,15 @@ function updateTableTotals($table) {
 
   // Grand Total
   const totalActualQty = [...document.querySelectorAll('.actual-qty')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalActualRmb = [...document.querySelectorAll('.actual-rmb')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalRmb = [...document.querySelectorAll('.total-rmb')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalActualUsd = [...document.querySelectorAll('.actual-usd')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalUsd = [...document.querySelectorAll('.total-usd')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalActualInr = [...document.querySelectorAll('.actual-inr')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalInr = [...document.querySelectorAll('.total-inr')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalOfficialQty = [...document.querySelectorAll('.official-qty')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalOfficialRateUsd = [...document.querySelectorAll('.official-rate-usd')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalOfficialRateRs = [...document.querySelectorAll('.official-rate')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalOfficialTotal = [...document.querySelectorAll('.official-total')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalDutyAmt = [...document.querySelectorAll('.duty-amt')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalDutySurcharge = [...document.querySelectorAll('.duty-surcharge')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
@@ -623,16 +667,21 @@ function updateTableTotals($table) {
   const totalAmt = [...document.querySelectorAll('.total-amt')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
 
   $('#grand-sum-actual-qty').text(totalActualQty);
-  $('#grand-sum-total-rmb').text(totalRmb);
-  $('#grand-sum-total-usd').text(totalUsd);
-  $('#grand-sum-total-inr').text(totalInr);
+  $('#grand-sum-actual-rmb').text(totalActualRmb.toFixed(2));
+  $('#grand-sum-total-rmb').text(totalRmb.toFixed(2));
+  $('#grand-sum-actual-usd').text(totalActualUsd.toFixed(2));
+  $('#grand-sum-total-usd').text(totalUsd.toFixed(2));
+  $('#grand-sum-actual-inr').text(totalActualInr.toFixed(2));
+  $('#grand-sum-total-inr').text(totalInr.toFixed(2));
   $('#grand-sum-official-qty').text(totalOfficialQty);
-  $('#grand-sum-official-total').text(totalOfficialTotal);
-  $('#grand-sum-duty-amt').text(totalDutyAmt);
-  $('#grand-sum-duty-surcharge').text(totalDutySurcharge);
-  $('#grand-sum-taxable').text(totalTaxableValue);
-  $('#grand-sum-gst').text(totalGstAmt);
-  $('#grand-sum-total-amt').text(totalAmt);
+  $('#grand-sum-official-rate-usd').text(totalOfficialRateUsd.toFixed(2));
+  $('#grand-sum-official-rate-rs').text(totalOfficialRateRs.toFixed(2));
+  $('#grand-sum-official-total').text(totalOfficialTotal.toFixed(2));
+  $('#grand-sum-duty-amt').text(totalDutyAmt.toFixed(2));
+  $('#grand-sum-duty-surcharge').text(totalDutySurcharge.toFixed(2));
+  $('#grand-sum-taxable').text(totalTaxableValue.toFixed(2));
+  $('#grand-sum-gst').text(totalGstAmt.toFixed(2));
+  $('#grand-sum-total-amt').text(totalAmt.toFixed(2));
 }
 
 function updateAllSupplierTotals() {
@@ -979,8 +1028,12 @@ function appendPurchaseInProductRow($section, p) {
         <td><input type="text" class="form-control form-control-sm text-right actual-qty" name="actual_qty[]" value="0" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-rmb" name="actual_rmb[]" value="${parseFloat(p.rate || 0).toFixed(2)}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right total-rmb" name="total_rmb[]" value="0.00" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right actual-usd" name="actual_usd[]" value="${usdRate.toFixed(2)}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right total-usd" name="total_usd[]" value="0.00" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right actual-inr" name="actual_inr[]" value="0.00" onkeyup="calculateActualINR(this)"></td>
+        <td><input type="text" class="form-control form-control-sm text-right total-inr" name="total_inr[]" value="0.00" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right official-qty" name="official_qty[]" value="0" readonly></td>
-        <td><input type="text" class="form-control form-control-sm text-right" value="${usdRate.toFixed(2)}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right official-rate-usd" value="${usdRate.toFixed(2)}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right official-rate" name="official_rate_rs[]" value="${rateInr.toFixed(2)}" data-usd-rate="${usdRate}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right official-total" name="official_total_rs[]" value="0.00" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right duty-percent" name="duty_percent[]" value="7.5" onkeyup="calculateDuty(this)"></td>
