@@ -297,7 +297,7 @@ foreach ($products_raw as $product) {
                                             class="form-control form-control-sm text-right actual-rmb"
                                             name="actual_rmb[]"
                                             value="<?php echo $actual_rmb !== 0.0 ? number_format($actual_rmb, 2, '.', '') : ''; ?>"
-                                            readonly>
+                                            onkeyup="calculateActual(this)">
                                         </td>
 
                                         <td>
@@ -313,7 +313,7 @@ foreach ($products_raw as $product) {
                                             class="form-control form-control-sm text-right actual-usd"
                                             name="actual_usd[]"
                                             value="<?php echo $actual_usd !== 0.0 ? number_format($actual_usd, 2, '.', '') : ''; ?>"
-                                            readonly>
+                                            onkeyup="calculateActual(this)">
                                         </td>
 
                                         <td>
@@ -1026,9 +1026,9 @@ function appendPurchaseInProductRow($section, p) {
         <td><input type="text" class="form-control form-control-sm" name="product_name[]" value="${p.name}" readonly></td>
         <td><input type="text" class="form-control form-control-sm" name="item_code[]" value="${p.item_code}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-qty" name="actual_qty[]" value="0" onkeyup="calculateActual(this)"></td>
-        <td><input type="text" class="form-control form-control-sm text-right actual-rmb" name="actual_rmb[]" value="${parseFloat(p.rate || 0).toFixed(2)}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right actual-rmb" name="actual_rmb[]" value="${parseFloat(p.rate || 0).toFixed(2)}" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-rmb" name="total_rmb[]" value="0.00" readonly></td>
-        <td><input type="text" class="form-control form-control-sm text-right actual-usd" name="actual_usd[]" value="${usdRate.toFixed(2)}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right actual-usd" name="actual_usd[]" value="${usdRate.toFixed(2)}" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-usd" name="total_usd[]" value="0.00" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-inr" name="actual_inr[]" value="0.00" onkeyup="calculateActualINR(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-inr" name="total_inr[]" value="0.00" readonly></td>
