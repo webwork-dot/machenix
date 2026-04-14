@@ -128,6 +128,8 @@ $route[$r_inventory . '/damage-stock/view/(:num)'] = 'inventory/damage_stock_for
 $route[$r_inventory . '/damage-stock-product'] = 'inventory/damage_stock_product';
 $route[$r_inventory . '/scrap-product'] = 'inventory/scrap_product';
 
+$route[$r_inventory . '/batch-detail'] = 'inventory/batch_detail';
+
 $route[$r_inventory . '/my-stock'] = 'inventory/my_stock';
 $route[$r_inventory . '/overall-stock'] = 'inventory/overall_stock';
 $route[$r_inventory . '/get-overall-stock'] = 'inventory/get_overall_stock';

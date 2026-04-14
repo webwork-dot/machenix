@@ -1526,6 +1526,268 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function batch_detail($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+
+            $company_id = $this->session->userdata('company_id');
+            $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['delivery_status' => 'purchase_in', 'is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id]);
+            $page_data['po'] = ($pos != '') ? $pos : [];
+
+            $page_data['page_name']  = 'batch_detail';
+            $page_data['page_title'] = get_phrase('batch_detail');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_batch_detail_data()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 401,
+                'message' => 'Unauthorized'
+            ));
+            return;
+        }
+
+        if (!$this->input->is_ajax_request()) {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 400,
+                'message' => 'Invalid request'
+            ));
+            return;
+        }
+
+        $batch_no = trim((string)$this->input->post('batch_no', true));
+        $company_id = (int)$this->session->userdata('company_id');
+
+        if ($batch_no === '') {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 400,
+                'message' => 'Batch No is required'
+            ));
+            return;
+        }
+
+        $po = $this->db->query("
+            SELECT
+                id,
+                voucher_no,
+                boe_no,
+                boe_date,
+                completed_date,
+                loading_date,
+                date
+            FROM purchase_order
+            WHERE voucher_no = ?
+              AND is_deleted = 0
+              AND method = 'import'
+              AND company_id = ?
+            LIMIT 1
+        ", array($batch_no, $company_id))->row_array();
+
+        if (empty($po)) {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 404,
+                'message' => 'Batch not found'
+            ));
+            return;
+        }
+
+        $rows = $this->db->query("
+            SELECT
+                pp.id,
+                pp.parent_id,
+                pp.product_id,
+                pp.supplier_id,
+                COALESCE(s.name, 'Unknown Supplier') AS supplier_name,
+                pp.product_name,
+                pp.item_code,
+                pp.hsn_code,
+                pp.official_ci_qty,
+                pp.black_qty,
+                pp.actual_qty,
+                pp.cbm,
+                pp.unit_price_rmb,
+                pp.actual_usd,
+                pp.official_ci_unit_price_usd,
+                pp.official_rate_rs,
+                pp.official_total_rs,
+                pp.duty_percent,
+                pp.duty_amt,
+                pp.duty_surcharge,
+                pp.taxable_value,
+                pp.gst_amt,
+                pop.id AS purchase_order_product_id
+            FROM po_products pp
+            LEFT JOIN supplier s
+                ON s.id = pp.supplier_id
+            LEFT JOIN purchase_order_product pop
+                ON pop.parent_id = pp.parent_id
+               AND pop.product_id = pp.product_id
+               AND pop.supplier_id = pp.supplier_id
+            WHERE pp.parent_id = ?
+              AND pp.is_deleted = 0
+            ORDER BY pp.supplier_id ASC, pp.id ASC
+        ", array($po['id']))->result_array();
+
+        $sum_keys = array(
+            'official_qty',
+            'black_qty',
+            'act_qty',
+            'cbm_per_pc',
+            'off_cbm_total',
+            'actual_cbm_total',
+            'rmb_per_pc',
+            'rmb_total',
+            'usd_per_pc',
+            'usd_total',
+            'off_usd_per_pc',
+            'total_off_usd',
+            'off_rs_per_pc',
+            'total_off_rs',
+            'off_duty_percent',
+            'off_duty_amt',
+            'off_surcharge',
+            'off_taxable_value',
+            'off_gst_percent',
+            'off_gst_amt',
+            'total_duty_gst'
+        );
+
+        $initTotals = function () use ($sum_keys) {
+            $totals = array();
+            foreach ($sum_keys as $k) {
+                $totals[$k] = 0;
+            }
+            return $totals;
+        };
+
+        $suppliers = array();
+        $grand_totals = $initTotals();
+
+        foreach ($rows as $r) {
+            $supplier_id = (int)($r['supplier_id'] ?? 0);
+            if (!isset($suppliers[$supplier_id])) {
+                $suppliers[$supplier_id] = array(
+                    'supplier_id' => $supplier_id,
+                    'supplier_name' => (string)($r['supplier_name'] ?? 'Unknown Supplier'),
+                    'products' => array(),
+                    'totals' => $initTotals()
+                );
+            }
+
+            $official_qty = (float)($r['official_ci_qty'] ?? 0);
+            $black_qty = (float)($r['black_qty'] ?? 0);
+            $act_qty = (float)($r['actual_qty'] ?? 0);
+            $cbm_per_pc = (float)($r['cbm'] ?? 0);
+            $off_cbm_total = $official_qty * $cbm_per_pc;
+            $actual_cbm_total = $act_qty * $cbm_per_pc;
+
+            $rmb_per_pc = (float)($r['unit_price_rmb'] ?? 0);
+            $rmb_total = $act_qty * $rmb_per_pc;
+            $usd_per_pc = (float)($r['actual_usd'] ?? 0);
+            $usd_total = $act_qty * $usd_per_pc;
+            $off_usd_per_pc = (float)($r['official_ci_unit_price_usd'] ?? 0);
+            $total_off_usd = $official_qty * $off_usd_per_pc;
+            $off_rs_per_pc = (float)($r['official_rate_rs'] ?? 0);
+            $total_off_rs = (float)($r['official_total_rs'] ?? 0);
+            $off_duty_percent = (float)($r['duty_percent'] ?? 0);
+            $off_duty_amt = (float)($r['duty_amt'] ?? 0);
+            $off_surcharge = (float)($r['duty_surcharge'] ?? 0);
+            $off_taxable_value = (float)($r['taxable_value'] ?? 0);
+            $off_gst_amt = (float)($r['gst_amt'] ?? 0);
+            $off_gst_percent = ($off_taxable_value > 0) ? (($off_gst_amt * 100) / $off_taxable_value) : 0;
+            $total_duty_gst = $off_duty_amt + $off_gst_amt;
+
+            $line = array(
+                'id' => (int)($r['id'] ?? 0),
+                'purchase_order_product_id' => (int)($r['purchase_order_product_id'] ?? 0),
+                'product_id' => (int)($r['product_id'] ?? 0),
+                'product_name' => (string)($r['product_name'] ?? ''),
+                'model_no' => (string)($r['item_code'] ?? ''),
+                'hsn_code' => (string)($r['hsn_code'] ?? ''),
+                'official_qty' => $official_qty,
+                'black_qty' => $black_qty,
+                'act_qty' => $act_qty,
+                'cbm_per_pc' => $cbm_per_pc,
+                'off_cbm_total' => $off_cbm_total,
+                'actual_cbm_total' => $actual_cbm_total,
+                'rmb_per_pc' => $rmb_per_pc,
+                'rmb_total' => $rmb_total,
+                'usd_per_pc' => $usd_per_pc,
+                'usd_total' => $usd_total,
+                'off_usd_per_pc' => $off_usd_per_pc,
+                'total_off_usd' => $total_off_usd,
+                'off_rs_per_pc' => $off_rs_per_pc,
+                'total_off_rs' => $total_off_rs,
+                'off_duty_percent' => $off_duty_percent,
+                'off_duty_amt' => $off_duty_amt,
+                'off_surcharge' => $off_surcharge,
+                'off_taxable_value' => $off_taxable_value,
+                'off_gst_percent' => $off_gst_percent,
+                'off_gst_amt' => $off_gst_amt,
+                'total_duty_gst' => $total_duty_gst
+            );
+
+            $suppliers[$supplier_id]['products'][] = $line;
+            foreach ($sum_keys as $k) {
+                $suppliers[$supplier_id]['totals'][$k] += (float)$line[$k];
+                $grand_totals[$k] += (float)$line[$k];
+            }
+        }
+
+        $suppliers = array_values($suppliers);
+
+        $expenses = $this->db->query("
+            SELECT
+                id,
+                input_method,
+                type,
+                expense_type,
+                vendor_id,
+                payment_type,
+                cheque_no,
+                cheque_recv_date,
+                cheque_date,
+                narration,
+                cheque_amount,
+                sub_total,
+                gst_total,
+                grand_total,
+                created_at
+            FROM po_expense
+            WHERE batch_no = ?
+              AND is_delete = 0
+            ORDER BY id ASC
+        ", array($batch_no))->result_array();
+
+        header('Content-Type: application/json');
+        echo json_encode(array(
+            'status' => 200,
+            'message' => 'success',
+            'batch_no' => $batch_no,
+            'header' => array(
+                'po_id' => (int)$po['id'],
+                'boe_no' => (string)($po['boe_no'] ?? ''),
+                'boe_date' => !empty($po['boe_date']) ? date('Y-m-d', strtotime($po['boe_date'])) : '',
+                'received_date' => !empty($po['completed_date']) ? date('Y-m-d', strtotime($po['completed_date'])) : '',
+                'loading_date' => !empty($po['loading_date']) ? date('Y-m-d', strtotime($po['loading_date'])) : '',
+                'po_date' => !empty($po['date']) ? date('Y-m-d', strtotime($po['date'])) : ''
+            ),
+            'suppliers' => $suppliers,
+            'grand_totals' => $grand_totals,
+            'expenses' => $expenses
+        ));
+    }
+
     public function my_stock($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {

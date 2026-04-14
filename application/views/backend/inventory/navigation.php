@@ -105,6 +105,13 @@
                 </li>
            </ul>
         </li>
+
+        <li class="nav-item <?php if($page_name == 'batch_detail') echo 'active'; ?>">
+           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/batch-detail'); ?>">
+               <i data-feather="database"></i>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Batch Detail</span>
+           </a>
+        </li>
         <?php } ?>
 
         <?php if($user_id == 4 || in_array('23',$access_array)) {?>
