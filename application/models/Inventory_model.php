@@ -4938,6 +4938,10 @@ class Inventory_model extends CI_Model
 		$data = array();
 		$keyword_filter = "";
 
+		$company_id        = $this->session->userdata('company_id');
+		$keyword_filter .= " AND (company_id='" . $company_id . "')";
+
+
 		if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != ""):
 			$warehouse_id        = $_REQUEST['warehouse_id'];
 			if ($warehouse_id != 'All') {
