@@ -26,7 +26,7 @@ $products_raw = $this->db
         LEFT JOIN inventory inv ON inv.product_id = pop.product_id 
              AND inv.batch_no = (SELECT voucher_no FROM purchase_order WHERE id = '$po_id')
              AND inv.warehouse_id = (SELECT warehouse_id FROM purchase_order WHERE id = '$po_id')
-        WHERE pop.parent_id = '$po_id' AND pop.loading_qty > 0
+        WHERE pop.parent_id = '$po_id' AND pop.loading_qty > 0 AND pop.is_deleted = 0
         ORDER BY pop.supplier_id ASC, pop.id ASC
     ")
     ->result_array();
