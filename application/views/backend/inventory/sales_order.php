@@ -19,6 +19,7 @@
 <?php 
     // echo json_encode($this->session->userdata());
     include('filter/date_range.php');
+    $staff_access = (int)$this->session->userdata('super_type_id');
 ?>	
 	
 <div class="row" id="table-bordered">
@@ -53,7 +54,10 @@
 					<th>Total Products</th>
 					<th>Total Amount</th>
 				    <!--<th>Remark</th>-->
-					   <th>Actions</th>
+                    <?php if ($staff_access !== 7) { ?>
+                    <th>Actions</th>
+                    <?php } ?>
+            
                   </tr>
                </thead>
             </table>
@@ -109,7 +113,9 @@
                 { "data": "total_pro" },
                 { "data": "grand_total" },
                 // { "data": "remark" },
+                <?php if ($staff_access !== 7) { ?>
                    { "data": "action" },
+                <?php } ?>
             ], 
            
             "buttons": [

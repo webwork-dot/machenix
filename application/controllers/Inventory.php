@@ -1617,6 +1617,7 @@ class Inventory extends CI_Controller
                 pp.cbm,
                 pp.unit_price_rmb,
                 pp.actual_usd,
+                pp.actual_inr,
                 pp.official_ci_unit_price_usd,
                 pp.official_rate_rs,
                 pp.official_total_rs,
@@ -1649,6 +1650,8 @@ class Inventory extends CI_Controller
             'rmb_total',
             'usd_per_pc',
             'usd_total',
+            'cost_without_expense_rs',
+            'total_rs_without_expense',
             'off_usd_per_pc',
             'total_off_usd',
             'off_rs_per_pc',
@@ -1695,6 +1698,8 @@ class Inventory extends CI_Controller
             $rmb_total = $act_qty * $rmb_per_pc;
             $usd_per_pc = (float)($r['actual_usd'] ?? 0);
             $usd_total = $act_qty * $usd_per_pc;
+            $cost_without_expense_rs = (float)($r['actual_inr'] ?? 0);
+            $total_rs_without_expense = $cost_without_expense_rs * $act_qty;
             $off_usd_per_pc = (float)($r['official_ci_unit_price_usd'] ?? 0);
             $total_off_usd = $official_qty * $off_usd_per_pc;
             $off_rs_per_pc = (float)($r['official_rate_rs'] ?? 0);
@@ -1724,6 +1729,8 @@ class Inventory extends CI_Controller
                 'rmb_total' => $rmb_total,
                 'usd_per_pc' => $usd_per_pc,
                 'usd_total' => $usd_total,
+                'cost_without_expense_rs' => $cost_without_expense_rs,
+                'total_rs_without_expense' => $total_rs_without_expense,
                 'off_usd_per_pc' => $off_usd_per_pc,
                 'total_off_usd' => $total_off_usd,
                 'off_rs_per_pc' => $off_rs_per_pc,
@@ -2164,8 +2171,7 @@ class Inventory extends CI_Controller
 
     public function get_product_by_company()
     {
-        $company_id = $this->input->post('company_id', true);
-        $results = $this->inventory_model->get_product_id_by_company($company_id);
+        $results = $this->inventory_model->get_product_id_by_company();
         foreach ($results as $item) {
             echo '<option value="' . $item['id'] . '">' . $item['name'] . '</option>';
         }
@@ -2173,9 +2179,8 @@ class Inventory extends CI_Controller
 
     public function get_qty_by_product_company()
     {
-        $company_id = $this->input->post('company_id', true);
         $product_id = $this->input->post('product_id', true);
-        $results = $this->inventory_model->get_qty_by_product_company($company_id, $product_id);
+        $results = $this->inventory_model->get_qty_by_product_company($product_id);
         header('Content-Type: application/json');
         echo json_encode($results);
     }
@@ -2434,11 +2439,11 @@ class Inventory extends CI_Controller
                 $staff_access = (int)($usr_det->staff_access ?? 0);
             }
 
-            if ($staff_access === 7) {
-                $page_data['page_name']  = 'sales_order_add_salesman';
-            } else {
-                $page_data['page_name']  = 'sales_order_add';
-            }
+            // if ($staff_access === 7) {
+            //     $page_data['page_name']  = 'sales_order_add_salesman';
+            // } else {
+            $page_data['page_name']  = 'sales_order_add';
+            // }
 
             $page_data['page_title'] = 'Add Sales';
             $this->load->view('backend/index', $page_data);

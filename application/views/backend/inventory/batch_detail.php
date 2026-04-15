@@ -48,7 +48,7 @@
 
           <div class="mt-2" id="supplier-table-wrap"></div>
 
-          <div class="mt-2">
+          <div class="mt-2 d-none">
             <h6 class="mb-1">Batch Expenses</h6>
             <div class="table-responsive">
               <table class="table table-bordered table-striped table-sm mb-0">
@@ -69,6 +69,7 @@
               </table>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -94,6 +95,11 @@
     return toNum(v).toFixed(d);
   }
 
+  function getTotalExpense(expenses) {
+    if (!Array.isArray(expenses) || expenses.length === 0) return 0;
+    return expenses.reduce((sum, e) => sum + toNum(e?.grand_total), 0);
+  }
+
   function setHeaderFields(header) {
     $('#view-boe-no').val(header?.boe_no || '');
     $('#view-boe-date').val(header?.boe_date || '');
@@ -102,7 +108,7 @@
     $('#view-po-date').val(header?.po_date || '');
   }
 
-  function renderSupplierTables(suppliers, grandTotals) {
+  function renderSupplierTables(suppliers, grandTotals, expenses) {
     const $wrap = $('#supplier-table-wrap');
     $wrap.empty();
 
@@ -110,6 +116,12 @@
       $wrap.html('<div class="alert alert-info mb-0">No product line items found for this batch.</div>');
       return;
     }
+
+    const totalExpense = getTotalExpense(expenses);
+    const grandActualCbmTotal = toNum(grandTotals?.actual_cbm_total);
+    const avgExpensePerActualCbm = grandActualCbmTotal > 0 ? (totalExpense / grandActualCbmTotal) : 0;
+    const grandOffCbmTotal = toNum(grandTotals?.off_cbm_total);
+    const avgExpensePerOffCbm = grandOffCbmTotal > 0 ? (totalExpense / grandOffCbmTotal) : 0;
 
     suppliers.forEach((supplier, supplierIdx) => {
       const products = Array.isArray(supplier.products) ? supplier.products : [];
@@ -129,10 +141,13 @@
             <td class="text-end">${fmt(p.cbm_per_pc, 5)}</td>
             <td class="text-end">${fmt(p.off_cbm_total, 5)}</td>
             <td class="text-end">${fmt(p.actual_cbm_total, 5)}</td>
+            <td class="text-end">${fmt(toNum(p.act_qty) > 0 ? (toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerActualCbm * toNum(p.actual_cbm_total))) / toNum(p.act_qty) : 0, 2)}</td>
             <td class="text-end">${fmt(p.rmb_per_pc, 2)}</td>
             <td class="text-end">${fmt(p.rmb_total, 2)}</td>
             <td class="text-end">${fmt(p.usd_per_pc, 2)}</td>
             <td class="text-end">${fmt(p.usd_total, 2)}</td>
+            <td class="text-end">${fmt(p.cost_without_expense_rs, 2)}</td>
+            <td class="text-end">${fmt(p.total_rs_without_expense, 2)}</td>
             <td class="text-end">${fmt(p.off_usd_per_pc, 2)}</td>
             <td class="text-end">${fmt(p.total_off_usd, 2)}</td>
             <td class="text-end">${fmt(p.off_rs_per_pc, 2)}</td>
@@ -144,12 +159,17 @@
             <td class="text-end">${fmt(p.off_gst_percent, 2)}</td>
             <td class="text-end">${fmt(p.off_gst_amt, 2)}</td>
             <td class="text-end">${fmt(p.total_duty_gst, 2)}</td>
+            <td class="text-end">${fmt(avgExpensePerActualCbm * toNum(p.actual_cbm_total), 2)}</td>
+            <td class="text-end">${fmt(toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerActualCbm * toNum(p.actual_cbm_total)), 2)}</td>
+            <td class="text-end">${fmt(avgExpensePerOffCbm * toNum(p.off_cbm_total), 2)}</td>
+            <td class="text-end">${fmt(toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerOffCbm * toNum(p.off_cbm_total)), 2)}</td>
+            <td class="text-end">${fmt(toNum(p.official_qty) > 0 ? (toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerOffCbm * toNum(p.off_cbm_total))) / toNum(p.official_qty) : 0, 2)}</td>
           </tr>
         `;
       });
 
       if (rowsHtml === '') {
-        rowsHtml = '<tr><td colspan="25" class="text-center">No records</td></tr>';
+        rowsHtml = '<tr><td colspan="33" class="text-center">No records</td></tr>';
       }
 
       const tableHtml = `
@@ -169,10 +189,13 @@
                   <th>CBM per pc</th>
                   <th>OFF CBM Total</th>
                   <th>Actual CBM Total</th>
+                  <th>Act Cost With Expense Rs.</th>
                   <th>RMB per pc</th>
                   <th>RMB Total</th>
                   <th>USD per pc</th>
                   <th>USD Total</th>
+                  <th>Cost Without Expense Rs.</th>
+                  <th>Total Rs. Without Expense</th>
                   <th>OFF USD per pc</th>
                   <th>Total OFF. USD</th>
                   <th>OFF Rs per pc</th>
@@ -184,6 +207,11 @@
                   <th>OFF GST%</th>
                   <th>OFF GST Amt</th>
                   <th>Total Duty + GST</th>
+                  <th>Expense</th>
+                  <th>Total Exp</th>
+                  <th>Off Exp</th>
+                  <th>Off Tot Exp</th>
+                  <th>Off Per Pc</th>
                 </tr>
               </thead>
               <tbody>${rowsHtml}</tbody>
@@ -196,10 +224,13 @@
                   <td class="text-end">${fmt(totals.cbm_per_pc, 5)}</td>
                   <td class="text-end">${fmt(totals.off_cbm_total, 5)}</td>
                   <td class="text-end">${fmt(totals.actual_cbm_total, 5)}</td>
+                  <td class="text-end">${fmt(toNum(totals.act_qty) > 0 ? (toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerActualCbm * toNum(totals.actual_cbm_total))) / toNum(totals.act_qty) : 0, 2)}</td>
                   <td class="text-end">${fmt(totals.rmb_per_pc, 2)}</td>
                   <td class="text-end">${fmt(totals.rmb_total, 2)}</td>
                   <td class="text-end">${fmt(totals.usd_per_pc, 2)}</td>
                   <td class="text-end">${fmt(totals.usd_total, 2)}</td>
+                  <td class="text-end">${fmt(totals.cost_without_expense_rs, 2)}</td>
+                  <td class="text-end">${fmt(totals.total_rs_without_expense, 2)}</td>
                   <td class="text-end">${fmt(totals.off_usd_per_pc, 2)}</td>
                   <td class="text-end">${fmt(totals.total_off_usd, 2)}</td>
                   <td class="text-end">${fmt(totals.off_rs_per_pc, 2)}</td>
@@ -211,6 +242,11 @@
                   <td class="text-end">${fmt(totals.off_gst_percent, 2)}</td>
                   <td class="text-end">${fmt(totals.off_gst_amt, 2)}</td>
                   <td class="text-end">${fmt(totals.total_duty_gst, 2)}</td>
+                  <td class="text-end">${fmt(avgExpensePerActualCbm * toNum(totals.actual_cbm_total), 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerActualCbm * toNum(totals.actual_cbm_total)), 2)}</td>
+                  <td class="text-end">${fmt(avgExpensePerOffCbm * toNum(totals.off_cbm_total), 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerOffCbm * toNum(totals.off_cbm_total)), 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.official_qty) > 0 ? (toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerOffCbm * toNum(totals.off_cbm_total))) / toNum(totals.official_qty) : 0, 2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -236,10 +272,13 @@
                 <th>CBM per pc</th>
                 <th>OFF CBM Total</th>
                 <th>Actual CBM Total</th>
+                <th>Act Cost With Expense Rs.</th>
                 <th>RMB per pc</th>
                 <th>RMB Total</th>
                 <th>USD per pc</th>
                 <th>USD Total</th>
+                <th>Cost Without Expense Rs.</th>
+                <th>Total Rs. Without Expense</th>
                 <th>OFF USD per pc</th>
                 <th>Total OFF. USD</th>
                 <th>OFF Rs per pc</th>
@@ -251,6 +290,11 @@
                 <th>OFF GST%</th>
                 <th>OFF GST Amt</th>
                 <th>Total Duty + GST</th>
+                <th>Expense</th>
+                <th>Total Exp</th>
+                <th>Off Exp</th>
+                <th>Off Tot Exp</th>
+                <th>Off Per Pc</th>
               </tr>
             </thead>
             <tfoot>
@@ -262,10 +306,13 @@
                 <td class="text-end">${fmt(g.cbm_per_pc, 5)}</td>
                 <td class="text-end">${fmt(g.off_cbm_total, 5)}</td>
                 <td class="text-end">${fmt(g.actual_cbm_total, 5)}</td>
+                <td class="text-end">${fmt(toNum(g.act_qty) > 0 ? (toNum(g.total_rs_without_expense) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense)) / toNum(g.act_qty) : 0, 2)}</td>
                 <td class="text-end">${fmt(g.rmb_per_pc, 2)}</td>
                 <td class="text-end">${fmt(g.rmb_total, 2)}</td>
                 <td class="text-end">${fmt(g.usd_per_pc, 2)}</td>
                 <td class="text-end">${fmt(g.usd_total, 2)}</td>
+                <td class="text-end">${fmt(g.cost_without_expense_rs, 2)}</td>
+                <td class="text-end">${fmt(g.total_rs_without_expense, 2)}</td>
                 <td class="text-end">${fmt(g.off_usd_per_pc, 2)}</td>
                 <td class="text-end">${fmt(g.total_off_usd, 2)}</td>
                 <td class="text-end">${fmt(g.off_rs_per_pc, 2)}</td>
@@ -277,6 +324,11 @@
                 <td class="text-end">${fmt(g.off_gst_percent, 2)}</td>
                 <td class="text-end">${fmt(g.off_gst_amt, 2)}</td>
                 <td class="text-end">${fmt(g.total_duty_gst, 2)}</td>
+                <td class="text-end">${fmt(totalExpense, 2)}</td>
+                <td class="text-end">${fmt(toNum(g.total_rs_without_expense) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense), 2)}</td>
+                <td class="text-end">${fmt(totalExpense, 2)}</td>
+                <td class="text-end">${fmt(toNum(g.total_off_rs) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense), 2)}</td>
+                <td class="text-end">${fmt(toNum(g.official_qty) > 0 ? (toNum(g.total_off_rs) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense)) / toNum(g.official_qty) : 0, 2)}</td>
               </tr>
             </tfoot>
           </table>
@@ -331,8 +383,8 @@
         success: function(res) {
           if (res && Number(res.status) === 200) {
             setHeaderFields(res.header || {});
-            renderSupplierTables(res.suppliers || [], res.grand_totals || {});
-            renderExpenses(res.expenses || []);
+            renderSupplierTables(res.suppliers || [], res.grand_totals || {}, res.expenses || []);
+            // renderExpenses(res.expenses || []);
             $('#batch-detail-wrap').removeClass('d-none');
           } else {
             $('#batch-detail-wrap').addClass('d-none');

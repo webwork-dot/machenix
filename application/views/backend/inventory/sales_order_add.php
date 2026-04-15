@@ -169,13 +169,13 @@
           </div>
 
 					<input type="hidden" name="company_id" value="<?php echo $this->session->userdata('company_id'); ?>">
-          
-          <div class="col-12 col-sm-12 mb-1 mt-1">
+					<input type="hidden" name="narration" value="">
+          <!-- <div class="col-12 col-sm-12 mb-1 mt-1">
             <div class="form-group">
               <label>Narration</label>
               <textarea class="form-control" placeholder="" rows="1" name="narration" id="narration"></textarea>
             </div>
-          </div>
+          </div> -->
 
           <div class="col-12 col-sm-12 mb-1">
             <div class="form-group">
@@ -195,7 +195,7 @@
                       <div class="col-md-3 pl-0">
                         <input type="hidden" name="x_value[]" id="x_value_1" value="1">
                         <div class="form-group">
-                          <label>Select Product (Stock)<span class="required">*</span></label>
+                          <label>Select Product<span class="required">*</span></label>
                           <select class="form-control select2 product_id" name="product_id[]" id="product_id_1"
                             data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
                             <option value="">Select Product</option>
@@ -224,9 +224,23 @@
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
+                          <label>Total Amount</label>
+                          <input type="number" step="any" id="total_amount_1" name="total_amount[]" class="form-control" readonly>
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
                           <label>Bill Amt <span class="required">*</span></label>
                           <input type="number" step="any" id="bill_amount_1" name="bill_amount[]"
                             onkeyup="markManual('1'); calculate_amt('1')" value="" class="form-control" data-manual="false">
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
+                          <label>Total Bill Amt</label>
+                          <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" readonly>
                         </div>
                       </div>
 
@@ -246,15 +260,22 @@
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
-                          <label>Bill Total</label>
-                          <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" readonly>
+                          <label>Total Bill GST Amount</label>
+                          <input type="number" step="any" id="total_bill_gst_amount_1" name="total_bill_gst_amount[]" class="form-control" readonly>
                         </div>
                       </div>
 
                       <div class="col-md-1 pl-0">
                         <div class="form-group">
                           <label>Black Amt</label>
-                          <input type="number" step="any" id="black_amount_1" name="black_amount[]" value="" class="form-control" readonly>
+                          <input type="number" step="any" id="black_amount_per_unit_1" name="black_amt[]" class="form-control" readonly>
+                        </div>
+                      </div>
+
+                      <div class="col-md-1 pl-0">
+                        <div class="form-group">
+                          <label>Total Black Amount</label>
+                          <input type="number" step="any" id="black_amount_1" name="black_total[]" value="" class="form-control" readonly>
                         </div>
                       </div>
 
@@ -296,82 +317,70 @@
                   <tbody>
                     <tr>
                       <td colspan="4" class="text-right" style="width:80%">
-                        <label style="float:right;display: contents;">Total Basic Amount</label>
+                        <label style="float:right;display: contents;">Total Bill Amt (Exc GST)</label>
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value"
-                            value="0" placeholder="Basic Value" class="form-control" readonly></p>
+                            value="0" placeholder="Total Bill Amt (Exc GST)" class="form-control" readonly></p>
                       </td>
                     </tr>
 
                     <tr>
                       <td colspan="4" class="text-right align-middle">
                         <div class="d-flex flex-column align-items-end">
-                          <span class="mb-0 text-capitalize">Basic Net Sales Value (Exclu. GST)</span>
-                          <select class="form-control " name="gst_type" id="gst_type" style="width : 200px !important;float:right !important">
-                          <!-- <select class="form-control " name="gst_type" id="gst_type" onchange="change_gst(this.value)" style="width : 200px !important;float:right !important"> -->
-                            <option value="">Select GST</option>
-                            <option value="Central GST / State GST">Central GST / State GST</option>
+                          <span class="mb-0 text-capitalize">Select GST</span>
+                          <select class="form-control " name="gst_type" id="gst_type" onchange="change_gst(this.value); recalculate();" style="width : 200px !important;float:right !important">
+                            <option value="Central GST / State GST" selected>Central GST / State GST</option>
                             <option value="IGST">IGST</option>
                           </select>
                         </div>
                       </td>
                       <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="net_sales_value_1"
-                            id="net_sales_value_1" value="0" placeholder="Basic Net Sales Value (Excl. GST)"
-                            class="form-control" readonly></p>
+                        <div id="cgst_sgst_inputs">
+                          <p class="td-blank mb-25">
+                            <input type="number" step="any" name="central_gst" id="central_gst" value="0" placeholder="CGST Amount" class="form-control" readonly>
+                          </p>
+                          <p class="td-blank mb-0">
+                            <input type="number" step="any" name="state_gst" id="state_gst" value="0" placeholder="SGST Amount" class="form-control" readonly>
+                          </p>
+                        </div>
+                        <div id="igst_input" class="hidden">
+                          <p class="td-blank mb-0">
+                            <input type="number" step="any" name="igst" id="igst" value="0" placeholder="IGST Amount" class="form-control" readonly>
+                          </p>
+                        </div>
                       </td>
-                    </tr>
-
-                    <tr class="hidden" id="cgst_gst">
-                      <th colspan="4" class="text-right align-middle">
-                        <b class="mb-0 text-capitalize">Add : IN: Central GST</b>
-                        <input type="text"
-                          oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="cgst_per" id="cgst_per" onkeyup="recalculate()" placeholder="in(%)" value="0"
-                          class="form-control dis-input">
-                      </th>
-                      <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="central_gst" id="central_gst"
-                              value="0" placeholder="Add : IN: Central GST" class="form-control" readonly></b></p>
-                      </th>
-                    </tr>
-
-                    <tr class="hidden" id="sgst_gst">
-                      <th colspan="4" class="text-right align-middle">
-                        <b class="mb-0 text-capitalize">Add : IN: State GST</b>
-                        <input type="text"
-                          oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="sgst_per" id="sgst_per" onkeyup="recalculate()" placeholder="in(%)" value="0"
-                          class="form-control dis-input" readonly>
-                      </th>
-                      <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="state_gst" id="state_gst" value="0"
-                              placeholder="Add : IN: State GST" class="form-control" readonly></b></p>
-                      </th>
-                    </tr>
-
-                    <tr class="hidden" id="igst_gst">
-                      <th colspan="4" class="text-right align-middle">
-                        <b class="mb-0 text-capitalize">Add : IN: IGST</b>
-                        <input type="text"
-                          oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="igst_per" id="igst_per" onkeyup="recalculate()" placeholder="in(%)" value="0"
-                          class="form-control dis-input">
-                      </th>
-                      <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="igst" id="igst" value="0"
-                              placeholder="Add : IN: IGST" class="form-control" readonly></b></p>
-                      </th>
                     </tr>
 
                     <tr>
                       <td colspan="4" class="text-right">
-                        <label>Net Sales Value (Inc. GST)</label>
+                        <label>Total Bill Amt (Incl GST)</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="net_sales_value_1"
+                            id="net_sales_value_1" value="0" placeholder="Total Bill Amt (Incl GST)"
+                            class="form-control" readonly></p>
+
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Total Black Amt</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="total_black_amount_summary"
+                            id="total_black_amount_summary" value="0" placeholder="Total Black Amt"
+                            class="form-control" readonly></p>
+
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Final Total</label>
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="net_sales_value_2"
-                            id="net_sales_value_2" value="0" placeholder="Basic Net Sales Value (Inc. GST)"
+                            id="net_sales_value_2" value="0" placeholder="Final Total"
                             class="form-control" readonly></p>
 
                       </td>
@@ -399,7 +408,7 @@
                     </tr>
                     <tr>
                       <td colspan="4" class="text-right">
-                        <label>Total Order Value</label>
+                        <label>Grand Total</label>
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total"
@@ -434,85 +443,61 @@ function get_per_total(amount, percent) {
 
 function subtotal_cal() {
   var gst_type = $('#gst_type').val();
-  var total_element = $(".element-1").length;
-  var base_total = 0;
+  var total_bill_amt_ex_gst = 0;
   var total_gst_amount = 0;
+  var total_bill_amt_in_gst = 0;
   var total_black_amount = 0;
-  var igst_per = 0;
-  var cgst_per = 0;
-  var cgst_amt = 0;
-  var sgst_amt = 0;
-  var igst_amt = 0;
-  var net_sales_value_1 = 0;
-  var discount_per = 0;
-  var discount = 0;
-  var other_tax_per = 0;
-  var other_tax = 0;
-  var tcs_per = 0;
-  var tcs = 0;
+  var final_total_sum = 0;
   var grand_total = 0;
 
-  // if (gst_type == 'IGST') {
-  //   igst_per = parseFloat($("#igst_per").val()) || 0;
-  // } else if (gst_type == 'Central GST / State GST') {
-  //   cgst_per = parseFloat($("#cgst_per").val()) || 0;
-  //   sgst_per = cgst_per;
-  //   $("#sgst_per").val(isNaN(cgst_per) ? 0 : Math.round(cgst_per));
-  // }
+  let totalBillAmt = document.querySelectorAll('[name="bill_total[]"]');
+  let gstAmt = document.querySelectorAll('[name="gst_amount[]"]');
+  let totalBillGstAmt = document.querySelectorAll('[name="total_bill_gst_amount[]"]');
+  let totalBlackAmt = document.querySelectorAll('[name="black_total[]"]');
+  let finalTotalArr = document.querySelectorAll('[name="final_total[]"]');
 
-  // for (let i = 1; i <= total_element; i++) {
-  //   if ($("#white_amount_" + i).val()) {
-  //     var master_price = parseFloat($("#white_amount_" + i).val());
-  //     master_price = isNaN(master_price) ? 0 : master_price;
-  //     var total_amount = master_price;
-  //     base_total += total_amount;
-  //   }
-  // }
-
-  let billAmt = document.querySelectorAll('[name="bill_amount[]"]');
-  let blackAmt = document.querySelectorAll('[name="black_amount[]"]');
-  let gstTax = document.querySelectorAll('[name="gst[]"]');
-  
-  billAmt.forEach((element, index)=> {
-    var bill_val = Number(element.value) || 0;
-    var black_val = Number(blackAmt[index] ? blackAmt[index].value : 0) || 0;
-    base_total += bill_val;
-    total_black_amount += black_val; // I noticed total_black_amount wasn't being tracked in the original add script but it should be
-
-    var gst = Number(gstTax[index] ? gstTax[index].value : 0) || 0;
-    var gst_amount = (bill_val * gst) / 100;
-    total_gst_amount += gst_amount;
+  totalBillAmt.forEach((element, index)=> {
+    var bill_total_val = Number(element.value) || 0;
+    var gst_amount_val = Number(gstAmt[index] ? gstAmt[index].value : 0) || 0;
+    total_bill_amt_ex_gst += bill_total_val;
+    total_gst_amount += gst_amount_val;
   });
 
-  console.log(base_total, total_gst_amount);
+  totalBillGstAmt.forEach((element) => {
+    total_bill_amt_in_gst += Number(element.value) || 0;
+  });
 
-  $("#basic_value").val(isNaN(base_total) ? 0 : base_total.toFixed(2));
-  net_sales_value_1 = base_total;
-  $("#net_sales_value_1").val(isNaN(net_sales_value_1) ? 0 : net_sales_value_1.toFixed(2));
+  totalBlackAmt.forEach((element) => {
+    total_black_amount += Number(element.value) || 0;
+  });
 
-  if (gst_type == 'IGST') {
-    // igst_amt = get_per_total(net_sales_value_1, igst_per);
-    // total_gst_amount = igst_amt;
-    // $('#igst').val(igst_amt.toFixed(2));
+  finalTotalArr.forEach((element) => {
+    final_total_sum += Number(element.value) || 0;
+  });
+
+  $("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
+  $("#net_sales_value_1").val(total_bill_amt_in_gst.toFixed(2));
+  $("#total_black_amount_summary").val(total_black_amount.toFixed(2));
+  $("#net_sales_value_2").val(final_total_sum.toFixed(2));
+
+  if (gst_type === 'IGST') {
     $('#igst').val(total_gst_amount.toFixed(2));
+    $('#central_gst').val('0.00');
+    $('#state_gst').val('0.00');
   } else if (gst_type == 'Central GST / State GST') {
-    // cgst_amt = get_per_total(net_sales_value_1, cgst_per);
-    // sgst_amt = cgst_amt;
-    // total_gst_amount = cgst_amt + sgst_amt;
-    // $('#central_gst').val(cgst_amt.toFixed(2));
-    // $('#state_gst').val(sgst_amt.toFixed(2));
     $('#central_gst').val((total_gst_amount / 2).toFixed(2));
     $('#state_gst').val((total_gst_amount / 2).toFixed(2));
+    $('#igst').val('0.00');
+  } else {
+    $('#central_gst').val('0.00');
+    $('#state_gst').val('0.00');
+    $('#igst').val('0.00');
   }
-
-  net_sales_value_2 = net_sales_value_1 + total_gst_amount;
-  $("#net_sales_value_2").val(isNaN(net_sales_value_2) ? 0 : net_sales_value_2.toFixed(2));
 
   var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
   var round_of = parseFloat($("#round_of").val()) || 0;
 
-  grand_total = net_sales_value_2 + round_of + other_charges_amount;
-  //console.log('grand_total: ' + grand_total);
+  grand_total = final_total_sum + other_charges_amount + round_of;
   $('#grand_total').val(grand_total.toFixed(2));
 }
 
@@ -521,22 +506,18 @@ function recalculate() {
 };
 
 function change_gst(value) {
-  let cgst_gst = document.querySelector("#cgst_gst");
-  let sgst_gst = document.querySelector("#sgst_gst");
-  let igst_gst = document.querySelector("#igst_gst");
+  let cgstSgstInputs = document.querySelector("#cgst_sgst_inputs");
+  let igstInput = document.querySelector("#igst_input");
 
   if (value == "Central GST / State GST") {
-    sgst_gst.classList.remove('hidden')
-    cgst_gst.classList.remove('hidden')
-    igst_gst.classList.add('hidden')
+    cgstSgstInputs.classList.remove('hidden');
+    igstInput.classList.add('hidden');
   } else if (value == "IGST") {
-    sgst_gst.classList.add('hidden')
-    cgst_gst.classList.add('hidden')
-    igst_gst.classList.remove('hidden')
+    cgstSgstInputs.classList.add('hidden');
+    igstInput.classList.remove('hidden');
   } else {
-    sgst_gst.classList.add('hidden')
-    cgst_gst.classList.add('hidden')
-    igst_gst.classList.add('hidden')
+    cgstSgstInputs.classList.add('hidden');
+    igstInput.classList.add('hidden');
   }
 }
 
@@ -585,7 +566,7 @@ function appendRequirement() {
               <div class="col-md-3 pl-0">
                 <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
                 <div class="form-group">
-                  <label>Select Product (Stock)<span class="required">*</span></label>
+                  <label>Select Product<span class="required">*</span></label>
                   <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
                     <option value="">Select Product</option>
                   </select>
@@ -612,9 +593,23 @@ function appendRequirement() {
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
+                  <label>Total Amount</label>
+                  <input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" readonly>
+                </div>
+              </div>
+
+              <div class="col-md-1 pl-0">
+                <div class="form-group">
                   <label>Bill Amt <span class="required">*</span></label>
                   <input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" 
                     onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false">
+                </div>
+              </div>
+
+              <div class="col-md-1 pl-0">
+                <div class="form-group">
+                  <label>Total Bill Amt</label>
+                  <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" readonly>
                 </div>
               </div>
 
@@ -635,15 +630,22 @@ function appendRequirement() {
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
-                  <label>Bill Total</label>
-                  <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" readonly>
+                  <label>Total Bill GST Amount</label>
+                  <input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" readonly>
                 </div>
               </div>
 
               <div class="col-md-1 pl-0">
                 <div class="form-group">
                   <label>Black Amt</label>
-                  <input type="number" step="any" id="black_amount_${nextindex}" name="black_amount[]" class="form-control" readonly>
+                  <input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" readonly>
+                </div>
+              </div>
+
+              <div class="col-md-1 pl-0">
+                <div class="form-group">
+                  <label>Total Black Amount</label>
+                  <input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" readonly>
                 </div>
               </div>
 
@@ -670,11 +672,10 @@ function appendRequirement() {
         </div>
       `);
       
-      let company_id = $('[name="company_id"]').val();
       $.ajax({
         type: "POST",
         url: "<?php echo base_url()?>inventory/get_product_by_company",
-        data: { company_id: company_id },
+        data: {},
         success: function(res) {
           console.log("Products Loaded:", res);
           var select = $('#product_id_' + nextindex);
@@ -695,130 +696,119 @@ function appendRequirement() {
     }
   }
 
-function markManual(index) {
-    $('#bill_amount_' + index).attr('data-manual', 'true');
-}
+  function markManual(index) {
+      $('#bill_amount_' + index).attr('data-manual', 'true');
+  }
 
-function calculate_amt(index) {
-    var qty = Number($('#quantity_' + index).val()) || 0;
-    var master_amt = Number($('#master_amount_' + index).val()) || 0;
-    var bill_amt_el = $('#bill_amount_' + index);
-    var is_manual = bill_amt_el.attr('data-manual') === 'true';
-    
-    var gross_total = qty * master_amt;
+  function calculate_amt(index) {
+      var qty = Number($('#quantity_' + index).val()) || 0;
+      var amount = Number($('#master_amount_' + index).val()) || 0;
+      var bill_amt_el = $('#bill_amount_' + index);
+      var is_manual = bill_amt_el.attr('data-manual') === 'true';
+      
+      var total_amount = qty * amount;
 
-    if (!is_manual) {
-        bill_amt_el.val(gross_total.toFixed(2));
-    }
+      if (!is_manual) {
+          bill_amt_el.val(amount.toFixed(2));
+      }
 
-    var bill_amt = Number(bill_amt_el.val()) || 0;
-    var gst_per = Number($('#gst_' + index).val()) || 0;
-    var available = Number($('#available_' + index).val()) || 0;
+      var bill_amt = Number(bill_amt_el.val()) || 0;
+      var gst_per = Number($('#gst_' + index).val()) || 0;
+      var total_bill_amt = bill_amt * qty;
+      var gst_amt = (total_bill_amt * gst_per) / 100;
+      var total_bill_gst_amt = total_bill_amt + gst_amt;
+      var black_amt = amount - bill_amt;
+      var total_black_amt = total_amount - total_bill_amt;
+      var final_total = total_black_amt + total_bill_gst_amt;
 
-    if (qty > available) {
-        Swal.fire({
-            title: "Error!",
-            text: "Quantity (" + qty + ") cannot exceed available stock (" + available + ")",
-            icon: "warning"
-        });
-        $('#quantity_' + index).val(available);
-        qty = available;
-        // Recalculate gross if qty was capped
-        gross_total = qty * master_amt;
-        if(!is_manual) {
-            bill_amt = gross_total;
-            bill_amt_el.val(bill_amt.toFixed(2));
-        }
-    }
+      $('#total_amount_' + index).val(total_amount.toFixed(2));
+      $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+      $('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
+      $('#black_amount_' + index).val(total_black_amt.toFixed(2));
+      $('#gst_amount_' + index).val(gst_amt.toFixed(2));
+      $('#total_bill_gst_amount_' + index).val(total_bill_gst_amt.toFixed(2));
+      $('#final_total_' + index).val(final_total.toFixed(2));
 
-    var black_amt = gross_total - bill_amt;
-    var gst_amt = (bill_amt * gst_per) / 100;
-    var bill_total = bill_amt + gst_amt;
-    var final_total = bill_total + black_amt;
+      recalculate();
+  }
 
-    $('#black_amount_' + index).val(black_amt.toFixed(2));
-    $('#gst_amount_' + index).val(gst_amt.toFixed(2));
-    $('#bill_total_' + index).val(bill_total.toFixed(2));
-    $('#final_total_' + index).val(final_total.toFixed(2));
-
-    recalculate();
-}
-
-function get_details_by_product(product_id, index) {
-    var company_id = $('[name="company_id"]').val();
+  function get_details_by_product(product_id, index) {
     if(!product_id) return;
 
-        $.ajax({
-            type: "POST",
-            url: "<?php echo base_url()?>inventory/get_qty_by_product_company",
-            data: { company_id: company_id, product_id: product_id },
-            success: function(res) {
-                if(res.status == 200) {
-                    $('#available_' + index).val(res.quantity);
-                    $('#gst_' + index).val(res.tax);
-                    $('#master_amount_' + index).val(res.rate);
-                    
-                    var qty = Number($('#quantity_' + index).val()) || 0;
-                    $('#bill_amount_' + index).val(res.rate * qty); // Default bill to master * qty
-                    calculate_amt(index);
-                } else {
-                    alert(res.message);
-                }
-            }
-        });
-}
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url()?>inventory/get_qty_by_product_company",
+      data: { product_id: product_id },
+      success: function(res) {
+          if(res.status == 200) {
+              $('#available_' + index).val(res.quantity);
+              $('#gst_' + index).val(res.tax);
+              $('#master_amount_' + index).val(res.rate);
+              $('#bill_amount_' + index).attr('data-manual', 'false');
+              
+              $('#bill_amount_' + index).val(res.rate); // Bill Amt is per-unit and defaults to Amount
+              calculate_amt(index);
+          } else {
+              alert(res.message);
+          }
+      }
+    });
+  }
 
-function showPriceHistory(index) {
+  function showPriceHistory(index) {
     var customer_id = $('#customer_id').val();
     var product_id = $('#product_id_' + index).val();
 
     if (!customer_id) {
-        alert('Please select a customer first');
-        return;
+      alert('Please select a customer first');
+      return;
     }
+
     if (!product_id) {
-        alert('Please select a product first');
-        return;
+      alert('Please select a product first');
+      return;
     }
 
     $.ajax({
-        type: "POST",
-        url: "<?php echo base_url()?>inventory/get_last_selling_price",
-        data: { customer_id: customer_id, product_id: product_id },
-        success: function(res) {
-            $('#priceHistoryModalContent').html(res);
-            $('#priceHistoryModal').modal('show');
-        }
+      type: "POST",
+      url: "<?php echo base_url()?>inventory/get_last_selling_price",
+      data: { customer_id: customer_id, product_id: product_id },
+      success: function(res) {
+          $('#priceHistoryModalContent').html(res);
+          $('#priceHistoryModal').modal('show');
+      }
     });
-}
-
-function removeRequirement(requirementElem) {
-  if(document.querySelector('#requirement_area').children.length > 1){
-    $(requirementElem).parent().parent().parent().parent().parent().remove();
-    recalculate();
-  } else {
-    alert('Atleast one line item is required');
   }
-}
 
-$(document).ready(function ($) {
+  function removeRequirement(requirementElem) {
+    if(document.querySelector('#requirement_area').children.length > 1){
+      $(requirementElem).parent().parent().parent().parent().parent().remove();
+      recalculate();
+    } else {
+      alert('Atleast one line item is required');
+    }
+  }
+
+  $(document).ready(function ($) {
     // Init first product row
-    let company_id = $('[name="company_id"]').val();
     $.ajax({
-        type: "POST",
-        url: "<?php echo base_url()?>inventory/get_product_by_company",
-        data: { company_id: company_id },
-        success: function(res) {
-            $('.product_id').append(res);
-        }
+      type: "POST",
+      url: "<?php echo base_url()?>inventory/get_product_by_company",
+      data: {},
+      success: function(res) {
+          $('.product_id').append(res);
+      }
     });
 
     // Restricted access check
     <?php if($this->session->userdata('super_type_id') == 7): // Salesman role ID ?>
-        $('#date_picker').prop('readonly', true);
-        $('#date_picker').on('mousedown', function(e){ e.preventDefault(); });
+      $('#date_picker').prop('readonly', true);
+      $('#date_picker').on('mousedown', function(e){ e.preventDefault(); });
     <?php endif; ?>
-});
+
+    change_gst($('#gst_type').val());
+    recalculate();
+  });
 </script>
 
 <!-- Price History Modal -->
@@ -834,4 +824,4 @@ $(document).ready(function ($) {
             </div>
         </div>
     </div>
-</div>
+</div>

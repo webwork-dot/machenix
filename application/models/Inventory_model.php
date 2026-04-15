@@ -5365,22 +5365,26 @@ class Inventory_model extends CI_Model
 		return $resultdata;
 	}
 
-	public function get_product_id_by_company($company_id)
+	public function get_product_id_by_company()
 	{
-		$query = $this->db->query("SELECT p.id as product_id, p.item_code, p.name as product_name, IFNULL(SUM(i.quantity),0) as total_qty 
-                                   FROM raw_products p 
-                                   LEFT JOIN inventory i ON p.id = i.product_id AND i.company_id='$company_id' 
-                                   WHERE p.is_deleted='0'
-                                   GROUP BY p.id order by p.name asc");
+		$query = $this->db->query("
+			SELECT 
+				p.id as product_id, p.item_code, p.name as product_name, IFNULL(SUM(i.quantity),0) as total_qty 
+			FROM raw_products p 
+				LEFT JOIN inventory i ON p.id = i.product_id
+			WHERE p.is_deleted='0'
+			GROUP BY p.id order by p.name asc");
+
 		$resultdata = array();
 		if ($query->num_rows() > 0) {
 			foreach ($query->result_array() as $item) {
 				$resultdata[] = array(
 					"id" => $item['product_id'],
-					"name" => trim($item['product_name']) . ' - ' . trim($item['item_code']) . ' (' . (float)$item['total_qty'] . ')',
+					"name" => trim($item['product_name']) . ' - ' . trim($item['item_code']),
 				);
 			}
 		}
+
 		return $resultdata;
 	}
 
@@ -5454,30 +5458,29 @@ class Inventory_model extends CI_Model
 		}
 	}
 
-	public function get_qty_by_product_company($company_id, $product_id)
+	public function get_qty_by_product_company($product_id)
 	{
-		$query = $this->db->query("SELECT SUM(quantity) as total_qty, product_id FROM inventory WHERE company_id='$company_id' and product_id='$product_id' AND quantity > 0 group by product_id limit 1");
-
-		if ($query->num_rows() > 0) {
-			$item = $query->row_array();
-			$product = $this->common_model->getRowById('raw_products', '*', ['id' => $item['product_id']]);
-			
-			$rate = $product['rate'] ?? 0;
-			$gst = $product['gst'] ?? 0;
-
-			return array(
-				'status' => 200,
-				'message' => 'success',
-				"quantity" => $item['total_qty'],
-				"tax" => $gst,
-				"rate" => $rate,
-			);
-		} else {
+		$product = $this->common_model->getRowById('raw_products', '*', ['id' => $product_id]);
+		if (empty($product)) {
 			return array(
 				'status' => 400,
-				'message' => 'Product out of stock'
+				'message' => 'Product not found'
 			);
 		}
+
+		$query = $this->db->query("SELECT IFNULL(SUM(quantity), 0) as total_qty FROM inventory WHERE product_id='$product_id'");
+		
+		$item = $query->row_array();
+		$rate = $product['rate'] ?? 0;
+		$gst = $product['gst'] ?? 0;
+
+		return array(
+			'status' => 200,
+			'message' => 'success',
+			"quantity" => $item['total_qty'] ?? 0,
+			"tax" => $gst,
+			"rate" => $rate,
+		);
 	}
 
 	public function get_last_price_history($customer_id, $product_id)
@@ -8492,6 +8495,7 @@ class Inventory_model extends CI_Model
 				} else {
 					$customer_name = '';
 				}
+				
 				$warehouse_id = $this->input->post('warehouse_id');
 				if ($warehouse_id != '') {
 					$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
@@ -8508,6 +8512,15 @@ class Inventory_model extends CI_Model
 
 				$other_charges_name   = clean_and_escape($this->input->post('other_charges_name'));
 				$other_charges_amount = ($this->input->post('other_charges_amount') != '') ? $this->input->post('other_charges_amount') : 0;
+				$basic_value          = price_format_decimal($this->input->post('basic_value'));
+				$net_sales_value_1    = price_format_decimal($this->input->post('net_sales_value_1'));
+				$total_black_amt      = price_format_decimal($this->input->post('total_black_amount_summary'));
+				$net_sales_value_2    = price_format_decimal($this->input->post('net_sales_value_2'));
+				$grand_total          = price_format_decimal($this->input->post('grand_total'));
+				$central_gst          = price_format_decimal($this->input->post('central_gst'));
+				$state_gst            = price_format_decimal($this->input->post('state_gst'));
+				$igst                 = price_format_decimal($this->input->post('igst'));
+				$gst_total            = ($gst_type == 'IGST') ? $igst : ($central_gst + $state_gst);
 
 				$data = array();
 				$data['order_no']          		= $order_no;
@@ -8522,8 +8535,21 @@ class Inventory_model extends CI_Model
 				$data['remark'] 		   		 		= ($this->input->post('remark'));
 				$data['narration']         		= ($this->input->post('narration'));
 				$data['gst_type']     	   		= $gst_type;
+				$data['igst_per']     	   		= 0;
+				$data['cgst_per']     	   		= 0;
+				$data['sgst_per']     	   		= 0;
+				$data['basic_value']          = $basic_value;
+				$data['net_sales_value_1']    = $net_sales_value_1;
+				$data['total_black_amt']      = $total_black_amt;
+				$data['central_gst']          = $central_gst;
+				$data['state_gst']            = $state_gst;
+				$data['igst']                 = $igst;
+				$data['gst_total']            = $gst_total;
+				$data['net_sales_value_2']    = $net_sales_value_2;
+				$data['round_of']             = $round_of;
+				$data['grand_total']          = $grand_total;
 				$data['other_charges_name']   = $other_charges_name;
-				$data['other_charges_amount'] = $other_charges_amount;;
+				$data['other_charges_amount'] = $other_charges_amount;
 				$data['added_by_id']          = $this->session->userdata('super_user_id');
 				$data['added_by_name']        = $this->session->userdata('super_name');
 				$data['added_date']   	      = date("Y-m-d H:i:s");
@@ -8534,107 +8560,56 @@ class Inventory_model extends CI_Model
 					$product_id_arr     = ($this->input->post('product_id'));
 					$quantity_arr       = ($this->input->post('quantity'));
 					$master_amount_arr  = ($this->input->post('master_amount'));
+					$total_amount_arr   = ($this->input->post('total_amount'));
 					$bill_amount_arr    = ($this->input->post('bill_amount'));
 					$gst_arr       			= ($this->input->post('gst'));
 					$gst_amount_arr     = ($this->input->post('gst_amount'));
 					$bill_total_arr     = ($this->input->post('bill_total'));
-					$black_amount_arr		= ($this->input->post('black_amount'));
+					$total_bill_gst_amount_arr = ($this->input->post('total_bill_gst_amount'));
+					$black_amt_arr       = ($this->input->post('black_amt'));
+					$black_total_arr		 = ($this->input->post('black_total'));
 					$final_total_arr    = ($this->input->post('final_total'));
 					$available_arr			= ($this->input->post('available'));
 
-					$basic_value = $total_gst_amount = $net_sales_value_1 = $transport_gst_amount = $igst = $net_total = $other_tax = $price_after_discount = $gst_amt = $price_after_gst = $price_total = $grand_total = 0;
-					$order_items_logs = array();
 					// echo json_encode($quantity_arr); exit();
 					for ($i = 0; $i < count($product_id_arr); $i++) {
 						if ($quantity_arr[$i] > 0) {
-							$data_p = array();
 							$xpro 			=  explode('|', $product_id_arr[$i]);
 							$product_id 	= $xpro[0];
 
-							$inv_prod = $this->db->where('product_id', $product_id)->get('inventory');
-							if ($inv_prod->num_rows() > 0) {
-								$inv_prod = $inv_prod->row_array();
-								$item_code 	= $inv_prod['item_code'];
-
-								$total_amount 	= $final_total_arr[$i];
-								$quantity 	= $quantity_arr[$i];
-								$product    	= $this->crud_model->get_raw_products_by_id($product_id)->row_array();
-								$product_name = $product['name'];
-								$data_product = array(
-									'order_id'          => $order_id,
-									'product_id'        => $product_id,
-									'item_code'         => $item_code,
-									'product_name'      => $product['name'],
-									'master_amount'     => (float) $master_amount_arr[$i],
-									'qty'               => $quantity,
-									'total_amount'      => (float) $final_total_arr[$i], // Using final total for legacy total_amount
-									'available'         => $available_arr[$i],
-									'black_amount'      => (float) $black_amount_arr[$i],
-									'bill_amount'       => (float) $bill_amount_arr[$i],
-									'white_amount'      => (float) $bill_amount_arr[$i], // Legacy white_amount
-									'gst'               => (float) $gst_arr[$i],
-									'gst_amount'        => (float) $gst_amount_arr[$i],
-									'bill_total'        => (float) $bill_total_arr[$i],
-									'white_total'       => (float) $bill_total_arr[$i], // Legacy white_total
-									'final_total'       => (float) $final_total_arr[$i],
-								);
-
-								$this->db->insert('sales_order_product', $data_product);
-								$order_product_id = $this->db->insert_id();
-								$basic_value += $total_amount;
-
-								$batch_no 	= NULL;
-								$batch_qty 	= intval($quantity);
-								if ($batch_qty > 0) {
-									$data_product_bat = array();
-									$data_product_bat = array(
-										'order_id'          => $order_id,
-										'order_product_id'  => $order_product_id,
-										'batch_no'      		=> $batch_no,
-										'batch_qty'       	=> $batch_qty,
-									);
-
-									$this->db->insert('sales_order_product_batch', $data_product_bat);
-								}
-							} else {
+							$product    	= $this->crud_model->get_raw_products_by_id($product_id)->row_array();
+							if (empty($product)) {
 								throw new Exception('No Product Found');
 							}
+
+							$item_code = $product['item_code'] ?? '';
+							if ($item_code == '') {
+								$inv_prod = $this->db->where('product_id', $product_id)->get('inventory')->row_array();
+								$item_code = $inv_prod['item_code'] ?? '';
+							}
+
+							$data_product = array(
+								'order_id'                => $order_id,
+								'product_id'              => $product_id,
+								'item_code'               => $item_code,
+								'product_name'            => $product['name'],
+								'qty'                     => (float) ($quantity_arr[$i] ?? 0),
+								'amount'                  => (float) ($master_amount_arr[$i] ?? 0),
+								'total_amount'            => (float) ($total_amount_arr[$i] ?? 0),
+								'bill_amount'             => (float) ($bill_amount_arr[$i] ?? 0),
+								'bill_total'              => (float) ($bill_total_arr[$i] ?? 0),
+								'available'               => (float) ($available_arr[$i] ?? 0),
+								'gst'                     => (float) ($gst_arr[$i] ?? 0),
+								'gst_amount'              => (float) ($gst_amount_arr[$i] ?? 0),
+								'total_bill_gst_amount'   => (float) ($total_bill_gst_amount_arr[$i] ?? 0),
+								'black_amount'            => (float) ($black_amt_arr[$i] ?? 0),
+								'black_total'             => (float) ($black_total_arr[$i] ?? 0),
+								'final_total'             => (float) ($final_total_arr[$i] ?? 0),
+							);
+
+							$this->db->insert('sales_order_product', $data_product);
 						}
 					}
-
-					$net_sales_value_1 = floatval($basic_value);
-
-					if ($gst_type == 'CGST/SGST') {
-						$gst_total   		= price_format_decimal($this->input->post('central_gst')) + price_format_decimal($this->input->post('state_gst'));
-					} else {
-						$gst_total   	= price_format_decimal($this->input->post('igst'));
-					}
-
-					$central_gst 		= price_format_decimal($this->input->post('central_gst'));
-					$state_gst   		= price_format_decimal($this->input->post('state_gst'));
-					$igst 	     		= price_format_decimal($this->input->post('igst'));
-					$cgst_per   		= 0;
-					$sgst_per   		= 0;
-					$igst_per				= 0;
-
-					$net_sales_value_2 = $net_sales_value_1 + $total_gst_amount;
-					$grand_total = $net_sales_value_2 + $round_of +  $other_charges_amount;
-					$update_data = array();
-					$update_data = array(
-						'net_sales_value_1' => $net_sales_value_1,
-						'igst_per' => $igst_per,
-						'cgst_per' => $cgst_per,
-						'sgst_per' => $sgst_per,
-						'central_gst' => $central_gst,
-						'state_gst' => $state_gst,
-						'igst' => $igst,
-						'gst_total' => $gst_total,
-						'net_sales_value_2' => $net_sales_value_2,
-						'round_of' 	  => $round_of,
-						'grand_total' => $grand_total,
-					);
-					$this->db->where('id', $order_id);
-					$this->db->update('sales_order', $update_data);
 
 					$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 				} else {
@@ -8703,8 +8678,16 @@ class Inventory_model extends CI_Model
 			}
 		}
 
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$keyword_filter .= " AND (company_id='" . $company_id . "')";
+			if($this->session->userdata('super_type_id') == 7) {
+				$keyword_filter .= " AND (added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			}
+		}
+
 		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_approved,date,customer_id,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -8721,15 +8704,12 @@ class Inventory_model extends CI_Model
 
 				$action = '';
 
-				if ($customer_id != '') {
-					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'name');
-				} else {
-					$customer_name = '';
-				}
+				$customer_name = $item['customer_name'];
+				
 
-				$action .= '
-    			 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
-    			 ';
+				// $action .= '
+    		// 	 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
+    		// 	 ';
 
 				if($this->session->userdata('super_type_id') != 4) {
 					$action .= '
@@ -8756,7 +8736,7 @@ class Inventory_model extends CI_Model
 
 
 				$qty = 0;
-				$query2 = $this->db->query("SELECT SUM(batch_qty) as qty FROM sales_order_product_batch WHERE (order_id='$id') group by order_id limit 1");
+				$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
 				if ($query2->num_rows() > 0) {
 					$row2 = $query2->row_array();
 					$qty = $row2['qty'];
@@ -8769,13 +8749,13 @@ class Inventory_model extends CI_Model
 					"order_no"        => $item['order_no'],
 					"refrence_no"        => $item['refrence_no'],
 					"customer_name"        => $customer_name,
-					"warehouse_name"        => $item['warehouse_name'],
+					"warehouse_name"        => ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
 					"company_name"        => ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
 					"grand_total"        => $item['grand_total'],
 					"date"        => date('d M, Y', strtotime($item['date'])),
 					"total_pro"      => $total_pro,
 					"qty"      => $qty,
-					"remark"      => $remark,
+					"remark"      => $item['remark'],
 					"action"      => $action,
 				);
 			}
