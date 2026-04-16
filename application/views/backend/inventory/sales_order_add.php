@@ -118,6 +118,63 @@
 		padding: 2px 5px;
 		margin-top: 5px;
 	}
+
+	.sales-line-item {
+		background: #f8fbff;
+		border: 1px solid #dbe6f5;
+		border-radius: 10px;
+		padding: 10px 0px;
+	}
+
+	.sales-line-item .jsr-no {
+		width: 24px;
+		height: 24px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: #2f3b52;
+		color: #fff;
+		font-size: 12px;
+		font-weight: 700;
+		margin-bottom: 8px;
+	}
+
+	.sales-line-item .form-group {
+		margin-bottom: 6px;
+	}
+
+	.sales-line-item .form-group label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #2f3b52;
+		margin-bottom: 4px;
+		line-height: 1.2;
+	}
+
+	.sales-line-item .form-control,
+	.sales-line-item .input-group-text {
+		min-height: 34px;
+		font-size: 13px;
+	}
+
+	.sales-line-item input[readonly] {
+		background: #eef3fa;
+	}
+
+	.sales-line-item .input-group-text {
+		background: #eef3fa;
+		border-color: #d3deef;
+	}
+
+	.sales-line-item .btn-remove-line {
+		width: 34px;
+		height: 34px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
 </style>
 
 <div class="row">
@@ -187,12 +244,12 @@
           <div class="col-12">
             <div id="requirement_area">
 
-              <div class="d-block mt-2 element-1 fx-border" id="product_1" data-id="1">
+              <div class="d-block mt-2 element-1 fx-border sales-line-item" id="product_1" data-id="1">
                 <b class="jsr-no">1</b>
-                <div class="flex-grow-1 px-0 ml-15">
-                  <div class="row">
+                <div class="flex-grow-1 ">
+                  <div class="row g-1 align-items-end">
 
-                      <div class="col-md-3 pl-0">
+                      <div class="col-xl-3 col-lg-4 col-md-6 px-1">
                         <input type="hidden" name="x_value[]" id="x_value_1" value="1">
                         <div class="form-group">
                           <label>Select Product<span class="required">*</span></label>
@@ -203,7 +260,7 @@
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Qty <span class="required">*</span></label>
                           <input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty"
@@ -211,7 +268,7 @@
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Amount <span class="required">*</span></label>
                           <div class="input-group">
@@ -222,14 +279,14 @@
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Total Amount</label>
                           <input type="number" step="any" id="total_amount_1" name="total_amount[]" class="form-control" readonly>
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Bill Amt <span class="required">*</span></label>
                           <input type="number" step="any" id="bill_amount_1" name="bill_amount[]"
@@ -237,49 +294,49 @@
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Total Bill Amt</label>
                           <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" readonly>
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>GST % <span class="required">*</span></label>
                           <input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_amt('1')" value="" class="form-control">
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>GST Amt</label>
                           <input type="number" step="any" id="gst_amount_1" name="gst_amount[]" value="" class="form-control" readonly>
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Total Bill GST Amount</label>
                           <input type="number" step="any" id="total_bill_gst_amount_1" name="total_bill_gst_amount[]" class="form-control" readonly>
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Black Amt</label>
                           <input type="number" step="any" id="black_amount_per_unit_1" name="black_amt[]" class="form-control" readonly>
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Total Black Amount</label>
                           <input type="number" step="any" id="black_amount_1" name="black_total[]" value="" class="form-control" readonly>
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Final Total</label>
                           <input type="number" step="any" id="final_total_1" name="final_total[]" class="form-control" readonly>
@@ -287,10 +344,10 @@
                         </div>
                       </div>
 
-                      <div class="col-md-1 pl-0">
+                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>&nbsp;</label><br />
-                          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
+                          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line"
                             onclick="removeRequirement(this,1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
                         </div>
                       </div>
@@ -557,13 +614,13 @@ function appendRequirement() {
     $(".loader").show();
     
       $('#requirement_area').append(`
-        <div class="d-block mt-2 element-1 fx-border" id="product_${nextindex}" data-id="${nextindex}">
+        <div class="d-block mt-2 element-1 fx-border sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
           <b class="jsr-no">${nextindex}</b>
 
           <div class="flex-grow-1 px-0 ml-15">
-            <div class="row">
+            <div class="row g-1 align-items-end">
 
-              <div class="col-md-3 pl-0">
+              <div class="col-xl-3 col-lg-4 col-md-6 px-1">
                 <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
                 <div class="form-group">
                   <label>Select Product<span class="required">*</span></label>
@@ -573,7 +630,7 @@ function appendRequirement() {
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Qty <span class="required">*</span></label>
                   <input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1"
@@ -581,7 +638,7 @@ function appendRequirement() {
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Amount <span class="required">*</span></label>
                   <div class="input-group">
@@ -591,14 +648,14 @@ function appendRequirement() {
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Total Amount</label>
                   <input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" readonly>
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Bill Amt <span class="required">*</span></label>
                   <input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" 
@@ -606,14 +663,14 @@ function appendRequirement() {
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Total Bill Amt</label>
                   <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" readonly>
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>GST % <span class="required">*</span></label>
                   <input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control"
@@ -621,35 +678,35 @@ function appendRequirement() {
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>GST Amt</label>
                   <input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" readonly>
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Total Bill GST Amount</label>
                   <input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" readonly>
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Black Amt</label>
                   <input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" readonly>
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Total Black Amount</label>
                   <input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" readonly>
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Final Total</label>
                   <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" readonly>
@@ -657,10 +714,10 @@ function appendRequirement() {
                 </div>
               </div>
 
-              <div class="col-md-1 pl-0">
+              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>&nbsp;</label><br>
-                  <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
+                  <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line"
                     onclick="removeRequirement(this,${nextindex})">
                     <i class="fa fa-times"></i>
                   </button>
@@ -732,8 +789,50 @@ function appendRequirement() {
       recalculate();
   }
 
+  function isDuplicateProductSelection(product_id, index) {
+    var selectedId = String(product_id || '').split('|')[0];
+    var duplicateFound = false;
+
+    $('.product_id').each(function() {
+      var thisId = this.id || '';
+      if (thisId === ('product_id_' + index)) return;
+
+      var otherId = String($(this).val() || '').split('|')[0];
+      if (otherId !== '' && otherId === selectedId) {
+        duplicateFound = true;
+      }
+    });
+
+    return duplicateFound;
+  }
+
+  function resetLineItem(index) {
+    $('#available_' + index).val(0);
+    $('#master_amount_' + index).val('');
+    $('#bill_amount_' + index).val('');
+    $('#gst_' + index).val('');
+    $('#total_amount_' + index).val('');
+    $('#bill_total_' + index).val('');
+    $('#gst_amount_' + index).val('');
+    $('#total_bill_gst_amount_' + index).val('');
+    $('#black_amount_per_unit_' + index).val('');
+    $('#black_amount_' + index).val('');
+    $('#final_total_' + index).val('');
+    recalculate();
+  }
+
   function get_details_by_product(product_id, index) {
     if(!product_id) return;
+    if (isDuplicateProductSelection(product_id, index)) {
+      Swal.fire({
+        title: "Error!",
+        text: "Same product cannot be selected more than once.",
+        icon: "warning"
+      });
+      $('#product_id_' + index).val('').trigger('change');
+      resetLineItem(index);
+      return;
+    }
 
     $.ajax({
       type: "POST",

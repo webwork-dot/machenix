@@ -2490,11 +2490,11 @@ class Inventory extends CI_Controller
                 $staff_access = (int)($usr_det->staff_access ?? 0);
             }
 
-            if ($staff_access === 7) {
-                $page_data['page_name']  = 'sales_order_edit_salesman';
-            } else {
-                $page_data['page_name']  = 'sales_order_edit';
-            }
+            // if ($staff_access === 7) {
+            //     $page_data['page_name']  = 'sales_order_edit_salesman';
+            // } else {
+            $page_data['page_name']  = 'sales_order_edit';
+            // }
 
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Sales';

@@ -3,13 +3,6 @@
 		text-align: right;
 	}
 
-	.dis-input {
-		margin-top: -7px;
-		width: 65px !important;
-		float: right !important;
-		margin-left: 5px !important;
-	}
-
 	.dis-input-1 {
 		margin-top: 0px;
 		width: 200px !important;
@@ -81,14 +74,12 @@
 
 	.select2-container--default .select2-selection--single .select2-selection__rendered {
 		line-height: 30px;
-		/* Adjust the line-height to change the height */
 		min-height: 30px;
 		line-height: normal;
 	}
 
 	.select2-container--default .select2-selection--single {
 		height: 30px;
-		/* Adjust the height as needed */
 		min-height: 30px;
 		line-height: normal;
 	}
@@ -101,847 +92,504 @@
 		width: 20px;
 	}
 
-	.f-title {
-		border-bottom: 1px dashed #3d3d3d;
-		width: max-content;
-		margin-top: 10px;
+	.sales-line-item {
+		background: #f8fbff;
+		border: 1px solid #dbe6f5;
+		border-radius: 10px;
+		padding: 10px 0px;
 	}
 
-	.m-acc .m-stock-avl {
-		position: absolute;
-		right: 0;
+	.sales-line-item .jsr-no {
+		width: 24px;
+		height: 24px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: #2f3b52;
+		color: #fff;
+		font-size: 12px;
+		font-weight: 700;
+		margin-bottom: 8px;
 	}
 
-	.m-stock-avl label {
-		border: 1px dashed #037e03;
-		color: #037e03;
-		padding: 2px 5px;
-		margin-top: 5px;
+	.sales-line-item .form-group {
+		margin-bottom: 6px;
+	}
+
+	.sales-line-item .form-group label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #2f3b52;
+		margin-bottom: 4px;
+		line-height: 1.2;
+	}
+
+	.sales-line-item .form-control,
+	.sales-line-item .input-group-text {
+		min-height: 34px;
+		font-size: 13px;
+	}
+
+	.sales-line-item input[readonly] {
+		background: #eef3fa;
+	}
+
+	.sales-line-item .input-group-text {
+		background: #eef3fa;
+		border-color: #d3deef;
 	}
 </style>
 
 <div class="row">
-  <div class="col-12">
-    <!-- profile -->
-    <div class="card">
-      <div class="card-body py-1 my-0">
+	<div class="col-12">
+		<div class="card">
+			<div class="card-body py-1 my-0">
 
-        <?php echo form_open('inventory/sales_order/edit_post/' . $id, ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
-        <div class="row">
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Order No <span class="required">*</span></label>
-              <input type="text" class="form-control" placeholder="Order No" name="order_no"
-                value="<?php echo $data['order_no'];?>" readonly>
-            </div>
-          </div>
+				<?php echo form_open('inventory/sales_order/edit_post/' . $id, ['class' => 'add-ajax-redirect-form', 'onsubmit' => 'return checkForm(this);']); ?>
+				<div class="row">
+					<div class="col-12 col-sm-3 mb-1">
+						<div class="form-group">
+							<label>Order No <span class="required">*</span></label>
+							<input type="text" class="form-control" placeholder="Order No" name="order_no" value="<?php echo $data['order_no']; ?>" readonly>
+						</div>
+					</div>
 
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Refrence Order No </label>
-              <input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no" value="<?php echo $data['refrence_no'];?>">
-            </div>
-          </div>
+					<div class="col-12 col-sm-3 mb-1">
+						<div class="form-group">
+							<label>Refrence Order No </label>
+							<input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no" value="<?php echo $data['refrence_no']; ?>">
+						</div>
+					</div>
 
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Date <span class="required">*</span></label>
-              <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
-                value="<?php echo $data['date'];?>" id="date_picker">
-            </div>
-          </div>
+					<div class="col-12 col-sm-3 mb-1">
+						<div class="form-group">
+							<label>Date <span class="required">*</span></label>
+							<input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d'); ?>" value="<?php echo $data['date']; ?>" id="date_picker">
+						</div>
+					</div>
 
-          <div class="col-12 col-sm-3 mb-1">
-            <label class="form-label" for="state">Customer <span class="required">*</span></label>
-            <select class=" form-select select2" name="customer_id" id="customer_id" required>
-              <option value="">Select Customer </option>
-              <?php foreach($customer_list as $item){?>
-              	<option value="<?php echo $item['id'];?>" <?php echo $data['customer_id'] == $item['id'] ? 'selected' : '';?> ><?php echo $item['owner_name'];?></option>
-              <?php }?>
-            </select>
-          </div>
+					<div class="col-12 col-sm-3 mb-1">
+						<label class="form-label" for="state">Customer <span class="required">*</span></label>
+						<select class="form-select select2" id="customer_id" disabled>
+							<option value="">Select Customer </option>
+							<?php foreach ($customer_list as $item) { ?>
+								<option value="<?php echo $item['id']; ?>" <?php echo $data['customer_id'] == $item['id'] ? 'selected' : ''; ?>>
+									<?php echo $item['owner_name']; ?>
+								</option>
+							<?php } ?>
+						</select>
+						<input type="hidden" name="customer_id" value="<?php echo $data['customer_id']; ?>">
+					</div>
 
-          <div class="col-12 col-sm-3 mb-1 d-none">
-            <label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
-            <select class=" form-select select2" name="warehouse_id" id="warehouse_id">
-              <option value="0">Select Warehouse</option>
-            </select>
-          </div>
+					<div class="col-12 col-sm-3 mb-1 ">
+						<label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
+						<select class="form-select select2" name="warehouse_id" id="warehouse_id">
+							<option value="0">Select Warehouse</option>
+							<?php foreach ($warehouse_list as $warehouse) { ?>
+								<option value="<?php echo $warehouse->id; ?>" <?php echo $data['warehouse_id'] == $warehouse->id ? 'selected' : ''; ?>>
+									<?php echo $warehouse->name; ?>
+								</option>
+							<?php } ?>
+						</select>
+					</div>
 
 					<input type="hidden" name="company_id" value="<?php echo $data['company_id']; ?>">
-          
-          <div class="col-12 col-sm-12 mb-1 mt-1">
-            <div class="form-group">
-              <label>Narration</label>
-              <textarea class="form-control" placeholder="" rows="1" name="narration" id="narration"><?php echo $data['narration'];?></textarea>
-            </div>
-          </div>
+					<input type="hidden" name="narration" value="<?php echo htmlspecialchars($data['narration'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
-          <div class="col-12 col-sm-12 mb-1">
-            <div class="form-group">
-              <label>Remark</label>
-              <textarea class="form-control" placeholder="" rows="1" name="remark" id="remark"><?php echo $data['remark'];?></textarea>
-            </div>
-          </div>
+					<div class="col-12 col-sm-12 mb-1">
+						<div class="form-group">
+							<label>Remark</label>
+							<textarea class="form-control" placeholder="" rows="1" name="remark" id="remark"><?php echo $data['remark']; ?></textarea>
+						</div>
+					</div>
 
-          <div class="col-12">
-            <div id="requirement_area">
-              <?php 
-                $i = 1; 
-                foreach($data['products'] as $item) { 
-              ?>
-              <div class="d-block mt-2 element-1 fx-border" id="product_<?php echo $i;?>" data-id="<?php echo $i;?>">
-                <b class="jsr-no"><?php echo $i;?></b>
-                <div class="flex-grow-1 px-0 ml-15">
-                  <div class="row">
+					<div class="col-12">
+						<div id="requirement_area">
+							<?php $i = 1; ?>
+							<?php foreach ($data['products'] as $item) { ?>
+								<?php
+								$qty = (float) ($item['qty'] ?? 0);
+								$amount = (float) ($item['amount'] ?? ($item['master_amount'] ?? 0));
+								$total_amount = (float) ($item['total_amount'] ?? ($qty * $amount));
+								$bill_amount = (float) ($item['bill_amount'] ?? ($item['white_amount'] ?? 0));
+								$bill_total = (float) ($item['bill_total'] ?? ($item['white_total'] ?? 0));
+								$gst = (float) ($item['gst'] ?? 0);
+								$gst_amount = (float) ($item['gst_amount'] ?? 0);
+								$total_bill_gst_amount = (float) ($item['total_bill_gst_amount'] ?? ($bill_total + $gst_amount));
+								$black_amt = (float) ($item['black_amount'] ?? 0);
+								$black_total = (float) ($item['black_total'] ?? ($item['black_amount'] ?? 0));
+								$final_total = (float) ($item['final_total'] ?? ($total_bill_gst_amount + $black_total));
+								?>
+								<div class="d-block mt-2 element-1 fx-border sales-line-item" id="product_<?php echo $i; ?>" data-id="<?php echo $i; ?>">
+									<b class="jsr-no"><?php echo $i; ?></b>
+									<div class="flex-grow-1 ">
+										<div class="row g-1 align-items-end">
 
-                      <div class="col-md-3 pl-0">
-                        <input type="hidden" name="x_value[]" id="x_value_<?php echo $i;?>" value="<?php echo $i;?>">
-                        <div class="form-group">
-                          <label>Select Product (Stock)<span class="required">*</span></label>
-                          <select class="form-control select2 product_id" name="product_id[]" id="product_id_<?php echo $i;?>" data-toggle="select2" onchange="get_details_by_product(this.value,'<?php echo $i;?>');" data-selected="<?php echo $item['product_id'];?>" required>
-                            <option value="">Select Product</option>
-                            <?php foreach($products_list as $p_item){?>
-                              <option value="<?php echo $p_item['id'];?>" <?php echo $p_item['id'] == $item['product_id'] ? 'selected' : '';?>><?php echo $p_item['name'];?></option>
-                            <?php }?>
-                          </select>
-                        </div>
-                      </div>
+											<div class="col-xl-3 col-lg-4 col-md-6 px-1">
+												<input type="hidden" name="x_value[]" id="x_value_<?php echo $i; ?>" value="<?php echo $i; ?>">
+												<div class="form-group">
+													<label>Select Product<span class="required">*</span></label>
+													<select class="form-control select2 product_id" id="product_id_<?php echo $i; ?>" disabled>
+														<option value="">Select Product</option>
+														<?php foreach ($products_list as $p_item) { ?>
+															<option value="<?php echo $p_item['id']; ?>" <?php echo (string) $p_item['id'] === (string) $item['product_id'] ? 'selected' : ''; ?>>
+																<?php echo $p_item['name']; ?>
+															</option>
+														<?php } ?>
+													</select>
+													<input type="hidden" name="product_id[]" value="<?php echo $item['product_id']; ?>">
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>Qty <span class="required">*</span></label>
-                          <input type="number" step="any" id="quantity_<?php echo $i;?>" name="quantity[]" placeholder="Qty"
-                            onkeyup="calculate_amt('<?php echo $i;?>')" value="<?php echo $item['qty'];?>" class="form-control"
-                            required="">
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Qty <span class="required">*</span></label>
+													<input type="number" step="any" id="quantity_<?php echo $i; ?>" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo $qty; ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>Amount <span class="required">*</span></label>
-                          <div class="input-group">
-                            <input type="number" step="any" id="master_amount_<?php echo $i;?>" name="master_amount[]"
-                              onkeyup="calculate_amt('<?php echo $i;?>')" value="<?php echo $item['master_amount'] ?? $item['total_amount'];?>" class="form-control">
-                            <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('<?php echo $i;?>')"><i class="fa fa-history px-1"></i></span>
-                          </div>
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Amount <span class="required">*</span></label>
+													<div class="input-group">
+														<input type="number" step="any" id="master_amount_<?php echo $i; ?>" name="master_amount[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control">
+														<span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('<?php echo $i; ?>')"><i class="fa fa-history px-1"></i></span>
+													</div>
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>Bill Amt <span class="required">*</span></label>
-                          <input type="number" step="any" id="bill_amount_<?php echo $i;?>" name="bill_amount[]"
-                            onkeyup="markManual('<?php echo $i;?>'); calculate_amt('<?php echo $i;?>')" value="<?php echo $item['bill_amount'] ?? $item['white_amount'];?>" class="form-control"
-                            data-manual="<?php echo ($item['black_amount'] != 0) ? 'true' : 'false'; ?>">
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Total Amount</label>
+													<input type="number" step="any" id="total_amount_<?php echo $i; ?>" name="total_amount[]" value="<?php echo number_format($total_amount, 2, '.', ''); ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>GST % <span class="required">*</span></label>
-                          <input type="number" step="any" id="gst_<?php echo $i;?>" name="gst[]" onkeyup="calculate_amt('<?php echo $i;?>')" value="<?php echo $item['gst'];?>" class="form-control">
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Bill Amt <span class="required">*</span></label>
+													<input type="number" step="any" id="bill_amount_<?php echo $i; ?>" name="bill_amount[]" onkeyup="markManual('<?php echo $i; ?>'); calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($bill_amount, 2, '.', ''); ?>" class="form-control" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>GST Amt</label>
-                          <input type="number" step="any" id="gst_amount_<?php echo $i;?>" name="gst_amount[]" value="<?php echo $item['gst_amount'] ?? 0;?>" class="form-control" readonly>
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Total Bill Amt</label>
+													<input type="number" step="any" id="bill_total_<?php echo $i; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>Bill Total</label>
-                          <input type="number" step="any" id="bill_total_<?php echo $i;?>" name="bill_total[]"
-                              value="<?php echo $item['bill_total'] ?? $item['white_total'];?>" class="form-control" readonly>
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>GST % <span class="required">*</span></label>
+													<input type="number" step="any" id="gst_<?php echo $i; ?>" name="gst[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($gst, 2, '.', ''); ?>" class="form-control">
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>Black Amt</label>
-                          <input type="number" step="any" id="black_amount_<?php echo $i;?>" name="black_amount[]" value="<?php echo $item['black_amount'];?>" class="form-control" readonly>
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>GST Amt</label>
+													<input type="number" step="any" id="gst_amount_<?php echo $i; ?>" name="gst_amount[]" value="<?php echo number_format($gst_amount, 2, '.', ''); ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>Final Total</label>
-                          <input type="number" step="any" id="final_total_<?php echo $i;?>" name="final_total[]" value="<?php echo $item['final_total'] ?? ($item['white_total'] + $item['black_amount']);?>" class="form-control" readonly>
-                          <input type="hidden" id="available_<?php echo $i;?>" name="available[]" value="<?php echo $item['available'];?>">
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Total Bill GST Amount</label>
+													<input type="number" step="any" id="total_bill_gst_amount_<?php echo $i; ?>" name="total_bill_gst_amount[]" value="<?php echo number_format($total_bill_gst_amount, 2, '.', ''); ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-1 pl-0">
-                        <div class="form-group">
-                          <label>&nbsp;</label><br />
-                          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light"
-                            style="" name="button" onclick="removeRequirement(this,'<?php echo $i;?>')"> <i class="fa fa-times"
-                              aria-hidden="true"></i> </button>
-                        </div>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Black Amt</label>
+													<input type="number" step="any" id="black_amount_per_unit_<?php echo $i; ?>" name="black_amt[]" value="<?php echo number_format($black_amt, 2, '.', ''); ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-12" id="batch_<?php echo $i;?>">
-                        
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Total Black Amount</label>
+													<input type="number" step="any" id="black_amount_<?php echo $i; ?>" name="black_total[]" value="<?php echo number_format($black_total, 2, '.', ''); ?>" class="form-control" readonly>
+												</div>
+											</div>
 
-                      <div class="col-md-12 mt-2 d-flex justify-content-center">
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="appendBatch('<?php echo $i;?>')">
-                          <i class="fa fa-plus"></i> Add Batch
-                        </button>
-                      </div>
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>Final Total</label>
+													<input type="number" step="any" id="final_total_<?php echo $i; ?>" name="final_total[]" value="<?php echo number_format($final_total, 2, '.', ''); ?>" class="form-control" readonly>
+													<input type="hidden" id="available_<?php echo $i; ?>" name="available[]" value="<?php echo (float) ($item['available'] ?? 0); ?>">
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<?php $i++; ?>
+							<?php } ?>
+						</div>
+					</div>
 
-                  </div>
-                </div>
-              </div>
-              <?php $i++; } ?>
+					<div class="col-12 col-sm-12 mb-1">
+						<div class="table-responsive">
+							<div class="col-lg-12 no-pad">
+								<table class="table table-striped table-bordered mn-table mt-1">
+									<tbody>
+										<tr>
+											<td colspan="4" class="text-right" style="width:80%">
+												<label style="float:right;display: contents;">Total Bill Amt (Exc GST)</label>
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value" value="<?php echo number_format((float) ($data['basic_value'] ?? 0), 2, '.', ''); ?>" placeholder="Total Bill Amt (Exc GST)" class="form-control" readonly></p>
+											</td>
+										</tr>
 
-            </div>
-          </div>
+										<tr>
+											<td colspan="4" class="text-right align-middle">
+												<div class="d-flex flex-column align-items-end">
+													<span class="mb-0 text-capitalize">Select GST</span>
+													<select class="form-control" name="gst_type" id="gst_type" onchange="change_gst(this.value); recalculate();" style="width : 200px !important;float:right !important">
+														<option value="Central GST / State GST" <?php echo (($data['gst_type'] ?? '') == 'IGST') ? '' : 'selected'; ?>>Central GST / State GST</option>
+														<option value="IGST" <?php echo (($data['gst_type'] ?? '') == 'IGST') ? 'selected' : ''; ?>>IGST</option>
+													</select>
+												</div>
+											</td>
+											<td colspan="1">
+												<div id="cgst_sgst_inputs">
+													<p class="td-blank mb-25">
+														<input type="number" step="any" name="central_gst" id="central_gst" value="<?php echo number_format((float) ($data['central_gst'] ?? 0), 2, '.', ''); ?>" placeholder="CGST Amount" class="form-control" readonly>
+													</p>
+													<p class="td-blank mb-0">
+														<input type="number" step="any" name="state_gst" id="state_gst" value="<?php echo number_format((float) ($data['state_gst'] ?? 0), 2, '.', ''); ?>" placeholder="SGST Amount" class="form-control" readonly>
+													</p>
+												</div>
+												<div id="igst_input" class="hidden">
+													<p class="td-blank mb-0">
+														<input type="number" step="any" name="igst" id="igst" value="<?php echo number_format((float) ($data['igst'] ?? 0), 2, '.', ''); ?>" placeholder="IGST Amount" class="form-control" readonly>
+													</p>
+												</div>
+											</td>
+										</tr>
 
-          <center>
-            <div class="col-md-12  pl-0 m-auto">
-              <button type="button" class="btn btn-outline-primary waves-effect" onclick="appendRequirement()"> 
-                <i class="fa fa-plus" aria-hidden="true"></i> Add New Product
-              </button>
-            </div>
-          </center>
+										<tr>
+											<td colspan="4" class="text-right">
+												<label>Total Bill Amt (Incl GST)</label>
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="net_sales_value_1" id="net_sales_value_1" value="<?php echo number_format((float) ($data['net_sales_value_1'] ?? 0), 2, '.', ''); ?>" placeholder="Total Bill Amt (Incl GST)" class="form-control" readonly></p>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="4" class="text-right">
+												<label>Total Black Amt</label>
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="total_black_amount_summary" id="total_black_amount_summary" value="<?php echo number_format((float) ($data['total_black_amt'] ?? 0), 2, '.', ''); ?>" placeholder="Total Black Amt" class="form-control" readonly></p>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="4" class="text-right">
+												<label>Final Total</label>
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="net_sales_value_2" id="net_sales_value_2" value="<?php echo number_format((float) ($data['net_sales_value_2'] ?? 0), 2, '.', ''); ?>" placeholder="Final Total" class="form-control" readonly></p>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="4" class="text-right">
+												<label>Add : Other Charges</label>
+												<input type="text" step="any" name="other_charges_name" id="other_charges_name" value="<?php echo $data['other_charges_name']; ?>" placeholder="Charge Name" class="form-control dis-input-1">
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="other_charges_amount" id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo number_format((float) ($data['other_charges_amount'] ?? 0), 2, '.', ''); ?>" onkeyup="recalculate()"></p>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="4" class="text-right">
+												<label>Round Of</label>
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="round_of" id="round_of" placeholder="Round Of" class="form-control" value="<?php echo number_format((float) ($data['round_of'] ?? 0), 2, '.', ''); ?>" onkeyup="recalculate()"></p>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="4" class="text-right">
+												<label>Grand Total</label>
+											</td>
+											<td colspan="1">
+												<p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total" value="<?php echo number_format((float) ($data['grand_total'] ?? 0), 2, '.', ''); ?>" placeholder="" class="form-control" readonly></p>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
 
-          <div class="col-12 col-sm-12 mb-1">
-            <div class="table-responsive">
-              <div class="col-lg-12 no-pad">
-
-                <table class="table table-striped table-bordered mn-table mt-1">
-                  <tbody>
-                    <tr>
-                      <td colspan="4" class="text-right" style="width:80%">
-                        <label style="float:right;display: contents;">Total Basic Amount</label>
-                      </td>
-                      <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value"
-                            value="<?php echo $data['basic_value'];?>" placeholder="Basic Value" class="form-control" readonly></p>
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td colspan="4" class="text-right align-middle">
-                        <div class="d-flex flex-column align-items-end">
-                          <span class="mb-0 text-capitalize">Basic Net Sales Value (Exclu. GST)</span>
-                          <select class="form-control " name="gst_type" id="gst_type" style="width : 200px !important;float:right !important">
-                          <!-- <select class="form-control " name="gst_type" id="gst_type" onchange="change_gst(this.value)" style="width : 200px !important;float:right !important"> -->
-                            <option value="">Select GST</option>
-                            <option value="Central GST / State GST">Central GST / State GST</option>
-                            <option value="IGST">IGST</option>
-                          </select>
-                        </div>
-                      </td>
-                      <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="net_sales_value_1"
-                            id="net_sales_value_1" value="<?php echo $data['net_sales_value_1'];?>" placeholder="Basic Net Sales Value (Excl. GST)"
-                            class="form-control" readonly></p>
-                      </td>
-                    </tr>
-
-                    <tr class="hidden" id="cgst_gst">
-                      <th colspan="4" class="text-right align-middle">
-                        <b class="mb-0 text-capitalize">Add : IN: Central GST</b>
-                        <input type="text"
-                          oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="cgst_per" id="cgst_per" onkeyup="recalculate()" placeholder="in(%)" value="<?php echo $data['cgst_per'];?>"
-                          class="form-control dis-input">
-                      </th>
-                      <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="central_gst" id="central_gst"
-                              value="<?php echo $data['central_gst'];?>" placeholder="Add : IN: Central GST" class="form-control" readonly></b></p>
-                      </th>
-                    </tr>
-
-                    <tr class="hidden" id="sgst_gst">
-                      <th colspan="4" class="text-right align-middle">
-                        <b class="mb-0 text-capitalize">Add : IN: State GST</b>
-                        <input type="text"
-                          oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="sgst_per" id="sgst_per" onkeyup="recalculate()" placeholder="in(%)" value="<?php echo $data['sgst_per'];?>"
-                          class="form-control dis-input" readonly>
-                      </th>
-                      <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="state_gst" id="state_gst" value="<?php echo $data['state_gst'];?>"
-                              placeholder="Add : IN: State GST" class="form-control" readonly></b></p>
-                      </th>
-                    </tr>
-
-                    <tr class="hidden" id="igst_gst">
-                      <th colspan="4" class="text-right align-middle">
-                        <b class="mb-0 text-capitalize">Add : IN: IGST</b>
-                        <input type="text"
-                          oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-                          name="igst_per" id="igst_per" onkeyup="recalculate()" placeholder="in(%)" value="<?php echo $data['igst_per'];?>"
-                          class="form-control dis-input">
-                      </th>
-                      <th colspan="1">
-                        <p class="td-blank"><b><input type="number" step="any" name="igst" id="igst" value="<?php echo $data['igst'];?>"
-                              placeholder="Add : IN: IGST" class="form-control" readonly></b></p>
-                      </th>
-                    </tr>
-
-                    <tr>
-                      <td colspan="4" class="text-right">
-                        <label>Net Sales Value (Inc. GST)</label>
-                      </td>
-                      <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="net_sales_value_2"
-                            id="net_sales_value_2" value="<?php echo $data['net_sales_value_2'];?>" placeholder="Basic Net Sales Value (Inc. GST)"
-                            class="form-control" readonly></p>
-
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colspan="4" class="text-right">
-                        <label>Add : Other Charges</label>
-                        <input type="text" step="any" name="other_charges_name" id="other_charges_name" value="<?php echo $data['other_charges_name'];?>"
-                          placeholder="Charge Name" class="form-control dis-input-1">
-                      </td>
-                      <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="other_charges_amount"
-                            id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo $data['other_charges_amount'];?>"
-                            onkeyup="recalculate()"></p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colspan="4" class="text-right">
-                        <label>Round Of</label>
-                      </td>
-                      <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="round_of" id="round_of"
-                            placeholder="Round Of" class="form-control" value="<?php echo $data['round_of'];?>" onkeyup="recalculate()"></p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colspan="4" class="text-right">
-                        <label>Total Order Value</label>
-                      </td>
-                      <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total"
-                            placeholder="" class="form-control" value="<?php echo $data['grand_total'];?>" readonly></p>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <button type="submit"
-              class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify"
-              name="btn_verify"><?php echo get_phrase('submit'); ?></button>
-          </div>
-        </div>
-        <?php echo form_close(); ?>
-        <!--/ form -->
-      </div>
-    </div>
-  </div>
+					<div class="col-12">
+						<button type="submit" class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify" name="btn_verify"><?php echo get_phrase('submit'); ?></button>
+					</div>
+				</div>
+				<?php echo form_close(); ?>
+			</div>
+		</div>
+	</div>
 </div>
 
 <script>
-  function appendBatch(productIndex) {
-    let product = $('#product_id_' + productIndex).val();
-    let container = $("#batch_" + productIndex);
-    if(product) {
-      let total_batch = container.find(".batch-row").length;
-      let nextBatch = total_batch + 1;
-      var html = "";
-  
-      $.ajax({
-        type: "POST",
-        url: "<?php echo base_url()?>inventory/get_product_batch",
-        data: {product_id: product},
-        async: false,
-        dataType: "JSON",
-        success: function(res) {
-          res.forEach(function(batch) {
-            html += "<option value='" + batch.id + "'>" + batch.batch_no + "</option>";
-          });
-        }
-      });
+function subtotal_cal() {
+	var gst_type = $('#gst_type').val();
+	var total_bill_amt_ex_gst = 0;
+	var total_gst_amount = 0;
+	var total_bill_amt_in_gst = 0;
+	var total_black_amount = 0;
+	var final_total_sum = 0;
 
-      container.append(`
-        <div class="row mt-2 batch-row " id="batch_${productIndex}_${nextBatch}">
-  
-          <div class="col-md-6 pl-0">
-            <div class="form-group">
-              <label>Batch</label>
-              <select class="form-control product-batch-${productIndex} select2"
-                name="batch_id[${productIndex}][]"
-                id="batch_select_${productIndex}_${nextBatch}"
-                onchange="get_batch_details(this.value,'${productIndex}','${nextBatch}')">
-                <option value="">Select Batch</option>
-                ${html}
-              </select>
-            </div>
-          </div>
-          <div class="col-md-2 pl-0 d-none">
-            <div class="form-group">
-              <label>Expiry</label>
-              <input type="text"
-                class="form-control"
-                name="batch_expiry[${productIndex}][]"
-                id="batch_expiry_${productIndex}_${nextBatch}"
-                readonly>
-            </div>
-          </div>
-          <div class="col-md-2 pl-0">
-            <div class="form-group">
-              <label>Qty</label>
-              <input type="number"
-                step="any"
-                class="form-control"
-                name="batch_qty[${productIndex}][]"
-                id="batch_qty_${productIndex}_${nextBatch}">
-            </div>
-          </div>
-          <div class="col-md-2  pl-0">
-            <div class="form-group">
-              <label>Available</label>
-              <input type="number"
-                step="any"
-                class="form-control"
-                name="batch_available[${productIndex}][]"
-                id="batch_available_${productIndex}_${nextBatch}"
-                readonly>
-            </div>
-          </div>
-          <div class="col-md-2 d-flex align-items-end pl-0">
-            <div class="form-group">
-              <label>&nbsp;</label>
-              <button type="button" class="btn btn-danger btn-sm"
-                onclick="removeBatch(${productIndex},${nextBatch})">
-                <i class="fa fa-times"></i>
-              </button>
-            </div>
-          </div>
-  
-        </div>
-      `);
-  
-      $(".select2").select2();
-    } else {
-      Swal.fire({
-        title: 'Please Select Product',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+	let totalBillAmt = document.querySelectorAll('[name="bill_total[]"]');
+	let gstAmt = document.querySelectorAll('[name="gst_amount[]"]');
+	let totalBillGstAmt = document.querySelectorAll('[name="total_bill_gst_amount[]"]');
+	let totalBlackAmt = document.querySelectorAll('[name="black_total[]"]');
+	let finalTotalArr = document.querySelectorAll('[name="final_total[]"]');
 
-      $("#batch_" + productIndex).html('');
-    }
-  }
+	totalBillAmt.forEach((element, index) => {
+		var bill_total_val = Number(element.value) || 0;
+		var gst_amount_val = Number(gstAmt[index] ? gstAmt[index].value : 0) || 0;
+		total_bill_amt_ex_gst += bill_total_val;
+		total_gst_amount += gst_amount_val;
+	});
 
-  function get_batch_details(batch_id, product, batch) {
-    let batchSelect = $(".product-batch-" + product);
-    let isValid = true;
+	totalBillGstAmt.forEach((element) => {
+		total_bill_amt_in_gst += Number(element.value) || 0;
+	});
 
-    batchSelect.forEach((e) => {
-      if(e.id != ('batch_select_' + product + '_' + batch)) {
-        if(e.value == batch_id) {
-          isValid = false;
-        }
-      }
-    });
+	totalBlackAmt.forEach((element) => {
+		total_black_amount += Number(element.value) || 0;
+	});
 
-    if(isValid) {
-      $.ajax({
-        url: "<?php echo base_url()?>inventory/get_batch_details",
-        type:"POST",
-        dataType: "JSON",
-        data:{batch_id: batch_id},
-        success:function(res){
-          var data = res;
-          // $("#batch_expiry_"+product+"_"+batch).val(data.expiry);
-          $("#batch_available_" + product + "_" + batch).val(data.quantity);
-        }
-      });
-    } else {
-      Swal.fire({
-        title: 'Cannot select the same batch',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+	finalTotalArr.forEach((element) => {
+		final_total_sum += Number(element.value) || 0;
+	});
 
-      $("#batch_select_" + product + "_" + batch).val('');
-      $("#batch_available_" + product + "_" + batch).val('');
-    }
-  }
+	$("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
+	$("#net_sales_value_1").val(total_bill_amt_in_gst.toFixed(2));
+	$("#total_black_amount_summary").val(total_black_amount.toFixed(2));
+	$("#net_sales_value_2").val(final_total_sum.toFixed(2));
 
-  function removeBatch(productIndex,batchIndex){
-    $("#batch_"+productIndex+"_"+batchIndex).remove();
-  }
+	if (gst_type === 'IGST') {
+		$('#igst').val(total_gst_amount.toFixed(2));
+		$('#central_gst').val('0.00');
+		$('#state_gst').val('0.00');
+	} else {
+		$('#central_gst').val((total_gst_amount / 2).toFixed(2));
+		$('#state_gst').val((total_gst_amount / 2).toFixed(2));
+		$('#igst').val('0.00');
+	}
 
-    function markManual(index) {
-        $('#bill_amount_' + index).attr('data-manual', 'true');
-    }
+	var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
+	var round_of = parseFloat($("#round_of").val()) || 0;
+	var grand_total = final_total_sum + other_charges_amount + round_of;
+	$('#grand_total').val(grand_total.toFixed(2));
+}
 
-    function calculate_amt(index) {
-        var qty = Number($('#quantity_' + index).val()) || 0;
-        var master_amt = Number($('#master_amount_' + index).val()) || 0;
-        var bill_amt_el = $('#bill_amount_' + index);
-        var is_manual = bill_amt_el.attr('data-manual') === 'true';
+function recalculate() {
+	subtotal_cal();
+}
 
-        var gross_total = qty * master_amt;
+function change_gst(value) {
+	let cgstSgstInputs = document.querySelector("#cgst_sgst_inputs");
+	let igstInput = document.querySelector("#igst_input");
 
-        if (!is_manual) {
-            bill_amt_el.val(gross_total.toFixed(2));
-        }
+	if (value == "Central GST / State GST") {
+		cgstSgstInputs.classList.remove('hidden');
+		igstInput.classList.add('hidden');
+	} else if (value == "IGST") {
+		cgstSgstInputs.classList.add('hidden');
+		igstInput.classList.remove('hidden');
+	} else {
+		cgstSgstInputs.classList.add('hidden');
+		igstInput.classList.add('hidden');
+	}
+}
 
-        var bill_amt = Number(bill_amt_el.val()) || 0;
-        var gst_per = Number($('#gst_' + index).val()) || 0;
-        var available = Number($('#available_' + index).val()) || 0;
+function markManual(index) {
+	$('#bill_amount_' + index).attr('data-manual', 'true');
+}
 
-        // Note: For Edit, available stock might need to include current item's qty if we were being strict, 
-        // but keeping it simple as per Add logic.
-        if (qty > available && available > 0) {
-            Swal.fire({
-                title: "Warning!",
-                text: "Quantity (" + qty + ") exceeds available stock (" + available + ")",
-                icon: "warning"
-            });
-        }
+function calculate_amt(index) {
+	var qty = Number($('#quantity_' + index).val()) || 0;
+	var amount = Number($('#master_amount_' + index).val()) || 0;
+	var bill_amt_el = $('#bill_amount_' + index);
+	var is_manual = bill_amt_el.attr('data-manual') === 'true';
 
-        var black_amt = gross_total - bill_amt;
-        var gst_amt = (bill_amt * gst_per) / 100;
-        var bill_total = bill_amt + gst_amt;
-        var final_total = bill_total + black_amt;
+	var total_amount = qty * amount;
+	if (!is_manual) {
+		bill_amt_el.val(amount.toFixed(2));
+	}
 
-        $('#black_amount_' + index).val(black_amt.toFixed(2));
-        $('#gst_amount_' + index).val(gst_amt.toFixed(2));
-        $('#bill_total_' + index).val(bill_total.toFixed(2));
-        $('#final_total_' + index).val(final_total.toFixed(2));
+	var bill_amt = Number(bill_amt_el.val()) || 0;
+	var gst_per = Number($('#gst_' + index).val()) || 0;
+	var total_bill_amt = bill_amt * qty;
+	var gst_amt = (total_bill_amt * gst_per) / 100;
+	var total_bill_gst_amt = total_bill_amt + gst_amt;
+	var black_amt = amount - bill_amt;
+	var total_black_amt = total_amount - total_bill_amt;
+	var final_total = total_black_amt + total_bill_gst_amt;
 
-        recalculate();
-    }
+	$('#total_amount_' + index).val(total_amount.toFixed(2));
+	$('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+	$('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
+	$('#black_amount_' + index).val(total_black_amt.toFixed(2));
+	$('#gst_amount_' + index).val(gst_amt.toFixed(2));
+	$('#total_bill_gst_amount_' + index).val(total_bill_gst_amt.toFixed(2));
+	$('#final_total_' + index).val(final_total.toFixed(2));
 
-    function subtotal_cal() {
-        var total_element = $(".element-1").length;
-        var grand_total = 0;
-        var total_bill_amount = 0;
-        var total_gst_amount = 0;
-        var total_black_amount = 0;
+	recalculate();
+}
 
-        $('.element-1').each(function() {
-            var id = $(this).data('id');
-            var bill_total = Number($('#bill_total_' + id).val()) || 0;
-            var black_amt = Number($('#black_amount_' + id).val()) || 0;
-            var bill_amt = Number($('#bill_amount_' + id).val()) || 0;
-            var gst_amt = Number($('#gst_amount_' + id).val()) || 0;
+function showPriceHistory(index) {
+	var customer_id = $('[name="customer_id"]').val();
+	var product_id = $('[name="product_id[]"]').eq(index - 1).val();
 
-            total_bill_amount += bill_amt;
-            total_gst_amount += gst_amt;
-            total_black_amount += black_amt;
-            grand_total += (bill_total + black_amt);
-        });
+	if (!customer_id || !product_id) {
+		alert('Customer and product must be selected.');
+		return;
+	}
 
-        $("#basic_value").val(total_bill_amount.toFixed(2));
-        $("#net_sales_value_1").val(total_bill_amount.toFixed(2));
-        
-        var gst_type = $('#gst_type').val();
-        if (gst_type == 'IGST') {
-            $('#igst').val(total_gst_amount.toFixed(2));
-            $('#central_gst').val(0);
-            $('#state_gst').val(0);
-        } else {
-            $('#central_gst').val((total_gst_amount / 2).toFixed(2));
-            $('#state_gst').val((total_gst_amount / 2).toFixed(2));
-            $('#igst').val(0);
-        }
+	$.ajax({
+		type: "POST",
+		url: "<?php echo base_url() ?>inventory/get_last_selling_price",
+		data: {
+			customer_id: customer_id,
+			product_id: product_id
+		},
+		success: function(res) {
+			$('#priceHistoryModalContent').html(res);
+			$('#priceHistoryModal').modal('show');
+		}
+	});
+}
 
-        $("#net_sales_value_2").val((total_bill_amount + total_gst_amount).toFixed(2));
+$(document).ready(function() {
+	<?php if ($this->session->userdata('super_type_id') == 7) : ?>
+		$('#date_picker').prop('readonly', true);
+		$('#date_picker').on('mousedown', function(e) {
+			e.preventDefault();
+		});
+	<?php endif; ?>
 
-        var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
-        var round_of = parseFloat($("#round_of").val()) || 0;
-
-        var final_grand_total = total_bill_amount + total_gst_amount + total_black_amount + other_charges_amount + round_of;
-        $('#grand_total').val(final_grand_total.toFixed(2));
-    }
-
-  function recalculate() {
-    subtotal_cal();
-  };
-
-  function change_gst(value) {
-    let cgst_gst = document.querySelector("#cgst_gst");
-    let sgst_gst = document.querySelector("#sgst_gst");
-    let igst_gst = document.querySelector("#igst_gst");
-
-    if (value == "Central GST / State GST") {
-      sgst_gst.classList.remove('hidden')
-      cgst_gst.classList.remove('hidden')
-      igst_gst.classList.add('hidden')
-    } else if (value == "IGST") {
-      sgst_gst.classList.add('hidden')
-      cgst_gst.classList.add('hidden')
-      igst_gst.classList.remove('hidden')
-    } else {
-      sgst_gst.classList.add('hidden')
-      cgst_gst.classList.add('hidden')
-      igst_gst.classList.add('hidden')
-    }
-  }
-
-  function appendRequirement() {
-    var customer_id = $('#customer_id').find(":selected").val();
-
-    if (customer_id == '') {
-      Swal.fire({
-        title: "Error!",
-        text: "Please Select Customer !!",
-        icon: "error"
-      });
-    } else {
-      var last_row = $("#requirement_area .element-1:last");
-      var nextindex = 1;
-      if (last_row.length > 0) {
-        var lastid = last_row.attr("id");
-        var split_id = lastid.split("_");
-        nextindex = Number(split_id[1]) + 1;
-        
-        var prev_product = $('#product_id_' + split_id[1]).val();
-        if (prev_product == '') {
-          Swal.fire({
-            title: "Error!",
-            text: "Please Select Previous Product !!",
-            icon: "error"
-          });
-          return;
-        }
-      }
-
-      $(".loader").show();
-      $('#requirement_area').append(`
-          <div class="d-block mt-2 element-1 fx-border" id="product_${nextindex}" data-id="${nextindex}">
-            <b class="jsr-no">${nextindex}</b>
-            <div class="flex-grow-1 px-0 ml-15">
-              <div class="row">
-                <div class="col-md-3 pl-0">
-                  <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
-                  <div class="form-group">
-                    <label>Select Product (Stock)<span class="required">*</span></label>
-                    <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
-                      <option value="">Select Product</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>Qty <span class="required">*</span></label>
-                    <input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1"
-                      class="form-control" onkeyup="calculate_amt('${nextindex}')" required>
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>Amount <span class="required">*</span></label>
-                    <div class="input-group">
-                        <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
-                        <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>Bill Amt <span class="required">*</span></label>
-                    <input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" 
-                      onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false">
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>GST % <span class="required">*</span></label>
-                    <input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>GST Amt</label>
-                    <input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" readonly>
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>Bill Total</label>
-                    <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" readonly>
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>Black Amt</label>
-                    <input type="number" step="any" id="black_amount_${nextindex}" name="black_amount[]" class="form-control" readonly>
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                  <div class="form-group">
-                    <label>Final Total</label>
-                    <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" readonly>
-                    <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
-                  </div>
-                </div>
-
-                <div class="col-md-1 pl-0">
-                    <div class="form-group">
-                        <label>&nbsp;</label><br>
-                        <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light" onclick="removeRequirement(this,${nextindex})">
-                            <i class="fa fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="col-md-12" id="batch_${nextindex}"></div>
-                <div class="col-md-12 mt-2 d-flex justify-content-center">
-                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="appendBatch('${nextindex}')">
-                    <i class="fa fa-plus"></i> Add Batch
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `);
-        $(".select2").select2();
-        load_products_by_company(company_id, nextindex, true);
-    }
-  }
-
-    function load_products_by_company(company_id, index, shouldScroll = false, selectedValue = null, skipRecalculate = false) {
-        $.ajax({
-            type: "POST",
-            url: "<?php echo base_url()?>inventory/get_product_by_company",
-            data: { company_id: company_id },
-            success: function(res) {
-                console.log("Products Loaded for index " + index + ":", res);
-                var select = $('#product_id_' + index);
-                select.html('<option value="">Select Product</option>' + res);
-                
-                if (selectedValue) {
-                    select.val(selectedValue);
-                    if (!skipRecalculate) {
-                        select.trigger('change');
-                    } else {
-                        get_details_by_product(selectedValue, index, true);
-                    }
-                }
-                select.select2();
-                $(".loader").fadeOut("slow");
-                
-                if (shouldScroll && $("#product_" + index).length) {
-                    $('html, body').animate({
-                        scrollTop: $("#product_" + index).offset().top
-                    }, 300);
-                }
-            },
-            error: function(xhr) {
-                console.log(xhr.responseText);
-                $(".loader").fadeOut("slow");
-            }
-        });
-    }
-
-    function get_details_by_product(product_id, index, skipPriceUpdate = false) {
-        var company_id = $('[name="company_id"]').val();
-        if(!product_id) return;
-
-        $.ajax({
-            type: "POST",
-            url: "<?php echo base_url()?>inventory/get_qty_by_product_company",
-            data: { company_id: company_id, product_id: product_id },
-            success: function(res) {
-                if(res.status == 200) {
-                    $('#available_' + index).val(res.quantity);
-                    if (!skipPriceUpdate) {
-                        $('#gst_' + index).val(res.tax);
-                        $('#master_amount_' + index).val(res.rate);
-                        
-                        var qty = Number($('#quantity_' + index).val()) || 0;
-                        $('#bill_amount_' + index).val(res.rate * qty);
-                        calculate_amt(index);
-                    }
-                } else {
-                    alert(res.message);
-                }
-            }
-        });
-    }
-
-    function showPriceHistory(index) {
-        var product_id = $('#product_id_' + index).val();
-        var customer_id = $('#customer_id').val();
-        
-        if(!product_id || !customer_id) {
-            Swal.fire("Error", "Please select product and customer first", "error");
-            return;
-        }
-
-        $.ajax({
-            url: "<?php echo base_url()?>inventory/get_last_selling_price",
-            type: "POST",
-            data: { customer_id: customer_id, product_id: product_id },
-            success: function(res) {
-                $('#priceHistoryBody').html(res);
-                $('#priceHistoryModal').modal('show');
-            }
-        });
-    }
-
-    $(document).ready(function() {
-        var company_id = $('[name="company_id"]').val();
-        $('.product_id').each(function() {
-            var full_id = $(this).attr('id');
-            var split_id = full_id.split('_');
-            var id = split_id[split_id.length - 1]; // Get the last part (the numeric index)
-            var current_val = $(this).attr('data-selected') || $(this).val();
-            load_products_by_company(company_id, id, false, current_val, true);
-        });
-
-        <?php if($this->session->userdata('super_type_id') == '7'): ?>
-            $('#date_picker').prop('readonly', true);
-            $('#date_picker').on('click', function(e){ e.preventDefault(); });
-        <?php endif; ?>
-    });
+	change_gst($('#gst_type').val());
+	recalculate();
+});
 </script>
 
-<!-- Price History Modal -->
 <div class="modal fade" id="priceHistoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Price History (Last 5 Sales)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Qty</th>
-                                <th>Selling Price</th>
-                                <th>Order No</th>
-                            </tr>
-                        </thead>
-                        <tbody id="priceHistoryBody">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Last Selling Prices</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body" id="priceHistoryModalContent"></div>
+		</div>
+	</div>
 </div>
-</script>
