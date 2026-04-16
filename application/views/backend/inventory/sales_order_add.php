@@ -270,7 +270,7 @@
 
                       <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
-                          <label>Amount <span class="required">*</span></label>
+                          <label>Per Qty Amount <span class="required">*</span></label>
                           <div class="input-group">
                             <input type="number" step="any" id="master_amount_1" name="master_amount[]"
                               onkeyup="calculate_amt('1')" value="" class="form-control">
@@ -288,7 +288,7 @@
 
                       <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
-                          <label>Bill Amt <span class="required">*</span></label>
+                          <label>Per Qty Bill Amt <span class="required">*</span></label>
                           <input type="number" step="any" id="bill_amount_1" name="bill_amount[]"
                             onkeyup="markManual('1'); calculate_amt('1')" value="" class="form-control" data-manual="false">
                         </div>
@@ -297,7 +297,7 @@
                       <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
                           <label>Total Bill Amt</label>
-                          <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" readonly>
+                          <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('1')">
                         </div>
                       </div>
 
@@ -324,7 +324,7 @@
 
                       <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                         <div class="form-group">
-                          <label>Black Amt</label>
+                          <label>Per Qty Black Amt</label>
                           <input type="number" step="any" id="black_amount_per_unit_1" name="black_amt[]" class="form-control" readonly>
                         </div>
                       </div>
@@ -640,7 +640,7 @@ function appendRequirement() {
 
               <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
-                  <label>Amount <span class="required">*</span></label>
+                  <label>Per Qty Amount <span class="required">*</span></label>
                   <div class="input-group">
                     <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
                     <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
@@ -657,7 +657,7 @@ function appendRequirement() {
 
               <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
-                  <label>Bill Amt <span class="required">*</span></label>
+                  <label>Per Qty Bill Amt <span class="required">*</span></label>
                   <input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" 
                     onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false">
                 </div>
@@ -666,7 +666,8 @@ function appendRequirement() {
               <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
                   <label>Total Bill Amt</label>
-                  <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" readonly>
+                  <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" 
+                    onkeyup="calculate_amt_reverse('${nextindex}')">
                 </div>
               </div>
 
@@ -694,7 +695,7 @@ function appendRequirement() {
 
               <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
                 <div class="form-group">
-                  <label>Black Amt</label>
+                  <label>Per Qty Black Amt</label>
                   <input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" readonly>
                 </div>
               </div>
@@ -758,6 +759,7 @@ function appendRequirement() {
   }
 
   function calculate_amt(index) {
+      var activeId = document.activeElement.id;
       var qty = Number($('#quantity_' + index).val()) || 0;
       var amount = Number($('#master_amount_' + index).val()) || 0;
       var bill_amt_el = $('#bill_amount_' + index);
@@ -765,7 +767,7 @@ function appendRequirement() {
       
       var total_amount = qty * amount;
 
-      if (!is_manual) {
+      if (!is_manual && activeId !== 'bill_amount_' + index) {
           bill_amt_el.val(amount.toFixed(2));
       }
 
@@ -779,7 +781,9 @@ function appendRequirement() {
       var final_total = total_black_amt + total_bill_gst_amt;
 
       $('#total_amount_' + index).val(total_amount.toFixed(2));
-      $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+      if (activeId !== 'bill_total_' + index) {
+          $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+      }
       $('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
       $('#black_amount_' + index).val(total_black_amt.toFixed(2));
       $('#gst_amount_' + index).val(gst_amt.toFixed(2));
@@ -787,6 +791,23 @@ function appendRequirement() {
       $('#final_total_' + index).val(final_total.toFixed(2));
 
       recalculate();
+  }
+
+  function calculate_amt_reverse(index) {
+      var activeId = document.activeElement.id;
+      var qty = Number($('#quantity_' + index).val()) || 0;
+      var bill_total = Number($('#bill_total_' + index).val()) || 0;
+      
+      markManual(index);
+
+      if (qty > 0) {
+          var bill_amt = bill_total / qty;
+          if (activeId !== 'bill_amount_' + index) {
+              $('#bill_amount_' + index).val(bill_amt.toFixed(2));
+          }
+      }
+
+      calculate_amt(index);
   }
 
   function isDuplicateProductSelection(product_id, index) {

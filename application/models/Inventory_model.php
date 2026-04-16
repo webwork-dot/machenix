@@ -5358,7 +5358,7 @@ class Inventory_model extends CI_Model
 			foreach ($query->result_array() as $item) {
 				$resultdata[] = array(
 					"id" => $item['product_id'],
-					"name" => trim($item['product_name']) . ' - ' . trim($item['item_code']) . ' (' . (float)$item['total_qty'] . ')',
+					"name" => trim($item['product_name']) . ' - ' . trim($item['item_code']),
 				);
 			}
 		}
@@ -8845,6 +8845,32 @@ class Inventory_model extends CI_Model
 			$res['quantity'] = $row['quantity'];
 		}
 
+		echo json_encode($res);
+	}
+
+	public function get_batches_by_warehouse_product()
+	{
+		$warehouse_id = $this->input->post('warehouse_id');
+		$product_id = $this->input->post('product_id');
+
+		$query = $this->db->query("SELECT id, batch_no FROM inventory WHERE warehouse_id = '$warehouse_id' AND product_id = '$product_id' AND quantity > 0 GROUP BY batch_no");
+		$html = '';
+		if ($query->num_rows() > 0) {
+			foreach ($query->result_array() as $row) {
+				$html .= '<option value="' . $row['id'] . '">' . $row['batch_no'] . '</option>';
+			}
+		}
+		echo $html;
+	}
+
+	public function get_batch_qty_details()
+	{
+		$batch_id = $this->input->post('batch_id');
+		$query = $this->db->query("SELECT quantity, official_qty, black_qty FROM inventory WHERE id = '$batch_id'");
+		$res = array('quantity' => 0, 'official_qty' => 0, 'black_qty' => 0);
+		if ($query->num_rows() > 0) {
+			$res = $query->row_array();
+		}
 		echo json_encode($res);
 	}
 

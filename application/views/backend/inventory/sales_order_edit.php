@@ -139,6 +139,32 @@
 		background: #eef3fa;
 		border-color: #d3deef;
 	}
+
+	.batch-section-box {
+		border: 1px solid #ccd9ea;
+		background: #ffffff;
+		padding: 10px;
+		border-radius: 8px;
+		margin-top: 5px;
+		box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+	}
+
+	.batch-row {
+		border-bottom: 1px dashed #dce5f0;
+		padding-bottom: 10px;
+		margin-bottom: 10px;
+	}
+
+	.batch-row:last-child {
+		border-bottom: none;
+		margin-bottom: 0;
+		padding-bottom: 0;
+	}
+
+	.batch-row label {
+		font-size: 11px !important;
+		color: #5e6d82 !important;
+	}
 </style>
 
 <div class="row">
@@ -184,7 +210,7 @@
 
 					<div class="col-12 col-sm-3 mb-1 ">
 						<label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
-						<select class="form-select select2" name="warehouse_id" id="warehouse_id">
+						<select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="clearAllBatches()">
 							<option value="0">Select Warehouse</option>
 							<?php foreach ($warehouse_list as $warehouse) { ?>
 								<option value="<?php echo $warehouse->id; ?>" <?php echo $data['warehouse_id'] == $warehouse->id ? 'selected' : ''; ?>>
@@ -276,7 +302,7 @@
 											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
 												<div class="form-group">
 													<label>Total Bill Amt</label>
-													<input type="number" step="any" id="bill_total_<?php echo $i; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>" class="form-control" readonly>
+													<input type="number" step="any" id="bill_total_<?php echo $i; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>" class="form-control" onkeyup="calculate_amt_reverse('<?php echo $i; ?>')">
 												</div>
 											</div>
 
@@ -322,6 +348,19 @@
 													<input type="hidden" id="available_<?php echo $i; ?>" name="available[]" value="<?php echo (float) ($item['available'] ?? 0); ?>">
 												</div>
 											</div>
+
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+												<div class="form-group">
+													<label>&nbsp;</label><br>
+													<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light" onclick="addBatch('<?php echo $i; ?>')">
+														<i class="fa fa-plus"></i> Add Batch
+													</button>
+												</div>
+											</div>
+										</div>
+
+										<div id="batch_container_<?php echo $i; ?>" class="mt-1 mx-1 batch-section-box" style="display:none;">
+											
 										</div>
 									</div>
 								</div>
@@ -516,13 +555,14 @@ function markManual(index) {
 }
 
 function calculate_amt(index) {
+	var activeId = document.activeElement.id;
 	var qty = Number($('#quantity_' + index).val()) || 0;
 	var amount = Number($('#master_amount_' + index).val()) || 0;
 	var bill_amt_el = $('#bill_amount_' + index);
 	var is_manual = bill_amt_el.attr('data-manual') === 'true';
 
 	var total_amount = qty * amount;
-	if (!is_manual) {
+	if (!is_manual && activeId !== 'bill_amount_' + index) {
 		bill_amt_el.val(amount.toFixed(2));
 	}
 
@@ -536,7 +576,9 @@ function calculate_amt(index) {
 	var final_total = total_black_amt + total_bill_gst_amt;
 
 	$('#total_amount_' + index).val(total_amount.toFixed(2));
-	$('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+	if (activeId !== 'bill_total_' + index) {
+		$('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+	}
 	$('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
 	$('#black_amount_' + index).val(total_black_amt.toFixed(2));
 	$('#gst_amount_' + index).val(gst_amt.toFixed(2));
@@ -544,6 +586,152 @@ function calculate_amt(index) {
 	$('#final_total_' + index).val(final_total.toFixed(2));
 
 	recalculate();
+}
+
+function calculate_amt_reverse(index) {
+	var activeId = document.activeElement.id;
+	var qty = Number($('#quantity_' + index).val()) || 0;
+	var bill_total = Number($('#bill_total_' + index).val()) || 0;
+
+	markManual(index);
+
+	if (qty > 0) {
+		var bill_amt = bill_total / qty;
+		if (activeId !== 'bill_amount_' + index) {
+			$('#bill_amount_' + index).val(bill_amt.toFixed(2));
+		}
+	}
+
+	calculate_amt(index);
+}
+
+function markBatchManual(element) {
+	$(element).attr('data-manual', 'true');
+}
+
+function calculate_batch_amt(element, index) {
+	var row = $(element).closest('.batch-row');
+	var activeId = document.activeElement.id;
+	var batch_id = row.find('.batch_id').val();
+
+	if (batch_id == '' || batch_id == null) {
+		Swal.fire({
+			title: "Error!",
+			text: "Please select a batch first!",
+			icon: "error",
+			customClass: { confirmButton: "btn btn-primary" },
+			buttonsStyling: !1
+		});
+		$(element).val(0);
+		return;
+	}
+
+	var container = $('#batch_container_' + index);
+	var product_qty = parseFloat($('#quantity_' + index).val()) || 0;
+	
+	var white_qty = parseFloat(row.find('.batch_white_qty_input').val()) || 0;
+	var black_qty = parseFloat(row.find('.batch_black_qty_input').val()) || 0;
+	var rate = parseFloat(row.find('.batch_rate').val()) || 0;
+	var bill_amt_el = row.find('.batch_bill_amount');
+	var is_manual = bill_amt_el.attr('data-manual') === 'true';
+
+	if (!is_manual && activeId !== bill_amt_el.attr('id')) {
+		bill_amt_el.val(rate.toFixed(2));
+	}
+
+	var bill_amt = parseFloat(bill_amt_el.val()) || 0;
+	var gst_per = parseFloat(row.find('.batch_gst_per').val()) || 0;
+	
+	var available_white = parseFloat(row.find('.available_white_qty').val()) || 0;
+	var available_black = parseFloat(row.find('.available_black_qty').val()) || 0;
+
+	// Validation: White Qty vs Available White
+	if (white_qty > available_white) {
+		Swal.fire({
+			title: "Warning!",
+			text: "White Quantity (" + white_qty + ") cannot exceed Available White Quantity (" + available_white + ")",
+			icon: "warning",
+			customClass: { confirmButton: "btn btn-primary" },
+			buttonsStyling: !1
+		});
+		row.find('.batch_white_qty_input').val(0);
+		white_qty = 0;
+	}
+	// Validation: Black Qty vs Available Black
+	if (black_qty > available_black) {
+		Swal.fire({
+			title: "Warning!",
+			text: "Black Quantity (" + black_qty + ") cannot exceed Available Black Quantity (" + available_black + ")",
+			icon: "warning",
+			customClass: { confirmButton: "btn btn-primary" },
+			buttonsStyling: !1
+		});
+		row.find('.batch_black_qty_input').val(0);
+		black_qty = 0;
+	}
+
+	// Validation: Total Batches White + Black Qty vs Product Qty
+	var total_white_across_batches = 0;
+	var total_black_across_batches = 0;
+	container.find('.batch-row').each(function() {
+		total_white_across_batches += parseFloat($(this).find('.batch_white_qty_input').val()) || 0;
+		total_black_across_batches += parseFloat($(this).find('.batch_black_qty_input').val()) || 0;
+	});
+
+	if ((total_white_across_batches + total_black_across_batches) > product_qty) {
+		Swal.fire({
+			title: "Warning!",
+			text: "Total Batch Quantity (" + (total_white_across_batches + total_black_across_batches) + ") cannot exceed Product Quantity (" + product_qty + ")",
+			icon: "warning",
+			customClass: { confirmButton: "btn btn-primary" },
+			buttonsStyling: !1
+		});
+		$(element).val(0);
+		white_qty = parseFloat(row.find('.batch_white_qty_input').val()) || 0;
+		black_qty = parseFloat(row.find('.batch_black_qty_input').val()) || 0;
+	}
+
+	// Calculations
+	var total_batch_qty = white_qty + black_qty;
+	var bill_total = total_batch_qty * bill_amt;
+	var gst_amt = (bill_total * gst_per) / 100;
+	var total_bill_gst_amt = bill_total + gst_amt;
+	var black_amt_unit = rate - bill_amt;
+	var black_total_amt = total_batch_qty * black_amt_unit;
+	var final_total = total_bill_gst_amt + black_total_amt;
+
+	if (activeId !== row.find('.batch_bill_total').attr('id')) {
+		row.find('.batch_bill_total').val(bill_total.toFixed(2));
+	}
+	row.find('.batch_gst_amt').val(gst_amt.toFixed(2));
+	row.find('.batch_total_bill_gst_amount').val(total_bill_gst_amt.toFixed(2));
+	row.find('.batch_black_amt').val(black_amt_unit.toFixed(2));
+	row.find('.batch_black_total_amt').val(black_total_amt.toFixed(2));
+	row.find('.batch_final_total').val(final_total.toFixed(2));
+}
+
+function calculate_batch_amt_reverse(element, index) {
+	var row = $(element).closest('.batch-row');
+	var activeId = document.activeElement.id;
+	var white_qty = parseFloat(row.find('.batch_white_qty_input').val()) || 0;
+	var black_qty = parseFloat(row.find('.batch_black_qty_input').val()) || 0;
+	var total_qty = white_qty + black_qty;
+	var bill_total = parseFloat($(element).val()) || 0;
+
+	markBatchManual(row.find('.batch_bill_amount'));
+
+	if (total_qty > 0) {
+		var bill_amt = bill_total / total_qty;
+		if (activeId !== row.find('.batch_bill_amount').attr('id')) {
+			row.find('.batch_bill_amount').val(bill_amt.toFixed(2));
+		}
+	}
+
+	calculate_batch_amt(element, index);
+}
+
+function clearAllBatches() {
+	$('.batch-section-box').empty().hide();
 }
 
 function showPriceHistory(index) {
@@ -569,6 +757,230 @@ function showPriceHistory(index) {
 	});
 }
 
+function addBatch(index) {
+	var warehouse_id = $('#warehouse_id').val();
+	var product_id = $('#product_' + index).find('input[name="product_id[]"]').val();
+
+	if (warehouse_id == '0' || warehouse_id == '') {
+		Swal.fire({
+			title: "Error!",
+			text: "Please select warehouse first",
+			icon: "error",
+			customClass: {
+				confirmButton: "btn btn-primary"
+			},
+			buttonsStyling: !1
+		});
+		return;
+	}
+
+	var batch_container = $('#batch_container_' + index);
+	batch_container.show();
+	var batch_index = 1;
+	batch_container.find('.batch_id').each(function() {
+		var existing_id = $(this).attr('id') || '';
+		var split_id = existing_id.split('_');
+		var current_index = parseInt(split_id[split_id.length - 1], 10);
+		if (!isNaN(current_index) && current_index >= batch_index) {
+			batch_index = current_index + 1;
+		}
+	});
+
+	var batch_row = `
+		<div class="row g-1 align-items-end mb-1 batch-row">
+			<div class="col-xl-2 col-lg-3 col-md-4 px-1">
+				<div class="form-group">
+					<label>Select Batch</label>
+					<select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
+						<option value="">Select Batch</option>
+					</select>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Avail. W</label>
+					<input type="number" class="form-control available_white_qty" name="available_white_qty[${index}][]" id="available_white_qty_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Avail. B</label>
+					<input type="number" class="form-control available_black_qty" name="available_black_qty[${index}][]" id="available_black_qty_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>White Qty</label>
+					<input type="number" class="form-control batch_white_qty_input" name="batch_white_qty[${index}][]" id="batch_white_qty_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="0">
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Black Qty</label>
+					<input type="number" class="form-control batch_black_qty_input" name="batch_black_qty[${index}][]" id="batch_black_qty_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="0">
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Rate</label>
+					<input type="number" step="any" class="form-control batch_rate" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Bill Amt</label>
+					<input type="number" step="any" class="form-control batch_bill_amount" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" data-manual="false">
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Total Bill Amt</label>
+					<input type="number" step="any" class="form-control batch_bill_total" name="batch_bill_total[${index}][]" id="batch_bill_total_${index}_${batch_index}" onkeyup="calculate_batch_amt_reverse(this, '${index}')">
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-1 col-md-1 px-1">
+				<div class="form-group">
+					<label>GST %</label>
+					<input type="number" step="any" class="form-control batch_gst_per" name="batch_gst_per[${index}][]" id="batch_gst_per_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>GST Amt</label>
+					<input type="number" class="form-control batch_gst_amt" name="batch_gst_amt[${index}][]" id="batch_gst_amt_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Total Bill GST</label>
+					<input type="number" class="form-control batch_total_bill_gst_amount" name="batch_total_bill_gst_amount[${index}][]" id="batch_total_bill_gst_amount_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Black Amt</label>
+					<input type="number" class="form-control batch_black_amt" name="batch_black_amt[${index}][]" id="batch_black_amt_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Total Black</label>
+					<input type="number" class="form-control batch_black_total_amt" name="batch_black_total_amt[${index}][]" id="batch_black_total_amt_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
+				<div class="form-group">
+					<label>Final Total</label>
+					<input type="number" class="form-control batch_final_total" name="batch_final_total[${index}][]" id="batch_final_total_${index}_${batch_index}" readonly>
+				</div>
+			</div>
+			<div class="col-xl-1 col-lg-1 col-md-1 px-1">
+				<button type="button" class="btn btn-danger btn-sm mb-25" onclick="$(this).closest('.batch-row').remove()"><i class="fa fa-times"></i></button>
+			</div>
+		</div>
+	`;
+
+	batch_container.append(batch_row);
+	var new_select = $('#batch_container_' + index + ' .batch-row:last .batch_id');
+	
+	$.ajax({
+		type: "POST",
+		url: "<?php echo base_url() ?>inventory/get_batches_by_warehouse_product",
+		data: {
+			warehouse_id: warehouse_id,
+			product_id: product_id
+		},
+		success: function(res) {
+			new_select.append(res);
+			new_select.select2();
+		}
+	});
+}
+
+function getBatchDetails(element, index) {
+	var batch_id = $(element).val();
+	var row = $(element).closest('.batch-row');
+	var container = $('#batch_container_' + index);
+
+	if (batch_id == '') {
+		row.find('.available_white_qty').val(0);
+		row.find('.available_black_qty').val(0);
+		row.find('.batch_white_qty_input').val(0);
+		row.find('.batch_black_qty_input').val(0);
+		row.find('.batch_rate').val(0);
+		row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
+		row.find('.batch_bill_total').val(0);
+		row.find('.batch_gst_per').val(0);
+		row.find('.batch_gst_amt').val(0);
+		row.find('.batch_total_bill_gst_amount').val(0);
+		row.find('.batch_black_amt').val(0);
+		row.find('.batch_black_total_amt').val(0);
+		row.find('.batch_final_total').val(0);
+		return;
+	}
+
+	// Duplicate check within same product
+	var is_duplicate = false;
+	container.find('.batch_id').not(element).each(function() {
+		if ($(this).val() == batch_id) {
+			is_duplicate = true;
+			return false;
+		}
+	});
+
+	if (is_duplicate) {
+		Swal.fire({
+			title: "Error!",
+			text: "Batch already selected for this product!",
+			icon: "error",
+			customClass: {
+				confirmButton: "btn btn-primary"
+			},
+			buttonsStyling: !1
+		});
+		$(element).val('').trigger('change.select2');
+		row.find('.available_white_qty').val(0);
+		row.find('.available_black_qty').val(0);
+		row.find('.batch_white_qty_input').val(0);
+		row.find('.batch_black_qty_input').val(0);
+		row.find('.batch_rate').val(0);
+		row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
+		row.find('.batch_bill_total').val(0);
+		row.find('.batch_gst_per').val(0);
+		row.find('.batch_gst_amt').val(0);
+		row.find('.batch_total_bill_gst_amount').val(0);
+		row.find('.batch_black_amt').val(0);
+		row.find('.batch_black_total_amt').val(0);
+		row.find('.batch_final_total').val(0);
+		return;
+	}
+
+	$.ajax({
+		type: "POST",
+		url: "<?php echo base_url() ?>inventory/get_batch_qty_details",
+		data: {
+			batch_id: batch_id
+		},
+		dataType: 'json',
+		success: function(res) {
+			row.find('.available_white_qty').val(res.official_qty);
+			row.find('.available_black_qty').val(res.black_qty);
+			
+			// Initialize Rate and GST from main row
+			var main_rate = $('#master_amount_' + index).val();
+			var main_gst = $('#gst_' + index).val();
+			var main_bill_amt = $('#bill_amount_' + index).val();
+			var is_main_manual = $('#bill_amount_' + index).attr('data-manual');
+
+			row.find('.batch_rate').val(main_rate);
+			row.find('.batch_bill_amount').val(main_bill_amt).attr('data-manual', is_main_manual);
+			row.find('.batch_gst_per').val(main_gst);
+			
+			calculate_batch_amt(row.find('.batch_white_qty_input'), index);
+		}
+	});
+}
+
 $(document).ready(function() {
 	<?php if ($this->session->userdata('super_type_id') == 7) : ?>
 		$('#date_picker').prop('readonly', true);
@@ -579,6 +991,7 @@ $(document).ready(function() {
 
 	change_gst($('#gst_type').val());
 	recalculate();
+	$('.select2').select2();
 });
 </script>
 
