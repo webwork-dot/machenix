@@ -277,29 +277,29 @@
 
 											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
 												<div class="form-group">
-													<label>Amount <span class="required">*</span></label>
+													<label>Per Qty Amount <span class="required">*</span></label>
 													<div class="input-group">
-														<input type="number" step="any" id="master_amount_<?php echo $i; ?>" name="master_amount[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control">
+														<input type="number" step="any" id="master_amount_<?php echo $i; ?>" name="master_amount[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control" readonly>
 														<span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('<?php echo $i; ?>')"><i class="fa fa-history px-1"></i></span>
 													</div>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Total Amount</label>
 													<input type="number" step="any" id="total_amount_<?php echo $i; ?>" name="total_amount[]" value="<?php echo number_format($total_amount, 2, '.', ''); ?>" class="form-control" readonly>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Bill Amt <span class="required">*</span></label>
 													<input type="number" step="any" id="bill_amount_<?php echo $i; ?>" name="bill_amount[]" onkeyup="markManual('<?php echo $i; ?>'); calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($bill_amount, 2, '.', ''); ?>" class="form-control" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Total Bill Amt</label>
 													<input type="number" step="any" id="bill_total_<?php echo $i; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>" class="form-control" onkeyup="calculate_amt_reverse('<?php echo $i; ?>')">
@@ -309,39 +309,39 @@
 											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
 												<div class="form-group">
 													<label>GST % <span class="required">*</span></label>
-													<input type="number" step="any" id="gst_<?php echo $i; ?>" name="gst[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($gst, 2, '.', ''); ?>" class="form-control">
+													<input type="number" step="any" id="gst_<?php echo $i; ?>" name="gst[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($gst, 2, '.', ''); ?>" class="form-control" readonly>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>GST Amt</label>
 													<input type="number" step="any" id="gst_amount_<?php echo $i; ?>" name="gst_amount[]" value="<?php echo number_format($gst_amount, 2, '.', ''); ?>" class="form-control" readonly>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Total Bill GST Amount</label>
 													<input type="number" step="any" id="total_bill_gst_amount_<?php echo $i; ?>" name="total_bill_gst_amount[]" value="<?php echo number_format($total_bill_gst_amount, 2, '.', ''); ?>" class="form-control" readonly>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Black Amt</label>
 													<input type="number" step="any" id="black_amount_per_unit_<?php echo $i; ?>" name="black_amt[]" value="<?php echo number_format($black_amt, 2, '.', ''); ?>" class="form-control" readonly>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Total Black Amount</label>
 													<input type="number" step="any" id="black_amount_<?php echo $i; ?>" name="black_total[]" value="<?php echo number_format($black_total, 2, '.', ''); ?>" class="form-control" readonly>
 												</div>
 											</div>
 
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
+											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
 												<div class="form-group">
 													<label>Final Total</label>
 													<input type="number" step="any" id="final_total_<?php echo $i; ?>" name="final_total[]" value="<?php echo number_format($final_total, 2, '.', ''); ?>" class="form-control" readonly>
@@ -484,29 +484,25 @@ function subtotal_cal() {
 	var total_black_amount = 0;
 	var final_total_sum = 0;
 
-	let totalBillAmt = document.querySelectorAll('[name="bill_total[]"]');
-	let gstAmt = document.querySelectorAll('[name="gst_amount[]"]');
-	let totalBillGstAmt = document.querySelectorAll('[name="total_bill_gst_amount[]"]');
-	let totalBlackAmt = document.querySelectorAll('[name="black_total[]"]');
-	let finalTotalArr = document.querySelectorAll('[name="final_total[]"]');
-
-	totalBillAmt.forEach((element, index) => {
-		var bill_total_val = Number(element.value) || 0;
-		var gst_amount_val = Number(gstAmt[index] ? gstAmt[index].value : 0) || 0;
-		total_bill_amt_ex_gst += bill_total_val;
-		total_gst_amount += gst_amount_val;
+	// Total calculations coming from batch module fields
+	$('.batch_bill_total').each(function() {
+		total_bill_amt_ex_gst += parseFloat($(this).val()) || 0;
 	});
 
-	totalBillGstAmt.forEach((element) => {
-		total_bill_amt_in_gst += Number(element.value) || 0;
+	$('.batch_gst_amt').each(function() {
+		total_gst_amount += parseFloat($(this).val()) || 0;
 	});
 
-	totalBlackAmt.forEach((element) => {
-		total_black_amount += Number(element.value) || 0;
+	$('.batch_total_bill_gst_amount').each(function() {
+		total_bill_amt_in_gst += parseFloat($(this).val()) || 0;
 	});
 
-	finalTotalArr.forEach((element) => {
-		final_total_sum += Number(element.value) || 0;
+	$('.batch_black_total_amt').each(function() {
+		total_black_amount += parseFloat($(this).val()) || 0;
+	});
+
+	$('.batch_final_total').each(function() {
+		final_total_sum += parseFloat($(this).val()) || 0;
 	});
 
 	$("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
@@ -519,6 +515,7 @@ function subtotal_cal() {
 		$('#central_gst').val('0.00');
 		$('#state_gst').val('0.00');
 	} else {
+		// Central GST / State GST: divide by 2
 		$('#central_gst').val((total_gst_amount / 2).toFixed(2));
 		$('#state_gst').val((total_gst_amount / 2).toFixed(2));
 		$('#igst').val('0.00');
@@ -526,13 +523,15 @@ function subtotal_cal() {
 
 	var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
 	var round_of = parseFloat($("#round_of").val()) || 0;
+	
+	// Grand Total = Final Total + Add : Other Charges + Round Of
 	var grand_total = final_total_sum + other_charges_amount + round_of;
 	$('#grand_total').val(grand_total.toFixed(2));
 }
 
 function recalculate() {
 	subtotal_cal();
-}
+} 
 
 function change_gst(value) {
 	let cgstSgstInputs = document.querySelector("#cgst_sgst_inputs");
@@ -657,11 +656,11 @@ function calculate_batch_amt(element, index) {
 		row.find('.batch_white_qty_input').val(0);
 		white_qty = 0;
 	}
-	// Validation: Black Qty vs Available Black
-	if (black_qty > available_black) {
+	// Validation: Total Batch Qty vs Total Available in Batch (Allowing Black to take from White)
+	if ((white_qty + black_qty) > (available_white + available_black)) {
 		Swal.fire({
 			title: "Warning!",
-			text: "Black Quantity (" + black_qty + ") cannot exceed Available Black Quantity (" + available_black + ")",
+			text: "Total Batch Quantity (" + (white_qty + black_qty) + ") cannot exceed Available Total Quantity (" + (available_white + available_black) + ")",
 			icon: "warning",
 			customClass: { confirmButton: "btn btn-primary" },
 			buttonsStyling: !1
@@ -708,6 +707,8 @@ function calculate_batch_amt(element, index) {
 	row.find('.batch_black_amt').val(black_amt_unit.toFixed(2));
 	row.find('.batch_black_total_amt').val(black_total_amt.toFixed(2));
 	row.find('.batch_final_total').val(final_total.toFixed(2));
+
+	recalculate();
 }
 
 function calculate_batch_amt_reverse(element, index) {
@@ -798,13 +799,13 @@ function addBatch(index) {
 			</div>
 			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
 				<div class="form-group">
-					<label>Avail. W</label>
+					<label>Avail. White Qty</label>
 					<input type="number" class="form-control available_white_qty" name="available_white_qty[${index}][]" id="available_white_qty_${index}_${batch_index}" readonly>
 				</div>
 			</div>
 			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
 				<div class="form-group">
-					<label>Avail. B</label>
+					<label>Avail. Black Qty</label>
 					<input type="number" class="form-control available_black_qty" name="available_black_qty[${index}][]" id="available_black_qty_${index}_${batch_index}" readonly>
 				</div>
 			</div>
@@ -822,13 +823,13 @@ function addBatch(index) {
 			</div>
 			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
 				<div class="form-group">
-					<label>Rate</label>
+					<label>Per Qty Amount</label>
 					<input type="number" step="any" class="form-control batch_rate" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
 				</div>
 			</div>
 			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
 				<div class="form-group">
-					<label>Bill Amt</label>
+					<label>Per Qty Bill Amt</label>
 					<input type="number" step="any" class="form-control batch_bill_amount" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" data-manual="false">
 				</div>
 			</div>
@@ -858,13 +859,13 @@ function addBatch(index) {
 			</div>
 			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
 				<div class="form-group">
-					<label>Black Amt</label>
+					<label>Per Qty Black Amt</label>
 					<input type="number" class="form-control batch_black_amt" name="batch_black_amt[${index}][]" id="batch_black_amt_${index}_${batch_index}" readonly>
 				</div>
 			</div>
 			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
 				<div class="form-group">
-					<label>Total Black</label>
+					<label>Total Black Amt</label>
 					<input type="number" class="form-control batch_black_total_amt" name="batch_black_total_amt[${index}][]" id="batch_black_total_amt_${index}_${batch_index}" readonly>
 				</div>
 			</div>
@@ -875,7 +876,7 @@ function addBatch(index) {
 				</div>
 			</div>
 			<div class="col-xl-1 col-lg-1 col-md-1 px-1">
-				<button type="button" class="btn btn-danger btn-sm mb-25" onclick="$(this).closest('.batch-row').remove()"><i class="fa fa-times"></i></button>
+				<button type="button" class="btn btn-danger btn-sm mb-25" onclick="$(this).closest('.batch-row').remove(); recalculate();"><i class="fa fa-times"></i></button>
 			</div>
 		</div>
 	`;
