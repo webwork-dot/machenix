@@ -286,6 +286,15 @@
             </a>
         </li>
         <?php } ?>
+        
+		<?php if($user_id == 4) {?>
+        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">My Company</span>
+            </a>
+        </li>
+        <?php } ?>
 
     </ul>
 </div>
