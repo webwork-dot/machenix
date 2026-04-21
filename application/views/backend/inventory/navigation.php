@@ -84,7 +84,7 @@
             </li>
         <?php } ?>
         
-        <?php if($user_id == 4 || in_array('24',$access_array) || in_array('25',$access_array)) {?>
+        <?php if($user_id == 4 || in_array('24',$access_array) || in_array('25',$access_array)) { ?>
 		<li class="nav-item <?php if($navigation == 'import_purchase_order' || $navigation == 'purchase_order') echo 'active'; ?>">   
             <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
