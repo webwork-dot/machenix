@@ -722,6 +722,55 @@ class Inventory extends CI_Controller
         }
     }
 
+    // payment receipt Starts
+    public function payment_receipt($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_payments();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_payments($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_payments($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'payment_receipt';
+            $page_data['page_name']  = 'payment_receipt';
+            $page_data['page_title'] = 'Payment Receipt';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function payment_receipt_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $company_id = $this->session->userdata('company_id');
+        $customer_list = $this->common_model->getResultById('customer', 'id, owner_name', ['is_deleted' => '0', 'company_id' => $company_id, 'type' => 'customer']);
+        $page_data['customer_list'] = ($customer_list != '') ? $customer_list : [];
+
+        $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
+        $page_data['bank_accounts'] = ($bank_accounts != '') ? $bank_accounts : [];
+
+        if ($param1 == 'add') {
+            $page_data['navigation']  = 'payment_receipt';
+            $page_data['page_name']  = 'payment_receipt_add';
+            $page_data['page_title'] = 'Add Payment Receipt';
+            $this->load->view('backend/index', $page_data);
+        } elseif($param1 == 'edit') {
+            $data = $this->common_model->getRowById('payments', '*', ['is_delete' => '0', 'id' => $param2]);
+            $page_data['data'] = ($data != '') ? $data : [];
+            $page_data['id'] = $param2;
+            $page_data['navigation']  = 'payments';
+            $page_data['page_name']  = 'payments_edit';
+            $page_data['page_title'] = 'Edit Payment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
     // payments Starts
     public function payments($param1 = "", $param2 = "")
     {
@@ -2291,8 +2340,17 @@ class Inventory extends CI_Controller
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Customer';
             $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'customer_ledger') {
+            $data                    = $this->inventory_model->get_customer_by_id($param2)->row_array();
+            $page_data['data']       = $data;
+            $page_data['id']         = $param2;
+            $page_data['ledger']     = $this->inventory_model->get_customer_ledger($param2);
+            $page_data['page_name']  = 'customer_ledger';
+            $page_data['page_title'] = 'Customer Ledger';
+            $this->load->view('backend/index', $page_data);
         }
     }
+
 
     public function get_staff_by_company_id() {
         $company_id = $this->input->post('company_id', true);

@@ -254,6 +254,7 @@
 
 											<div class="col-xl-3 col-lg-4 col-md-6 px-1">
 												<input type="hidden" name="x_value[]" id="x_value_<?php echo $i; ?>" value="<?php echo $i; ?>">
+												<input type="hidden" name="old_id[]" id="old_id_<?php echo $i; ?>" value="<?php echo $item['id']; ?>">
 												<div class="form-group">
 													<label>Select Product<span class="required">*</span></label>
 													<select class="form-control select2 product_id" id="product_id_<?php echo $i; ?>" disabled>

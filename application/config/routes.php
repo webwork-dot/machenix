@@ -61,6 +61,8 @@ $route[$r_inventory . '/bank-accounts/edit/(:num)'] = 'inventory/bank_accounts_f
 $route[$r_inventory . '/customer'] = 'inventory/customer';
 $route[$r_inventory . '/customer/add']    = 'inventory/customer_form/customer_add';
 $route[$r_inventory . '/customer/edit/(:num)'] = 'inventory/customer_form/customer_edit/$1';
+$route[$r_inventory . '/customer/ledger/(:num)'] = 'inventory/customer_form/customer_ledger/$1';
+
 
 $route[$r_inventory . '/leads/add']               = 'inventory/leads_form/leads_add';
 $route[$r_inventory . '/leads/edit/(:num)']       = 'inventory/leads_form/leads_edit/$1';
@@ -98,6 +100,10 @@ $route[$r_inventory . '/po-expense/edit/(:num)']  = 'inventory/po_expense_form/e
 $route[$r_inventory . '/payments']          = 'inventory/payments';
 $route[$r_inventory . '/payments/add']      = 'inventory/payments_form/add';
 $route[$r_inventory . '/payments/edit/(:num)']      = 'inventory/payments_form/edit/$1';
+
+$route[$r_inventory . '/payment-receipt']             = 'inventory/payment_receipt';
+$route[$r_inventory . '/payment-receipt/add']         = 'inventory/payment_receipt_form/add';
+$route[$r_inventory . '/payment-receipt/edit/(:num)'] = 'inventory/payment_receipt_form/edit/$1';
 
 $route[$r_inventory . '/purchase-order'] = 'inventory/purchase_order/local';
 $route[$r_inventory . '/purchase-order/add-import']    = 'inventory/purchase_order_form/add_import';

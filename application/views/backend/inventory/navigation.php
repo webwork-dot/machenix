@@ -296,5 +296,14 @@
         </li>
         <?php } ?>
 
+        <?php if($user_id != 4) {?>
+        <li class="nav-item <?php if($page_name == 'payment_receipt' || $page_name == 'payment_receipt_add' || $page_name == 'payment_receipt_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payment-receipt">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">Payment Receipt</span>
+            </a>
+        </li>
+        <?php } ?>
+
     </ul>
 </div>
