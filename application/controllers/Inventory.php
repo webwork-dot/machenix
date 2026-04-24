@@ -771,6 +771,17 @@ class Inventory extends CI_Controller
         }
     }
 
+    
+    public function get_customer_payments_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_customer_payments();
+        }
+    }
+
     // payments Starts
     public function payments($param1 = "", $param2 = "")
     {
@@ -837,15 +848,6 @@ class Inventory extends CI_Controller
         }
     }
 
-    public function get_customer_payments_ajax()
-    {
-        if ($this->session->userdata('inventory_login') != true) {
-            redirect(site_url('login'), 'refresh');
-        }
-        if ($this->input->is_ajax_request()) {
-            $this->inventory_model->get_customer_payments();
-        }
-    }
     
     // Loading List PO Starts
     public function po_purchase_in($param1 = "", $param2 = "")
