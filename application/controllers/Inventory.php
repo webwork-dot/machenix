@@ -728,7 +728,7 @@ class Inventory extends CI_Controller
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
         } elseif ($param1 == "add_post") {
-            $this->inventory_model->add_payments();
+            $this->inventory_model->add_customer_payment();
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_payments($param2);
         } elseif ($param1 == "delete") {
@@ -834,6 +834,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_payments();
+        }
+    }
+
+    public function get_customer_payments_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_customer_payments();
         }
     }
     
@@ -3183,4 +3193,219 @@ class Inventory extends CI_Controller
         $batches = $this->inventory_model->get_batches_by_supplier($supplier_id);
         echo json_encode($batches);
     }
+	public function get_customer_sales_orders()
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			echo "Session expired";
+			return;
+		}
+
+		$customer_id = $this->input->post('customer_id');
+		$payment_type = $this->input->post('payment_type');
+
+		if (!$customer_id || !$payment_type) {
+			echo "";
+			return;
+		}
+
+		$orders = $this->inventory_model->get_unpaid_sales_orders_by_customer($customer_id, $payment_type);
+
+		if (empty($orders)) {
+			echo '<div class="alert alert-info">No outstanding orders found for this customer and payment type.</div>';
+			return;
+		}
+
+		// Render table
+		$html = '
+		<div class="row mb-1 mt-2">
+			<div class="col-12 d-flex justify-content-between align-items-center">
+				<h4 class="card-title mb-0">
+					<i class="fa fa-list-alt text-warning"></i> Outstanding Invoices ('.count($orders).' Invoices)
+				</h4>
+				<div>
+					<button type="button" class="btn btn-sm btn-outline-info" id="select_all_btn"><i class="fa fa-check-square-o"></i> Select All</button>
+					<button type="button" class="btn btn-sm btn-outline-danger" id="clear_all_btn"><i class="fa fa-times-circle-o"></i> Clear All</button>
+				</div>
+			</div>
+		</div>
+		<div class="table-responsive">
+					<table class="table table-bordered table-sm" id="outstanding_table">
+						<thead class="thead-dark" style="background: #1e1e1e;">
+							<tr>
+								<th class="text-center" style="width: 40px;"><input type="checkbox" id="select_all_checkbox"></th>
+								<th>DATE</th>
+								<th>ITEM / NO</th>
+								<th>REF / DUE</th>
+								<th class="text-end">TOTAL</th>
+								<th class="text-end">PAID</th>
+								<th class="text-end">PENDING</th>
+								<th style="width: 250px;">APPLY / PAY</th>
+								<th class="text-end">REMAINING</th>
+							</tr>
+						</thead>
+						<tbody>';
+
+		foreach ($orders as $order) {
+			$total = ($payment_type == 'official') ? $order['net_sales_value_1'] : $order['total_black_amt'];
+			$paid = ($payment_type == 'official') ? $order['total_white_paid'] : $order['total_black_paid'];
+			$pending = $total - $paid;
+
+			$html .= '<tr>
+						<td class="text-center align-middle">
+							<input type="checkbox" class="order_checkbox" name="order_ids[]" value="'.$order['id'].'">
+							<input type="hidden" name="order_date['.$order['id'].']" value="'.$order['date'].'">
+							<input type="hidden" name="order_no['.$order['id'].']" value="'.$order['order_no'].'">
+							<input type="hidden" name="refrence_no['.$order['id'].']" value="'.$order['refrence_no'].'">
+							<input type="hidden" name="order_total['.$order['id'].']" value="'.$total.'">
+							<input type="hidden" name="order_paid['.$order['id'].']" value="'.$paid.'">
+							<input type="hidden" name="order_pending['.$order['id'].']" value="'.$pending.'">
+						</td>
+						<td class="align-middle">'.date('d M Y', strtotime($order['date'])).'</td>
+						<td class="align-middle"><strong>'.$order['order_no'].'</strong></td>
+						<td class="align-middle">'.($order['refrence_no'] ?: '-').'</td>
+						<td class="text-end align-middle">₹'.number_format($total, 2).'</td>
+						<td class="text-end align-middle text-success">₹'.number_format($paid, 2).'</td>
+						<td class="text-end align-middle text-primary" data-pending="'.$pending.'">₹'.number_format($pending, 2).'</td>
+						<td class="align-middle">
+							<input type="number" class="form-control form-control-sm apply_amount" 
+								name="apply_amount['.$order['id'].']" 
+								data-pending="'.$pending.'"
+								value="0.00" min="0" max="'.$pending.'" step="0.01" readonly>
+						</td>
+						<td class="text-end align-middle remaining_amount">₹'.number_format($pending, 2).'</td>
+					</tr>';
+		}
+
+		$html .= '</tbody>
+					<tfoot style="background: #f8f9fa;">
+						<tr>
+							<td colspan="7" class="text-end align-middle font-weight-bold">Net Allocation Total:</td>
+							<td colspan="2" class="text-end align-middle"><h4 class="mb-0 font-weight-bold" style="color: #ff9f43;" id="net_allocation_total">₹0.00</h4></td>
+						</tr>
+					</tfoot>
+				</table>
+			  </div>
+			  
+			  <div class="row mt-3 p-2 border rounded shadow-sm mx-0 bg-white" style="border-left: 5px solid #ff9f43 !important;">
+				<div class="col-md-2 border-end text-center">
+					<small class="text-muted d-block font-weight-bold">Invoices Selected</small>
+					<h4 class="mb-0" id="summary_selected_count">0</h4>
+					<small class="text-muted d-block mt-1">Balance After</small>
+					<h5 class="text-primary mb-0 font-weight-bold" id="summary_balance_after">₹0.00</h5>
+				</div>
+				<div class="col-md-2 border-end text-center">
+					<small class="text-muted d-block font-weight-bold">Total Outstanding</small>
+					<h4 class="text-danger mb-0 font-weight-bold" id="summary_total_outstanding">₹0.00</h4>
+				</div>
+				<div class="col-md-2 border-end text-center">
+					<small class="text-muted d-block font-weight-bold">Allocated (Inv)</small>
+					<h4 class="text-success mb-0 font-weight-bold" id="summary_allocated_inv">₹0.00</h4>
+				</div>
+				<div class="col-md-2 border-end text-center">
+					<small class="text-muted d-block font-weight-bold">Adjustments</small>
+					<h4 class="text-info mb-0 font-weight-bold" id="summary_adjustments">₹0.00</h4>
+				</div>
+				<div class="col-md-2 border-end text-center">
+					<small class="text-muted d-block font-weight-bold">Total Tender</small>
+					<h4 class="text-primary mb-0 font-weight-bold" id="summary_total_tender">₹0.00</h4>
+				</div>
+				<div class="col-md-2 text-center">
+					<small class="text-muted d-block font-weight-bold">On Account</small>
+					<h4 class="text-warning mb-0 font-weight-bold" id="summary_on_account">₹0.00</h4>
+				</div>
+			</div>
+			
+			<input type="hidden" name="invoices_selected_count" id="hidden_selected_count" value="0">
+			<input type="hidden" name="balance_after" id="hidden_balance_after" value="0">
+			<input type="hidden" name="total_outstanding" id="hidden_total_outstanding" value="0">
+			<input type="hidden" name="allocated_inv" id="hidden_allocated_inv" value="0">
+			<input type="hidden" name="adjustments" id="hidden_adjustments" value="0">
+			<input type="hidden" name="total_tender" id="hidden_total_tender" value="0">
+			<input type="hidden" name="on_account" id="hidden_on_account" value="0">
+			';
+
+		echo $html;
+	}
+
+	public function get_customer_credits()
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			echo "Session expired";
+			return;
+		}
+
+		$customer_id = $this->input->post('customer_id');
+
+		if (!$customer_id) {
+			echo "";
+			return;
+		}
+
+		$credits = $this->inventory_model->get_customer_credits($customer_id);
+
+		if (empty($credits)) {
+			echo '';
+			return;
+		}
+
+		// Render table
+		$html = '
+		<div class="row mb-1 mt-3">
+			<div class="col-12 d-flex justify-content-between align-items-center">
+				<h4 class="card-title mb-0">
+					<i class="fa fa-credit-card text-success"></i> Customer Credits ('.count($credits).' Records)
+				</h4>
+				<div>
+					<button type="button" class="btn btn-sm btn-outline-success" id="select_all_credits_btn"><i class="fa fa-check-square-o"></i> Select All</button>
+					<button type="button" class="btn btn-sm btn-outline-danger" id="clear_all_credits_btn"><i class="fa fa-times-circle-o"></i> Clear All</button>
+				</div>
+			</div>
+		</div>
+		<div class="table-responsive">
+					<table class="table table-bordered table-sm" id="credits_table">
+						<thead class="thead-dark" style="background: #1e1e1e;">
+							<tr>
+								<th class="text-center" style="width: 40px;"><input type="checkbox" id="select_all_credits"></th>
+								<th>DATE</th>
+								<th>ITEM / NO</th>
+								<th>REF / DUE</th>
+								<th class="text-end">TOTAL</th>
+								<th class="text-end">PAID</th>
+								<th class="text-end">PENDING</th>
+								<th style="width: 250px;">APPLY / PAY</th>
+								<th class="text-end">REMAINING</th>
+							</tr>
+						</thead>
+						<tbody>';
+
+		foreach ($credits as $credit) {
+			$total = $credit['credit_balance'] - $credit['debit_balance'];
+			$pending = $total;
+
+			$html .= '<tr>
+						<td class="text-center align-middle">
+							<input type="checkbox" class="credit_checkbox" name="credit_ids[]" value="'.$credit['id'].'">
+						</td>
+						<td class="align-middle">'.date('d M Y', strtotime($credit['date'])).'</td>
+						<td class="align-middle"><strong>'.$credit['item_no'].'</strong></td>
+						<td class="align-middle">Credit Note</td>
+						<td class="text-end align-middle">₹'.number_format($total, 2).'</td>
+						<td class="text-end align-middle">-</td>
+						<td class="text-end align-middle text-primary" data-pending="'.$pending.'">₹'.number_format($pending, 2).'</td>
+						<td class="align-middle">
+							<input type="number" class="form-control form-control-sm apply_credit_amount" 
+								name="apply_credit_amount['.$credit['id'].']" 
+								data-pending="'.$pending.'"
+								value="0.00" min="0" max="'.$pending.'" step="0.01" readonly>
+						</td>
+						<td class="text-end align-middle remaining_credit_amount">₹'.number_format($pending, 2).'</td>
+					</tr>';
+		}
+
+		$html .= '</tbody>
+				</table>
+			  </div>';
+
+		echo $html;
+	}
 }

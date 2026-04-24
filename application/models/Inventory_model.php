@@ -14559,5 +14559,203 @@ public function get_sales_return_reports()
 									ORDER BY date DESC, id DESC");
 		return $query->result_array();
 	}
+
+	public function get_unpaid_sales_orders_by_customer($customer_id, $payment_type)
+	{
+		$company_id = $this->session->userdata('company_id');
+		
+		$this->db->select('*');
+		$this->db->from('sales_order');
+		$this->db->where('customer_id', $customer_id);
+		$this->db->where('company_id', $company_id);
+		$this->db->where('is_paid', 0);
+		$this->db->where('is_deleted', 0);
+		
+		if ($payment_type == 'official') {
+			$this->db->where('net_sales_value_1 > total_white_paid', NULL, FALSE);
+		} else if ($payment_type == 'unofficial') {
+			$this->db->where('total_black_amt > total_black_paid', NULL, FALSE);
+		}
+		
+		$this->db->order_by('date', 'ASC');
+		$query = $this->db->get();
+		return $query->result_array();
+	}
+
+	public function get_customer_credits($customer_id)
+	{
+		$this->db->select('*');
+		$this->db->from('customer_credit');
+		$this->db->where('customer_id', $customer_id);
+		$this->db->where('credit_balance > debit_balance', NULL, FALSE);
+		$this->db->order_by('date', 'ASC');
+		$query = $this->db->get();
+		return $query->result_array();
+	}
+
+	public function add_customer_payment()
+	{
+		$data['customer_id'] = $this->input->post('customer_id');
+		$data['date'] = $this->input->post('payment_date');
+		$data['inv_no'] = $this->input->post('invoice_no');
+		$data['amount'] = $this->input->post('amount_rs');
+		$data['payment_type'] = $this->input->post('payment_type');
+		$data['payment_method'] = $this->input->post('payment_method');
+		$data['company_bank_account'] = $this->input->post('bank_account');
+		$data['narration'] = $this->input->post('narration');
+		
+		$data['invoices_selected_count'] = $this->input->post('invoices_selected_count');
+		$data['balance_after'] = $this->input->post('balance_after');
+		$data['total_outstanding'] = $this->input->post('total_outstanding');
+		$data['allocated_inv'] = $this->input->post('allocated_inv');
+		$data['total_tender'] = $this->input->post('total_tender');
+		$data['on_account'] = $this->input->post('on_account');
+		$data['adjustments'] = $this->input->post('adjustments');
+		
+		$data['added_by'] = $this->session->userdata('super_user_id');
+		$data['added_by_name'] = $this->session->userdata('super_name');
+		
+		// Get customer name
+		$customer = $this->db->get_where('customer', ['id' => $data['customer_id']])->row_array();
+		$data['customer_name'] = $customer['owner_name'];
+
+		$this->db->insert('customer_payment', $data);
+		$payment_id = $this->db->insert_id();
+
+		// Insert Records (Allocations)
+		$order_ids = $this->input->post('order_ids');
+		if (!empty($order_ids)) {
+			$apply_amounts = $this->input->post('apply_amount');
+			$order_dates = $this->input->post('order_date');
+			$ref_nos = $this->input->post('refrence_no');
+			$order_totals = $this->input->post('order_total');
+			$order_pendings = $this->input->post('order_pending'); // This now stores the remaining amount after payment
+
+			foreach ($order_ids as $id) {
+				$paid_now = $apply_amounts[$id];
+				if ($paid_now <= 0) continue;
+
+				$record_data = [
+					'payment_id' => $payment_id,
+					'order_id' => $id,
+					'order_date' => $order_dates[$id],
+					'refrence_no' => $ref_nos[$id],
+					'order_total' => $order_totals[$id],
+					'order_paid' => $paid_now, // Amount paid in this transaction
+					'order_pending' => $order_pendings[$id] // Remaining balance
+				];
+				$this->db->insert('customer_payment_record', $record_data);
+
+				// Update Sales Order
+				$order = $this->db->get_where('sales_order', ['id' => $id])->row_array();
+				if ($data['payment_type'] == 'official') {
+					$new_paid = $order['total_white_paid'] + $paid_now;
+					$this->db->where('id', $id)->update('sales_order', ['total_white_paid' => $new_paid]);
+				} else {
+					$new_paid = $order['total_black_paid'] + $paid_now;
+					$this->db->where('id', $id)->update('sales_order', ['total_black_paid' => $new_paid]);
+				}
+
+				// Check if fully paid
+				$updated_order = $this->db->get_where('sales_order', ['id' => $id])->row_array();
+				if ($updated_order['net_sales_value_1'] <= $updated_order['total_white_paid'] && 
+					$updated_order['total_black_amt'] <= $updated_order['total_black_paid']) {
+					$this->db->where('id', $id)->update('sales_order', ['is_paid' => 1]);
+				}
+			}
+		}
+
+		// Update Credits Used (Debit existing credits)
+		$credit_ids = $this->input->post('credit_ids');
+		if (!empty($credit_ids)) {
+			$apply_credit_amounts = $this->input->post('apply_credit_amount');
+			foreach ($credit_ids as $cid) {
+				$credit_used = $apply_credit_amounts[$cid];
+				if ($credit_used <= 0) continue;
+
+				$this->db->set('debit_balance', 'debit_balance + ' . (float)$credit_used, FALSE);
+				$this->db->where('id', $cid);
+				$this->db->update('customer_credit');
+			}
+		}
+
+		// Handle On Account (Create new credit for future use)
+		if ($data['on_account'] > 0) {
+			$credit_data = [
+				'customer_id' => $data['customer_id'],
+				'payment_id' => $payment_id,
+				'item_no' => $data['inv_no'],
+				'date' => $data['date'],
+				'credit_balance' => $data['on_account'],
+				'debit_balance' => 0
+			];
+			$this->db->insert('customer_credit', $credit_data);
+		}
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Payment receipt added successfully",
+			"url"     => base_url() . 'inventory/payment_receipt',
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function get_customer_payments()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $filter_data['keywords'];
+			$keyword_filter = " AND (customer_name LIKE '%" . $keyword . "%' OR inv_no LIKE '%" . $keyword . "%')";
+		}
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$date_range = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($date_range['0']));
+			$to = date('Y-m-d', strtotime($date_range['1']));
+
+			$keyword_filter .= " AND (DATE(date) >= '" . $from . "' AND DATE(date) <= '" . $to . "')";
+		}
+
+		// $company_id = $this->session->userdata('company_id');
+		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
+		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		
+		if (!empty($query)) {
+			$sr_no = $start;
+			foreach ($query->result_array() as $item) {
+				$data[] = array(
+					"sr_no"         => ++$sr_no,
+					"date"          => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
+					"inv_no"        => $item['inv_no'],
+					"customer_name" => $item['customer_name'],
+					"total_tender"  => '₹' . number_format($item['total_tender'], 2),
+					"allocated_inv" => '₹' . number_format($item['allocated_inv'], 2),
+					"on_account"    => '₹' . number_format($item['on_account'], 2),
+					"adjustments"   => '₹' . number_format($item['adjustments'], 2),
+					"payment_type"  => ucfirst($item['payment_type']),
+					"payment_method" => ucfirst($item['payment_method']),
+					"added_by_name" => $item['added_by_name'],
+					"actions"       => '' // Hidden for now as per request
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+	}
 }
 

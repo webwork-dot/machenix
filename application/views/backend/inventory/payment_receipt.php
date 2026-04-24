@@ -67,15 +67,17 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Batch No.</th>
-              <th>Supplier Name</th>
-              <th>Invoice No</th>
-              <th>Payment Type</th>
-              <th>Amount (Dollar)</th>
-              <th>Amount (INR)</th>
-              <th>Amount (RMB)</th>
               <th>Date</th>
-              <th>Action</th>
+              <th>Inv No</th>
+              <th>Customer Name</th>
+              <th>Total Tender</th>
+              <th>Allocated (Inv)</th>
+              <th>On Account</th>
+              <th>Adjustments</th>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Added By</th>
+              <th class="d-none">Action</th>
             </tr>
           </thead>
         </table>
@@ -104,7 +106,7 @@ $(document).ready(function($) {
     },
 
     "ajax": {
-      "url": "<?php echo base_url('inventory/get_payments'); ?>",
+      "url": "<?php echo base_url('inventory/get_customer_payments_ajax'); ?>",
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
@@ -120,27 +122,29 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "batch_no" },
-      { "data": "supplier_name" },
-      { "data": "invoice_no" },
-      { "data": "type" },
-      { "data": "amount_dollar" },
-      { "data": "amount_inr" },
-      { "data": "amount_rmb" },
       { "data": "date" },
-      { "data": "actions" },
+      { "data": "inv_no" },
+      { "data": "customer_name" },
+      { "data": "total_tender" },
+      { "data": "allocated_inv" },
+      { "data": "on_account" },
+      { "data": "adjustments" },
+      { "data": "payment_type" },
+      { "data": "payment_method" },
+      { "data": "added_by_name" },
+      { "data": "actions", "className": "d-none" },
     ],
 
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
       }
     ],
 
