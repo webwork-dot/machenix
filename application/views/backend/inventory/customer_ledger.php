@@ -16,9 +16,6 @@ $pincode = trim($customer['pincode'] ?? '');
 $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
-  rel="stylesheet">
-
 <style>
   .customer-card-shell,
   .ledger-card-shell {
@@ -44,8 +41,6 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
 
   .customer-main-text { color: #111827; }
   .customer-soft-text { color: #1f2937; }
-
-  .mono-amount { font-family: "DM Mono", monospace; }
 
   .customer-info-divider { border-right: 1px solid #f0f2f5; }
   .customer-info-col { min-width: 220px; }
@@ -115,9 +110,9 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
 <!-- ───── Customer Info Card ───── -->
 <div class="bg-white customer-card-shell mb-3">
   <!-- Card Header -->
-  <div class="d-flex align-items-center justify-content-between px-3 py-2 card-soft-header">
+  <div class="d-flex align-items-center justify-content-between px-2 py-2 card-soft-header">
     <div>
-      <div class="text-uppercase fw-semibold fs-10 track-1 text-muted mb-1">Customer</div>
+      <div class="text-uppercase fw-semibold fs-10 track-1 mb-1">Customer</div>
       <div class="fw-semibold customer-main-text fs-15"><?= html_escape($customer['company_name'] ?? '—') ?></div>
     </div>
   </div>
@@ -125,12 +120,12 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
   <!-- Card Body -->
   <div class="d-flex flex-wrap">
     <!-- Address -->
-    <div class="flex-fill px-3 py-3 customer-info-divider customer-info-col">
-      <div class="text-uppercase fw-semibold fs-10 track-1 text-muted mb-2">Address</div>
+    <div class="flex-fill px-2 py-2 customer-info-divider customer-info-col">
+      <div class="text-uppercase fw-semibold fs-10 track-1 mb-2">Address</div>
       <?php if (!empty($addrLines)): ?>
         <div class="fs-13 customer-soft-text addr-lines"><?= implode("<br>", array_map('html_escape', $addrLines)) ?></div>
       <?php else: ?>
-        <div class="fs-13 text-muted">—</div>
+        <div class="fs-13">—</div>
       <?php endif; ?>
       <?php if (!empty($locationLine)): ?>
         <div class="fs-11 text-secondary fw-medium mt-1"><?= html_escape($locationLine) ?></div>
@@ -138,8 +133,8 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
     </div>
 
     <!-- Key Info -->
-    <div class="flex-fill px-3 py-3 customer-info-col">
-      <div class="text-uppercase fw-semibold fs-10 track-1 text-muted mb-2">Key Info</div>
+    <div class="flex-fill px-2 py-2 customer-info-col">
+      <div class="text-uppercase fw-semibold fs-10 track-1 mb-2">Key Info</div>
       <table class="w-100 key-info-table fs-12">
         <tr>
           <td class="text-secondary fw-medium key-label-col">Contact Person</td>
@@ -173,11 +168,75 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
 </div>
 
 <?php
-$total_outstanding = 0;
-foreach ($ledger as $item) {
-    $total_outstanding += (float)$item['grand_total'];
+// --- 1. DATA MERGE & SORTING ---
+$ledger = [];
+
+if (!empty($outstanding)) {
+  foreach ($outstanding as $row) {
+    $ledger[] = [
+      'date' => $row['date'],
+      'ref' => $row['voucher_no'],
+      'type' => 'SALES',
+      'amount' => (float) $row['grand_total'],
+      'added_by' => $row['added_by_name'],
+      'is_payment' => false
+    ];
+  }
 }
+
+if (!empty($payments)) {
+  foreach ($payments as $pay) {
+    $ledger[] = [
+      'date' => $pay['date'],
+      'ref' => $pay['inv_no'],
+      'type' => 'PAYMENT',
+      'amount' => (float) $pay['amount'],
+      'added_by' => $pay['added_by_name'],
+      'is_payment' => true
+    ];
+  }
+}
+
+usort($ledger, function ($a, $b) {
+  return strtotime($a['date']) - strtotime($b['date']);
+});
+
+$totals = [
+  'sales' => 0,
+  'payment' => 0
+];
+
+foreach ($ledger as $item) {
+  $tKey = $item['is_payment'] ? 'payment' : 'sales';
+  $totals[$tKey] += $item['amount'];
+}
+
+$balance = $totals['sales'] - $totals['payment'];
+
+$balanceIsDue = $balance > 0;
+$balancePillClass = $balanceIsDue ? 'balance-pill-due' : 'balance-pill-credit';
+$balanceRowClass = $balanceIsDue ? 'balance-row-due' : 'balance-row-credit';
+$balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
 ?>
+
+<style>
+  .ledger-row-payment { background: #f0fdf4; }
+  .ledger-row-payment:hover { background: #dcfce7; }
+  .ledger-row-sales { background: #ffffff; }
+  .ledger-row-sales:hover { background: #f9fafb; }
+
+  .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
+  .type-badge-sales { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
+
+  .amount-positive { color: #dc2626; font-weight: 600; }
+  .amount-negative { color: #16a34a; font-weight: 600; }
+
+  .balance-pill-due { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+  .balance-pill-credit { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
+  
+  .balance-row-credit { background: #f0fdf4; }
+  .balance-text-credit { color: #16a34a; }
+</style>
 
 <!-- ───── Unified Ledger ───── -->
 <div>
@@ -185,9 +244,18 @@ foreach ($ledger as $item) {
     <!-- Ledger Header -->
     <div class="d-flex align-items-center justify-content-between px-2 py-2 card-soft-header">
       <div class="fw-semibold customer-main-text fs-13">Customer Ledger</div>
+      
+      <!-- Balance Summary Pills -->
       <div class="d-flex align-items-center flex-wrap gap-2">
-        <div class="summary-pill">Total Sales &nbsp;<strong class="customer-soft-text mono-amount">₹ <?= number_format($total_outstanding, 2) ?></strong></div>
-        <div class="balance-pill">Balance &nbsp;₹ <?= number_format($total_outstanding, 2) ?></div>
+        <div class="summary-pill">
+          Sales &nbsp;<strong class="customer-soft-text">₹ <?= number_format($totals['sales'], 2) ?></strong>
+        </div>
+        <div class="summary-pill">
+          Payments &nbsp;<strong class="customer-soft-text">₹ <?= number_format($totals['payment'], 2) ?></strong>
+        </div>
+        <div class="balance-pill <?= $balancePillClass ?>">
+          Balance &nbsp;₹ <?= number_format($balance, 2) ?>
+        </div>
       </div>
     </div>
 
@@ -196,32 +264,45 @@ foreach ($ledger as $item) {
       <table class="table table-borderless mb-0 align-middle ledger-table fs-12">
         <thead>
           <tr>
-            <th class="text-start px-3 py-2 text-muted fw-semibold">Date</th>
-            <th class="text-start px-2 py-2 text-muted fw-semibold">Type</th>
-            <th class="text-start px-2 py-2 text-muted fw-semibold">Reference</th>
-            <th class="text-end px-2 py-2 text-muted fw-semibold">Total Amount</th>
-            <th class="text-start px-3 py-2 text-muted fw-semibold">Added By</th>
+            <th class="text-start px-3 py-2 fw-semibold">Date</th>
+            <th class="text-start px-2 py-2 fw-semibold">Type</th>
+            <th class="text-start px-2 py-2 fw-semibold">Reference</th>
+            <th class="text-end px-2 py-2 fw-semibold">Amount</th>
+            <th class="text-start px-3 py-2 fw-semibold">Added By</th>
           </tr>
         </thead>
         <tbody>
           <?php if (!empty($ledger)): ?>
             <?php foreach ($ledger as $item): ?>
-              <tr class="ledger-row">
+              <?php
+              $rowClass = $item['is_payment'] ? 'ledger-row-payment' : 'ledger-row-sales';
+              $amtClass = $item['is_payment'] ? 'amount-negative' : 'amount-positive';
+              $sign = $item['is_payment'] ? '−' : '+';
+              ?>
+              <tr class="ledger-row <?= $rowClass ?>">
                 <td class="px-3 py-2 text-secondary fs-11 text-nowrap"><?= date('d M y', strtotime($item['date'])) ?></td>
-                <td class="px-2 py-2"><span class="type-badge">Sales Order</span></td>
-                <td class="px-2 py-2"><div class="fw-semibold customer-soft-text fs-11"><?= html_escape($item['voucher_no']) ?></div></td>
-                <td class="px-2 py-2 text-end amount-positive">₹ <?= number_format($item['grand_total'], 2) ?></td>
-                <td class="px-3 py-2 text-muted fs-10 text-nowrap"><?= html_escape($item['added_by_name'] ?: '—') ?></td>
+                <td class="px-2 py-2">
+                  <?php if ($item['is_payment']): ?>
+                    <span class="type-badge type-badge-payment">Payment</span>
+                  <?php else: ?>
+                    <span class="type-badge type-badge-sales">Sales Order</span>
+                  <?php endif; ?>
+                </td>
+                <td class="px-2 py-2"><div class="fw-semibold customer-soft-text fs-11"><?= html_escape($item['ref']) ?></div></td>
+                <td class="px-2 py-2 text-end <?= $amtClass ?>">
+                  <?= $sign ?> ₹ <?= number_format($item['amount'], 2) ?>
+                </td>
+                <td class="px-3 py-2 fs-10 text-nowrap"><?= html_escape($item['added_by'] ?: '—') ?></td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
-            <tr><td colspan="5" class="py-5 text-center text-muted fs-13">No approved sales orders found for this customer.</td></tr>
+            <tr><td colspan="5" class="py-5 text-center fs-13">No transactions found for this customer.</td></tr>
           <?php endif; ?>
         </tbody>
         <tfoot>
-          <tr class="balance-row-due tfoot-border-top">
+          <tr class="<?= $balanceRowClass ?> tfoot-border-top">
             <td colspan="3" class="px-3 py-2 text-end fs-11 fw-bold customer-main-text">Total Outstanding</td>
-            <td class="px-2 py-2 text-end fw-bold balance-text-due fs-12">₹ <?= number_format($total_outstanding, 2) ?></td>
+            <td class="px-2 py-2 text-end fw-bold <?= $balanceTextClass ?> fs-12">₹ <?= number_format($balance, 2) ?></td>
             <td></td>
           </tr>
         </tfoot>
@@ -229,3 +310,7 @@ foreach ($ledger as $item) {
     </div>
   </div>
 </div>
+
+<script>
+  if (typeof feather !== 'undefined') feather.replace();
+</script>

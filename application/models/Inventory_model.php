@@ -8350,6 +8350,10 @@ class Inventory_model extends CI_Model
 							'official_qty' => ($batch_detail['black_qty'] >= $batch_black_qty[$i][$index]) ? $batch_detail['official_qty'] - $batch_white_qty[$i][$index] : $batch_detail['official_qty'] - $batch_white_qty[$i][$index] - ($batch_black_qty[$i][$index] - $batch_detail['black_qty']),
 						));
 
+						if($batch_detail['black_qty'] < $batch_black_qty[$i][$index]){
+							$this->db->where('id', $order_id)->update('sales_order', ["is_weird" => 1]);
+						}
+
 						$inv_his = [
 							'supplier_id' 			=> $batch_detail["supplier_id"],
 							'parent_id' 				=> $bid,
@@ -8644,8 +8648,8 @@ class Inventory_model extends CI_Model
 			}
 		}
 
-		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC")->num_rows();
+		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -8659,6 +8663,7 @@ class Inventory_model extends CI_Model
 				$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
 				$invoice_url = base_url() . 'inventory/sales_order/invoice/' . $id;
 				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
+				$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
 
 				$action = '';
 
@@ -8675,9 +8680,14 @@ class Inventory_model extends CI_Model
 				}
 
 				if($item['is_approved'] == 1) {
-					// $action .= '
-					// 	<a href="' . $invoice_url . '" data-toggle="tooltip" data-bs-placement="top" title="Download Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-file-excel-o" aria-hidden="true"></i></button></a>
-					// ';
+					$action .= '
+						<a href="' . $invoice_url . '" data-toggle="tooltip" data-bs-placement="top" title="Download Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-file-excel-o" aria-hidden="true"></i></button></a>
+					';
+				}
+
+				if($item['is_generated'] == 0) {
+					$action .= '
+					<a href="#" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-pass"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
 				}
 
 				// $action .='
@@ -8691,6 +8701,115 @@ class Inventory_model extends CI_Model
 
 				// $action .= '<a href="#" onclick="confirm_modal(\'' . $delete_url . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" data-bs-placement="top" title="" data-bs-original-title="Delete" aria-label="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
 
+
+				$qty = 0;
+				$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
+				if ($query2->num_rows() > 0) {
+					$row2 = $query2->row_array();
+					$qty = $row2['qty'];
+				}
+
+				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"id"          => $item['id'],
+					"order_no"        => $item['order_no'],
+					"refrence_no"        => $item['refrence_no'],
+					"customer_name"        => $customer_name,
+					"warehouse_name"        => ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
+					"company_name"        => ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
+					"grand_total"        => $item['grand_total'],
+					"date"        => date('d M, Y', strtotime($item['date'])),
+					"total_pro"      => $total_pro,
+					"qty"      => $qty,
+					"remark"      => $item['remark'],
+					"action"      => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_black_order()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (company_name like '%" . $keyword . "%' 
+            OR refrence_no like '%" . $keyword . "%'
+            OR order_no like '%" . $keyword . "%')";
+		endif;
+		
+		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
+			$keyword        = $_REQUEST['customer_id'];
+			$keyword_filter .= " AND (customer_id = '" . $keyword . "')";
+		endif;
+		
+		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
+			$keyword        = $_REQUEST['status'];
+			$keyword_filter .= " AND (is_generated = '" . (($keyword == 'completed') ? '1' : '0') . "')";
+		endif;
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$keyword_filter .= " AND (company_id='" . $company_id . "')";
+			if($this->session->userdata('super_type_id') == 7) {
+				$keyword_filter .= " AND (added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			}
+		}
+
+		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') AND is_weird='1' $keyword_filter ORDER BY date DESC")->num_rows();
+		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') AND is_weird='1' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$order_type = $item['order_type'];
+				$customer_id = $item['customer_id'];
+
+				$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
+				$invoice_url = base_url() . 'inventory/sales_order/invoice/' . $id;
+				$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
+
+				$action = '';
+
+				$customer_name = $item['customer_name'];
+				
+				if($item['is_approved'] == 1) {
+					// $action .= '
+					// 	<a href="' . $invoice_url . '" data-toggle="tooltip" data-bs-placement="top" title="Download Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-file-excel-o" aria-hidden="true"></i></button></a>
+					// ';
+				}
+
+				if($item['is_generated'] == 0) {
+					$action .= '
+					<a href="#" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-pass"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
+				}
 
 				$qty = 0;
 				$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
@@ -10129,6 +10248,38 @@ class Inventory_model extends CI_Model
 		return ["not_found" => $notfound, "not_enough" => $notenough];
 	}
 
+	function gen_invoice_sales_order($id)
+	{
+		$this->db->trans_start(); // Start transaction
+
+		try {
+			$sales = $this->common_model->getRowById('sales_order', 'warehouse_id', ['id' => $id]);
+			if (!$sales) {
+				throw new Exception(get_phrase('sales_order_not_found'));
+			}
+
+			// Soft update sales order
+			$this->db->where('id', $id)->update('sales_order', ['is_generated' => 1]);
+
+			$this->db->trans_commit(); // Commit transaction
+
+			$resultpost = [
+				"status" => 200,
+				"message" => get_phrase('invoice_generated_successfully'),
+				"url" => $this->session->userdata('previous_url'),
+			];
+		} catch (Exception $e) {
+			$this->db->trans_rollback(); // Rollback on error
+			$resultpost = [
+				"status" => 400,
+				"message" => $e->getMessage(),
+			];
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
 	function delete_sales_order($id)
 	{
 		$this->db->trans_start(); // Start transaction
@@ -10636,6 +10787,33 @@ class Inventory_model extends CI_Model
 	{
 		$this->db->where('id', $id);
 		return $this->db->get('sales_order');
+	}
+
+	public function get_sales_order_details_by_id($id)
+	{
+		$sales = $this->db->where('id', $id)->get('sales_order')->row_array();
+		
+		$products = $this->db->query("
+			SELECT 
+				sp.product_name, p.hsn_code, SUM(sb.white_qty) as white_qty, SUM(sb.black_qty) as black_qty,
+				SUM(sb.bill_amount) as bill_amount, SUM(sb.gst_amount) as gst_amount,
+				sb.gst, SUM(sb.black_total) as black_total, SUM(sb.final_total) as final_total 
+			FROM sales_order_product as sp
+			INNER JOIN sales_order_product_batch as sb ON sb.order_product_id = sp.id
+			INNER JOIN raw_products as p ON p.id = sp.product_id
+			WHERE sp.order_id = $id
+			GROUP BY sp.id
+		");
+
+		$sales['products'] = ($products->num_rows() > 0) ? $products->result_array() : [];
+		
+		$company = $this->common_model->getRowById('company', '*', ['id' => $sales['company_id']]);
+		$sales['company'] = ($company) ? $company : [];
+		
+		$customer = $this->common_model->getRowById('customer', '*', ['id' => $sales['customer_id']]);
+		$sales['customer'] = ($customer) ? $customer : [];
+
+		return $sales;
 	}
 
 	/* Sales Order End */
@@ -14260,8 +14438,8 @@ public function get_sales_return_reports()
 		// ob_clean();
 		$page_data['data'] = [];
 		$html = $this->load->view('invoice/sales/sales_invoice', $page_data, true);
-		echo $html;
-		exit;
+		// echo $html;
+		// exit;
 		$pdf = $this->pdf->create();
 		$pdf->setPaper('A4', 'portrait');
 		$pdf->loadHtml($html);
@@ -14272,10 +14450,10 @@ public function get_sales_return_reports()
 		// return $pdf->output();
 		// unset($pdf);
 
-		$pdfname = 'PL_' . $receipt_no . '.pdf';
-		file_put_contents($path . $pdfname, $pdf->output());
-		$path_info[] = 'uploads/invoices/' . $pdfname;
-		unset($pdf);
+		// $pdfname = 'PL_' . $receipt_no . '.pdf';
+		// file_put_contents($path . $pdfname, $pdf->output());
+		// $path_info[] = 'uploads/invoices/' . $pdfname;
+		// unset($pdf);
 	}
 
 	public function get_overall_stock()
@@ -14569,6 +14747,7 @@ public function get_sales_return_reports()
 		$this->db->where('customer_id', $customer_id);
 		$this->db->where('company_id', $company_id);
 		$this->db->where('is_paid', 0);
+		$this->db->where('is_generated', 1);
 		$this->db->where('is_deleted', 0);
 		
 		if ($payment_type == 'official') {
@@ -14756,6 +14935,18 @@ public function get_sales_return_reports()
 		);
 
 		echo json_encode($json_data);
+	}
+
+	public function get_customer_payments_by_id($customer_id)
+	{
+		$query = $this->db->query("SELECT 
+										p.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM customer_payment p
+									LEFT JOIN sys_users u ON p.added_by = u.id
+									WHERE p.customer_id = '$customer_id'
+									ORDER BY p.date DESC, p.id DESC");
+		return $query->result_array();
 	}
 }
 

@@ -2356,7 +2356,8 @@ class Inventory extends CI_Controller
             $data                    = $this->inventory_model->get_customer_by_id($param2)->row_array();
             $page_data['data']       = $data;
             $page_data['id']         = $param2;
-            $page_data['ledger']     = $this->inventory_model->get_customer_ledger($param2);
+            $page_data['outstanding'] = $this->inventory_model->get_customer_ledger($param2);
+            $page_data['payments']    = $this->inventory_model->get_customer_payments_by_id($param2);
             $page_data['page_name']  = 'customer_ledger';
             $page_data['page_title'] = 'Customer Ledger';
             $this->load->view('backend/index', $page_data);
@@ -2477,13 +2478,53 @@ class Inventory extends CI_Controller
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_sales_order($param2);
         } elseif ($param1 == "invoice") {
-            $this->inventory_model->create_sales_invoice($param2);
+            // $this->inventory_model->create_sales_invoice($param2);
+
+            $id = $param2;
+            $receipt_no = sprintf('%05d', $id);
+            $page_data['data'] =  [];
+            $this->load->library('pdf');
+            $this->load->library('zip');
+
+            $data = $this->inventory_model->get_sales_order_details_by_id($id);
+
+            $html_content = $this->load->view('invoice/sales/sales_invoice', $page_data, TRUE);
+            $this->pdf->set_paper("A4", "portrait");
+            $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
+            $this->pdf->load_html($html_content);
+
+            echo $html_content; exit();
+            $this->pdf->render();
+            $pdfname = 'invoice_' . $receipt_no . '.pdf';
+            $this->pdf->stream($pdfname, array("Attachment" => 0));
+            // $output = $this->pdf->output();
+            
+            // $this->load->library('pdf');
+            // $html = $this->pdf_model->view_purchase_order($param1);
+            
+            // $this->createPDF($html, $param1, true , 'A4','portrait');
+            
+            
         } elseif ($param1 == "delete") {
             $this->inventory_model->delete_sales_order($param2);
+        } elseif ($param1 == "gen_invoice") {
+            $this->inventory_model->gen_invoice_sales_order($param2);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['page_name']  = 'sales_order';
             $page_data['page_title'] = get_phrase('sales');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function black_order($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['page_name']  = 'black_order';
+            $page_data['page_title'] = get_phrase('black_order');
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -2619,6 +2660,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_sales_order();
+        }
+    }
+
+    public function get_black_order()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_black_order();
         }
     }
 

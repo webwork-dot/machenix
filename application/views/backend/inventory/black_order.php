@@ -14,6 +14,32 @@
         color: #3c3a3a;
         font-weight: 600 !important;
     }
+
+	.fixedElement{
+		background : white;
+		border-radius: .428rem;
+	}
+	.nav-pills.nav-justified .nav-item {
+		display: flex;
+		align-items: center;
+	}
+	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+		color: #1e652e;
+		border: 1px solid #1e652e !important;
+		background: white;
+		box-shadow: initial;
+		font-weight: 600;
+	}
+	.small-img{
+		max-height: 50px;
+		min-height: 50px;
+		object-fit: cover;
+		border-radius: 10px;
+		border: 1px solid #e7e6e6;
+		height: 50px;
+		max-width: 60px;
+	}
+	
 </style>
 
 <?php
@@ -23,23 +49,40 @@
 ?>
 	
 <div class="row" id="table-bordered">
+
+    <div class="col-md-12 mb-1">
+		<div class="fixedElement" id="fixedElement">
+			<ul class="nav nav-pills bg-nav-pills nav-justified ">
+				
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/black-order" class="nav-link <?php echo ($_GET['status']!= 'completed') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">Pending</span>
+                    </a>
+                </li>
+				
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/black-order?status=completed" class="nav-link <?php echo (isset($_GET['status']) && $_GET['status'] == 'completed') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">Completed</span>
+                    </a>
+                </li>
+                
+			</ul>
+		</div>
+	</div>
+
    <div class="col-12">
       <div class="card">
          <div class="card-body">
             <div class="row">
                <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total Sales Order <span id="total_count"> (0)</span></b>
+                  <h5 class="mb-0"><b>Total Black Order <span id="total_count"> (0)</span></b>
 				  </h5>
                </div>
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-		   <!-- <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>    -->
-           <?php if($this->session->userdata('super_type_id') == 7) { ?>
-		    <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
-           <?php } ?>       
-     
-		
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
@@ -53,11 +96,10 @@
 					<th>Total Qty</th>
 					<th>Total Products</th>
 					<th>Total Amount</th>
-				    <!--<th>Remark</th>-->
+					<!--<th>Remark</th>-->
                     <?php if ($staff_access !== 7) { ?>
                     <th>Actions</th>
                     <?php } ?>
-            
                   </tr>
                </thead>
             </table>
@@ -86,12 +128,13 @@
             },
       
             "ajax":{
-                "url": "<?php echo base_url('inventory/get_sales_order'); ?>",
+                "url": "<?php echo base_url('inventory/get_black_order'); ?>",
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
+                    data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']:'pending'; ?>';	
                 },
                 "beforeSend": function() {
                     $('.loader').show();

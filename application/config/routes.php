@@ -168,6 +168,8 @@ $route[$r_inventory . '/import-order'] = 'inventory/import_order';
 
 $route[$r_inventory . '/import-purchase-order'] = 'inventory/import_purchase_order';
 
+$route[$r_inventory . '/black-order'] = 'inventory/black_order';
+
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
 $route[$r_inventory . '/sales-order/add']    = 'inventory/sales_order_form/add';
 $route[$r_inventory . '/sales-order/view/(:num)']    = 'inventory/sales_order_form/view/$1';

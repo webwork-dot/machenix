@@ -136,6 +136,12 @@
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales</span>
            </a>
         </li>
+        <li class="nav-item <?php if($page_name == 'black_order') echo 'active'; ?>">
+           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/black-order'); ?>">
+               <i data-feather="align-left"></i>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Black Order</span>
+           </a>
+        </li>
 		<?php } ?>
 	   
         <?php if($user_id == 4 || in_array('27',$access_array)) {?>

@@ -10,60 +10,98 @@
 <body>
   <div style="background:#ffffff;margin:0 auto;width:100%;padding:0px;">
 
-    <!-- Company Header (Seller) -->
-    <table style="width:100%; margin-bottom:10px;">
-      <tbody>
-        <tr>
-          <td style="text-align:center;padding:0px 3px;line-height:1.2;">
-            <span style="color:#000;font-size:14px;font-weight:bold;">
-              GUANGZHOU WEI GE MACHINERY EQUIPMENT CO., LIMITED
-            </span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;">
-              Supplier Address Here
-            </span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;">
-              email@example.com | Tel: +86-123456789 | Contact: John Doe
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Commercial Invoice Title -->
     <table style="width:100%; margin-bottom:15px;">
       <tbody>
         <tr>
           <td style="width:100%;text-align:center;padding:8px 3px;line-height:1.0;" colspan="6">
-            <b style="font-size:16px;color:#000;">COMMERCIAL INVOICE</b>
+            <b style="font-size:16px;color:#000;">TAX INVOICE</b>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Buyer Information and Invoice Details -->
-    <table style="width:100%; margin-bottom:10px;">
+    <!-- General Details Section -->
+    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:0;">
       <tbody>
         <tr>
-          <td style="width:50%;text-align:left;padding:5px 3px;line-height:1.3;" colspan="3">
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>Buyer:</b> Central Exportrade</span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;">
-              <b>Add:</b> Buyer Address Here
-            </span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>Tel:</b> +91-000000000</span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>E-mail:</b> buyer@email.com</span>
+
+          <!-- LEFT: Seller / Consignee / Buyer stacked in one cell -->
+          <td style="width:50%;border:1px solid #000;padding:0;vertical-align:top;">
+
+            <!-- Seller -->
+            <div style="padding:5px 6px;border-bottom:1px solid #000;line-height:1.55;">
+              <b>Caterbell Industries 2023-24</b><br>
+              NO 25, BHASKAR LAYOUT, Anjanapura Main Road,<br>
+              AVALAHALLI VILLAGE, Bengaluru, Bengaluru Urban<br>
+              Karnataka, 560062<br>
+              GSTIN/UIN: 29EFMPK8325B1Z9<br>
+              State Name : Karnataka, Code : 29
+            </div>
+
+            <!-- Consignee -->
+            <div style="padding:5px 6px;border-bottom:1px solid #000;line-height:1.55;">
+              Consignee (Ship to)<br>
+              <b>Kumar Food Machinery</b><br>
+              Papanayakanpalayam<br>
+              Coimbatore - 641037<br>
+              Mob - 97895 17516<br>
+              GSTIN/UIN &nbsp;&nbsp;&nbsp;&nbsp;: 33AINPP7824Q1ZE<br>
+              State Name &nbsp;&nbsp;: Tamil Nadu, Code : 33
+            </div>
+
+            <!-- Buyer -->
+            <div style="padding:5px 6px;line-height:1.55;">
+              Buyer (Bill to)<br>
+              <b>Kumar Food Machinery</b><br>
+              Papanayakanpalayam<br>
+              Coimbatore - 641037<br>
+              Mob - 97895 17516<br>
+              GSTIN/UIN &nbsp;&nbsp;&nbsp;&nbsp;: 33AINPP7824Q1ZE<br>
+              State Name &nbsp;&nbsp;: Tamil Nadu, Code : 33
+            </div>
+
           </td>
 
-          <td style="width:50%;text-align:left;padding:5px 3px;line-height:1.3;" colspan="3">
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>C/I No:</b> CI-001</span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>Date:</b> 16 Mar 2026</span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>Terms Of Price:</b> FOB</span><br>
-            <span style="color:#000;font-size:11px;font-weight:bold;"><b>Terms Of Payment:</b> T/T</span>
+          <!-- RIGHT: Invoice Meta Grid -->
+          <td style="width:50%;border:1px solid #000;padding:0;vertical-align:top;">
+            <table style="width:100%;border-collapse:collapse;font-size:10px;">
+              <tr>
+                <td style="width:50%;border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Invoice No.</td>
+                <td style="width:50%;border-bottom:1px solid #000;padding:4px 6px;">Dated</td>
+              </tr>
+              <tr>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;"><b>830/2025-26</b></td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;"><b>23-Feb-26</b></td>
+              </tr>
+              <tr>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Delivery Note</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;">Mode/Terms of Payment</td>
+              </tr>
+              <tr>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Reference No. &amp; Date.</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;">Other References</td>
+              </tr>
+              <tr>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Buyer's Order No.</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;">Dated</td>
+              </tr>
+              <tr>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Dispatch Doc No.</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;">Delivery Note Date</td>
+              </tr>
+              <tr>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Dispatched through</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;">Destination</td>
+              </tr>
+              <tr>
+                <td colspan="2" style="padding:4px 6px;">Terms of Delivery</td>
+              </tr>
+            </table>
           </td>
+
         </tr>
       </tbody>
     </table>
-
-
 
     <!-- Items Table -->
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:5px;">
@@ -115,7 +153,6 @@
       </tfoot>
     </table>
 
-
     <!-- Amount in Words -->
     <table style="width:100%;border-collapse:collapse;font-size:10px;">
       <tr>
@@ -125,7 +162,6 @@
         </td>
       </tr>
     </table>
-
 
     <!-- Tax Summary Table -->
     <table style="width:100%;border-collapse:collapse;font-size:10px;">
@@ -158,7 +194,6 @@
       </tbody>
     </table>
 
-
     <!-- Footer Section -->
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:5px;">
       <tr>
@@ -178,7 +213,6 @@
         </td>
       </tr>
     </table>
-
 
     <!-- Computer Generated Note -->
     <div style="text-align:center;font-size:10px;margin-top:5px;">
