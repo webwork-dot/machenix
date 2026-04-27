@@ -40,7 +40,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header pb-0">
-                <h4 class="card-title">Overall Stock Overview</h4>
+                <h4 class="card-title">Product Company Stock Breakdown</h4>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -57,16 +57,16 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <!-- <th>Company</th>
-                            <th>Warehouse</th> -->
+                            <th>Company</th>
+                            <th>Warehouse</th>
                             <th>Product Name</th>
                             <th>Quantity</th>
-                            <!-- <th>PO Qty</th>
+                            <th>PO Qty</th>
                             <th>Priority Qty</th>
                             <th>Loading Qty</th>
                             <th>With Exp Cost</th>
                             <th>Without Exp Cost</th>
-                            <th>Official Cost in INR</th> -->
+                            <th>Official Cost in INR</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -138,8 +138,11 @@
                 processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
             },
             "ajax": {
-                "url": "<?php echo base_url('inventory/get_overall_stock'); ?>",
+                "url": "<?php echo base_url('inventory/get-overall-stock-company'); ?>",
                 "type": "POST",
+                "data": function(d) {
+                    d.product_id = "<?php echo $product_id; ?>";
+                },
                 "beforeSend": function () {
                     $('.loader').show();
                 },
@@ -149,16 +152,16 @@
             },
             "columns": [
                 { "data": "sr_no" },
-                // { "data": "company" },
-                // { "data": "warehouse" },
+                { "data": "company" },
+                { "data": "warehouse" },
                 { "data": "product_name" },
                 { "data": "quantity" },
-                // { "data": "po_qty" },
-                // { "data": "priority_qty" },
-                // { "data": "loading_qty" },
-                // { "data": "with_exp_cost" },
-                // { "data": "without_exp_cost" },
-                // { "data": "official_cost_inr" },
+                { "data": "po_qty" },
+                { "data": "priority_qty" },
+                { "data": "loading_qty" },
+                { "data": "with_exp_cost" },
+                { "data": "without_exp_cost" },
+                { "data": "official_cost_inr" },
                 { "data": "action" }
             ],
             "buttons": [
@@ -166,7 +169,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2]
+                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
                     }
                 },
                 {
@@ -174,7 +177,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2]
+                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
                     }
                 }
             ],

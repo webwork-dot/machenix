@@ -1975,6 +1975,29 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function my_stock_company($product_id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $page_data['product_id'] = $product_id;
+        $page_data['page_name']  = 'overall_stock_company';
+        $page_data['page_title'] = 'Product Company Stock';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function get_overall_stock_company()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            return;
+        }
+
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_overall_stock_company();
+        }
+    }
+
     public function get_product_po_list()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -2469,7 +2492,7 @@ class Inventory extends CI_Controller
         }
     }
 
-    public function sales_order($param1 = "", $param2 = "")
+    public function sales_order($param1 = "", $param2 = "", $param3 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
@@ -2480,20 +2503,20 @@ class Inventory extends CI_Controller
         } elseif ($param1 == "invoice") {
             // $this->inventory_model->create_sales_invoice($param2);
 
-            $id = $param2;
+            $type = $param2;
+            $id = $param3;
             $receipt_no = sprintf('%05d', $id);
-            $page_data['data'] =  [];
             $this->load->library('pdf');
             $this->load->library('zip');
 
-            $data = $this->inventory_model->get_sales_order_details_by_id($id);
-
+            $page_data['data'] = $this->inventory_model->get_sales_order_details_by_id($id, $type);
+            // echo json_encode($page_data['data']); exit();
             $html_content = $this->load->view('invoice/sales/sales_invoice', $page_data, TRUE);
             $this->pdf->set_paper("A4", "portrait");
             $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
             $this->pdf->load_html($html_content);
 
-            echo $html_content; exit();
+            // echo $html_content; exit();
             $this->pdf->render();
             $pdfname = 'invoice_' . $receipt_no . '.pdf';
             $this->pdf->stream($pdfname, array("Attachment" => 0));
@@ -2503,8 +2526,6 @@ class Inventory extends CI_Controller
             // $html = $this->pdf_model->view_purchase_order($param1);
             
             // $this->createPDF($html, $param1, true , 'A4','portrait');
-            
-            
         } elseif ($param1 == "delete") {
             $this->inventory_model->delete_sales_order($param2);
         } elseif ($param1 == "gen_invoice") {

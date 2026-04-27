@@ -8661,9 +8661,10 @@ class Inventory_model extends CI_Model
 				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
 				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
 				$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
-				$invoice_url = base_url() . 'inventory/sales_order/invoice/' . $id;
 				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
 				$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
+				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $id;
+				$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $id;
 
 				$action = '';
 
@@ -8674,26 +8675,35 @@ class Inventory_model extends CI_Model
     		// 	 ';
 
 				if($this->session->userdata('super_type_id') != 4 && $item['is_approved'] == 0) {
-					$action .= '
-						<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
-						';
-				}
-
-				if($item['is_approved'] == 1) {
-					$action .= '
-						<a href="' . $invoice_url . '" data-toggle="tooltip" data-bs-placement="top" title="Download Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-file-excel-o" aria-hidden="true"></i></button></a>
-					';
-				}
-
-				if($item['is_generated'] == 0) {
-					$action .= '
-					<a href="#" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-pass"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
+					$action ='<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+						</div>
+					</div>';
+				} else if($item['is_generated'] == 0) {
+					$action ='<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="javascript:void(0)" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')"><i class="fa fa-refresh" aria-hidden="true"></i> Generate Invoice</a>
+						</div>
+					</div>';
+				} else if($item['is_generated'] == 1 && $item['is_approved'] == 1) {
+					$action ='<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View White Invoice</a>
+							<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
+						</div>
+					</div>';
 				}
 
 				// $action .='
 				// <a href="'.$products_url.'" data-toggle="tooltip" data-bs-placement="top" title="Products"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-edit" aria-hidden="true"></i></button></a>
 				// ';
-
 
 				// if ($order_type == 'excel') {
 				// 	$action .= '<a href="' . $not_url . '" data-toggle="tooltip" data-bs-placement="top" title="Not Upload"><button type="button" class="btn mr-2 mb-1 icon-btn-edit"><i class="fa fa-times" aria-hidden="true"></i></button></a>';
@@ -10789,23 +10799,43 @@ class Inventory_model extends CI_Model
 		return $this->db->get('sales_order');
 	}
 
-	public function get_sales_order_details_by_id($id)
+	public function get_sales_order_details_by_id($id, $type = 'white')
 	{
 		$sales = $this->db->where('id', $id)->get('sales_order')->row_array();
 		
-		$products = $this->db->query("
+		$white_products = $this->db->query("
 			SELECT 
-				sp.product_name, p.hsn_code, SUM(sb.white_qty) as white_qty, SUM(sb.black_qty) as black_qty,
-				SUM(sb.bill_amount) as bill_amount, SUM(sb.gst_amount) as gst_amount,
-				sb.gst, SUM(sb.black_total) as black_total, SUM(sb.final_total) as final_total 
+				sp.product_name, p.hsn_code, SUM(sb.white_qty + sb.black_qty) as qtys,
+				SUM(sb.bill_amount) as amount, SUM(sb.gst_amount) as gst_amount,
+				sb.gst, (SUM(sb.bill_amount) + SUM(sb.gst_amount)) as total 
 			FROM sales_order_product as sp
 			INNER JOIN sales_order_product_batch as sb ON sb.order_product_id = sp.id
 			INNER JOIN raw_products as p ON p.id = sp.product_id
-			WHERE sp.order_id = $id
+			WHERE sp.order_id = $id AND sb.bill_amount > 0
+			GROUP BY sp.id
+		");
+		
+		$black_products = $this->db->query("
+			SELECT 
+				sp.product_name, p.hsn_code, SUM(sb.white_qty + sb.black_qty) as qtys,
+				SUM(sb.black_total) as amount, 0 as gst_amount,
+				0 as gst, SUM(sb.black_total) as total 
+			FROM sales_order_product as sp
+			INNER JOIN sales_order_product_batch as sb ON sb.order_product_id = sp.id
+			INNER JOIN raw_products as p ON p.id = sp.product_id
+			WHERE sp.order_id = $id AND sb.black_total > 0
 			GROUP BY sp.id
 		");
 
-		$sales['products'] = ($products->num_rows() > 0) ? $products->result_array() : [];
+		$white_products = ($white_products->num_rows() > 0) ? $white_products->result_array() : [];
+		if($type == 'white') {
+			$black_products = [];
+		} else {
+			$black_products = ($black_products->num_rows() > 0) ? $black_products->result_array() : [];
+		}
+
+		// echo json_encode($black_products);exit();
+		$sales['products'] = array_merge($white_products, $black_products);
 		
 		$company = $this->common_model->getRowById('company', '*', ['id' => $sales['company_id']]);
 		$sales['company'] = ($company) ? $company : [];
@@ -14465,6 +14495,71 @@ public function get_sales_return_reports()
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (p.name like '%" . $keyword . "%')";
+		endif;
+
+		$total_count_query = "SELECT p.id
+							  FROM raw_products p
+							  JOIN inventory inv ON inv.product_id = p.id
+							  WHERE 1=1 $keyword_filter
+							  GROUP BY p.id
+							  HAVING SUM(inv.quantity) > 0";
+		$total_count = $this->db->query($total_count_query)->num_rows();
+
+		$data_query = "SELECT 
+							  p.id as product_id,
+							  p.name as product_name,
+							  SUM(inv.quantity) as current_qty
+					   FROM raw_products p
+					   JOIN inventory inv ON inv.product_id = p.id
+					   WHERE 1=1 $keyword_filter
+					   GROUP BY p.id
+					   HAVING current_qty > 0 
+					   ORDER BY p.name ASC LIMIT $start, $length";
+		$query = $this->db->query($data_query);
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$pid = $item['product_id'];
+
+				$batch_url = base_url() . 'inventory/my-stock-company/' . $pid;
+				$action = '<a href="' . $batch_url . '" data-toggle="tooltip" data-bs-placement="top" title="View Company Stock"><button type="button" class="btn btn-sm btn-primary"><i class="fa fa-eye"></i></button></a>';
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"product_name"=> $item['product_name'] ?? 'Unknown Product (ID: '.$pid.')',
+					"quantity"    => $item['current_qty'],
+					"action"      => $action
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_overall_stock_company()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+		$product_id = $_REQUEST['product_id'] ?? null;
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if ($product_id) {
+			$keyword_filter .= " AND base.product_id = " . $product_id;
+		}
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];

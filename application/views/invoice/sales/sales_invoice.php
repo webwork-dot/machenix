@@ -26,75 +26,78 @@
         <tr>
 
           <!-- LEFT: Seller / Consignee / Buyer stacked in one cell -->
-          <td style="width:50%;border:1px solid #000;padding:0;vertical-align:top;">
+          <td style="width:50%;border:1px solid #000;padding:0px !important;vertical-align:top;text-align:left;">
 
             <!-- Seller -->
             <div style="padding:5px 6px;border-bottom:1px solid #000;line-height:1.55;">
-              <b>Caterbell Industries 2023-24</b><br>
-              NO 25, BHASKAR LAYOUT, Anjanapura Main Road,<br>
-              AVALAHALLI VILLAGE, Bengaluru, Bengaluru Urban<br>
-              Karnataka, 560062<br>
-              GSTIN/UIN: 29EFMPK8325B1Z9<br>
-              State Name : Karnataka, Code : 29
+              <b><?= $data['company']['name']; ?></b><br>
+              <?= $data['company']['address']; ?><br>
+              <?= ($data['company']['address_2'] != '') ? $data['company']['address_2'] . '<br>' : ''; ?>
+              <?= ($data['company']['address_3'] != '') ? $data['company']['address_3'] . '<br>' : ''; ?>
+              <?= $data['company']['city_name']; ?>, <?= $data['company']['state_name']; ?> - <?= $data['company']['pincode']; ?><br>
+              GSTIN/UIN: <?= $data['company']['gst_no']; ?><br>
+              State Name : <?= $data['company']['state_name']; ?>, Code : <?= $data['company']['state_code']; ?>
             </div>
 
             <!-- Consignee -->
             <div style="padding:5px 6px;border-bottom:1px solid #000;line-height:1.55;">
               Consignee (Ship to)<br>
-              <b>Kumar Food Machinery</b><br>
-              Papanayakanpalayam<br>
-              Coimbatore - 641037<br>
-              Mob - 97895 17516<br>
-              GSTIN/UIN &nbsp;&nbsp;&nbsp;&nbsp;: 33AINPP7824Q1ZE<br>
-              State Name &nbsp;&nbsp;: Tamil Nadu, Code : 33
+              <b><?= $data['customer']['company_name']; ?></b><br>
+              <?= $data['customer']['address']; ?><br>
+              <?= ($data['customer']['address_2'] != '') ? $data['customer']['address_2'] . '<br>' : ''; ?>
+              <?= $data['customer']['city_name']; ?> - <?= $data['customer']['pincode']; ?><br>
+              Mob - <?= $data['customer']['owner_mobile']; ?><br>
+              GSTIN/UIN &nbsp;&nbsp;&nbsp;&nbsp;: <?= $data['customer']['gst_no']; ?><br>
+              State Name &nbsp;&nbsp;: <?= $data['customer']['state_name']; ?>, Code : <?= $data['customer']['state_id']; ?>
             </div>
 
             <!-- Buyer -->
             <div style="padding:5px 6px;line-height:1.55;">
               Buyer (Bill to)<br>
-              <b>Kumar Food Machinery</b><br>
-              Papanayakanpalayam<br>
-              Coimbatore - 641037<br>
-              Mob - 97895 17516<br>
-              GSTIN/UIN &nbsp;&nbsp;&nbsp;&nbsp;: 33AINPP7824Q1ZE<br>
-              State Name &nbsp;&nbsp;: Tamil Nadu, Code : 33
+              <b><?= $data['customer']['company_name']; ?></b><br>
+              <?= $data['customer']['address']; ?><br>
+              <?= ($data['customer']['address_2'] != '') ? $data['customer']['address_2'] . '<br>' : ''; ?>
+              <?= $data['customer']['city_name']; ?> - <?= $data['customer']['pincode']; ?><br>
+              Mob - <?= $data['customer']['owner_mobile']; ?><br>
+              GSTIN/UIN &nbsp;&nbsp;&nbsp;&nbsp;: <?= $data['customer']['gst_no']; ?><br>
+              State Name &nbsp;&nbsp;: <?= $data['customer']['state_name']; ?>, Code : <?= $data['customer']['state_id']; ?>
             </div>
 
           </td>
 
           <!-- RIGHT: Invoice Meta Grid -->
-          <td style="width:50%;border:1px solid #000;padding:0;vertical-align:top;">
+          <td style="width:50%;border:1px solid #000;padding:0px !important;vertical-align:top;">
             <table style="width:100%;border-collapse:collapse;font-size:10px;">
               <tr>
-                <td style="width:50%;border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Invoice No.</td>
-                <td style="width:50%;border-bottom:1px solid #000;padding:4px 6px;">Dated</td>
+                <td style="width:50%;border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;">Invoice No.</td>
+                <td style="width:50%;border-bottom:1px solid #000;padding:4px 6px;text-align:left;">Dated</td>
               </tr>
               <tr>
-                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;"><b>830/2025-26</b></td>
-                <td style="border-bottom:1px solid #000;padding:4px 6px;"><b>23-Feb-26</b></td>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;"><b><?= $data['order_no']; ?></b></td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;text-align:left;"><b><?= date('d-M-y', strtotime($data['date'])); ?></b></td>
               </tr>
               <tr>
-                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Delivery Note</td>
-                <td style="border-bottom:1px solid #000;padding:4px 6px;">Mode/Terms of Payment</td>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;">Delivery Note<br><b><?= $data['unique_id']; ?></b></td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;text-align:left;">Mode/Terms of Payment<br><b><?= $data['narration']; ?></b></td>
               </tr>
               <tr>
-                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Reference No. &amp; Date.</td>
-                <td style="border-bottom:1px solid #000;padding:4px 6px;">Other References</td>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;">Reference No. &amp; Date.<br><b><?= $data['refrence_no']; ?></b></td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;text-align:left;">Other References</td>
               </tr>
               <tr>
-                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Buyer's Order No.</td>
-                <td style="border-bottom:1px solid #000;padding:4px 6px;">Dated</td>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;">Buyer's Order No.</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;text-align:left;">Dated</td>
               </tr>
               <tr>
-                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Dispatch Doc No.</td>
-                <td style="border-bottom:1px solid #000;padding:4px 6px;">Delivery Note Date</td>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;">Dispatch Doc No.</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;text-align:left;">Delivery Note Date</td>
               </tr>
               <tr>
-                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;">Dispatched through</td>
-                <td style="border-bottom:1px solid #000;padding:4px 6px;">Destination</td>
+                <td style="border-bottom:1px solid #000;border-right:1px solid #000;padding:4px 6px;text-align:left;">Dispatched through</td>
+                <td style="border-bottom:1px solid #000;padding:4px 6px;text-align:left;">Destination<br><b><?= $data['customer']['city_name']; ?></b></td>
               </tr>
               <tr>
-                <td colspan="2" style="padding:4px 6px;">Terms of Delivery</td>
+                <td colspan="2" style="text-align:left;padding:4px 6px;">Terms of Delivery<br><b><?= $data['remark']; ?></b></td>
               </tr>
             </table>
           </td>
@@ -104,7 +107,7 @@
     </table>
 
     <!-- Items Table -->
-    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:5px;">
+    <table style="width:100%;border-collapse:collapse;font-size:10px;">
       <thead>
         <tr>
           <td style="border:1px solid;padding:4px;text-align:center;"><b>Sl No</b></td>
@@ -118,19 +121,32 @@
       </thead>
 
       <tbody>
+        <?php 
+          $total_qty = 0;
+          $total_gst = 0;
+          $total_total_amount = 0;
+          $i = 1;
+          foreach ($data['products'] as $product): 
+            $total_qty += $product['qtys'];
+            $total_gst += $product['gst_amount'];
+            $total_total_amount += $product['total'];
+            $rate = ($product['qtys'] > 0) ? ($product['amount'] / $product['qtys']) : 0;
+        ?>
         <tr>
-          <td style="border:1px solid;padding:4px;text-align:center;">1</td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $i++; ?></td>
           <td style="border:1px solid;padding:4px;">
-            Spiral Mixer 40L (HS-40L)
+            <?= $product['product_name']; ?>
           </td>
-          <td style="border:1px solid;padding:4px;text-align:center;">84381010</td>
-          <td style="border:1px solid;padding:4px;text-align:center;">1 Pc</td>
-          <td style="border:1px solid;padding:4px;text-align:right;">21,000.00</td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $product['hsn_code']; ?></td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $product['qtys']; ?> Pc</td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($rate, 2); ?></td>
           <td style="border:1px solid;padding:4px;text-align:center;">Pc</td>
-          <td style="border:1px solid;padding:4px;text-align:right;">21,000.00</td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($product['amount'], 2); ?></td>
         </tr>
+        <?php endforeach; ?>
 
-        <!-- Tax Row -->
+        <!-- Tax Rows -->
+        <?php if ($data['gst_type'] == 'IGST' && $total_gst > 0): ?>
         <tr>
           <td style="border:1px solid;padding:4px;"></td>
           <td style="border:1px solid;padding:4px;"><b>IGST</b></td>
@@ -138,17 +154,52 @@
           <td style="border:1px solid;padding:4px;"></td>
           <td style="border:1px solid;padding:4px;"></td>
           <td style="border:1px solid;padding:4px;"></td>
-          <td style="border:1px solid;padding:4px;text-align:right;">3,780.00</td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($total_gst, 2); ?></td>
         </tr>
+        <?php elseif ($data['gst_type'] == 'Central GST / State GST'): ?>
+        <?php if ($total_gst > 0): ?>
+        <tr>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"><b>CGST</b></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($total_gst / 2, 2); ?></td>
+        </tr>
+        <tr>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"><b>SGST</b></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($total_gst / 2, 2); ?></td>
+        </tr>
+        <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if ($data['other_charges_amount'] > 0): ?>
+        <tr>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"><b><?= $data['other_charges_name']; ?></b></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($data['other_charges_amount'], 2); ?></td>
+        </tr>
+        <?php endif; ?>
       </tbody>
 
       <tfoot>
+        <?php $final_grand_total = $total_total_amount + $data['other_charges_amount']; ?>
         <tr>
           <td colspan="3" style="border:1px solid;padding:4px;text-align:right;"><b>Total</b></td>
-          <td style="border:1px solid;padding:4px;text-align:center;">1 Pc</td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $total_qty; ?> Pc</td>
           <td style="border:1px solid;padding:4px;"></td>
           <td style="border:1px solid;padding:4px;"></td>
-          <td style="border:1px solid;padding:4px;text-align:right;"><b>₹ 24,780.00</b></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><b>₹ <?= number_format($final_grand_total, 2); ?></b></td>
         </tr>
       </tfoot>
     </table>
@@ -158,7 +209,7 @@
       <tr>
         <td style="border:1px solid;padding:5px;">
           <b>Amount Chargeable (in words)</b><br>
-          INR Twenty Four Thousand Seven Hundred Eighty Only
+          <?= rupees_word($final_grand_total); ?>
         </td>
       </tr>
     </table>
@@ -169,37 +220,70 @@
         <tr>
           <td style="border:1px solid;padding:4px;text-align:center;"><b>HSN/SAC</b></td>
           <td style="border:1px solid;padding:4px;text-align:center;"><b>Taxable Value</b></td>
+          <?php if ($data['gst_type'] == 'IGST'): ?>
           <td style="border:1px solid;padding:4px;text-align:center;"><b>IGST Rate</b></td>
           <td style="border:1px solid;padding:4px;text-align:center;"><b>IGST Amount</b></td>
+          <?php else: ?>
+          <td style="border:1px solid;padding:4px;text-align:center;"><b>CGST Rate</b></td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><b>CGST Amount</b></td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><b>SGST Rate</b></td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><b>SGST Amount</b></td>
+          <?php endif; ?>
           <td style="border:1px solid;padding:4px;text-align:center;"><b>Total Tax Amount</b></td>
         </tr>
       </thead>
 
       <tbody>
+        <?php 
+          $sum_taxable = 0;
+          $sum_gst = 0;
+          foreach ($data['products'] as $product): 
+            if ($product['gst_amount'] > 0):
+              $sum_taxable += $product['amount'];
+              $sum_gst += $product['gst_amount'];
+        ?>
         <tr>
-          <td style="border:1px solid;padding:4px;text-align:center;">84381010</td>
-          <td style="border:1px solid;padding:4px;text-align:right;">21,000.00</td>
-          <td style="border:1px solid;padding:4px;text-align:center;">18%</td>
-          <td style="border:1px solid;padding:4px;text-align:right;">3,780.00</td>
-          <td style="border:1px solid;padding:4px;text-align:right;">3,780.00</td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $product['hsn_code']; ?></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($product['amount'], 2); ?></td>
+          <?php if ($data['gst_type'] == 'IGST'): ?>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $product['gst']; ?>%</td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($product['gst_amount'], 2); ?></td>
+          <?php else: ?>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $product['gst']/2; ?>%</td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($product['gst_amount']/2, 2); ?></td>
+          <td style="border:1px solid;padding:4px;text-align:center;"><?= $product['gst']/2; ?>%</td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($product['gst_amount']/2, 2); ?></td>
+          <?php endif; ?>
+          <td style="border:1px solid;padding:4px;text-align:right;"><?= number_format($product['gst_amount'], 2); ?></td>
         </tr>
+        <?php 
+            endif;
+          endforeach; 
+        ?>
 
         <tr>
           <td style="border:1px solid;padding:4px;text-align:right;"><b>Total</b></td>
-          <td style="border:1px solid;padding:4px;text-align:right;"><b>21,000.00</b></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><b><?= number_format($sum_taxable, 2); ?></b></td>
+          <?php if ($data['gst_type'] == 'IGST'): ?>
           <td style="border:1px solid;padding:4px;"></td>
-          <td style="border:1px solid;padding:4px;text-align:right;"><b>3,780.00</b></td>
-          <td style="border:1px solid;padding:4px;text-align:right;"><b>3,780.00</b></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><b><?= number_format($sum_gst, 2); ?></b></td>
+          <?php else: ?>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><b><?= number_format($sum_gst/2, 2); ?></b></td>
+          <td style="border:1px solid;padding:4px;"></td>
+          <td style="border:1px solid;padding:4px;text-align:right;"><b><?= number_format($sum_gst/2, 2); ?></b></td>
+          <?php endif; ?>
+          <td style="border:1px solid;padding:4px;text-align:right;"><b><?= number_format($sum_gst, 2); ?></b></td>
         </tr>
       </tbody>
     </table>
 
     <!-- Footer Section -->
-    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:5px;">
+    <table style="width:100%;border-collapse:collapse;font-size:10px;">
       <tr>
         <td style="width:60%;border:1px solid;padding:6px;">
           <b>Tax Amount (in words):</b><br>
-          INR Three Thousand Seven Hundred Eighty Only
+          <?= rupees_word($sum_gst); ?>
           <br><br>
           <b>Declaration</b><br>
           We declare that this invoice shows the actual price of the goods
@@ -207,7 +291,7 @@
         </td>
 
         <td style="width:40%;border:1px solid;padding:6px;text-align:right;vertical-align:bottom;">
-          for Caterbell Industries 2023-24
+          for <?= $data['company']['name']; ?>
           <br><br><br><br>
           <b>Authorised Signatory</b>
         </td>
