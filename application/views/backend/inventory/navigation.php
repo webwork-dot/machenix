@@ -23,7 +23,7 @@
             </a>
         </li>  
         
-        <?php if($user_id == 4) {?>
+        <?php if($user_id == 4) { ?>
             <li class="nav-item hidden <?php if($page_name == 'manage_access' || $page_name == 'manage_access_add' || $page_name == 'manage_access_edit') echo 'active'; ?>">
                 <a class="d-flex align-items-center " href="<?php echo site_url('inventory/manage-access'); ?>">
                     <i data-feather="align-left"></i>

@@ -1188,7 +1188,7 @@ class Inventory_model extends CI_Model
 					"message" => 'Duplicate SKU: ' . $item_code
 				);
 			} else {
-				$checkProduct = $this->db->select('id')->where('sku_code', $item_code)->get('product_sku');
+				$checkProduct = $this->db->select('id')->where('sku_code', $item_code)->where('sku_code!=', '')->get('product_sku');
 				if ($checkProduct->num_rows() > 0) {
 					$this->session->set_flashdata('error_message', get_phrase('sku_code_duplication'));
 					$resultpost = array(
@@ -1451,11 +1451,11 @@ class Inventory_model extends CI_Model
 		$other_skus[] = $item_code;
 		$exist_sku = [];
 		foreach ($other_skus as $sku) {
-			$checkProduct = $this->db->select('id')->where('item_code', $sku)->where('id!=', $id)->get('raw_products');
+			$checkProduct = $this->db->select('id')->where('item_code', $sku)->where('item_code!=', '')->where('id!=', $id)->get('raw_products');
 			if ($checkProduct->num_rows() > 0) {
 				$exist_sku[] = $sku;
 			} else {
-				$checkProduct = $this->db->select('id')->where('sku_code', $sku)->where('product_id!=', $id)->get('product_sku');
+				$checkProduct = $this->db->select('id')->where('sku_code', $sku)->where('sku_code!=', '')->where('product_id!=', $id)->get('product_sku');
 				if ($checkProduct->num_rows() > 0) {
 					$exist_sku[] = $sku;
 				}
@@ -1511,24 +1511,24 @@ class Inventory_model extends CI_Model
 			$data['type']           = $product_type;
 			$data['name']           = $name;
 			$data['alias']  = clean_and_escape($this->input->post('alias'));
-			$data['is_variation']   = $is_variation;
-			$data['categories']     = $categories;
-			$data['item_code']      = $item_code;
-			$data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
-			$data['min_stock']      = clean_and_escape($this->input->post('intimation'));
-			$data['intimation']     = clean_and_escape($this->input->post('intimation'));
-			$data['product_mrp']    = clean_and_escape($this->input->post('product_mrp'));
-			$data['costing_price']  = clean_and_escape($this->input->post('costing_price'));
-			$data['gst']            = ($gst) ? $gst : 0;
-			$data['net_weight']    	= clean_and_escape($this->input->post('net_weight'));
-			$data['gross_weight']  	= clean_and_escape($this->input->post('gross_weight'));
-			$data['length']					= clean_and_escape($this->input->post('length'));
-			$data['width']					= clean_and_escape($this->input->post('width'));
-			$data['height']  				= clean_and_escape($this->input->post('height'));
-			$data['cbm']						= clean_and_escape($this->input->post('cbm'));
-			$data['rate']  					= clean_and_escape($this->input->post('rate'));
-			$data['usd_rate']  			= clean_and_escape($this->input->post('usd_rate'));
-			$data['actual_usd_rate']  	= clean_and_escape($this->input->post('actual_usd_rate'));
+			$data['is_variation']   	= $is_variation;
+			$data['categories']     	= $categories;
+			$data['item_code']      	= $item_code;
+			$data['hsn_code']       	= clean_and_escape($this->input->post('hsn_code'));
+			$data['min_stock']      	= clean_and_escape($this->input->post('intimation'));
+			$data['intimation']     	= clean_and_escape($this->input->post('intimation'));
+			$data['product_mrp']    	= clean_and_escape($this->input->post('product_mrp'));
+			$data['costing_price']  	= clean_and_escape($this->input->post('costing_price'));
+			$data['gst']            	= ($gst) ? $gst : 0;
+			$data['net_weight']    		= clean_and_escape($this->input->post('net_weight'));
+			$data['gross_weight']  		= clean_and_escape($this->input->post('gross_weight'));
+			$data['length']						= clean_and_escape($this->input->post('length'));
+			$data['width']						= clean_and_escape($this->input->post('width'));
+			$data['height']  					= clean_and_escape($this->input->post('height'));
+			$data['cbm']							= clean_and_escape($this->input->post('cbm'));
+			$data['rate']  						= clean_and_escape($this->input->post('rate'));
+			$data['usd_rate']  				= clean_and_escape($this->input->post('usd_rate'));
+			$data['actual_usd_rate']	= clean_and_escape($this->input->post('actual_usd_rate'));
 
 			$supplier_id = $this->input->post('supplier_id');
 			$supplier = $this->common_model->getRowById('supplier', 'name', ['id' => $supplier_id]);
@@ -4637,6 +4637,8 @@ class Inventory_model extends CI_Model
 		$loading_in_stock_qtys = $this->input->post('loading_in_stock_qty');
 		$loading_company_stocks = $this->input->post('loading_company_stock');
 		$loading_lists_loading = $this->input->post('loading_list'); // 1 for Loading Products
+		$sorts = $this->input->post('sort');
+		$loading_sorts = $this->input->post('loading_sort');
 
 		// Process Priority List products (loading_list = 0, is_priority = 1)
 		if (!empty($product_ids)) {
@@ -4725,6 +4727,7 @@ class Inventory_model extends CI_Model
 										'received' => $original_product['received'],
 										'received_date' => $original_product['received_date'],
 										'invoice_no' => $original_product['invoice_no'],
+										'sort' => isset($sorts[$row_key]) ? intval($sorts[$row_key]) : 0,
 										'is_priority' => 1, // Priority List products
 										'is_complete' => $original_product['is_complete']
 								];
@@ -4821,6 +4824,7 @@ class Inventory_model extends CI_Model
 						'received' => $original_product['received'],
 						'received_date' => $original_product['received_date'],
 						'invoice_no' => $original_product['invoice_no'],
+						'sort' => isset($loading_sorts[$row_key]) ? intval($loading_sorts[$row_key]) : 0,
 						'is_priority' => 0, // Loading Products
 						'is_complete' => $original_product['is_complete']
 					];

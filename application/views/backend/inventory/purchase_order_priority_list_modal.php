@@ -103,6 +103,7 @@
               <?php echo $sr_no++; ?>
               <input type="hidden" name="old_product_id[<?php echo $product['id']; ?>]"
                 value="<?php echo $product['id']; ?>">
+              <input type="hidden" name="sort[<?php echo $product['id']; ?>]" value="<?php echo $sr_no - 1; ?>" class="sort-input">
             </td>
             <td>
               <select class="form-control form-control-sm supplier-select" disabled>
@@ -407,6 +408,7 @@ function addToLoadingProducts(loadingRowId, originalRowId, supplierId, supplierN
             <td>
                 ${loadingSrNo}
                 <input type="hidden" name="loading_old_product_id[${loadingRowId}]" value="${originalRowId}">
+                <input type="hidden" name="loading_sort[${loadingRowId}]" value="${loadingSrNo}" class="loading-sort-input">
             </td>
             <td>
                 <select class="form-control form-control-sm loading-supplier-select" name="loading_supplier_id[${loadingRowId}]" required>
@@ -551,6 +553,14 @@ function updateLoadingRowNumbers() {
       hiddenInput.val(originalRowId);
     }
 
+    // Update sort input
+    var sortInput = firstTd.find('.loading-sort-input');
+    if (sortInput.length === 0) {
+      firstTd.append('<input type="hidden" name="loading_sort[' + rowId + ']" value="' + (index + 1) + '" class="loading-sort-input">');
+    } else {
+      sortInput.val(index + 1);
+    }
+
     // Update serial number text
     var textContent = firstTd.clone().children().remove().end().text().trim();
     firstTd.contents().filter(function() {
@@ -654,6 +664,7 @@ function restoreToPriorityList(loadingRowId, quantity) {
         <td>
           ${$('#priority_tbody tr').length + 1}
           <input type="hidden" name="old_product_id[${originalRowId}]" value="${originalRowId}">
+          <input type="hidden" name="sort[${originalRowId}]" value="${$('#priority_tbody tr').length + 1}" class="sort-input">
         </td>
         <td>
           <select class="form-control form-control-sm supplier-select" disabled>
@@ -870,6 +881,13 @@ function removeRow(rowId) {
 function updateRowNumbers() {
   $('#priority_tbody tr').each(function(index) {
     var $firstTd = $(this).find('td:first');
+    
+    // Update sort input value if it exists
+    var $sortInput = $firstTd.find('.sort-input');
+    if ($sortInput.length) {
+      $sortInput.val(index + 1);
+    }
+    
     var $hiddenInputs = $firstTd.find('input[type="hidden"]').detach();
     $firstTd.empty().append((index + 1) + ' ').append($hiddenInputs);
   });
@@ -916,6 +934,7 @@ function addNewRow() {
             <td>
                 ${rowCounter}
                 <input type="hidden" name="old_product_id[${newRowId}]" value="0">
+                <input type="hidden" name="sort[${newRowId}]" value="${rowCounter}" class="sort-input">
             </td>
             <td>
                 <select class="form-control form-control-sm supplier-select select2 supplier-${newRowId}" name="supplier_id[${newRowId}]" 
@@ -1493,6 +1512,7 @@ function addLoadingProductRow() {
             <td>
                 ${loadingSrNo}
                 <input type="hidden" name="loading_old_product_id[${loadingRowId}]" value="0">
+                <input type="hidden" name="loading_sort[${loadingRowId}]" value="${loadingSrNo}" class="loading-sort-input">
             </td>
             <td>
                 <select class="form-control form-control-sm loading-supplier-select select2 l-supplier-${loadingRowId}" name="loading_supplier_id[${loadingRowId}]" 
