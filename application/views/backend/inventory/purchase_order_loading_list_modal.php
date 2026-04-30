@@ -1356,7 +1356,7 @@ function processReloadSupplierProducts(buttonEl, loadProducts, existingProductId
                     </table>
                     `;
 
-                    jQuery('.inner-modal').modal('show', {backdrop: 'true'});
+                    jQuery('#staticBackdrop').modal('show');
                     $("#temp-supp-prods").html(html);
                     document.querySelector("#load-product-btn").setAttribute('onclick',`supplierProducts(${supplierId})`);
                 } else {
@@ -1987,7 +1987,7 @@ $(document).on('click', '#add_supplier_btn', function() {
     html += '</div>';
 
     if (count === 0) {
-        html = '<div class="alert alert-warning">All available suppliers are already added to the list.</div>';
+        html = '<div class="alert-warning">All available suppliers are already added to the list.</div>';
         $('#confirm_add_supplier_btn').hide();
     } else {
         $('#confirm_add_supplier_btn').show();
