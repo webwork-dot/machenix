@@ -425,7 +425,7 @@
   $po_data = $this->db->query("SELECT * FROM purchase_order WHERE id = '$po_id'")->row_array();
 
   
-    // If no products found in loading_po_product, fallback to po_products
+  // Get products from loading_po_product
 
   $products_raw = $this->db->query("
     SELECT 
@@ -1550,7 +1550,7 @@ function calculateOfficial(rowId) {
         $row.find('.pkg-ctn').val(loadingQty);
     });
 
-    calculateCTN(rowId);
+    calculateRow(rowId);
 }
 
 // Calculate CTN for a product

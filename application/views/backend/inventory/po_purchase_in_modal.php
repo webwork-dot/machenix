@@ -20,14 +20,14 @@ $products_raw = $this->db
             s.name AS supplier_name,
             rp.actual_usd_rate,
             inv.quantity AS inv_qty
-        FROM po_products pop
+        FROM loading_po_product pop
         LEFT JOIN supplier s ON s.id = pop.supplier_id
         LEFT JOIN raw_products rp ON rp.id = pop.product_id
         LEFT JOIN inventory inv ON inv.product_id = pop.product_id 
              AND inv.batch_no = (SELECT voucher_no FROM purchase_order WHERE id = '$po_id')
              AND inv.warehouse_id = (SELECT warehouse_id FROM purchase_order WHERE id = '$po_id')
         WHERE pop.parent_id = '$po_id' AND pop.loading_qty > 0 AND pop.is_deleted = 0
-        ORDER BY pop.supplier_id ASC, pop.id ASC
+        ORDER BY pop.id ASC
     ")
     ->result_array();
 

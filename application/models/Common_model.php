@@ -773,7 +773,7 @@ class Common_model extends CI_Model{
                 return true;
             }
         }
-     }
+    }
      
     function displayTreeOptions($tree, $selectedValues, $parentName = '', $level = 0) {
       foreach ($tree as $category) {
