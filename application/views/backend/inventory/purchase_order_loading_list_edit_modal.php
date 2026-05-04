@@ -444,7 +444,7 @@
           pv.length AS variation_length,
           pv.width AS variation_width,
           pv.height AS variation_height
-      FROM po_products pop
+      FROM loading_po_product pop
       LEFT JOIN raw_products rp ON rp.id = pop.product_id
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
@@ -463,7 +463,7 @@
       $loading_totals_by_parent[$parent_id][] = $lt;
   }
 
-  // Group raw rows by po_products.id and collect variations
+  // Group raw rows by loading_po_product.id and collect variations
   $products_by_id = [];
   foreach ($products_raw as $row) {
       $pop_id = $row['id'];
@@ -915,6 +915,12 @@
                 <?php endforeach; ?>
             <?php endif; ?>
             
+            <div class="text-center mb-4">
+                <button type="button" class="btn btn-outline-info" id="add_supplier_btn">
+                    <i class="fa fa-plus-circle"></i> Add Supplier
+                </button>
+            </div>
+
             <!-- Grand Total Section -->
             <?php if (!empty($supplier_products)): ?>
                 <div class="supplier-section grand-total-section">
@@ -1020,11 +1026,38 @@
   </div>
 </div>
 
+<!-- Modal for Adding Supplier -->
+<div class="modal fade inner-modal" id="addSupplierModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addSupplierModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addSupplierModalLabel">Add New Supplier</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="available_suppliers_list">
+            <!-- Suppliers checkboxes will be loaded here -->
+            <div class="text-center p-3">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Loading suppliers...</p>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="confirm_add_supplier_btn">Add Selected</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // Supplier options for JavaScript
 var supplierOptions = '';
+var allSuppliers = {};
 <?php foreach($supplier_list as $supplier): ?>
 supplierOptions += '<option value="<?php echo $supplier['id']; ?>"><?php echo addslashes($supplier['name']); ?></option>';
+allSuppliers[<?php echo $supplier['id']; ?>] = '<?php echo addslashes($supplier['name']); ?>';
 <?php endforeach; ?>
 
 // Invoice supplier mappings for pre-selection
@@ -2086,4 +2119,139 @@ $(document).ready(function() {
         return false;
     });
 });
+$(document).on('click', '#add_supplier_btn', function() {
+    var existingSupplierIds = [];
+    $('.supplier-section[data-supplier-id]').each(function() {
+        var id = $(this).attr('data-supplier-id');
+        if (id) existingSupplierIds.push(id.toString());
+    });
+
+    var html = '<div class="row">';
+    var count = 0;
+    for (var id in allSuppliers) {
+        if (existingSupplierIds.indexOf(id.toString()) === -1) {
+            html += '<div class="col-md-6 mb-2">';
+            html += '<div class="form-check">';
+            html += '<input class="form-check-input supplier-checkbox" type="checkbox" value="' + id + '" id="supp_' + id + '">';
+            html += '<label class="form-check-label" for="supp_' + id + '">' + allSuppliers[id] + '</label>';
+            html += '</div>';
+            html += '</div>';
+            count++;
+        }
+    }
+    html += '</div>';
+
+    if (count === 0) {
+        html = '<div class="alert-warning">All available suppliers are already added to the list.</div>';
+        $('#confirm_add_supplier_btn').hide();
+    } else {
+        $('#confirm_add_supplier_btn').show();
+    }
+
+    $('#available_suppliers_list').html(html);
+    $('#addSupplierModal').modal('show');
+});
+
+$(document).on('click', '#confirm_add_supplier_btn', function() {
+    var selectedSuppliers = [];
+    $('.supplier-checkbox:checked').each(function() {
+        selectedSuppliers.push({
+            id: $(this).val(),
+            name: allSuppliers[$(this).val()]
+        });
+    });
+
+    if (selectedSuppliers.length === 0) {
+        Swal.fire({
+            title: "Warning!",
+            text: "Please select at least one supplier.",
+            icon: "warning",
+            customClass: { confirmButton: "btn btn-primary" },
+            buttonsStyling: !1
+        });
+        return;
+    }
+
+    selectedSuppliers.forEach(function(supplier) {
+        createSupplierSection(supplier.id, supplier.name);
+    });
+
+    $('#addSupplierModal').modal('hide');
+    updateGrandTotals();
+});
+
+function createSupplierSection(supplierId, supplierName) {
+    if ($('.supplier-section[data-supplier-id="' + supplierId + '"]').length > 0) return;
+
+    var sectionHtml = `
+        <div class="supplier-section" data-supplier-id="${supplierId}">
+            <h5>
+                Supplier: ${$('<div>').text(supplierName).html()}
+                <span class="supplier-header-actions">
+                    <button type="button" class="btn btn-outline-primary btn-sm supplier-reload-btn" data-supp-id="${supplierId}" onclick="reloadSupplierProducts(this)">
+                        <i class="fa fa-refresh"></i> Add Product
+                    </button>
+                </span>
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped loading-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Sr No.</th>
+                            <th style="width: 100px;">Invoice</th>
+                            <th style="width: 150px;">Model No.</th>
+                            <th style="width: 200px;">Product Name</th>
+                            <th style="width: 100px;">Priority List <br> (Qty)</th>
+                            <th style="width: 100px;">Loading Qty <br> (PCS)</th>
+                            <th style="width: 100px;">Unit Price <br> (RMB)</th>
+                            <th style="width: 80px;">Official CI <br> Qty</th>
+                            <th style="width: 80px;">Black Qty</th>
+                            <th style="width: 110px;">Total Amount <br> (RMB)</th>
+                            <th style="width: 130px;">Official CI <br>Unit Price (USD)</th>
+                            <th style="width: 110px;">Total Amount <br> (USD)</th>
+                            <th style="width: 100px;">Black Total <br> Price</th>
+                            <th style="width: 80px;">PKG <br> (ctn)</th>
+                            <th style="width: 80px;">N.W. <br> (kg)</th>
+                            <th style="width: 100px;">Total N.W.</th>
+                            <th style="width: 80px;">G.W. <br> (kg)</th>
+                            <th style="width: 100px;">Total G.W.</th>
+                            <th style="width: 70px;">L</th>
+                            <th style="width: 70px;">W</th>
+                            <th style="width: 70px;">H</th>
+                            <th style="width: 110px;">Total CBM</th>
+                            <th style="width: 50px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="loading_list_tbody">
+                        <tr class="supplier-total-row" data-supplier-id="${supplierId}" style="background-color: #fafafc; font-weight: bold;">
+                            <td colspan="4" style="text-align: right; padding: 10px;"><strong>Total:</strong></td>
+                            <td class="supplier-total-priority-qty">0</td>
+                            <td class="supplier-total-loading-qty">0</td>
+                            <td class="supplier-total-official-ci-qty">0</td>
+                            <td class="supplier-total-black-qty">0</td>
+                            <td class="supplier-total-unit-price-rmb">0.00</td>
+                            <td class="supplier-total-amount-rmb">0.00</td>
+                            <td class="supplier-total-official-ci-unit-price-usd">0.00</td>
+                            <td class="supplier-total-amount-usd">0.00</td>
+                            <td class="supplier-total-black-total-price">0.00</td>
+                            <td class="supplier-total-pkg-ctn">0</td>
+                            <td class="supplier-total-nw-kg">0.00</td>
+                            <td class="supplier-total-total-nw">0.00</td>
+                            <td class="supplier-total-gw-kg">0.00</td>
+                            <td class="supplier-total-total-gw">0.00</td>
+                            <td class="supplier-total-length">0.00</td>
+                            <td class="supplier-total-width">0.00</td>
+                            <td class="supplier-total-height">0.00</td>
+                            <td class="supplier-total-total-cbm">0.000000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    $('#add_supplier_btn').parent().before(sectionHtml);
+    $('.grand-total-section').show();
+}
+
 </script>

@@ -5700,8 +5700,16 @@ class Inventory_model extends CI_Model
 			'loading_date' => date('Y-m-d H:i:s'),
 		]);
 
+		// Delete existing loading list entries for this PO
+		$this->db->where('parent_id', $po_id);
+		$this->db->delete('loading_po_product');
+
+		$this->db->where('po_id', $po_id);
+		$this->db->delete('loading_product_total');
+
 		// Get product data arrays from form
-		$product_ids = $this->input->post('product_id'); // Array keys are po_products.id
+		$product_ids = $this->input->post('product_id'); // Array keys are loading_po_product.id or 'new_...'
+		$quantities = $this->input->post('quantity');
 		$loading_qtys = $this->input->post('loading_qty');
 		$official_ci_qtys = $this->input->post('official_ci_qty');
 		$black_qtys = $this->input->post('black_qty');
@@ -5729,34 +5737,28 @@ class Inventory_model extends CI_Model
 		$total_cbms = $this->input->post('total_cbm');
 		$variation_ids = $this->input->post('variation_id');
 
-		// Delete existing loading_product_total entries for this PO
-		$this->db->where('po_id', $po_id);
-		$this->db->delete('loading_product_total');
-
-		// Update each product in po_products table
+		// Process each product
 		if (!empty($product_ids)) {
-			foreach ($product_ids as $po_product_id => $product_id) {
-				if (empty($po_product_id)) continue;
-
-				$is_new = 0;
-				$check_prefix = explode('_', $po_product_id);
-				if ($check_prefix[0] == 'new') {
-					$is_new = 1;
-				}
+			foreach ($product_ids as $form_product_key => $product_id) {
+				if (empty($form_product_key)) continue;
 
 				// Get values from arrays, default to 0 if not set
-				$loading_qty = isset($loading_qtys[$po_product_id]) ? intval($loading_qtys[$po_product_id]) : 0;
-				$official_ci_qty = isset($official_ci_qtys[$po_product_id]) ? intval($official_ci_qtys[$po_product_id]) : 0;
-				$black_qty = isset($black_qtys[$po_product_id]) ? intval($black_qtys[$po_product_id]) : 0;
-				$unit_price_rmb = isset($unit_price_rmbs[$po_product_id]) ? floatval($unit_price_rmbs[$po_product_id]) : 0.00;
-				$total_amount_rmb = isset($total_amount_rmbs[$po_product_id]) ? floatval($total_amount_rmbs[$po_product_id]) : 0.00;
-				$official_ci_unit_price_usd = isset($official_ci_unit_price_usds[$po_product_id]) ? floatval($official_ci_unit_price_usds[$po_product_id]) : 0.00;
-				$total_amount_usd = isset($total_amount_usds[$po_product_id]) ? floatval($total_amount_usds[$po_product_id]) : 0.00;
-				$black_total_price = isset($black_total_prices[$po_product_id]) ? floatval($black_total_prices[$po_product_id]) : 0.00;
-				$pkg_ctn = isset($pkg_ctns[$po_product_id]) ? intval($pkg_ctns[$po_product_id]) : 0;
+				$loading_qty = isset($loading_qtys[$form_product_key]) ? intval($loading_qtys[$form_product_key]) : 0;
+				$priority_qty = isset($quantities[$form_product_key]) ? intval($quantities[$form_product_key]) : 0;
 				
-				// Get invoice number and supplier
-				$invoice_no = isset($invoice_nos[$po_product_id]) ? intval($invoice_nos[$po_product_id]) : 0;
+				// Only process if loading quantity is greater than 0
+				if ($loading_qty <= 0) continue;
+
+				$official_ci_qty = isset($official_ci_qtys[$form_product_key]) ? intval($official_ci_qtys[$form_product_key]) : 0;
+				$black_qty = isset($black_qtys[$form_product_key]) ? intval($black_qtys[$form_product_key]) : 0;
+				$unit_price_rmb = isset($unit_price_rmbs[$form_product_key]) ? floatval($unit_price_rmbs[$form_product_key]) : 0.00;
+				$total_amount_rmb = isset($total_amount_rmbs[$form_product_key]) ? floatval($total_amount_rmbs[$form_product_key]) : 0.00;
+				$official_ci_unit_price_usd = isset($official_ci_unit_price_usds[$form_product_key]) ? floatval($official_ci_unit_price_usds[$form_product_key]) : 0.00;
+				$total_amount_usd = isset($total_amount_usds[$form_product_key]) ? floatval($total_amount_usds[$form_product_key]) : 0.00;
+				$black_total_price = isset($black_total_prices[$form_product_key]) ? floatval($black_total_prices[$form_product_key]) : 0.00;
+				
+				// Get invoice details
+				$invoice_no = isset($invoice_nos[$form_product_key]) ? intval($invoice_nos[$form_product_key]) : 0;
 				$invoice_supplier_id = 0;
 				$invoice_info = '';
 				$invoice_date = null;
@@ -5767,7 +5769,6 @@ class Inventory_model extends CI_Model
 					if (isset($invoice_suppliers[$invoice_no])) {
 						$invoice_supplier_id = intval($invoice_suppliers[$invoice_no]);
 					}
-					// Get invoice info, date, terms, and price terms for this invoice number
 					if (isset($invoice_infos[$invoice_no])) {
 						$invoice_info = $this->db->escape_str(trim($invoice_infos[$invoice_no]));
 					}
@@ -5783,6 +5784,7 @@ class Inventory_model extends CI_Model
 				}
 
 				// Initialize sums for metric fields
+				$sum_pkg_ctn = 0.00;
 				$sum_nw_kg = 0.00;
 				$sum_total_nw_kg = 0.00;
 				$sum_gw_kg = 0.00;
@@ -5792,54 +5794,68 @@ class Inventory_model extends CI_Model
 				$sum_height = 0.00;
 				$sum_total_cbm_value = 0.00;
 
-				// Collect all variation metric values and sum them
-				if (isset($nw_kgs[$po_product_id]) && is_array($nw_kgs[$po_product_id])) {
-					foreach ($nw_kgs[$po_product_id] as $var_index => $value) {
-						// Get metric values for this variation
-						$nw_kg = isset($nw_kgs[$po_product_id][$var_index]) ? floatval($nw_kgs[$po_product_id][$var_index]) : 0.00;
-						$pkg_ctn = isset($pkg_ctns[$po_product_id][$var_index]) ? floatval($pkg_ctns[$po_product_id][$var_index]) : 0.00;
-						$total_nw_kg = isset($total_nws[$po_product_id][$var_index]) ? floatval($total_nws[$po_product_id][$var_index]) : 0.00;
-						$gw_kg = isset($gw_kgs[$po_product_id][$var_index]) ? floatval($gw_kgs[$po_product_id][$var_index]) : 0.00;
-						$total_gw_kg = isset($total_gws[$po_product_id][$var_index]) ? floatval($total_gws[$po_product_id][$var_index]) : 0.00;
-						$length = isset($lengths[$po_product_id][$var_index]) ? floatval($lengths[$po_product_id][$var_index]) : 0.00;
-						$width = isset($widths[$po_product_id][$var_index]) ? floatval($widths[$po_product_id][$var_index]) : 0.00;
-						$height = isset($heights[$po_product_id][$var_index]) ? floatval($heights[$po_product_id][$var_index]) : 0.00;
-						$total_cbm_value = isset($total_cbms[$po_product_id][$var_index]) ? floatval($total_cbms[$po_product_id][$var_index]) : 0.00;
-						$variation_id = isset($variation_ids[$po_product_id][$var_index]) ? intval($variation_ids[$po_product_id][$var_index]) : 0;
+				$variation_data_list = [];
 
-						// Sum up for po_products
-						$sum_nw_kg += $nw_kg;
-						$sum_total_nw_kg += $total_nw_kg;
-						$sum_gw_kg += $gw_kg;
-						$sum_total_gw_kg += $total_gw_kg;
-						$sum_length += $length;
-						$sum_width += $width;
-						$sum_height += $height;
-						$sum_total_cbm_value += $total_cbm_value;
+				// Collect variation metrics
+				if (isset($nw_kgs[$form_product_key]) && is_array($nw_kgs[$form_product_key])) {
+					foreach ($nw_kgs[$form_product_key] as $var_index => $value) {
+						$pkg_ctn_val = isset($pkg_ctns[$form_product_key][$var_index]) ? floatval($pkg_ctns[$form_product_key][$var_index]) : 0.00;
+						$nw_kg_val = isset($nw_kgs[$form_product_key][$var_index]) ? floatval($nw_kgs[$form_product_key][$var_index]) : 0.00;
+						$total_nw_kg_val = isset($total_nws[$form_product_key][$var_index]) ? floatval($total_nws[$form_product_key][$var_index]) : 0.00;
+						$gw_kg_val = isset($gw_kgs[$form_product_key][$var_index]) ? floatval($gw_kgs[$form_product_key][$var_index]) : 0.00;
+						$total_gw_kg_val = isset($total_gws[$form_product_key][$var_index]) ? floatval($total_gws[$form_product_key][$var_index]) : 0.00;
+						$length_val = isset($lengths[$form_product_key][$var_index]) ? floatval($lengths[$form_product_key][$var_index]) : 0.00;
+						$width_val = isset($widths[$form_product_key][$var_index]) ? floatval($widths[$form_product_key][$var_index]) : 0.00;
+						$height_val = isset($heights[$form_product_key][$var_index]) ? floatval($heights[$form_product_key][$var_index]) : 0.00;
+						$total_cbm_val = isset($total_cbms[$form_product_key][$var_index]) ? floatval($total_cbms[$form_product_key][$var_index]) : 0.00;
 
-						// Insert individual entry into loading_product_total
-						$loading_total_data = [
+						$sum_pkg_ctn += $pkg_ctn_val;
+						$sum_nw_kg += $nw_kg_val;
+						$sum_total_nw_kg += $total_nw_kg_val;
+						$sum_gw_kg += $gw_kg_val;
+						$sum_total_gw_kg += $total_gw_kg_val;
+						$sum_length += $length_val;
+						$sum_width += $width_val;
+						$sum_height += $height_val;
+						$sum_total_cbm_value += $total_cbm_val;
+
+						$variation_data_list[] = [
 							'po_id' => $po_id,
-							'parent_id' => $po_product_id,
-							'pkg_ctn' => $pkg_ctn,
-							'nw_kg' => $nw_kg,
-							'total_nw_kg' => $total_nw_kg,
-							'gw_kg' => $gw_kg,
-							'total_gw_kg' => $total_gw_kg,
-							'length' => $length,
-							'width' => $width,
-							'height' => $height,
-							'total_cbm_value' => $total_cbm_value
+							'pkg_ctn' => $pkg_ctn_val,
+							'nw_kg' => $nw_kg_val,
+							'total_nw_kg' => $total_nw_kg_val,
+							'gw_kg' => $gw_kg_val,
+							'total_gw_kg' => $total_gw_kg_val,
+							'length' => $length_val,
+							'width' => $width_val,
+							'height' => $height_val,
+							'total_cbm_value' => $total_cbm_val
 						];
-
-						if($is_new == 0) {
-							$this->db->insert('loading_product_total', $loading_total_data);
-						}
 					}
 				}
 
-				// Update po_products record with sums and invoice data
-				$update_data = [
+				// Fetch product details from raw_products
+				$product_details = $this->get_raw_products_by_id($product_id)->row_array();
+				if (!$product_details) {
+					$this->db->trans_rollback();
+					echo json_encode(["status" => 400, "message" => "Product not found: ID " . $product_id]);
+					return;
+				}
+
+				// Prepare data for loading_po_product
+				$insert_data = [
+					'parent_id'            	=> $po_id,
+					'supplier_id'          	=> $product_details['supplier_id'],
+					'product_type'         	=> $product_details['type'],
+					'product_id'           	=> $product_id,
+					'product_name'         	=> $product_details['name'] ?? '',
+					'item_code'            	=> $product_details['item_code'],
+					'categories'           	=> $product_details['categories'] ?? NULL,
+					'group_id'             	=> $product_details['group_id'] ?? NULL,
+					'hsn_code'             	=> $product_details['hsn_code'] ?? NULL,
+					'unit'                 	=> $product_details['unit'] ?? NULL,
+					'cbm'               		=> $product_details['cbm'],
+					'total_cbm'         		=> $product_details['cbm'] * $loading_qty,
 					'loading_qty' => $loading_qty,
 					'official_ci_qty' => $official_ci_qty,
 					'black_qty' => $black_qty,
@@ -5848,7 +5864,7 @@ class Inventory_model extends CI_Model
 					'official_ci_unit_price_usd' => $official_ci_unit_price_usd,
 					'total_amount_usd' => $total_amount_usd,
 					'black_total_price' => $black_total_price,
-					'pkg_ctn' => count($pkg_ctns),
+					'pkg_ctn' => $sum_pkg_ctn,
 					'nw_kg' => $sum_nw_kg,
 					'total_nw_kg' => $sum_total_nw_kg,
 					'gw_kg' => $sum_gw_kg,
@@ -5862,80 +5878,26 @@ class Inventory_model extends CI_Model
 					'invoice' => $invoice_info,
 					'invoice_date' => $invoice_date,
 					'invoice_terms' => $invoice_terms,
-					'invoice_price_terms' => $invoice_price_terms
+					'invoice_price_terms' => $invoice_price_terms,
+					'cartoon' => intval($product_details['cartoon_qty'] ?? 0),
+					'rate' => $product_details['product_mrp'] ?? NULL,
+					'basic_amount' => $product_details['costing_price'] ?? NULL,
+					'quantity' => $priority_qty,
+					'pending' => 0,
+					'received' => 0,
+					'received_date' => null,
+					'is_priority' => 1,
+					'is_complete' => 0
 				];
 
-				if($is_new == 0) {
-					$this->db->where('id', $po_product_id);
-					$this->db->where('parent_id', $po_id);
-					$this->db->update('po_products', $update_data);
-				} elseif($is_new == 1 && $loading_qty > 0) {
-					$product_details = $this->get_raw_products_by_id($product_id)->row_array();
-					if (!$product_details) {
-						$this->db->trans_rollback();
-						$resultpost = array(
-							"status" => 400,
-							"message" => "Product not found: ID " . $product_id
-						);
-						return simple_json_output($resultpost);
-					}
-	
-					$update_data['parent_id']            	= $po_id;
-					$update_data['supplier_id']          	= $product_details['supplier_id'];
-					$update_data['product_type']         	= $product_details['type'];
-					$update_data['product_id']           	= $product_id;
-					$update_data['product_name']         	= $product_details['name'] ?? '';
-					$update_data['item_code']            	= $product_details['item_code'];
-					$update_data['sizes']                	= null;
-					$update_data['color_id']             	= null;
-					$update_data['color_name']           	= null;
-					$update_data['categories']           	= $product_details['categories'] ?? NULL;
-					$update_data['group_id']             	= $product_details['group_id'] ?? NULL;
-					$update_data['hsn_code']             	= $product_details['hsn_code'] ?? NULL;
-					$update_data['unit']                 	= $product_details['unit'] ?? NULL;
-					$update_data['cbm']               		= $product_details['cbm'];
-					$update_data['total_cbm']         		= $product_details['cbm'] * 0;
-					$update_data['pending_po_qty']       	= 0;
-					$update_data['loading_list_qty']     	= 0;
-					$update_data['in_stock_qty']         	= 0;
-					$update_data['current_company_qty']  	= 0;
-					$update_data['quantity']             	= 0;
-					$update_data['cartoon']              	= intval($product_details['cartoon_qty'] ?? 0);
-					$update_data['rate']                 	= $product_details['product_mrp'] ?? NULL;
-					$update_data['basic_amount']         	= $product_details['costing_price'] ?? NULL;
-					$update_data['discount']             	= 0;
-					$update_data['discount_amount']      	= 0;
-					$update_data['gst']                  	= 0;
-					$update_data['gst_amount']           	= 0;
-					$update_data['total_val']            	= 0;
-					$update_data['pending']              	= 0;
-					$update_data['received']             	= 0;
-					$update_data['received_date']        	= null;
-					$update_data['is_priority']          	= 1;
-					$update_data['is_complete']          	= 0;
+				// Insert into loading_po_product
+				$this->db->insert('loading_po_product', $insert_data);
+				$new_parent_id = $this->db->insert_id();
 
-					$this->db->insert('po_products', $update_data);
-					if (isset($nw_kgs[$po_product_id]) && is_array($nw_kgs[$po_product_id])) {
-						$insert_id = $this->db->insert_id();
-						foreach ($nw_kgs[$po_product_id] as $var_index => $value) {
-							// Insert individual entry into loading_product_total
-							$loading_total_data = [
-								'po_id' => $po_id,
-								'parent_id' => $insert_id,
-								'pkg_ctn' => isset($pkg_ctns[$po_product_id][$var_index]) ? floatval($pkg_ctns[$po_product_id][$var_index]) : 0.00,
-								'nw_kg' => isset($nw_kgs[$po_product_id][$var_index]) ? floatval($nw_kgs[$po_product_id][$var_index]) : 0.00,
-								'total_nw_kg' => isset($total_nws[$po_product_id][$var_index]) ? floatval($total_nws[$po_product_id][$var_index]) : 0.00,
-								'gw_kg' => isset($gw_kgs[$po_product_id][$var_index]) ? floatval($gw_kgs[$po_product_id][$var_index]) : 0.00,
-								'total_gw_kg' => isset($total_gws[$po_product_id][$var_index]) ? floatval($total_gws[$po_product_id][$var_index]) : 0.00,
-								'length' => isset($lengths[$po_product_id][$var_index]) ? floatval($lengths[$po_product_id][$var_index]) : 0.00,
-								'width' => isset($widths[$po_product_id][$var_index]) ? floatval($widths[$po_product_id][$var_index]) : 0.00,
-								'height' => isset($heights[$po_product_id][$var_index]) ? floatval($heights[$po_product_id][$var_index]) : 0.00,
-								'total_cbm_value' => isset($total_cbms[$po_product_id][$var_index]) ? floatval($total_cbms[$po_product_id][$var_index]) : 0.00
-							];
-
-							$this->db->insert('loading_product_total', $loading_total_data);
-						}
-					}
+				// Insert variation records into loading_product_total
+				foreach ($variation_data_list as $var_data) {
+					$var_data['parent_id'] = $new_parent_id;
+					$this->db->insert('loading_product_total', $var_data);
 				}
 			}
 		}
@@ -5946,7 +5908,6 @@ class Inventory_model extends CI_Model
 		if ($this->db->trans_status() === FALSE) {
 			echo json_encode(['status' => 400, 'message' => 'Error updating loading list']);
 		} else {
-			// Get the redirect URL (usually the priority PO page)
 			$redirect_url = $this->agent->referrer();
 			echo json_encode([
 				'status' => 200, 
@@ -5959,7 +5920,7 @@ class Inventory_model extends CI_Model
 	public function soft_delete_loading_list_item($id)
 	{
 		$this->db->where('id', $id);
-		return $this->db->update('po_products', ['is_deleted' => 1]);
+		return $this->db->update('loading_po_product', ['is_deleted' => 1]);
 	}
 
 	public function add_loading_list_po()
@@ -6268,7 +6229,7 @@ class Inventory_model extends CI_Model
 					'height' 										=> $sums['height'],
 				];
 
-				if (!$this->db->insert('po_products', $po_product_data)) {
+				if (!$this->db->insert('loading_po_product', $po_product_data)) {
 					$this->db->trans_rollback();
 					$resultpost = array(
 						"status" => 400,

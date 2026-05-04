@@ -424,33 +424,38 @@
   // Get PO details
   $po_data = $this->db->query("SELECT * FROM purchase_order WHERE id = '$po_id'")->row_array();
 
-  // Get all products for this PO with raw_products, supplier, and product_variation details
+  
+    // If no products found in loading_po_product, fallback to po_products
+
   $products_raw = $this->db->query("
-      SELECT 
-          pop.*, 
-          rp.rate as rate_rmb,
-          rp.usd_rate,
-          rp.cartoon_qty,
-          rp.net_weight,
-          rp.gross_weight,
-          rp.length,
-          rp.width,
-          rp.height,
-          s.name AS supplier_name,
-          pv.id AS variation_id,
-          pv.cartoon_qty AS variation_cartoon_qty,
-          pv.net_weight AS variation_net_weight,
-          pv.gross_weight AS variation_gross_weight,
-          pv.length AS variation_length,
-          pv.width AS variation_width,
-          pv.height AS variation_height
-      FROM po_products pop
-      LEFT JOIN raw_products rp ON rp.id = pop.product_id
-      LEFT JOIN supplier s ON s.id = pop.supplier_id
-      LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
-      WHERE pop.parent_id = '$po_id' AND pop.is_deleted = '0'
-      ORDER BY pop.supplier_id DESC, pop.id ASC, pv.id ASC
+    SELECT 
+        pop.*, 
+        SUM(pop.quantity) as quantity,
+        rp.rate as rate_rmb,
+        rp.usd_rate,
+        rp.cartoon_qty,
+        rp.net_weight,
+        rp.gross_weight,
+        rp.length,
+        rp.width,
+        rp.height,
+        s.name AS supplier_name,
+        pv.id AS variation_id,
+        pv.cartoon_qty AS variation_cartoon_qty,
+        pv.net_weight AS variation_net_weight,
+        pv.gross_weight AS variation_gross_weight,
+        pv.length AS variation_length,
+        pv.width AS variation_width,
+        pv.height AS variation_height
+    FROM po_products pop
+    LEFT JOIN raw_products rp ON rp.id = pop.product_id
+    LEFT JOIN supplier s ON s.id = pop.supplier_id
+    LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
+    WHERE pop.parent_id = '$po_id' AND pop.is_deleted = '0'
+    GROUP BY pop.product_id, pv.id
+    ORDER BY pop.sort ASC
   ")->result_array();
+  
 
   // Group raw rows by po_products.id and collect variations
   $products_by_id = [];
