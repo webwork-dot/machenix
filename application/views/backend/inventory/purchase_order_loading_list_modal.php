@@ -514,6 +514,20 @@
 <?php echo form_open('inventory/update_purchase_order_loading_list', ['class' => 'priority-list-form', 'onsubmit' => 'return checkForm(this);']); ?>
 <input type="hidden" name="po_id" value="<?php echo $po_id; ?>">
     <div class="row mt-2">
+        <div class="col-md-4"></div>
+        <div class="col-md-4">
+            <div class="form-group">
+              <label>Expected Loading Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expected_date" value="<?php echo (!empty($po_data['expected_date']) ? date('Y-m-d', strtotime($po_data['expected_date'])) : date('Y-m-d')); ?>" >
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+              <label>Arrival Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="arrival_date" value="<?php echo (!empty($po_data['arrival_date']) ? date('Y-m-d', strtotime($po_data['arrival_date'])) : date('Y-m-d')); ?>">
+            </div>
+        </div>
+
         <div class="col-md-12">
             <?php if (!empty($supplier_products)): ?>
                 <?php foreach ($supplier_products as $supplier_id => $products): ?>
@@ -790,13 +804,13 @@
                                         <td colspan="4" style="text-align: right; padding: 10px;"><strong>Total:</strong></td>
                                         <td class="supplier-total-priority-qty">0</td>
                                         <td class="supplier-total-loading-qty">0</td>
+                                        <td class="supplier-total-unit-price-rmb"></td>
                                         <td class="supplier-total-official-ci-qty">0</td>
                                         <td class="supplier-total-black-qty">0</td>
-                                        <td class="supplier-total-unit-price-rmb">0.00</td>
                                         <td class="supplier-total-amount-rmb">0.00</td>
                                         <td class="supplier-total-official-ci-unit-price-usd">0.00</td>
                                         <td class="supplier-total-amount-usd">0.00</td>
-                                        <td class="supplier-total-black-total-price">0.00</td>
+                                        <td class="supplier-total-black-total-price"></td>
                                         <td class="supplier-total-pkg-ctn">0</td>
                                         <td class="supplier-total-nw-kg">0.00</td>
                                         <td class="supplier-total-total-nw">0.00</td>
@@ -860,11 +874,11 @@
                                 <td class="grand-total-loading-qty" style="color: #000;">0</td>
                                 <td class="grand-total-official-ci-qty" style="color: #000;">0</td>
                                 <td class="grand-total-black-qty" style="color: #000;">0</td>
-                                <td class="grand-total-unit-price-rmb" style="color: #000;">0.00</td>
+                                <td class="grand-total-unit-price-rmb" style="color: #000;"></td>
                                 <td class="grand-total-amount-rmb" style="color: #000;">0.00</td>
                                 <td class="grand-total-official-ci-unit-price-usd" style="color: #000;">0.00</td>
                                 <td class="grand-total-amount-usd" style="color: #000;">0.00</td>
-                                <td class="grand-total-black-total-price" style="color: #000;">0.00</td>
+                                <td class="grand-total-black-total-price" style="color: #000;"></td>
                                 <td class="grand-total-pkg-ctn" style="color: #000;">0</td>
                                 <td class="grand-total-nw-kg" style="color: #000;">0.00</td>
                                 <td class="grand-total-total-nw" style="color: #000;">0.00</td>
@@ -873,7 +887,7 @@
                                 <td class="grand-total-length" style="color: #000;">0.00</td>
                                 <td class="grand-total-width" style="color: #000;">0.00</td>
                                 <td class="grand-total-height" style="color: #000;">0.00</td>
-                                <td class="grand-total-total-cbm" style="color: #000;">0.000000</td>
+                                <td class="grand-total-total-cbm" style="color: #000;">0.00</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1511,18 +1525,18 @@ function updateInvoiceSuppliers() {
                 '<div class="invoice-field-group">' +
                 '<label class="invoice-supplier-label">' +
                 '<i class="fa fa-clipboard"></i> ' +
-                'Invoice Terms' +
+                'Terms of Payment' +
                 '</label>' +
                 '<textarea class="form-control invoice-field-textarea" name="invoice_terms[' + invoiceNo + ']" ' +
-                'id="invoice_terms_' + invoiceNo + '" placeholder="Enter invoice terms"></textarea>' +
+                'id="invoice_terms_' + invoiceNo + '" placeholder="Enter Terms of Payment"></textarea>' +
                 '</div>' +
                 '<div class="invoice-field-group">' +
                 '<label class="invoice-supplier-label">' +
                 '<i class="fa fa-dollar-sign"></i> ' +
-                'Price Term' +
+                'Terms of Price ' +
                 '</label>' +
                 '<input type="text" class="form-control invoice-field-input" name="invoice_price_terms[' + invoiceNo + ']" ' +
-                'id="invoice_price_terms_' + invoiceNo + '" placeholder="Enter price term">' +
+                'id="invoice_price_terms_' + invoiceNo + '" placeholder="Enter Terms of price">' +
                 '</div>' +
                 '</div>' +
                 '</div>';
@@ -1765,11 +1779,11 @@ function updateSupplierTotals($supplierSection) {
     $totalRow.find('.supplier-total-loading-qty').text(Math.round(totals.loadingQty));
     $totalRow.find('.supplier-total-official-ci-qty').text(Math.round(totals.officialCIQty));
     $totalRow.find('.supplier-total-black-qty').text(Math.round(totals.blackQty));
-    $totalRow.find('.supplier-total-unit-price-rmb').text(totals.unitPriceRMB.toFixed(2));
+    // $totalRow.find('.supplier-total-unit-price-rmb').text(totals.unitPriceRMB.toFixed(2));
     $totalRow.find('.supplier-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));
     $totalRow.find('.supplier-total-official-ci-unit-price-usd').text(totals.officialCIUnitPriceUSD.toFixed(2));
     $totalRow.find('.supplier-total-amount-usd').text(totals.totalAmountUSD.toFixed(2));
-    $totalRow.find('.supplier-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
+    // $totalRow.find('.supplier-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
     $totalRow.find('.supplier-total-pkg-ctn').text(Math.round(totals.pkgCtn));
     $totalRow.find('.supplier-total-nw-kg').text(totals.nwKg.toFixed(2));
     $totalRow.find('.supplier-total-total-nw').text(totals.totalNW.toFixed(2));
@@ -1841,11 +1855,11 @@ function updateGrandTotals() {
         $grandTotalRow.find('.grand-total-loading-qty').text(Math.round(grandTotals.loadingQty));
         $grandTotalRow.find('.grand-total-official-ci-qty').text(Math.round(grandTotals.officialCIQty));
         $grandTotalRow.find('.grand-total-black-qty').text(Math.round(grandTotals.blackQty));
-        $grandTotalRow.find('.grand-total-unit-price-rmb').text(grandTotals.unitPriceRMB.toFixed(2));
+        // $grandTotalRow.find('.grand-total-unit-price-rmb').text(grandTotals.unitPriceRMB.toFixed(2));
         $grandTotalRow.find('.grand-total-amount-rmb').text(grandTotals.totalAmountRMB.toFixed(2));
         $grandTotalRow.find('.grand-total-official-ci-unit-price-usd').text(grandTotals.officialCIUnitPriceUSD.toFixed(2));
         $grandTotalRow.find('.grand-total-amount-usd').text(grandTotals.totalAmountUSD.toFixed(2));
-        $grandTotalRow.find('.grand-total-black-total-price').text(grandTotals.blackTotalPrice.toFixed(2));
+        // $grandTotalRow.find('.grand-total-black-total-price').text(grandTotals.blackTotalPrice.toFixed(2));
         $grandTotalRow.find('.grand-total-pkg-ctn').text(Math.round(grandTotals.pkgCtn));
         $grandTotalRow.find('.grand-total-nw-kg').text(grandTotals.nwKg.toFixed(2));
         $grandTotalRow.find('.grand-total-total-nw').text(grandTotals.totalNW.toFixed(2));
@@ -1854,7 +1868,7 @@ function updateGrandTotals() {
         $grandTotalRow.find('.grand-total-length').text(grandTotals.length.toFixed(2));
         $grandTotalRow.find('.grand-total-width').text(grandTotals.width.toFixed(2));
         $grandTotalRow.find('.grand-total-height').text(grandTotals.height.toFixed(2));
-        $grandTotalRow.find('.grand-total-total-cbm').text(grandTotals.totalCBM.toFixed(6));
+        $grandTotalRow.find('.grand-total-total-cbm').text(grandTotals.totalCBM.toFixed(2));
     }
 
     // Toggle Submit button visibility
@@ -2077,13 +2091,13 @@ function createSupplierSection(supplierId, supplierName) {
                             <td colspan="4" style="text-align: right; padding: 10px;"><strong>Total:</strong></td>
                             <td class="supplier-total-priority-qty">0</td>
                             <td class="supplier-total-loading-qty">0</td>
+                            <td class="supplier-total-unit-price-rmb"></td>
                             <td class="supplier-total-official-ci-qty">0</td>
                             <td class="supplier-total-black-qty">0</td>
-                            <td class="supplier-total-unit-price-rmb">0.00</td>
                             <td class="supplier-total-amount-rmb">0.00</td>
                             <td class="supplier-total-official-ci-unit-price-usd">0.00</td>
                             <td class="supplier-total-amount-usd">0.00</td>
-                            <td class="supplier-total-black-total-price">0.00</td>
+                            <td class="supplier-total-black-total-price"></td>
                             <td class="supplier-total-pkg-ctn">0</td>
                             <td class="supplier-total-nw-kg">0.00</td>
                             <td class="supplier-total-total-nw">0.00</td>

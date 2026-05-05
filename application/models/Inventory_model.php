@@ -2758,6 +2758,48 @@ class Inventory_model extends CI_Model
 					$priority_loading['lo_total_usd'][] = number_format($r['lo_total_usd'], 2);
 				}
 
+				// Priority and Loading List
+				// $loading_list = [
+				// 	"pl_ready"    			=> [],
+				// 	"pl_spare"    			=> [],
+
+				// 	"lo_loading_qty"		=> [],
+				// 	"lo_official_qty"		=> [],
+
+				// 	"lo_total_rmb"			=> [],
+				// 	"lo_total_usd"			=> [],
+
+				// 	"supplier" 					=> [],
+				// ];
+
+				// $sql = "
+				// 	SELECT
+				// 		pop.supplier_id,
+				// 		COALESCE(s.name, '') AS supplier_name,
+				// 		SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS pl_spare_qty,
+				// 		SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS pl_ready_qty,
+				// 		SUM(pop.loading_qty) AS lo_loading_qty,
+				// 		SUM(pop.official_ci_qty) AS lo_official_qty,
+				// 		SUM(pop.total_amount_rmb) AS lo_total_rmb,
+				// 		SUM(pop.total_amount_usd) AS lo_total_usd
+				// 	FROM po_products pop
+				// 	LEFT JOIN supplier s ON s.id = pop.supplier_id
+				// 	WHERE pop.parent_id = '$id'
+				// 	GROUP BY pop.supplier_id, s.name
+				// 	ORDER BY pop.id
+				// ";
+
+				// $rows = $this->db->query($sql)->result_array();
+				// foreach ($rows as $r) {
+				// 	$loading_list['pl_ready'][]    = $r['pl_ready_qty'];
+				// 	$loading_list['pl_spare'][]    = $r['pl_spare_qty'];
+				// 	$loading_list['supplier'][] = $r['supplier_name'];
+				// 	$loading_list['lo_loading_qty'][] = $r['lo_loading_qty'];
+				// 	$loading_list['lo_official_qty'][] = $r['lo_official_qty'];
+				// 	$loading_list['lo_total_rmb'][] = number_format($r['lo_total_rmb'], 2);
+				// 	$loading_list['lo_total_usd'][] = number_format($r['lo_total_usd'], 2);
+				// }
+
 				$status = '';
 				if ($delivery_status == 'pending') {
 					$status = '<span class="badge badge-danger">Pending</span>';
@@ -5698,6 +5740,8 @@ class Inventory_model extends CI_Model
 		$this->db->update('purchase_order', [
 			'delivery_status' => 'loading',
 			'loading_date' => date('Y-m-d H:i:s'),
+			'expected_date' => $this->input->post('expected_date'),
+			'arrival_date' => $this->input->post('arrival_date'),
 		]);
 
 		// Delete existing loading list entries for this PO
@@ -5997,6 +6041,8 @@ class Inventory_model extends CI_Model
 			'delivery_status' => 'loading',
 			'priority_date' => date('Y-m-d H:i:s'),
 			'loading_date' => date('Y-m-d H:i:s'),
+			'expected_date' => $this->input->post('expected_date'),
+			'arrival_date' => $this->input->post('arrival_date'),
 			'source' => 'loading',
 		);
 
@@ -14273,12 +14319,12 @@ public function get_sales_return_reports()
 	public function create_po_export_zip($id) {
 		$export_data = [];
 		// Unique invoice no
-		$total_invoice = $this->db->query("SELECT invoice_no FROM po_products WHERE parent_id='$id' AND invoice_no IS NOT NULL GROUP BY invoice_no");
+		$total_invoice = $this->db->query("SELECT invoice_no FROM loading_po_product WHERE official_ci_qty > 0 AND parent_id='$id' AND invoice_no IS NOT NULL GROUP BY invoice_no");
 		if($total_invoice->num_rows() > 0) {
 				$invoice_numbers = array_column($total_invoice->result_array(), 'invoice_no');
 				foreach($invoice_numbers as $invoice) {
 						// Fetching All product with invoice no
-						$product_data = $this->db->query("SELECT * FROM po_products WHERE parent_id='$id' AND invoice_no='$invoice' ORDER BY supplier_id DESC, id ASC");
+						$product_data = $this->db->query("SELECT * FROM loading_po_product WHERE official_ci_qty > 0 AND parent_id='$id' AND invoice_no='$invoice' ORDER BY supplier_id DESC, id ASC");
 						if($product_data->num_rows() > 0) {
 								$single_row_prod = $product_data->row_array();
 								// Fetching Supplier Info

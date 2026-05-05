@@ -169,6 +169,18 @@
                 id="date_picker">
             </div>
           </div>
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Expected Loading Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expected_date" value="<?php echo date('Y-m-d');?>" >
+            </div>
+          </div>
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Arrival Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="arrival_date" value="<?php echo date('Y-m-d');?>">
+            </div>
+          </div>
           <input type="hidden" name="warehouse_state" id="warehouse_state" value="">
           <input type="hidden" name="gst_type" id="gst_type" value="">
 
@@ -352,7 +364,8 @@
                       <td class="grand-total-unit-price-rmb">0.00</td>
                       <td class="grand-total-official-qty">0</td>
                       <td class="grand-total-black-qty">0</td>
-                      <td class="grand-total-amount-rmb">0.00</td>
+                      <!-- <td class="grand-total-amount-rmb">0.00</td> -->
+                      <td class="grand-total-amount-rmb"></td>
                       <td class="grand-total-official-ci-unit-price-usd">0.00</td>
                       <td class="grand-total-amount-usd">0.00</td>
                       <td class="grand-total-black-total-price">0.00</td>
@@ -364,7 +377,7 @@
                       <td class="grand-total-length">0.00</td>
                       <td class="grand-total-width">0.00</td>
                       <td class="grand-total-height">0.00</td>
-                      <td class="grand-total-total-cbm">0.000000</td>
+                      <td class="grand-total-total-cbm">0.00</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1154,7 +1167,7 @@ function createProductTotalRow(supplierRowId) {
       <span class="stotal-black-${supplierRowId}">${blackQtySum}</span>
     </td>
     <td>
-      <span class="stotal-rmb-${supplierRowId}">${totalAmountSum}</span>
+      <span class="stotal-rmb-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-ci-${supplierRowId}">${officialCiUsdSum}</span>
@@ -1330,7 +1343,8 @@ function updateGrandTotalsRow() {
   $grandTotalRow.find('.grand-total-unit-price-rmb').text(totals.unitPriceRMB.toFixed(2));
   $grandTotalRow.find('.grand-total-official-qty').text(Math.round(totals.officialQty));
   $grandTotalRow.find('.grand-total-black-qty').text(Math.round(totals.blackQty));
-  $grandTotalRow.find('.grand-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));
+  // $grandTotalRow.find('.grand-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));
+  $grandTotalRow.find('.grand-total-amount-rmb').text('');
   $grandTotalRow.find('.grand-total-official-ci-unit-price-usd').text(totals.officialCIUnitPriceUSD.toFixed(2));
   $grandTotalRow.find('.grand-total-amount-usd').text(totals.totalAmountUSD.toFixed(2));
   $grandTotalRow.find('.grand-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
@@ -1342,7 +1356,7 @@ function updateGrandTotalsRow() {
   $grandTotalRow.find('.grand-total-length').text(totals.length.toFixed(2));
   $grandTotalRow.find('.grand-total-width').text(totals.width.toFixed(2));
   $grandTotalRow.find('.grand-total-height').text(totals.height.toFixed(2));
-  $grandTotalRow.find('.grand-total-total-cbm').text(totals.totalCBM.toFixed(6));
+  $grandTotalRow.find('.grand-total-total-cbm').text(totals.totalCBM.toFixed(2));
 }
 
 // Calculate sum of all total CBM values

@@ -19,7 +19,7 @@
           pop.*, 
           s.name AS supplier_name,
           inv_s.name AS invoice_supplier_name
-      FROM po_products pop
+      FROM loading_po_product pop
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       LEFT JOIN supplier inv_s ON inv_s.id = pop.invoice_supplier_id
       WHERE pop.parent_id = '$po_id'
@@ -72,6 +72,27 @@
       $grand_total_gw += floatval($product['total_gw_kg'] ?? 0);
       $grand_total_cbm += floatval($product['total_cbm_value'] ?? 0);
   }
+
+  // Group products by invoice number for the Supplier Invoice section
+  $invoices = [];
+  foreach ($products_raw as $product) {
+      if (!empty($product['invoice_no'])) {
+          $invoice_no = $product['invoice_no'];
+          if (!isset($invoices[$invoice_no])) {
+              $invoices[$invoice_no] = [
+                  'invoice_no' => $invoice_no,
+                  'supplier_name' => $product['invoice_supplier_name'] ?? 'N/A',
+                  'invoice_info' => $product['invoice'] ?? '',
+                  'invoice_date' => $product['invoice_date'] ?? '',
+                  'invoice_terms' => $product['invoice_terms'] ?? '',
+                  'invoice_price_terms' => $product['invoice_price_terms'] ?? '',
+                  'product_count' => 0
+              ];
+          }
+          $invoices[$invoice_no]['product_count']++;
+      }
+  }
+  ksort($invoices);
 ?>
 
 <style>
@@ -246,6 +267,140 @@
   .grand-total-value {
     font-size: 1.2rem;
     font-weight: bold;
+  }
+
+  /* Invoice Supplier Section Styles for View Modal */
+  .invoice-supplier-view-section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .invoice-supplier-view-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #5a79c0;
+  }
+
+  .invoice-supplier-view-header h5 {
+    margin: 0;
+    color: #333;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.1rem;
+  }
+
+  .invoice-supplier-view-header .badge {
+    background: #5a79c0;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(90, 121, 192, 0.3);
+  }
+
+  .invoice-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #eef0f2;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .invoice-card:hover {
+    border-color: #5a79c0;
+    box-shadow: 0 8px 25px rgba(90, 121, 192, 0.12);
+    transform: translateY(-3px);
+  }
+
+  .invoice-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #f1f3f5;
+  }
+
+  .invoice-number-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #5a79c0 0%, #4a6ba8 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 3px 8px rgba(90, 121, 192, 0.2);
+  }
+
+  .invoice-product-count {
+    background: #f1f3f9;
+    color: #4a6ba8;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+  }
+
+  .invoice-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .invoice-info-item {
+    margin-bottom: 12px;
+  }
+
+  .invoice-info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .invoice-info-value {
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 0.95rem;
+    word-break: break-word;
+  }
+
+  .invoice-info-full {
+    grid-column: span 2;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 5px;
+    border: 1px solid #f1f5f9;
+  }
+
+  .invoice-info-full .invoice-info-value {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.5;
   }
 </style>
 
@@ -477,6 +632,68 @@
         <?php endforeach; ?>
     <?php else: ?>
         <div class="alert alert-info">No loading list data found for this Purchase Order.</div>
+    <?php endif; ?>
+
+    <!-- Supplier Invoices Section -->
+    <?php if (!empty($invoices)): ?>
+    <div class="invoice-supplier-view-section">
+        <div class="invoice-supplier-view-header">
+            <h5><i class="fa fa-file"></i> Supplier Invoices</h5>
+            <span class="badge ml-3"><?php echo count($invoices); ?> Invoices</span>
+        </div>
+        
+        <div class="row">
+            <?php foreach ($invoices as $inv): ?>
+            <div class="col-md-6 col-lg-4">
+                <div class="invoice-card">
+                    <div class="invoice-card-header">
+                        <span class="invoice-number-badge">
+                            <i class="fa fa-file-alt"></i> Invoice #<?php echo $inv['invoice_no']; ?>
+                        </span>
+                        <span class="invoice-product-count">
+                            <i class="fa fa-dropbox"></i> <?php echo $inv['product_count']; ?> <?php echo $inv['product_count'] == 1 ? 'Product' : 'Products'; ?>
+                        </span>
+                    </div>
+                    
+                    <div class="invoice-info-grid">
+                        <div class="invoice-info-item">
+                            <div class="invoice-info-label"><i class="fa fa-truck"></i> Supplier</div>
+                            <div class="invoice-info-value"><?php echo htmlspecialchars($inv['supplier_name']); ?></div>
+                        </div>
+                        
+                        <div class="invoice-info-item">
+                            <div class="invoice-info-label"><i class="fa fa-calendar-alt"></i> Date</div>
+                            <div class="invoice-info-value">
+                                <?php echo !empty($inv['invoice_date']) ? date('d M, Y', strtotime($inv['invoice_date'])) : 'N/A'; ?>
+                            </div>
+                        </div>
+                        
+                        <?php if (!empty($inv['invoice_price_terms'])): ?>
+                        <div class="invoice-info-item">
+                            <div class="invoice-info-label"><i class="fa fa-usd"></i> Terms of Price</div>
+                            <div class="invoice-info-value"><?php echo htmlspecialchars($inv['invoice_price_terms']); ?></div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($inv['invoice_info'])): ?>
+                        <div class="invoice-info-item">
+                            <div class="invoice-info-label"><i class="fa fa-info-circle"></i> Invoice Info</div>
+                            <div class="invoice-info-value"><?php echo htmlspecialchars($inv['invoice_info']); ?></div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($inv['invoice_terms'])): ?>
+                        <div class="invoice-info-item invoice-info-full">
+                            <div class="invoice-info-label"><i class="fa fa-clipboard"></i> Terms of Payment</div>
+                            <div class="invoice-info-value"><?php echo nl2br(htmlspecialchars($inv['invoice_terms'])); ?></div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
     <?php endif; ?>
 
     <!-- Grand Totals Section -->

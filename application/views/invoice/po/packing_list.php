@@ -303,27 +303,29 @@ $total_cbm = 0;
         
         if (!empty($products)) {
             foreach ($products as $product) {
-                $loading_qty = isset($product['loading_qty']) ? intval($product['loading_qty']) : 0;
-                $pkg_ctn = isset($product['pkg_ctn']) ? intval($product['pkg_ctn']) : 0;
+                $official_ci_qty = isset($product['official_ci_qty']) ? intval($product['official_ci_qty']) : 0;
                 
                 $total_nw_item = 0;
                 $total_gw_item = 0;
                 $total_cbm_item = 0;
+                $pkg_ctn_item = 0;
                 
                 if (!empty($product['totals']) && is_array($product['totals']) && count($product['totals']) > 0) {
                     foreach ($product['totals'] as $total_item) {
                         $total_nw_item += isset($total_item['total_nw_kg']) ? floatval($total_item['total_nw_kg']) : 0;
                         $total_gw_item += isset($total_item['total_gw_kg']) ? floatval($total_item['total_gw_kg']) : 0;
                         $total_cbm_item += isset($total_item['total_cbm_value']) ? floatval($total_item['total_cbm_value']) : 0;
+                        $pkg_ctn_item += isset($total_item['pkg_ctn']) ? floatval($total_item['pkg_ctn']) : 0;
                     }
                 } else {
                     $total_nw_item = isset($product['total_nw_kg']) ? floatval($product['total_nw_kg']) : 0;
                     $total_gw_item = isset($product['total_gw_kg']) ? floatval($product['total_gw_kg']) : 0;
                     $total_cbm_item = isset($product['total_cbm_value']) ? floatval($product['total_cbm_value']) : 0;
+                    $pkg_ctn_item = isset($product['pkg_ctn']) ? floatval($product['pkg_ctn']) : 0;
                 }
                 
-                $total_qty += $loading_qty;
-                $total_pkg += $pkg_ctn;
+                $total_qty += $official_ci_qty;
+                $total_pkg += $pkg_ctn_item;
                 $total_nw_sum += $total_nw_item;
                 $total_gw_sum += $total_gw_item;
                 $total_cbm_sum += $total_cbm_item;
