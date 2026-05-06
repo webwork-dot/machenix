@@ -4265,7 +4265,7 @@ class Inventory_model extends CI_Model
 							$s_id = $supplier_ids[$i];
 							$raw_p = $this->common_model->getRowById('raw_products', '*', ['id' => $p_id]);
 							
-							$new_po_prod = [
+							$po_prod_row = [
 								'parent_id' => $po_id,
 								'supplier_id' => $s_id,
 								'product_id' => $p_id,
@@ -4286,11 +4286,9 @@ class Inventory_model extends CI_Model
 								'pending' => 0,
 								'black_qty' => 0
 							];
-							$this->db->insert('po_products', $new_po_prod);
-							$row_id = $this->db->insert_id();
-							$po_prod_row = $new_po_prod;
 						} else {
-							$po_prod_row = $this->common_model->getRowById('po_products', '*', ['id' => $row_id]);
+							$source_table = $is_edit ? 'purchase_in_product' : 'loading_po_product';
+							$po_prod_row = $this->common_model->getRowById($source_table, '*', ['id' => $row_id]);
 						}
 
 						// PO total
@@ -4316,7 +4314,13 @@ class Inventory_model extends CI_Model
 								'invoice_no'        => $invoice_no[$i] ?? 1,
 						];
 
-						$this->db->where('id', $row_id)->update('po_products', $po_prods);
+						if ($is_edit && $row_id != 0) {
+							$this->db->where('id', $row_id)->update('purchase_in_product', $po_prods);
+						} else {
+							$insert_data = array_merge($po_prod_row, $po_prods);
+							if (isset($insert_data['id'])) unset($insert_data['id']);
+							$this->db->insert('purchase_in_product', $insert_data);
+						}
 
 						// Inventory In
 						$inv = [
@@ -4511,7 +4515,7 @@ class Inventory_model extends CI_Model
 		$company_id = $po['company_id'];
 
 		// 1. Fetch matching products
-		$po_products = $this->db->get_where('po_products', ['parent_id' => $po_id, 'actual_qty >' => 0])->result_array();
+		$po_products = $this->db->get_where('purchase_in_product', ['parent_id' => $po_id, 'actual_qty >' => 0])->result_array();
 		
 		if (empty($po_products)) {
 			return ['status' => 400, 'message' => 'No products found with actual quantity in this PO.'];
@@ -4563,7 +4567,7 @@ class Inventory_model extends CI_Model
 				'item_code'					=> $product["item_code"],
 				'sku'         			=> $product["item_code"],
 				'order_id'        	=> $po_id,
-				'status'        		=> 'Purchase In Reverted', // Updated as requested
+				'status'        		=> 'Purchase In Reverted', 
 				'quantity'        	=> $stocked_qty,
 				'actual_rmb'        => $product['actual_rmb'],
 				'total_rmb'         => $product['total_rmb'],
@@ -4585,21 +4589,8 @@ class Inventory_model extends CI_Model
 			])->delete('inventory');
 		}
 
-		// Reset PO Products
-		$this->db->where('parent_id', $po_id)->update('po_products', [
-			'actual_qty' => 0,
-			'actual_rmb' => 0,
-			'total_rmb' => 0,
-			'actual_usd' => 0,
-			'actual_inr' => 0,
-			'total_amt' => 0,
-			'taxable_value' => 0,
-			'gst_amt' => 0,
-			'duty_amt' => 0,
-			'duty_surcharge' => 0,
-			'official_total_rs' => 0,
-			'official_rate_rs' => 0,
-		]);
+		// Delete Purchase In Products snapshot
+		$this->db->where('parent_id', $po_id)->delete('purchase_in_product');
 
 		// Update PO status back to Loading List and clear BOE
 		$this->db->where('id', $po_id)->update('purchase_order', [

@@ -13,6 +13,8 @@ $po_raw = $this->db
     ")
     ->row_array();
 
+$source_table = ($po_raw['delivery_status'] == 'purchase_in') ? 'purchase_in_product' : 'loading_po_product';
+
 $products_raw = $this->db
     ->query("
         SELECT 
@@ -20,7 +22,7 @@ $products_raw = $this->db
             s.name AS supplier_name,
             rp.actual_usd_rate,
             inv.quantity AS inv_qty
-        FROM loading_po_product pop
+        FROM $source_table pop
         LEFT JOIN supplier s ON s.id = pop.supplier_id
         LEFT JOIN raw_products rp ON rp.id = pop.product_id
         LEFT JOIN inventory inv ON inv.product_id = pop.product_id 
@@ -37,11 +39,23 @@ foreach ($products_raw as $product) {
     if (!isset($supplier_products[$supplier_id])) {
         $supplier_products[$supplier_id] = [
             'supplier_name' => isset($product['supplier_name']) ? $product['supplier_name'] : 'Unknown Supplier',
-            'products' => []
+            'products' => [],
+            'invoice' => '',
+            'invoice_date' => ''
         ];
     }
     $supplier_products[$supplier_id]['products'][] = $product;
+
+    // Capture invoice info if it matches this supplier
+    if (!empty($product['invoice']) && isset($product['invoice_supplier_id']) && $product['invoice_supplier_id'] == $supplier_id) {
+        $supplier_products[$supplier_id]['invoice'] = $product['invoice'];
+        $supplier_products[$supplier_id]['invoice_date'] = $product['invoice_date'];
+    }
 }
+
+// Get supplier list for the "Add Supplier" modal
+$company_id = $this->session->userdata('company_id');
+$supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' ORDER BY name ASC")->result_array();
 ?>
 
 <style>
@@ -109,6 +123,14 @@ foreach ($products_raw as $product) {
                     <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                         <h5>
                             Supplier: <?php echo htmlspecialchars($supplier_data['supplier_name']); ?>
+                            <?php if (!empty($supplier_data['invoice'])): ?>
+                                <span class="badge badge-soft-primary ml-2" style="font-size: 0.8rem; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                                    <i class="fa fa-file-invoice mr-1"></i> Inv: <?php echo htmlspecialchars($supplier_data['invoice']); ?>
+                                </span>
+                                <span class="badge badge-soft-secondary ml-1" style="font-size: 0.8rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">
+                                    <i class="fa fa-calendar-alt mr-1"></i> <?php echo !empty($supplier_data['invoice_date']) ? date('d-M-Y', strtotime($supplier_data['invoice_date'])) : '-'; ?>
+                                </span>
+                            <?php endif; ?>
                             <span class="supplier-header-actions">
                                 <button type="button" class="btn btn-outline-primary btn-sm supplier-reload-btn" data-supplier-id="<?php echo $supplier_id; ?>" onclick="reloadSupplierProducts(this)">
                                     <i class="fa fa-refresh"></i> Add Product
@@ -120,7 +142,6 @@ foreach ($products_raw as $product) {
                                 <thead>
                                     <tr>
                                         <th>Sr No.</th>
-                                        <th>Invoice#</th>
                                         <th>Product Name</th>
                                         <th>Model No.</th>
                                         <th>Actual Qty</th>
@@ -246,17 +267,10 @@ foreach ($products_raw as $product) {
                                         $g_total_amt           += $total_amt;
                                     ?>
                                     <?php $row_id = (int)($product['id'] ?? 0); ?>
-                                    <tr>
-                                        <td class="text-center"><?php echo $sr_no++; ?></td>
-                                        <td>
-                                            <select class="form-control form-control-sm invoice-select" name="invoice_no[]" <?php echo $is_locked ? 'disabled' : ''; ?>>
-                                                <?php for($i = 1; $i <= 5; $i++): ?>
-                                                    <option value="<?php echo $i; ?>" <?php echo (isset($product['invoice_no']) && $product['invoice_no'] == $i) ? 'selected' : ''; ?>><?php echo $i; ?></option>
-                                                <?php endfor; ?>
-                                            </select>
-                                            <?php if($is_locked): ?>
-                                                <input type="hidden" name="invoice_no[]" value="<?php echo $product['invoice_no'] ?? 1; ?>">
-                                            <?php endif; ?>
+                                    <tr data-product-id="<?php echo $product['product_id']; ?>">
+                                        <td class="text-center">
+                                            <?php echo $sr_no++; ?>
+                                            <input type="hidden" name="invoice_no[]" value="<?php echo $product['invoice_no'] ?? 1; ?>">
                                         </td>
 
                                         <!-- optional: helps if you want a flat list too -->
@@ -434,7 +448,7 @@ foreach ($products_raw as $product) {
                                 </tbody>
                                 <tfoot>
                                     <tr class="font-weight-bold js-totals-row">
-                                        <td colspan="4" class="text-right">TOTAL</td>
+                                        <td colspan="3" class="text-right">TOTAL</td>
                                         <td class="text-right"><span class="js-sum-actual-qty"><?php echo number_format($t_actual_qty, 0); ?></span></td>
                                         <td class="text-right"><span class="js-sum-actual-rmb"><?php echo number_format($t_actual_rmb, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-total-rmb"><?php echo number_format($t_total_rmb, 2, '.', ''); ?></span></td>
@@ -460,13 +474,19 @@ foreach ($products_raw as $product) {
                     </div>
                 <?php endforeach; ?>
 
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button" class="btn btn-outline-success btn-sm" id="add_supplier_btn">
+                        <i class="fa fa-plus-circle"></i> Add Supplier
+                    </button>
+                </div>
+
                 <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                     <h5>Grand Total</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped table-sm">
                             <thead>
                                 <tr>
-                                    <th colspan="4" style="width: 225px;">#</th>
+                                    <th colspan="3" style="width: 225px;">#</th>
                                     <th>Actual Qty</th>
                                     <th>Actual RMB</th>
                                     <th>Total RMB</th>
@@ -488,7 +508,7 @@ foreach ($products_raw as $product) {
                             </thead>
                             <tfoot>
                                 <tr class="font-weight-bold js-totals-row">
-                                    <td colspan="4" class="text-right fw-bold">Total</td>
+                                    <td colspan="3" class="text-right fw-bold">Total</td>
                                     <td class="text-right"><span id="grand-sum-actual-qty"><?php echo number_format($g_actual_qty, 0); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-actual-rmb"><?php echo number_format($g_actual_rmb, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-total-rmb"><?php echo number_format($g_total_rmb, 2, '.', ''); ?></span></td>
@@ -525,6 +545,34 @@ foreach ($products_raw as $product) {
 </form>
 
 <!-- Modal -->
+</div>
+
+<!-- Modal for Adding Supplier -->
+<div class="modal fade inner-modal" id="addSupplierModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addSupplierModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addSupplierModalLabel">Add New Supplier</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="available_suppliers_list">
+            <!-- Suppliers checkboxes will be loaded here -->
+            <div class="text-center p-3">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Loading suppliers...</p>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="confirm_add_supplier_btn">Add Selected</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Product Selection -->
 <div class="modal fade inner-modal" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -566,6 +614,10 @@ foreach ($products_raw as $product) {
 </style>
 
 <script>
+var allSuppliers = {};
+<?php foreach($supplier_list as $supplier): ?>
+allSuppliers[<?php echo $supplier['id']; ?>] = '<?php echo addslashes($supplier['name']); ?>';
+<?php endforeach; ?>
 
 function toNum(v) {
   if (v === null || v === undefined) return 0;
@@ -824,7 +876,141 @@ $(document).ready(function () {
 
     updateAllSupplierTotals();
   });
+
+  $(document).on('click', '#add_supplier_btn', function() {
+    var existingSupplierIds = [];
+    $('.supplier-section[data-supplier-id]').each(function() {
+        var id = $(this).attr('data-supplier-id');
+        if (id) existingSupplierIds.push(id.toString());
+    });
+
+    var html = '<div class="row">';
+    var count = 0;
+    for (var id in allSuppliers) {
+        if (existingSupplierIds.indexOf(id.toString()) === -1) {
+            html += '<div class="col-md-6 mb-2">';
+            html += '<div class="form-check">';
+            html += '<input class="form-check-input supplier-checkbox" type="checkbox" value="' + id + '" id="supp_' + id + '">';
+            html += '<label class="form-check-label ms-2" for="supp_' + id + '">' + allSuppliers[id] + '</label>';
+            html += '</div>';
+            html += '</div>';
+            count++;
+        }
+    }
+    html += '</div>';
+
+    if (count === 0) {
+        html = '<div class="alert alert-warning">All available suppliers are already added.</div>';
+        $('#confirm_add_supplier_btn').hide();
+    } else {
+        $('#confirm_add_supplier_btn').show();
+    }
+
+    $('#available_suppliers_list').html(html);
+    $('#addSupplierModal').modal('show');
+  });
+
+  $(document).on('click', '#confirm_add_supplier_btn', function() {
+    var selectedSuppliers = [];
+    $('.supplier-checkbox:checked').each(function() {
+        selectedSuppliers.push({
+            id: $(this).val(),
+            name: allSuppliers[$(this).val()]
+        });
+    });
+
+    if (selectedSuppliers.length === 0) {
+        Swal.fire("Warning!", "Please select at least one supplier.", "warning");
+        return;
+    }
+
+    selectedSuppliers.forEach(function(supplier) {
+        createSupplierSection(supplier.id, supplier.name);
+    });
+
+    $('#addSupplierModal').modal('hide');
+  });
 });
+
+function createSupplierSection(supplierId, supplierName) {
+    if ($('.supplier-section[data-supplier-id="' + supplierId + '"]').length > 0) return;
+
+    var sectionHtml = `
+    <div class="supplier-section mb-2" data-supplier-id="${supplierId}">
+        <h5>
+            Supplier: ${supplierName}
+            <span class="supplier-header-actions">
+                <button type="button" class="btn btn-outline-primary btn-sm supplier-reload-btn" data-supplier-id="${supplierId}" onclick="reloadSupplierProducts(this)">
+                    <i class="fa fa-refresh"></i> Add Product
+                </button>
+            </span>
+        </h5>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>Sr No.</th>
+                        <th>Product Name</th>
+                        <th>Model No.</th>
+                        <th>Actual Qty</th>
+                        <th>Actual RMB</th>
+                        <th>Total RMB</th>
+                        <th>Actual USD</th>
+                        <th>Total USD</th>
+                        <th>Actual INR</th>
+                        <th>Total INR</th>
+                        <th>Official Qty</th>
+                        <th>Official Rate USD</th>
+                        <th>Official Rate Rs.</th>
+                        <th>Official Total Rs.</th>
+                        <th>Duty %</th>
+                        <th>Duty Amt</th>
+                        <th>Duty Surcharge 10%</th>
+                        <th>Taxable Value</th>
+                        <th>GST Amt</th>
+                        <th>Total Amt</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody class="supplier_products_tbody">
+                </tbody>
+                <tfoot>
+                    <tr class="font-weight-bold js-totals-row">
+                        <td colspan="3" class="text-right">TOTAL</td>
+                        <td class="text-right"><span class="js-sum-actual-qty">0</span></td>
+                        <td class="text-right"><span class="js-sum-actual-rmb">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-total-rmb">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-actual-usd">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-total-usd">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-actual-inr">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-total-inr">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-official-qty">0</span></td>
+                        <td class="text-right"><span class="js-sum-official-rate-usd">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-official-rate-rs">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-official-total">0.00</span></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><span class="js-sum-duty-amt">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-duty-surcharge">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-taxable">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-gst">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-total-amt">0.00</span></td>
+                        <td class="text-right">-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>`;
+
+    var $container = $('.col-md-12.mt-2');
+    var $grandTotalSection = $container.find('.supplier-section h5:contains("Grand Total")').closest('.supplier-section');
+    
+    if ($grandTotalSection.length > 0) {
+        $(sectionHtml).insertBefore($grandTotalSection);
+    } else {
+        $container.find('.alert-info').remove();
+        $container.append(sectionHtml);
+    }
+}
 
 $(document).ready(function() {
     $('.priority-list-form').submit(function(e) {
@@ -876,7 +1062,6 @@ $(document).ready(function() {
 var purchaseInRowCounter = 0;
 
 function reloadSupplierProducts(buttonEl, loadProducts = []) {
-    document.querySelector('#close-sub-modal')?.click();
     var $btn = $(buttonEl);
     var $section = $btn.closest('.supplier-section');
     var supplierId = $section.data('supplier-id');
@@ -910,6 +1095,7 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
                 buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) {
+                    document.querySelector('#close-sub-modal')?.click();
                     processReloadSupplierProducts(buttonEl, loadProducts, existingProductIds);
                 }
             });
@@ -917,6 +1103,7 @@ function reloadSupplierProducts(buttonEl, loadProducts = []) {
         }
     }
 
+    document.querySelector('#close-sub-modal')?.click();
     processReloadSupplierProducts(buttonEl, loadProducts, existingProductIds);
 }
 
@@ -961,7 +1148,7 @@ function processReloadSupplierProducts(buttonEl, loadProducts, existingProductId
                     });
                     html += body || '<tr><td colspan="4" class="text-center">No Products Found</td></tr>';
                     html += `</tbody></table>`;
-                    $('.inner-modal').modal('show');
+                    $('#staticBackdrop').modal('show');
                     $("#temp-supp-prods").html(html);
                     $("#load-product-btn").attr('onclick', `supplierProducts(${supplierId})`);
                 } else {
@@ -984,7 +1171,7 @@ function supplierProducts(id) {
         Swal.fire("Error!", "Select at least 1 Product", "error");
     } else {
         reloadSupplierProducts(document.querySelector(`[data-supplier-id="${id}"] .btn-outline-primary`), value);
-        $('.inner-modal').modal('hide');
+        $('#staticBackdrop').modal('hide');
     }
 }
 
@@ -997,8 +1184,19 @@ function mergeSupplierProducts(readyProducts, spareProducts) {
     return merged;
 }
 
+function updateAllSupplierTotals() {
+    var $tables = $('table');
+    if ($tables.length > 0) {
+        updateTableTotals($tables.first());
+    }
+}
+
 function updateSupplierRowNumbers($section) {
-    $section.find('tbody tr').each((i, row) => $(row).find('td:first').text(i + 1));
+    $section.find('tbody tr').each((i, row) => {
+        $(row).find('td:first').contents().filter(function() {
+            return this.nodeType === 3; // Text node
+        }).first().replaceWith((i + 1).toString());
+    });
 }
 
 function appendPurchaseInProductRow($section, p) {
@@ -1010,15 +1208,9 @@ function appendPurchaseInProductRow($section, p) {
 
     var html = `
     <tr data-product-id="${p.id}" data-new-row="true">
-        <td class="text-center">0</td>
-        <td>
-            <select class="form-control form-control-sm invoice-select" name="invoice_no[]">
-                <option value="1" selected>1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-            </select>
+        <td class="text-center">
+            0
+            <input type="hidden" name="invoice_no[]" value="1">
         </td>
         <input type="hidden" name="row_id[]" value="0">
         <input type="hidden" name="product_id[]" value="${p.id}">
