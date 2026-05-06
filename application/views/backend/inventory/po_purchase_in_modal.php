@@ -138,30 +138,30 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                             </span>
                         </h5>
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped table-sm">
+                            <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
                                 <thead>
                                     <tr>
-                                        <th>Sr No.</th>
-                                        <th>Product Name</th>
-                                        <th>Model No.</th>
-                                        <th>Actual Qty</th>
-                                        <th>Actual RMB</th>
-                                        <th>Total RMB</th>
-                                        <th>Actual USD</th>
-                                        <th>Total USD</th>
-                                        <th>Actual INR</th>
-                                        <th>Total INR</th>
-                                        <th>Official Qty</th>
-                                        <th>Official Rate USD</th>
-                                        <th>Official Rate Rs.</th>
-                                        <th>Official Total Rs.</th>
-                                        <th>Duty %</th>
-                                        <th>Duty Amt</th>
-                                        <th>Duty Surcharge 10%</th>
-                                        <th>Taxable Value</th>
-                                        <th>GST Amt</th>
-                                        <th>Total Amt</th>
-                                        <th>Action</th>
+                                        <th style="width: 50px;">Sr No.</th>
+                                        <th style="width: 250px;">Product Name</th>
+                                        <th style="width: 150px;">Model No.</th>
+                                        <th style="width: 100px;">Actual Qty</th>
+                                        <th style="width: 100px;">Actual RMB</th>
+                                        <th style="width: 100px;">Total RMB</th>
+                                        <th style="width: 100px;">Actual USD</th>
+                                        <th style="width: 100px;">Total USD</th>
+                                        <th style="width: 100px;">Actual INR</th>
+                                        <th style="width: 100px;">Total INR</th>
+                                        <th style="width: 100px;">Official Qty</th>
+                                        <th style="width: 100px;">Official Rate USD</th>
+                                        <th style="width: 100px;">Official Rate Rs.</th>
+                                        <th style="width: 100px;">Official Total Rs.</th>
+                                        <th style="width: 100px;">Duty %</th>
+                                        <th style="width: 100px;">Duty Amt</th>
+                                        <th style="width: 100px;">Duty Surcharge 10%</th>
+                                        <th style="width: 100px;">Taxable Value</th>
+                                        <th style="width: 100px;">GST Amt</th>
+                                        <th style="width: 100px;">Total Amt</th>
+                                        <th style="width: 100px;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -186,26 +186,35 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     $t_gst_amt           = 0;
                                     $t_total_amt         = 0;
                                     foreach ($supplier_data['products'] as $ind => $product):
-                                        $inr_rate = isset($po_raw['inr_rate']) ? (float)$po_raw['inr_rate'] : 0;
-                                        $actual_qty = isset($product['loading_qty']) ? (float)$product['loading_qty'] : 0;
-                                        if ($actual_qty <= 0) {
-                                            continue;
+                                        $delivery_status = $po_raw['delivery_status'];
+                                        
+                                        // Product details
+                                        $product_name = $product['product_name'] ?? '';
+                                        $item_code = $product['item_code'] ?? '';
+                                        
+                                        // Quantities
+                                        $actual_qty = (float)($product['actual_qty'] ?? 0);
+                                        // If first time opening Stock In, show loading hints
+                                        if ($delivery_status != 'purchase_in' && $actual_qty == 0) {
+                                            $actual_qty = (float)($product['loading_qty'] ?? 0);
+                                        }
+                                        
+                                        if ($actual_qty <= 0 && $delivery_status != 'purchase_in') {
+                                            $actual_qty = (float)($product['loading_qty'] ?? 0);
                                         }
 
-                                        $product_name = isset($product['product_name']) ? $product['product_name'] : '';
-                                        $item_code = isset($product['item_code']) ? $product['item_code'] : '';
-
-                                        $actual_rmb = isset($product['unit_price_rmb']) ? (float)$product['unit_price_rmb'] : 0;
-                                        $total_rmb = $actual_qty * $actual_rmb;
-
-                                        $official_qty = isset($product['official_ci_qty']) ? (float)$product['official_ci_qty'] : 0;
-                                        $official_rate_rs = isset($product['official_ci_unit_price_usd']) ? ((float)$product['official_ci_unit_price_usd'] * $inr_rate) : 0;
-
+                                        // Prices - handles different field names between tables
+                                        $actual_rmb = (float)($product['actual_rmb'] ?? ($product['unit_price_rmb'] ?? 0));
+                                        $actual_usd = (float)($product['actual_usd'] ?? ($product['actual_usd_rate'] ?? 0));
+                                        $actual_inr = (float)($product['actual_inr'] ?? 0);
+                                        
+                                        // Official Details
+                                        $official_qty = (float)($product['official_ci_qty'] ?? 0);
+                                        if ($official_qty == 0) $official_qty = $actual_qty; 
+                                        
+                                        $official_rate_usd = (float)($product['official_ci_unit_price_usd'] ?? 0);
+                                        $official_rate_rs = $official_rate_usd * $inr_rate;
                                         $official_total_rs = $official_qty * $official_rate_rs;
-
-                                        // New Actual Fields
-                                        $actual_usd = isset($product['actual_usd']) && $product['actual_usd'] > 0 ? (float)$product['actual_usd'] : (isset($product['actual_usd_rate']) ? (float)$product['actual_usd_rate'] : 0);
-                                        $actual_inr = isset($product['actual_inr']) ? (float)$product['actual_inr'] : 0;
                                         
                                         // Locking Logic
                                         $is_locked = false;
@@ -219,17 +228,29 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                             }
                                         }
 
-                                        $actual_qty = ($po_raw['delivery_status'] == 'purchase_in') ? (float)($product['actual_qty'] ?? 0) : (float)($product['loading_qty'] ?? 0);
+                                        $duty_percent = (float)($product['duty_percent'] ?? 7.5);
+                                        
+                                        // Tax/Duty mapping
+                                        if ($delivery_status == 'purchase_in') {
+                                            $duty_amt = (float)($product['duty_amt'] ?? 0);
+                                            $duty_surcharge = (float)($product['duty_surcharge'] ?? 0);
+                                            $taxable_value = (float)($product['taxable_value'] ?? 0);
+                                            $gst_amt = (float)($product['gst_amt'] ?? 0);
+                                            $total_amt = (float)($product['total_amt'] ?? 0);
+                                        } else {
+                                            $duty_amt = round($official_total_rs * $duty_percent / 100, 1);
+                                            $duty_surcharge = round($duty_amt * 0.10, 1);
+                                            $taxable_value = $official_total_rs + $duty_amt + $duty_surcharge;
+                                            $gst_amt = round($taxable_value * 0.18, 1);
+                                            $total_amt = $taxable_value + $gst_amt;
+                                        }
+
+                                        // Derived Totals
                                         $total_rmb = $actual_qty * $actual_rmb;
                                         $total_usd = $actual_qty * $actual_usd;
                                         $total_inr = $actual_qty * $actual_inr;
 
-                                        $duty_percent = 7.5;
-                                        $duty_amt = $official_total_rs * $duty_percent / 100;
-                                        $duty_surcharge = $duty_amt * 0.10;
-                                        $taxable_value = $official_total_rs + $duty_amt + $duty_surcharge;
-                                        $gst_amt = $taxable_value * 0.18;
-                                        $total_amt = $taxable_value + $gst_amt;
+                                        if ($actual_qty <= 0) continue; 
 
                                         // accumulate totals
                                         $t_actual_qty          += $actual_qty;
@@ -483,27 +504,27 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                 <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                     <h5>Grand Total</h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-sm">
+                        <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
                             <thead>
                                 <tr>
-                                    <th colspan="3" style="width: 225px;">#</th>
-                                    <th>Actual Qty</th>
-                                    <th>Actual RMB</th>
-                                    <th>Total RMB</th>
-                                    <th>Actual USD</th>
-                                    <th>Total USD</th>
-                                    <th>Actual INR</th>
-                                    <th>Total INR</th>
-                                    <th>Official Qty</th>
-                                    <th>Official Rate USD</th>
-                                    <th>Official Rate Rs.</th>
-                                    <th>Official Total Rs.</th>
-                                    <th>Duty %</th>
-                                    <th>Duty Amt</th>
-                                    <th>Duty Surcharge 10%</th>
-                                    <th>Taxable Value</th>
-                                    <th>GST Amt</th>
-                                    <th>Total Amt</th>
+                                    <th colspan="3" style="width: 450px;">#</th>
+                                    <th style="width: 100px;">Actual Qty</th>
+                                    <th style="width: 100px;">Actual RMB</th>
+                                    <th style="width: 100px;">Total RMB</th>
+                                    <th style="width: 100px;">Actual USD</th>
+                                    <th style="width: 100px;">Total USD</th>
+                                    <th style="width: 100px;">Actual INR</th>
+                                    <th style="width: 100px;">Total INR</th>
+                                    <th style="width: 100px;">Official Qty</th>
+                                    <th style="width: 100px;">Official Rate USD</th>
+                                    <th style="width: 100px;">Official Rate Rs.</th>
+                                    <th style="width: 100px;">Official Total Rs.</th>
+                                    <th style="width: 100px;">Duty %</th>
+                                    <th style="width: 100px;">Duty Amt</th>
+                                    <th style="width: 100px;">Duty Surcharge 10%</th>
+                                    <th style="width: 100px;">Taxable Value</th>
+                                    <th style="width: 100px;">GST Amt</th>
+                                    <th style="width: 200px;">Total Amt</th>
                                 </tr>
                             </thead>
                             <tfoot>
@@ -618,6 +639,11 @@ var allSuppliers = {};
 <?php foreach($supplier_list as $supplier): ?>
 allSuppliers[<?php echo $supplier['id']; ?>] = '<?php echo addslashes($supplier['name']); ?>';
 <?php endforeach; ?>
+
+function customRound(val) {
+  if (!val && val !== 0) return 0;
+  return Math.round(toNum(val) * 10) / 10;
+}
 
 function toNum(v) {
   if (v === null || v === undefined) return 0;
@@ -763,18 +789,18 @@ function recalcOfficialAndTotals($row) {
   var officialTotal = officialQty * unitInr; // official_total_rs
 
   var dutyPercent = toNum($row.find('.duty-percent').val()); // use input value (not data-*)
-  var dutyAmt = officialTotal * dutyPercent / 100;
-  var dutySurcharge = dutyAmt * 0.10;
+  var dutyAmt = customRound(officialTotal * dutyPercent / 100);
+  var dutySurcharge = customRound(dutyAmt * 0.10);
   var taxableValue = officialTotal + dutyAmt + dutySurcharge;
-  var gstAmt = taxableValue * 0.18;
+  var gstAmt = customRound(taxableValue * 0.18);
   var totalAmt = taxableValue + gstAmt;
 
   setNum($row.find('.official-rate'), unitInr, 2);
   setNum($row.find('.official-total'), officialTotal, 2);
-  setNum($row.find('.duty-amt'), dutyAmt, 2);
-  setNum($row.find('.duty-surcharge'), dutySurcharge, 2);
+  setNum($row.find('.duty-amt'), dutyAmt, 1);
+  setNum($row.find('.duty-surcharge'), dutySurcharge, 1);
   setNum($row.find('.taxable-value'), taxableValue, 2);
-  setNum($row.find('.gst-amt'), gstAmt, 2);
+  setNum($row.find('.gst-amt'), gstAmt, 1);
   setNum($row.find('.total-amt'), totalAmt, 2);
   updateTableTotals($row.closest('table'));
 }
@@ -822,14 +848,14 @@ function calculateDutyChrg(el) {
   var officialTotal = toNum($row.find('.official-total').val());
   var dutyAmt = toNum($row.find('.duty-amt').val());
 
-  var dutySurcharge = dutyAmt * 0.10;
+  var dutySurcharge = customRound(dutyAmt * 0.10);
   var taxableValue = officialTotal + dutyAmt + dutySurcharge;
-  var gstAmt = taxableValue * 0.18;
+  var gstAmt = customRound(taxableValue * 0.18);
   var totalAmt = taxableValue + gstAmt;
 
-  setNum($row.find('.duty-surcharge'), dutySurcharge, 2);
+  setNum($row.find('.duty-surcharge'), dutySurcharge, 1);
   setNum($row.find('.taxable-value'), taxableValue, 2);
-  setNum($row.find('.gst-amt'), gstAmt, 2);
+  setNum($row.find('.gst-amt'), gstAmt, 1);
   setNum($row.find('.total-amt'), totalAmt, 2);
   updateTableTotals($row.closest('table'));
 }
@@ -843,11 +869,11 @@ function calculateDutySur(el) {
   var dutySurcharge = toNum($row.find('.duty-surcharge').val());
 
   var taxableValue = officialTotal + dutyAmt + dutySurcharge;
-  var gstAmt = taxableValue * 0.18;
+  var gstAmt = customRound(taxableValue * 0.18);
   var totalAmt = taxableValue + gstAmt;
 
   setNum($row.find('.taxable-value'), taxableValue, 2);
-  setNum($row.find('.gst-amt'), gstAmt, 2);
+  setNum($row.find('.gst-amt'), gstAmt, 1);
   setNum($row.find('.total-amt'), totalAmt, 2);
   updateTableTotals($row.closest('table'));
 }
@@ -946,30 +972,30 @@ function createSupplierSection(supplierId, supplierName) {
             </span>
         </h5>
         <div class="table-responsive">
-            <table class="table table-bordered table-striped table-sm">
+            <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
                 <thead>
                     <tr>
-                        <th>Sr No.</th>
-                        <th>Product Name</th>
-                        <th>Model No.</th>
-                        <th>Actual Qty</th>
-                        <th>Actual RMB</th>
-                        <th>Total RMB</th>
-                        <th>Actual USD</th>
-                        <th>Total USD</th>
-                        <th>Actual INR</th>
-                        <th>Total INR</th>
-                        <th>Official Qty</th>
-                        <th>Official Rate USD</th>
-                        <th>Official Rate Rs.</th>
-                        <th>Official Total Rs.</th>
-                        <th>Duty %</th>
-                        <th>Duty Amt</th>
-                        <th>Duty Surcharge 10%</th>
-                        <th>Taxable Value</th>
-                        <th>GST Amt</th>
-                        <th>Total Amt</th>
-                        <th>Action</th>
+                        <th style="width: 50px;">Sr No.</th>
+                        <th style="width: 250px;">Product Name</th>
+                        <th style="width: 150px;">Model No.</th>
+                        <th style="width: 100px;">Actual Qty</th>
+                        <th style="width: 100px;">Actual RMB</th>
+                        <th style="width: 100px;">Total RMB</th>
+                        <th style="width: 100px;">Actual USD</th>
+                        <th style="width: 100px;">Total USD</th>
+                        <th style="width: 100px;">Actual INR</th>
+                        <th style="width: 100px;">Total INR</th>
+                        <th style="width: 100px;">Official Qty</th>
+                        <th style="width: 100px;">Official Rate USD</th>
+                        <th style="width: 100px;">Official Rate Rs.</th>
+                        <th style="width: 100px;">Official Total Rs.</th>
+                        <th style="width: 100px;">Duty %</th>
+                        <th style="width: 100px;">Duty Amt</th>
+                        <th style="width: 100px;">Duty Surcharge 10%</th>
+                        <th style="width: 100px;">Taxable Value</th>
+                        <th style="width: 100px;">GST Amt</th>
+                        <th style="width: 100px;">Total Amt</th>
+                        <th style="width: 100px;">Action</th>
                     </tr>
                 </thead>
                 <tbody class="supplier_products_tbody">
@@ -1203,8 +1229,9 @@ function appendPurchaseInProductRow($section, p) {
     purchaseInRowCounter++;
     var rowKey = 'new_' + purchaseInRowCounter;
     var inrRate = getInrRate();
-    var usdRate = parseFloat(p.usd_rate) || 0;
-    var rateInr = usdRate * inrRate;
+    var actualUsdRate = parseFloat(p.actual_usd_rate) || 0;
+    var officialUsdRate = parseFloat(p.usd_rate) || 0;
+    var officialRateInr = officialUsdRate * inrRate;
 
     var html = `
     <tr data-product-id="${p.id}" data-new-row="true">
@@ -1220,13 +1247,13 @@ function appendPurchaseInProductRow($section, p) {
         <td><input type="text" class="form-control form-control-sm text-right actual-qty" name="actual_qty[]" value="0" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-rmb" name="actual_rmb[]" value="${parseFloat(p.rate || 0).toFixed(2)}" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-rmb" name="total_rmb[]" value="0.00" readonly></td>
-        <td><input type="text" class="form-control form-control-sm text-right actual-usd" name="actual_usd[]" value="${usdRate.toFixed(2)}" onkeyup="calculateActual(this)"></td>
+        <td><input type="text" class="form-control form-control-sm text-right actual-usd" name="actual_usd[]" value="${actualUsdRate.toFixed(2)}" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-usd" name="total_usd[]" value="0.00" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-inr" name="actual_inr[]" value="0.00" onkeyup="calculateActualINR(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-inr" name="total_inr[]" value="0.00" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right official-qty" name="official_qty[]" value="0" readonly></td>
-        <td><input type="text" class="form-control form-control-sm text-right official-rate-usd" value="${usdRate.toFixed(2)}" readonly></td>
-        <td><input type="text" class="form-control form-control-sm text-right official-rate" name="official_rate_rs[]" value="${rateInr.toFixed(2)}" data-usd-rate="${usdRate}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right official-rate-usd" value="${officialUsdRate.toFixed(2)}" readonly></td>
+        <td><input type="text" class="form-control form-control-sm text-right official-rate" name="official_rate_rs[]" value="${officialRateInr.toFixed(2)}" data-usd-rate="${officialUsdRate}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right official-total" name="official_total_rs[]" value="0.00" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right duty-percent" name="duty_percent[]" value="7.5" onkeyup="calculateDuty(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right duty-amt" name="duty_amt[]" value="0.00" onkeyup="calculateDutyChrg(this)"></td>

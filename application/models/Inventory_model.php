@@ -2716,16 +2716,10 @@ class Inventory_model extends CI_Model
 					$po['supplier'][] = $r['supplier_name'];
 				}
 
-				// Priority and Loading List
+				// Priority List
 				$priority_loading = [
 					"pl_ready"    			=> [],
 					"pl_spare"    			=> [],
-
-					"lo_loading_qty"		=> [],
-					"lo_official_qty"		=> [],
-
-					"lo_total_rmb"			=> [],
-					"lo_total_usd"			=> [],
 
 					"supplier" 					=> [],
 				];
@@ -2735,11 +2729,7 @@ class Inventory_model extends CI_Model
 						pop.supplier_id,
 						COALESCE(s.name, '') AS supplier_name,
 						SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS pl_spare_qty,
-						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS pl_ready_qty,
-						SUM(pop.loading_qty) AS lo_loading_qty,
-						SUM(pop.official_ci_qty) AS lo_official_qty,
-						SUM(pop.total_amount_rmb) AS lo_total_rmb,
-						SUM(pop.total_amount_usd) AS lo_total_usd
+						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS pl_ready_qty
 					FROM po_products pop
 					LEFT JOIN supplier s ON s.id = pop.supplier_id
 					WHERE pop.parent_id = '$id'
@@ -2752,54 +2742,66 @@ class Inventory_model extends CI_Model
 					$priority_loading['pl_ready'][]    = $r['pl_ready_qty'];
 					$priority_loading['pl_spare'][]    = $r['pl_spare_qty'];
 					$priority_loading['supplier'][] = $r['supplier_name'];
-					$priority_loading['lo_loading_qty'][] = $r['lo_loading_qty'];
-					$priority_loading['lo_official_qty'][] = $r['lo_official_qty'];
-					$priority_loading['lo_total_rmb'][] = number_format($r['lo_total_rmb'], 2);
-					$priority_loading['lo_total_usd'][] = number_format($r['lo_total_usd'], 2);
 				}
 
-				// Priority and Loading List
-				// $loading_list = [
-				// 	"pl_ready"    			=> [],
-				// 	"pl_spare"    			=> [],
+				// Loading List
+				$loading_list = [
+					"lo_loading_qty"		=> [],
+					"lo_official_qty"		=> [],
 
-				// 	"lo_loading_qty"		=> [],
-				// 	"lo_official_qty"		=> [],
+					"lo_total_rmb"			=> [],
+					"lo_total_usd"			=> [],
 
-				// 	"lo_total_rmb"			=> [],
-				// 	"lo_total_usd"			=> [],
+					"supplier" 					=> [],
+					"supplier_id"				=> [],
+				];
 
-				// 	"supplier" 					=> [],
-				// ];
+				$sql = "
+					SELECT
+						pop.supplier_id,
+						COALESCE(s.name, '') AS supplier_name,
+						SUM(pop.loading_qty) AS lo_loading_qty,
+						SUM(pop.official_ci_qty) AS lo_official_qty,
+						SUM(pop.total_amount_rmb) AS lo_total_rmb,
+						SUM(pop.total_amount_usd) AS lo_total_usd
+					FROM loading_po_product pop
+					LEFT JOIN supplier s ON s.id = pop.supplier_id
+					WHERE pop.parent_id = '$id'
+					GROUP BY pop.supplier_id, s.name
+					ORDER BY pop.id
+				";
 
-				// $sql = "
-				// 	SELECT
-				// 		pop.supplier_id,
-				// 		COALESCE(s.name, '') AS supplier_name,
-				// 		SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS pl_spare_qty,
-				// 		SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS pl_ready_qty,
-				// 		SUM(pop.loading_qty) AS lo_loading_qty,
-				// 		SUM(pop.official_ci_qty) AS lo_official_qty,
-				// 		SUM(pop.total_amount_rmb) AS lo_total_rmb,
-				// 		SUM(pop.total_amount_usd) AS lo_total_usd
-				// 	FROM po_products pop
-				// 	LEFT JOIN supplier s ON s.id = pop.supplier_id
-				// 	WHERE pop.parent_id = '$id'
-				// 	GROUP BY pop.supplier_id, s.name
-				// 	ORDER BY pop.id
-				// ";
+				$rows = $this->db->query($sql)->result_array();
+				foreach ($rows as $r) {
+					$loading_list['supplier'][] = $r['supplier_name'];
+					$loading_list['lo_loading_qty'][] = $r['lo_loading_qty'];
+					$loading_list['lo_official_qty'][] = $r['lo_official_qty'];
+					$loading_list['lo_total_rmb'][] = number_format($r['lo_total_rmb'], 2);
+					// $loading_list['lo_total_usd'][] = number_format($r['lo_total_usd'], 2);
+					$loading_list['supplier_id'][] = $r['supplier_id'];
+				}
 
-				// $rows = $this->db->query($sql)->result_array();
-				// foreach ($rows as $r) {
-				// 	$loading_list['pl_ready'][]    = $r['pl_ready_qty'];
-				// 	$loading_list['pl_spare'][]    = $r['pl_spare_qty'];
-				// 	$loading_list['supplier'][] = $r['supplier_name'];
-				// 	$loading_list['lo_loading_qty'][] = $r['lo_loading_qty'];
-				// 	$loading_list['lo_official_qty'][] = $r['lo_official_qty'];
-				// 	$loading_list['lo_total_rmb'][] = number_format($r['lo_total_rmb'], 2);
-				// 	$loading_list['lo_total_usd'][] = number_format($r['lo_total_usd'], 2);
-				// }
+				foreach ($loading_list["supplier_id"] as $l) {
+					$sql = "
+						SELECT
+							pop.supplier_id,
+							SUM(pop.total_amount_usd) AS lo_total_usd
+						FROM loading_po_product pop
+						WHERE pop.parent_id = '$id' AND pop.invoice_supplier_id = '$l'
+						GROUP BY pop.parent_id
+						ORDER BY pop.id
+					";
 
+					$rows = $this->db->query($sql);
+					if($rows->num_rows() > 0){
+						$row = $rows->row_array();
+						$loading_list['lo_total_usd'][] = number_format($row['lo_total_usd'], 2);
+					} else {
+						$loading_list['lo_total_usd'][] = '-';
+					}
+				}
+
+				// Status
 				$status = '';
 				if ($delivery_status == 'pending') {
 					$status = '<span class="badge badge-danger">Pending</span>';
@@ -2934,10 +2936,11 @@ class Inventory_model extends CI_Model
 					"pl_suppliers"						=> array_to_list($priority_loading['supplier']),
 					"pl_spare_parts_count"		=> array_to_list($priority_loading['pl_spare']),
 					"pl_ready_goods_count"		=> array_to_list($priority_loading['pl_ready']),
-					"loading_qty"							=> array_to_list($priority_loading['lo_loading_qty']),
-					"official_qty"						=> array_to_list($priority_loading['lo_official_qty']),
-					"total_rmb"								=> array_to_list($priority_loading['lo_total_rmb']),
-					"total_usd"								=> array_to_list($priority_loading['lo_total_usd']),
+					"lo_suppliers"						=> array_to_list($loading_list['supplier']),
+					"loading_qty"							=> array_to_list($loading_list['lo_loading_qty']),
+					"official_qty"						=> array_to_list($loading_list['lo_official_qty']),
+					"total_rmb"								=> array_to_list($loading_list['lo_total_rmb']),
+					"total_usd"								=> array_to_list($loading_list['lo_total_usd']),
 					"status"        					=> $status,
 					"action"      						=> $action,
 					"priority_list_action"    => $priority_list_action,
@@ -14380,6 +14383,19 @@ public function get_sales_return_reports()
 				file_put_contents($path . $pdfname, $pdf->output());
 				$path_info[] = 'uploads/invoices/' . $pdfname;
 				unset($pdf);
+
+				// test
+			  // $receipt_no = sprintf('%05d', $id);
+				// $page_data['data'] = $item;
+				// $html_content = $this->load->view('invoice/po/packing_list', $page_data, TRUE);
+				// $this->pdf->set_paper("A4", "portrait");
+				// $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
+				// $this->pdf->load_html($html_content);
+				// // echo $html_content; exit();
+				// $this->pdf->render();
+				// $pdfname = 'invoice_' . $receipt_no . '.pdf';
+				// $this->pdf->stream($pdfname, array("Attachment" => 0));
+				// exit();
 
 				/* ================= COMMERCIAL INVOICE 1 ================= */
 				ob_clean();

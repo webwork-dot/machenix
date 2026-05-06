@@ -136,7 +136,7 @@ $(document).ready(function($) {
         "data": "boe_date"
       },
       {
-        "data": "pl_suppliers"
+        "data": "lo_suppliers"
       },
       {
         "data": "pl_spare_parts_count"

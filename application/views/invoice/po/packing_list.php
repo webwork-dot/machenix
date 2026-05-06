@@ -86,25 +86,37 @@ $total_cbm = 0;
   <title>Packing List</title>
   <link rel="stylesheet" href="<?= base_url(); ?>assets/pdf/bootstrap.min.css">
   <link rel="stylesheet" href="<?= base_url(); ?>assets/pdf/custom.css">
+  <style>
+    @font-face {
+        font-family: 'OpenSans-Bold';
+        src: url("<?= base_url('assets/fonts/OpenSans-Bold.ttf') ?>") format('truetype');
+        font-weight: bold;
+    }
+
+    .bold-text {
+        font-family: 'OpenSans-Bold', Arial, sans-serif;
+        font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
-  <div style="background: none repeat scroll 0 0 #ffffff;margin: 0 auto;width: 100%;padding: 0px;">
+  <div style="background: none repeat scroll 0 0 #ffffff;margin: 0 auto;width: 100%;padding: 0px 50px;">
     <!-- Company Header (Seller) - Centered -->
-    <table style="width: 100%; margin-bottom: 10px;">
+    <table style="width: 100%;">
       <tbody>
         <tr>
-          <td style="text-align: center; padding: 0px 3px; line-height: 1.2;">
-            <span style="color: #000; font-size: 14px; font-weight: bold;">
-              <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : 'GUANGZHOU WEI GE MACHINERY EQUIPMENT CO., LIMITED'; ?>
+          <td style="text-align: center; padding: 0px 3px; line-height: 0.75;">
+            <span class="bold-text" style="color: #000; font-size: 16px;">
+              <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : ''; ?>
             </span><br>
             <?php if (!empty($supplier_address)): ?>
-            <span style="color: #000; font-size: 11px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 11px;">
               Add: <?php echo htmlspecialchars($supplier_address); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($supplier['contact_no'])): ?>
-            <span style="color: #000; font-size: 11px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 11px;">
               Tel: <?php echo htmlspecialchars($supplier['contact_no']); ?>
               <?php if (!empty($supplier['gst_no'])): ?>
               Fax: <?php echo htmlspecialchars($supplier['gst_no']); ?>
@@ -117,33 +129,33 @@ $total_cbm = 0;
     </table>
 
     <!-- Packing List Title -->
-    <table style="width: 100%; margin-bottom: 15px;">
+    <table style="width: 100%;">
       <tbody>
         <tr>
-          <td style="width:100%;text-align: center;padding: 8px 3px; line-height: 1.0; height: auto;" colspan="12">
-            <b style="font-size: 16px;color: #000;">PACKING LIST</b>
+          <td style="width:100%;text-align: center;padding: 0px 3px; line-height: 0.75; height: auto;" colspan="12">
+            <span class="bold-text" style="font-size: 16px;color: #000;">PACKING LIST</span>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- To Section and Invoice Details - NO BORDERS -->
+    <!-- To Section and Invoice Details -->
     <table style="width: 100%; margin-bottom: 10px;">
       <tbody>
         <tr>
           <td style="width:70%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="9">
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>To:</b> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?></span><br>
+            <span style="color: #000;font-size: 11px;" class="bold-text"><span class="bold-text">To:</span> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?></span><br>
             <?php if (!empty($company_address)): ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;">
-              <b>Add:</b> <?php echo htmlspecialchars($company_address); ?>
+            <span style="color: #000;font-size: 11px;" class="bold-text">
+              <span class="bold-text">Add:</span> <?php echo htmlspecialchars($company_address); ?>
             </span>
             <?php endif; ?>
           </td>
           <td style="width:30%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
           <?php if (!empty($invoice_no)): ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Invoice No.:</b> <?php echo htmlspecialchars($invoice_no); ?></span><br>
+            <span style="color: #000;font-size: 11px;" class="bold-text"><span class="bold-text">Invoice No.:</span> <?php echo htmlspecialchars($invoice_no); ?></span><br>
             <?php endif; ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Date:</b> <?php echo $invoice_date_formatted; ?></span>
+            <span style="color: #000;font-size: 11px;" class="bold-text"><span class="bold-text">Date:</span> <?php echo $invoice_date_formatted; ?></span>
           </td>
         </tr>
       </tbody>
@@ -153,49 +165,49 @@ $total_cbm = 0;
     <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
       <thead>
         <tr>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>No.</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            No.
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>Model</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            Model
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>Product Name</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            Product Name
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>Qty<br/>(set)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            Qty<br/>(set)
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>PKG<br/>(ctn)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            PKG<br/>(ctn)
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>N.W.<br/>(kg)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            N.W.<br/>(kg)
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>Total<br/>N.W.</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            Total<br/>N.W.
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>G.W.<br/>(kg)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            G.W.<br/>(kg)
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>Total<br/>G.W.</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            Total<br/>G.W.
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" colspan="3">
-            <b>Specification(mm)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" colspan="3">
+            Specification(mm)
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;" rowspan="2">
-            <b>Total<br/>CBM</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" rowspan="2">
+            Total<br/>CBM
           </td>
         </tr>
         <tr>
-          <td style="text-align: center;padding: 2px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>L</b>
+          <td class="bold-text" style="text-align: center;padding: 2px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            L
           </td>
-          <td style="text-align: center;padding: 2px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>W</b>
+          <td class="bold-text" style="text-align: center;padding: 2px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            W
           </td>
-          <td style="text-align: center;padding: 2px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>H</b>
+          <td class="bold-text" style="text-align: center;padding: 2px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            H
           </td>
         </tr>
       </thead>
@@ -243,20 +255,19 @@ $total_cbm = 0;
                 $total_cbm_val = isset($first_variation['total_cbm_value']) ? floatval($first_variation['total_cbm_value']) : 0;
         ?>
         <tr>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $sr_no++; ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo htmlspecialchars($product['product_name'] ?? '-'); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $official_ci_qty; ?></td>
-          <!-- <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $pkg_ctn; ?></td> -->
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_nw, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($gw_kg, 1, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_gw, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($length, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($width, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($height, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_cbm_val, 2, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $sr_no++; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo htmlspecialchars($product['product_name'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $official_ci_qty; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_nw, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($gw_kg, 1, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_gw, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($length, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($width, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($height, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_cbm_val, 2, '.', ''); ?></td>
         </tr>
         <?php 
                 // Display remaining variations (if any)
@@ -274,15 +285,15 @@ $total_cbm = 0;
                         $total_cbm_val = isset($variation['total_cbm_value']) ? floatval($variation['total_cbm_value']) : 0;
         ?>
         <tr>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_nw, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($gw_kg, 1, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_gw, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($length, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($width, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($height, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_cbm_val, 2, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_nw, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($gw_kg, 1, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_gw, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($length, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($width, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($height, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_cbm_val, 2, '.', ''); ?></td>
         </tr>
         <?php 
                     }
@@ -333,19 +344,19 @@ $total_cbm = 0;
         }
         ?>
         <tr>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;">Total</td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo $total_qty; ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo $total_pkg; ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_nw_sum, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_gw_sum, 0, '.', ''); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo number_format($total_cbm_sum, 2, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">Total</td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $total_qty; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $total_pkg; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_nw_sum, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_gw_sum, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($total_cbm_sum, 2, '.', ''); ?></td>
         </tr>
       </tfoot>
     </table>
@@ -360,10 +371,10 @@ $total_cbm = 0;
             <?php endif; ?>
           </td>
           <td style="width:50%;text-align: left; padding: 10px 3px; line-height: 1.2; vertical-align: top;">
-            <span style="color: #000; font-size: 12px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 12px;">
               SELLER:
             </span><br>
-            <span style="color: #000; font-size: 12px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 12px;">
               <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : '-'; ?>
             </span>
           </td>

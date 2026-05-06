@@ -88,5 +88,6 @@
   ),
   'opensans-bold' => array(
     'normal' => $fontDir . '/3332efbeb74c3398b76e9a609616cd17',
+    'bold' => $fontDir . '\54a077b346540c5b94983f24c0694624',
   ),
 ) ?>

@@ -107,6 +107,18 @@ if (empty($invoice_date_formatted)) {
   <title>Commercial Invoice</title>
   <link rel="stylesheet" href="<?= base_url(); ?>assets/pdf/bootstrap.min.css">
   <link rel="stylesheet" href="<?= base_url(); ?>assets/pdf/custom.css">
+  <style>
+    @font-face {
+        font-family: 'OpenSans-Bold';
+        src: url("<?= base_url('assets/fonts/OpenSans-Bold.ttf') ?>") format('truetype');
+        font-weight: bold;
+    }
+
+    .bold-text {
+        font-family: 'OpenSans-Bold', Arial, sans-serif;
+        font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
@@ -117,7 +129,7 @@ if (empty($invoice_date_formatted)) {
         <tr>
           <td style="text-align: center; padding: 0px 3px; line-height: 1.2;">
             <span style="color: #000; font-size: 14px; font-weight: bold;">
-              <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : 'GUANGZHOU WEI GE MACHINERY EQUIPMENT CO., LIMITED'; ?>
+              <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : ''; ?>
             </span><br>
             <?php if (!empty($supplier_address)): ?>
             <span style="color: #000; font-size: 11px; font-weight: bold;">
