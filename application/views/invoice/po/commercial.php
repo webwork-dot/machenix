@@ -122,22 +122,22 @@ if (empty($invoice_date_formatted)) {
 </head>
 
 <body>
-  <div style="background: none repeat scroll 0 0 #ffffff;margin: 0 auto;width: 100%;padding: 0px;">
+  <div style="background: none repeat scroll 0 0 #ffffff;margin: 0 auto;width: 100%;padding: 0px 55px;">
     <!-- Company Header (Seller) -->
     <table style="width: 100%; margin-bottom: 10px;">
       <tbody>
         <tr>
           <td style="text-align: center; padding: 0px 3px; line-height: 1.2;">
-            <span style="color: #000; font-size: 14px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 14px;">
               <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : ''; ?>
             </span><br>
             <?php if (!empty($supplier_address)): ?>
-            <span style="color: #000; font-size: 11px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 11px;">
               <?php echo htmlspecialchars($supplier_address); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($supplier_contact) || !empty($supplier['contact_no'])): ?>
-            <span style="color: #000; font-size: 11px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 11px;">
               <?php 
               $contact_display = [];
               if (!empty($supplier['email'])) {
@@ -162,8 +162,8 @@ if (empty($invoice_date_formatted)) {
     <table style="width: 100%; margin-bottom: 15px;">
       <tbody>
         <tr>
-          <td style="width:100%;text-align: center;padding: 8px 3px; line-height: 1.0; height: auto;" colspan="6">
-            <b style="font-size: 16px;color: #000;">COMMERCIAL INVOICE</b>
+          <td style="width:100%;text-align: center;padding: 8px 3px; line-height: 0.75; height: auto;" colspan="6">
+            <span class="bold-text" style="font-size: 16px;color: #000;">COMMERCIAL INVOICE</span>
           </td>
         </tr>
       </tbody>
@@ -174,27 +174,27 @@ if (empty($invoice_date_formatted)) {
       <tbody>
         <tr>
           <td style="width:50%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Buyer:</b> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Buyer:</span> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?></span><br>
             <?php if (!empty($company_address)): ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;">
-              <b>Add:</b> <?php echo htmlspecialchars($company_address); ?>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">Add:</span> <?php echo htmlspecialchars($company_address); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($company_info['contact_no'])): ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Tel:</b> <?php echo htmlspecialchars($company_info['contact_no']); ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Tel:</span> <?php echo htmlspecialchars($company_info['contact_no']); ?></span><br>
             <?php endif; ?>
             <?php if (!empty($company_info['email'])): ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>E-mail:</b> <?php echo htmlspecialchars($company_info['email']); ?></span>
+            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">E-mail:</span> <?php echo htmlspecialchars($company_info['email']); ?></span>
             <?php endif; ?>
           </td>
           <td style="width:50%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
             <?php if (!empty($invoice_no)): ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>C/I No:</b> <?php echo htmlspecialchars($invoice_no); ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">C/I No:</span> <?php echo htmlspecialchars($invoice_no); ?></span><br>
             <?php endif; ?>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Date:</b> <?php echo $invoice_date_formatted; ?></span><br>
-            <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Terms Of Price:</b> <?php echo htmlspecialchars($price_terms); ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Date:</span> <?php echo $invoice_date_formatted; ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Terms Of Price:</span> <?php echo htmlspecialchars($price_terms); ?></span><br>
             <?php if ($invoice_type == '1'): ?>
-              <span style="color: #000;font-size: 11px; font-weight: bold;"><b>Terms Of Payment:</b> <?php echo htmlspecialchars($payment_terms); ?></span>
+              <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Terms Of Payment:</span> <?php echo htmlspecialchars($payment_terms); ?></span>
               <?php endif; ?>
           </td>
         </tr>
@@ -205,23 +205,23 @@ if (empty($invoice_date_formatted)) {
     <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
       <thead>
         <tr>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>No.</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            No.
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>Product Name</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            Product Name
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>Item No</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            Item No
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>Quantity</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            Quantity
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>Unit Price<br/>(USD)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            Unit Price<br/>(USD)
           </td>
-          <td style="text-align: center;padding: 4px 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; background-color: #f0f0f0;">
-            <b>Total Amount<br/>(USD)</b>
+          <td class="bold-text" style="text-align: center;padding: 4px 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">
+            Total Amount<br/>(USD)
           </td>
         </tr>
       </thead>
@@ -242,12 +242,12 @@ if (empty($invoice_date_formatted)) {
                 $total_amount += $total_amount_usd;
         ?>
         <tr>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo $sr_no++; ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo htmlspecialchars($product['product_name'] ?? '-'); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo $official_ci_qty; ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;">US$<?php echo number_format($official_ci_unit_price_usd, 2, '.', ','); ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;">US$<?php echo number_format($total_amount_usd, 2, '.', ','); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $sr_no++; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars($product['product_name'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $official_ci_qty; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">US$<?php echo number_format($official_ci_unit_price_usd, 2, '.', ','); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">US$<?php echo number_format($total_amount_usd, 2, '.', ','); ?></td>
         </tr>
         <?php 
             endforeach; 
@@ -272,12 +272,12 @@ if (empty($invoice_date_formatted)) {
         }
         ?>
         <tr>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;">Total</td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"><?php echo $total_qty; ?></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;"></td>
-          <td style="text-align: center;padding: 3px; line-height: 1.0; height: auto;border:1px solid; font-size: 10px; color: #000; font-weight: bold;">US$<?php echo number_format($total_amount, 2, '.', ','); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">Total</td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $total_qty; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">US$<?php echo number_format($total_amount, 2, '.', ','); ?></td>
         </tr>
       </tfoot>
     </table>
@@ -287,8 +287,8 @@ if (empty($invoice_date_formatted)) {
       <tbody>
         <tr>
           <td style="width:50%;text-align: left; padding: 5px 3px; line-height: 1.3;">
-            <span style="color: #000; font-size: 12px; font-weight: bold;">BANK DETAILS</span><br><br>
-            <span style="color: #000; font-size: 11px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 12px;">BANK DETAILS</span><br><br>
+            <span class="bold-text" style="color: #000; font-size: 11px;">
               <?php if (!empty($supplier['beneficiary'])): ?>
               1. BENEFICIARY: <?php echo htmlspecialchars($supplier['beneficiary']); ?><br>
               <?php else: ?>
@@ -313,7 +313,7 @@ if (empty($invoice_date_formatted)) {
                 <img src="<?= $stamp_image; ?>" style="max-width: 150px; height: auto; margin-top: 10px;" >
                 <br><br>
               <?php endif; ?>
-              <span style="color: #000; font-size: 12px; font-weight: bold;">
+              <span class="bold-text" style="color: #000; font-size: 12px;">
                 BUYER: <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : '-'; ?>
               </span>
             </td>
@@ -326,7 +326,7 @@ if (empty($invoice_date_formatted)) {
       <tbody>
         <tr>
           <td style="width:50%;text-align: left; padding: 10px 3px; line-height: 1.2; vertical-align: top;">
-            <span style="color: #000; font-size: 12px; font-weight: bold;">
+            <span class="bold-text" style="color: #000; font-size: 12px;">
               SELLER: <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : '-'; ?>
             </span>
           </td>

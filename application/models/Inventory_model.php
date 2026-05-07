@@ -14384,19 +14384,6 @@ public function get_sales_return_reports()
 				$path_info[] = 'uploads/invoices/' . $pdfname;
 				unset($pdf);
 
-				// test
-			  // $receipt_no = sprintf('%05d', $id);
-				// $page_data['data'] = $item;
-				// $html_content = $this->load->view('invoice/po/packing_list', $page_data, TRUE);
-				// $this->pdf->set_paper("A4", "portrait");
-				// $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
-				// $this->pdf->load_html($html_content);
-				// // echo $html_content; exit();
-				// $this->pdf->render();
-				// $pdfname = 'invoice_' . $receipt_no . '.pdf';
-				// $this->pdf->stream($pdfname, array("Attachment" => 0));
-				// exit();
-
 				/* ================= COMMERCIAL INVOICE 1 ================= */
 				ob_clean();
 				$item['invoice_type'] = '1';
@@ -14410,6 +14397,19 @@ public function get_sales_return_reports()
 				file_put_contents($path . $pdfname, $pdf->output());
 				$path_info[] = 'uploads/invoices/' . $pdfname;
 				unset($pdf);
+
+				// test
+			  // $receipt_no = sprintf('%05d', $id);
+				// $page_data['data'] = $item;
+				// $html_content = $this->load->view('invoice/po/commercial', $page_data, TRUE);
+				// $this->pdf->set_paper("A4", "portrait");
+				// $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
+				// $this->pdf->load_html($html_content);
+				// // echo $html_content; exit();
+				// $this->pdf->render();
+				// $pdfname = 'invoice_' . $receipt_no . '.pdf';
+				// $this->pdf->stream($pdfname, array("Attachment" => 0));
+				// exit();
 
 				/* ================= COMMERCIAL INVOICE 2 ================= */
 				ob_clean();
