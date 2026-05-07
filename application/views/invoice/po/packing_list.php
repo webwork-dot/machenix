@@ -257,7 +257,9 @@ $total_cbm = 0;
         <tr>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $sr_no++; ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo htmlspecialchars($product['product_name'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>>
+            <?php echo htmlspecialchars(explode('(', $product['product_name'])[0] ?? '-'); ?>
+          </td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $official_ci_qty; ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
@@ -273,16 +275,16 @@ $total_cbm = 0;
                 // Display remaining variations (if any)
                 if ($variation_count > 1) {
                     for ($i = 1; $i < $variation_count; $i++) {
-                        $variation = $variations[$i];
-                        $pkg_ctn = isset($variation['pkg_ctn']) ? floatval($variation['pkg_ctn']) : 0;
-                        $nw_kg = isset($variation['nw_kg']) ? floatval($variation['nw_kg']) : 0;
-                        $gw_kg = isset($variation['gw_kg']) ? floatval($variation['gw_kg']) : 0;
-                        $length = isset($variation['length']) ? floatval($variation['length']) : 0;
-                        $width = isset($variation['width']) ? floatval($variation['width']) : 0;
-                        $height = isset($variation['height']) ? floatval($variation['height']) : 0;
-                        $total_nw = isset($variation['total_nw_kg']) ? floatval($variation['total_nw_kg']) : 0;
-                        $total_gw = isset($variation['total_gw_kg']) ? floatval($variation['total_gw_kg']) : 0;
-                        $total_cbm_val = isset($variation['total_cbm_value']) ? floatval($variation['total_cbm_value']) : 0;
+                      $variation = $variations[$i];
+                      $pkg_ctn = isset($variation['pkg_ctn']) ? floatval($variation['pkg_ctn']) : 0;
+                      $nw_kg = isset($variation['nw_kg']) ? floatval($variation['nw_kg']) : 0;
+                      $gw_kg = isset($variation['gw_kg']) ? floatval($variation['gw_kg']) : 0;
+                      $length = isset($variation['length']) ? floatval($variation['length']) : 0;
+                      $width = isset($variation['width']) ? floatval($variation['width']) : 0;
+                      $height = isset($variation['height']) ? floatval($variation['height']) : 0;
+                      $total_nw = isset($variation['total_nw_kg']) ? floatval($variation['total_nw_kg']) : 0;
+                      $total_gw = isset($variation['total_gw_kg']) ? floatval($variation['total_gw_kg']) : 0;
+                      $total_cbm_val = isset($variation['total_cbm_value']) ? floatval($variation['total_cbm_value']) : 0;
         ?>
         <tr>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>

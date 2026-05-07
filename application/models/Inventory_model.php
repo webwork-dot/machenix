@@ -465,6 +465,12 @@ class Inventory_model extends CI_Model
 				"message" => 'supplier Name Duplication'
 			);
 		} else {
+			$country_id = $this->input->post('country_id');
+			if ($country_id != '') {
+				$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+			} else {
+				$country_name = '';
+			}
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
 				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
@@ -496,6 +502,8 @@ class Inventory_model extends CI_Model
 			$data['swift_code']       = clean_and_escape($this->input->post('swift_code'));
 			$user_id                = $this->session->userdata('super_user_id');
 			$user_name              = $this->session->userdata('super_name');
+			$data['country_id']    = $country_id;
+			$data['country_name']    = $country_name;
 			$data['state_id']    = $state_id;
 			$data['state_name']    = $state_name;
 			$data['city_id']    = $city_id;
@@ -551,6 +559,12 @@ class Inventory_model extends CI_Model
 			);
 		} else {
 
+			$country_id = $this->input->post('country_id');
+			if ($country_id != '') {
+				$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+			} else {
+				$country_name = '';
+			}
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
 				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
@@ -580,6 +594,8 @@ class Inventory_model extends CI_Model
 			$data['bank_address']       = clean_and_escape($this->input->post('bank_address'));
 			$data['swift_code']       = clean_and_escape($this->input->post('swift_code'));
 			$data['company_id']    = $this->session->userdata('company_id');
+			$data['country_id']    = $country_id;
+			$data['country_name']    = $country_name;
 			$data['state_id']    = $state_id;
 			$data['state_name']    = $state_name;
 			$data['city_id']    = $city_id;
@@ -14803,7 +14819,7 @@ public function get_sales_return_reports()
 										SUM(pp.actual_qty * pp.actual_inr) as total_actual_inr,
 										COALESCE(MAX(CONCAT(u.first_name, ' ', IFNULL(u.last_name, ''))), MAX(invh.added_by_name)) as added_by_name
 									FROM purchase_order po
-									JOIN po_products pp ON po.id = pp.parent_id
+									JOIN purchase_in_product pp ON po.id = pp.parent_id
 									LEFT JOIN inventory_history invh ON po.id = invh.order_id AND invh.status IN ('in', 'Purchase In Updated')
 									LEFT JOIN sys_users u ON invh.added_by_id = u.id
 									WHERE pp.supplier_id = '$supplier_id'

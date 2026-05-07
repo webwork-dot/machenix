@@ -304,6 +304,7 @@ class Inventory extends CI_Controller
         }
 
         $page_data['states']     = $this->crud_model->get_states();
+        $page_data['countries']     = $this->crud_model->get_countries();
 
         if ($param1 == 'supplier_add') {
             $page_data['page_name']  = 'supplier_add';

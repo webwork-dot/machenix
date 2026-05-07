@@ -17,8 +17,8 @@ $pincode = trim($supplier['pincode'] ?? '');
 $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
-  rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
+  rel="stylesheet"> -->
 
 <style>
   .supplier-card-shell,

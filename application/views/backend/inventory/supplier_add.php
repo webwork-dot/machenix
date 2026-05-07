@@ -75,6 +75,16 @@
           </div>
 
           <div class="col-12 col-sm-4 mb-1">
+            <label class="form-label" for="country">Select Country </label>
+            <select class=" form-select select2 country_id" name="country_id">
+              <option value="">Select Country</option>
+              <?php foreach($countries as $country){?>
+              <option value="<?php echo $country['id'];?>"><?php echo $country['name'];?></option>
+              <?php }?>
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
             <label class="form-label" for="state">Select State </label>
             <select class=" form-select select2 state_id" name="state_id" onchange="get_city_(this.value);">
               <option value="">Select State</option>

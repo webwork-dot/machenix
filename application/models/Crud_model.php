@@ -322,6 +322,23 @@ class Crud_model extends CI_Model
     
 
     
+    public function get_countries(){
+        $resultdata=array();
+        $query = $this->db->query("SELECT id, name  FROM `countries` ORDER BY id asc");
+        if (!empty($query)) { 
+            $data=array();
+            foreach ($query->result_array() as $item) {
+                $resultdata[] = array(
+                 "id"   => $item['id'],
+                 "name" => $item['name'],
+              );
+        
+            }
+        }
+        
+      return $resultdata;
+    }
+    
     public function get_states(){
         $resultdata=array();
         $query = $this->db->query("SELECT id, state  FROM `state_list` ORDER BY id asc");

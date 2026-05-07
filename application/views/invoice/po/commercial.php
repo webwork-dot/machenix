@@ -257,7 +257,7 @@ if (empty($invoice_date_formatted)) {
         ?>
         <tr>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $sr_no++; ?></td>
-          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars($product['product_name'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars(explode('(', $product['product_name'])[0] ?? '-'); ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $official_ci_qty; ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">US$<?php echo number_format($official_ci_unit_price_usd, 2, '.', ','); ?></td>

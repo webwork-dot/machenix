@@ -73,6 +73,16 @@
                      <input type="text" class="form-control" placeholder="Enter GST No." name="gst_no" value="<?php echo $data['gst_no']; ?>">
                </div>
             </div>
+
+            <div class="col-12 col-sm-4 mb-1">
+              <label class="form-label" for="country">Select Country </label>
+              <select class=" form-select select2 country_id" name="country_id">
+                <option value="">Select Country</option>
+                <?php foreach($countries as $country){?>
+                <option value="<?php echo $country['id'];?>" <?php if($country['id'] == $data['country_id']){ echo 'selected'; } ?>><?php echo $country['name'];?></option>
+                <?php }?>
+              </select>
+            </div>
             
             <div class="col-12 col-sm-4 mb-1">
               <label class="form-label" for="state">Select State </label>

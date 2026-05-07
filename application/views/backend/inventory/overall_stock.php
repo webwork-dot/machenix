@@ -37,43 +37,34 @@
 </style>
 
 <div class="row" id="table-bordered">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header pb-0">
-                <h4 class="card-title">Overall Stock Overview</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-12">
-                        <p class="mb-0">
-                            <b>Total Entries: <span id="total_count">(0)</span></b>
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-datatable table-responsive mb-2">
-                <table class="table table-bordered table-hover" id="report-datatable">
-                    <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <!-- <th>Company</th>
-                            <th>Warehouse</th> -->
-                            <th>Product Name</th>
-                            <th>Quantity</th>
-                            <!-- <th>PO Qty</th>
-                            <th>Priority Qty</th>
-                            <th>Loading Qty</th>
-                            <th>With Exp Cost</th>
-                            <th>Without Exp Cost</th>
-                            <th>Official Cost in INR</th> -->
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                </table>
-            </div>
+ 
+  <div class="col-12">
+    <div class="card" style="border-top-left-radius: 0;">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-12 mt-10">
+            <h5 class="mb-0"><b>Total Entries <span id="total_count"> (0)</span></b>
+            </h5>
+          </div>
         </div>
+      </div>
+      <div class="card-datatable d-report mb-2">
+
+        <table class="table leads-table" id="report-datatable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product Name</th>
+              <th>Quantity</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+        </table>
+
+      </div>
+
     </div>
+  </div>
 </div>
 
 <!-- PO List Modal -->
@@ -129,36 +120,37 @@
         var dataTable = $('#report-datatable').DataTable({
             "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
+            "sDom": 'rt<"dtPagination"lp><"clear">',
+            "pagingType": "simple_numbers",
             "processing": true,
+            'scrollX': true,
             "serverSide": true,
-            "pageLength": 25,
-            "lengthMenu": [10, 25, 50, 100],
+            "lengthChange": true,
             "language": {
-                sLengthMenu: "_MENU_",
-                processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
+            sLengthMenu: "_MENU_",
+            'processing': $('.loader').show()
+            },
+            "drawCallback": function(settings, json) {
+                $('[data-toggle="tooltip"]').tooltip('update');
             },
             "ajax": {
                 "url": "<?php echo base_url('inventory/get_overall_stock'); ?>",
+                "dataType": "json",
                 "type": "POST",
-                "beforeSend": function () {
+                "data": function(data) {
+                    // data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+                },
+                "beforeSend": function() {
                     $('.loader').show();
                 },
-                "complete": function () {
+                "complete": function() {
                     $('.loader').hide();
                 }
             },
             "columns": [
                 { "data": "sr_no" },
-                // { "data": "company" },
-                // { "data": "warehouse" },
                 { "data": "product_name" },
                 { "data": "quantity" },
-                // { "data": "po_qty" },
-                // { "data": "priority_qty" },
-                // { "data": "loading_qty" },
-                // { "data": "with_exp_cost" },
-                // { "data": "without_exp_cost" },
-                // { "data": "official_cost_inr" },
                 { "data": "action" }
             ],
             "buttons": [
