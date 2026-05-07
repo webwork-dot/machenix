@@ -728,7 +728,7 @@ class Common_model extends CI_Model{
     }
 	
 	public function get_batch_product_1($product_id,$warehouse_id)   {
-        $resultdata = array();
+       $resultdata = array();
        $query = $this->db->query("SELECT warehouse_name,product_name,product_id,categories,item_code,SUM(quantity) as quantity FROM inventory WHERE warehouse_id='$warehouse_id' and id='$product_id' group by product_id LIMIT 1");
 	//    echo $this->db->last_query(); exit();
         if ($query->num_rows() > 0) {

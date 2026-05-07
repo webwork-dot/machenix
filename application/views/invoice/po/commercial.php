@@ -124,7 +124,7 @@ if (empty($invoice_date_formatted)) {
 <body>
   <div style="background: none repeat scroll 0 0 #ffffff;margin: 0 auto;width: 100%;padding: 0px 55px;">
     <!-- Company Header (Seller) -->
-    <table style="width: 100%; margin-bottom: 10px;">
+    <table style="width: 100%;">
       <tbody>
         <tr>
           <td style="text-align: center; padding: 0px 3px; line-height: 1.2;">
@@ -159,7 +159,7 @@ if (empty($invoice_date_formatted)) {
     </table>
 
     <!-- Commercial Invoice Title -->
-    <table style="width: 100%; margin-bottom: 15px;">
+    <table style="width: 100%;">
       <tbody>
         <tr>
           <td style="width:100%;text-align: center;padding: 8px 3px; line-height: 0.75; height: auto;" colspan="6">
@@ -174,28 +174,42 @@ if (empty($invoice_date_formatted)) {
       <tbody>
         <tr>
           <td style="width:50%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
-            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Buyer:</span> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">Buyer:</span> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?>
+            </span><br>
             <?php if (!empty($company_address)): ?>
             <span class="bold-text" style="color: #000;font-size: 11px;">
               <span class="bold-text">Add:</span> <?php echo htmlspecialchars($company_address); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($company_info['contact_no'])): ?>
-            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Tel:</span> <?php echo htmlspecialchars($company_info['contact_no']); ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">Tel:</span> <?php echo htmlspecialchars($company_info['contact_no']); ?>
+            </span><br>
             <?php endif; ?>
             <?php if (!empty($company_info['email'])): ?>
-            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">E-mail:</span> <?php echo htmlspecialchars($company_info['email']); ?></span>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">E-mail:</span> <?php echo htmlspecialchars($company_info['email']); ?>
+            </span>
             <?php endif; ?>
           </td>
           <td style="width:50%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
             <?php if (!empty($invoice_no)): ?>
-            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">C/I No:</span> <?php echo htmlspecialchars($invoice_no); ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">C/I No:</span> <?php echo htmlspecialchars($invoice_no); ?>
+            </span><br>
             <?php endif; ?>
-            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Date:</span> <?php echo $invoice_date_formatted; ?></span><br>
-            <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Terms Of Price:</span> <?php echo htmlspecialchars($price_terms); ?></span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">Date:</span> <?php echo $invoice_date_formatted; ?>
+            </span><br>
+            <span class="bold-text" style="color: #000;font-size: 11px;">
+              <span class="bold-text">Terms Of Price:</span> <?php echo htmlspecialchars($price_terms); ?>
+            </span><br>
             <?php if ($invoice_type == '1'): ?>
-              <span class="bold-text" style="color: #000;font-size: 11px;"><span class="bold-text">Terms Of Payment:</span> <?php echo htmlspecialchars($payment_terms); ?></span>
-              <?php endif; ?>
+              <span class="bold-text" style="color: #000;font-size: 11px;">
+                <span class="bold-text">Terms Of Payment:</span> <?php echo htmlspecialchars($payment_terms); ?>
+              </span>
+            <?php endif; ?>
           </td>
         </tr>
       </tbody>
@@ -283,7 +297,7 @@ if (empty($invoice_date_formatted)) {
     </table>
 
     <!-- Bank Details Section -->
-    <table style="width: 100%; margin-top: 20px; margin-bottom: 20px;">
+    <table style="width: 100%; margin-top: 10px; margin-bottom: 10px;">
       <tbody>
         <tr>
           <td style="width:50%;text-align: left; padding: 5px 3px; line-height: 1.3;">
@@ -322,7 +336,7 @@ if (empty($invoice_date_formatted)) {
     </table>
 
     <!-- Seller and Buyer Section at Bottom with Stamp -->
-    <table style="width: 100%; margin-top: 30px;">
+    <table style="width: 100%; ">
       <tbody>
         <tr>
           <td style="width:50%;text-align: left; padding: 10px 3px; line-height: 1.2; vertical-align: top;">
@@ -330,7 +344,6 @@ if (empty($invoice_date_formatted)) {
               SELLER: <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : '-'; ?>
             </span>
           </td>
-          
         </tr>
       </tbody>
     </table>

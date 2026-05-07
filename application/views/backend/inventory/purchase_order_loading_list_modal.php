@@ -849,9 +849,9 @@
                                 <th style="width: 200px;">Product Name</th>
                                 <th style="width: 100px;">Priority List <br> (Qty)</th>
                                 <th style="width: 100px;">Loading Qty <br> (PCS)</th>
+                                <th style="width: 100px;">Unit Price <br> (RMB)</th>
                                 <th style="width: 80px;">Official CI <br> Qty</th>
                                 <th style="width: 80px;">Black Qty</th>
-                                <th style="width: 100px;">Unit Price <br> (RMB)</th>
                                 <th style="width: 110px;">Total Amount <br> (RMB)</th>
                                 <th style="width: 130px;">Official CI <br>Unit Price (USD)</th>
                                 <th style="width: 110px;">Total Amount <br> (USD)</th>
@@ -872,9 +872,9 @@
                                 <td colspan="4" style="text-align: right; padding: 10px; color: #000;"><strong>Grand Total:</strong></td>
                                 <td class="grand-total-priority-qty" style="color: #000;">0</td>
                                 <td class="grand-total-loading-qty" style="color: #000;">0</td>
+                                <td class="grand-total-unit-price-rmb" style="color: #000;"></td>
                                 <td class="grand-total-official-ci-qty" style="color: #000;">0</td>
                                 <td class="grand-total-black-qty" style="color: #000;">0</td>
-                                <td class="grand-total-unit-price-rmb" style="color: #000;"></td>
                                 <td class="grand-total-amount-rmb" style="color: #000;">0.00</td>
                                 <td class="grand-total-official-ci-unit-price-usd" style="color: #000;">0.00</td>
                                 <td class="grand-total-amount-usd" style="color: #000;">0.00</td>

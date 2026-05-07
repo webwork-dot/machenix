@@ -14371,6 +14371,19 @@ public function get_sales_return_reports()
 			foreach ($export_data as $item) {
 				$receipt_no = sprintf('%02d', $item['id']) . rand(100, 999);
 
+				// Test PDF - Uncomment the code below and change the pdf file name if needed
+			  // $receipt_no = sprintf('%05d', $id);
+				// $page_data['data'] = $item;
+				// $html_content = $this->load->view('invoice/po/packing_list', $page_data, TRUE);
+				// $this->pdf->set_paper("A4", "portrait");
+				// $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
+				// $this->pdf->load_html($html_content);
+				// // echo $html_content; exit();
+				// $this->pdf->render();
+				// $pdfname = 'invoice_' . $receipt_no . '.pdf';
+				// $this->pdf->stream($pdfname, array("Attachment" => 0));
+				// exit();
+
 				/* ================= PACKING LIST ================= */
 				ob_clean();
 				$page_data['data'] = $item;
@@ -14398,19 +14411,6 @@ public function get_sales_return_reports()
 				$path_info[] = 'uploads/invoices/' . $pdfname;
 				unset($pdf);
 
-				// test
-			  // $receipt_no = sprintf('%05d', $id);
-				// $page_data['data'] = $item;
-				// $html_content = $this->load->view('invoice/po/commercial', $page_data, TRUE);
-				// $this->pdf->set_paper("A4", "portrait");
-				// $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
-				// $this->pdf->load_html($html_content);
-				// // echo $html_content; exit();
-				// $this->pdf->render();
-				// $pdfname = 'invoice_' . $receipt_no . '.pdf';
-				// $this->pdf->stream($pdfname, array("Attachment" => 0));
-				// exit();
-
 				/* ================= COMMERCIAL INVOICE 2 ================= */
 				ob_clean();
 				$item['invoice_type'] = '2';
@@ -14426,7 +14426,6 @@ public function get_sales_return_reports()
 				unset($pdf);
 			}
 
-			// exit();
 			/* ================= CREATE ZIP ================= */
 			$this->load->library('zip');
 			$zip_name = 'invoices_' . date('Ymd_His') . '_' . rand(1000,9999) . '.zip';
