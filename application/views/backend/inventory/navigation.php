@@ -297,7 +297,7 @@
         <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit') echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
                 <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">My Company</span>
+                <span class="menu-title text-truncate">My Vendors</span>
             </a>
         </li>
         <?php } ?>

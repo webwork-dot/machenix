@@ -429,11 +429,11 @@ class Crud_model extends CI_Model
         
         if (!empty($query)) {
             foreach ($query->result_array() as $item) {
-                $id=$item['id'];
-                $role_id=$item['role_id'];
-                if($item['status']== 1){
+                $id = $item['id'];
+                $role_id = $item['role_id'];
+                if($item['status'] == 1) {
                     $status='<div class="chip chip-success"><div class="chip-body"><span class="chip-text">Active</span></div></div>';   
-                }else{
+                } else {
                     $status='<div class="chip chip-danger"><div class="chip-body"><span class="chip-text">Inactive</span></div></div>';
                 }
                 

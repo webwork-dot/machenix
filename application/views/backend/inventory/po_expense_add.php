@@ -23,6 +23,14 @@
 
           <div class="col-12 col-sm-4 mb-1">
             <div class="form-group">
+              <label>Suppliers <span class="required">*</span></label>
+              <select class="form-control select2" name="supplier_id[]" id="supplier_id" multiple="multiple" required>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
               <label>Vendor <span class="required">*</span></label>
               <select class="form-control select2" name="company_id" id="company_id" required>
                 <option value="">Select</option>
@@ -56,7 +64,7 @@
             </div>
           </div>
 
-           <div class="col-md-4 mb-1">
+          <div class="col-md-4 mb-1 gst-type-container">
             <div class="form-group">
               <label><?php echo get_phrase('gst_type'); ?> <span class="required">*</span></label>
               <select class="form-control" name="gst_type" id="gst_type" >
@@ -67,53 +75,10 @@
             </div>
           </div>
 
-          <div class="col-md-4 mb-1" id="payment_type_div">
-            <div class="form-group">
-              <label><?php echo get_phrase('payment_type'); ?> <span class="required">*</span></label>
-              <select class="form-control" name="payment_type" id="payment_type" onchange="check_provider(this.value)" required>
-                <option value="">Select</option>
-                <option value="Cheque">Cheque</option>
-                <option value="RTGS">RTGS</option>
-                <option value="NEFT">NEFT</option>
-                <option value="IMPS">IMPS</option>
-                <option value="UPI">UPI</option>
-                <option value="CASH">CASH</option>
-                <option value="CARD">CARD</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="col-md-12" id="check" style="display:none">
-            <div class="row">
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="control-label"><span class="check"></span> No.</label>
-                  <input type="text" name="cheque_no" class="form-control">
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label><?php echo get_phrase('company_bank_name'); ?> </label>
-                  <input type="text" name="company_bank_name" class="form-control">
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="control-label"><span class="check"></span> Received Date</label>
-                  <input type="date" class="form-control required" name="cheque_recv_date"
-                         value="<?php echo date('Y-m-d');?>" id="date_picker">
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="col-md-4 mb-1">
             <div class="form-group">
-              <label class="control-label"><span class="check"></span> Date <span class="required">*</span></label>
-              <input type="date" class="form-control required" name="cheque_date"
-                     value="<?php echo date('Y-m-d');?>" id="date_picker" required>
+              <label class="control-label"> Expense Date <span class="required">*</span></label>
+              <input type="date" class="form-control required" name="expense_date" value="<?php echo !empty($po_exp['expense_date']) ? $po_exp['expense_date'] : date('Y-m-d');?>" id="expense_date" required>
             </div>
           </div>
 
@@ -138,8 +103,8 @@
                     <th style="width:70px">Sr No</th>
                     <th>Name <span class="required">*</span></th>
                     <th style="width:100px">Amount </th>
-                    <th style="width:100px">GST (In %)</th>
-                    <th style="width:100px">GST Amount</th>
+                    <th style="width:100px" class="gst-column">GST (In %)</th>
+                    <th style="width:100px" class="gst-column">GST Amount</th>
                     <th style="width:100px">Total Amount<span class="required">*</span></th>
                     <th style="width:100px">Action</th>
                   </tr>
@@ -153,16 +118,14 @@
                     </td>
 
                     <td>
-                      <input type="number" name="amount[]" class="form-control amount"
-                             min="0" step="0.01">
+                      <input type="number" name="amount[]" class="form-control amount" min="0" step="0.01">
                     </td>
 
-                    <td>
-                      <input type="number" name="gst[]" class="form-control gst"
-                             min="0" max="100" step="0.01" placeholder="0">
+                    <td class="gst-column">
+                      <input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0">
                     </td>
 
-                    <td>
+                    <td class="gst-column">
                       <input type="text" name="gst_amt[]" class="form-control gst_amt" readonly>
                     </td>
 
@@ -194,7 +157,7 @@
                     </td>
                   </tr>
 
-                  <tr>
+                  <tr class="gst-total-row">
                     <td class="text-right">
                       <label>GST Amount</label>
                     </td>
@@ -211,7 +174,6 @@
                       <input type="text" name="grand_total" id="grand_total" class="form-control" readonly>
                       <!-- Optional hidden fields if your backend still expects old names -->
                       <input type="hidden" name="final_amount" id="final_amount_hidden">
-                      <input type="hidden" name="cheque_amount" id="cheque_amount_hidden">
                     </td>
                   </tr>
                 </tbody>
@@ -234,17 +196,6 @@
 </div>
 
 <script>
-function check_provider(provider) {
-  if (provider === 'CASH') {
-    $('#check').hide();
-    $('.check').html('');
-    $('.required').removeAttr('required');
-  } else {
-    $('#check').show();
-    $('.check').html(provider);
-    $('.required').prop('required', true);
-  }
-}
 
 $(function () {
   const $tbody = $('#expenseTable tbody');
@@ -343,7 +294,6 @@ $(function () {
 
     // if backend expects these:
     $('#final_amount_hidden').val(money(grandTotal));
-    $('#cheque_amount_hidden').val(money(grandTotal));
   }
 
   // ---------- events ----------
@@ -364,15 +314,68 @@ $(function () {
     updateTotals();
   });
 
+  $('#batch_no').on('change', function() {
+    const batchNo = $(this).val();
+    const $supplierSelect = $('#supplier_id');
+    
+    $supplierSelect.empty().append('<option value="">Loading...</option>').trigger('change');
+    
+    if (batchNo) {
+      $.ajax({
+        url: '<?php echo base_url("inventory/get_suppliers_by_batch"); ?>',
+        type: 'POST',
+        data: { batch_no: batchNo },
+        dataType: 'json',
+        success: function(data) {
+          $supplierSelect.empty();
+          if (data.length > 0) {
+            data.forEach(supplier => {
+              $supplierSelect.append(new Option(supplier.name, supplier.id));
+            });
+          }
+          $supplierSelect.trigger('change');
+        }
+      });
+    } else {
+      $supplierSelect.empty().trigger('change');
+    }
+  });
+
+  function toggleGstFields() {
+    const type = $('#po_type').val();
+    const isOfficial = (type === 'official');
+
+    if (isOfficial) {
+      $('.gst-type-container').show();
+      $('.gst-column').show();
+      $('.gst-total-row').show();
+      $('#gst_type').prop('required', true);
+    } else {
+      $('.gst-type-container').hide();
+      $('.gst-column').hide();
+      $('.gst-total-row').hide();
+      $('#gst_type').prop('required', false).val('');
+      
+      // Reset GST values to 0 for unofficial
+      $('.gst').val(0);
+      $('.gst_amt').val('0.00');
+      updateTotals();
+    }
+  }
+
+  $('#po_type').on('change', toggleGstFields);
+
   // add row
   $('#addExpenseRow').on('click', function () {
+    const isOfficial = ($('#po_type').val() === 'official');
+    const displayStyle = isOfficial ? '' : 'style="display:none"';
     const newRow = `
       <tr class="expense-row">
         <td class="sr-no text-center"></td>
         <td><input type="text" name="expense_name[]" class="form-control expense_name" required></td>
         <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
-        <td><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"></td>
-        <td><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
+        <td class="gst-column" ${displayStyle}><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="0"></td>
+        <td class="gst-column" ${displayStyle}><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
         <td><input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required></td>
         <td class="text-center">
           <button type="button" class="btn btn-sm btn-outline-danger removeExpenseRow">Remove</button>
@@ -394,6 +397,7 @@ $(function () {
   // init
   renumberRows();
   updateTotals();
+  toggleGstFields();
 });
 
 </script>

@@ -11,12 +11,9 @@ $selected_vendor  = $po_exp['vendor_id']     ?? ($po_exp['company_id'] ?? '');
 $selected_type    = $po_exp['type']          ?? '';
 $selected_expense = $po_exp['expense_type']  ?? '';
 $selected_gsttype = $po_exp['gst_type']      ?? '';
-$selected_paytype = $po_exp['payment_type']  ?? '';
+$selected_suppliers = !empty($po_exp['supplier_id']) ? explode(',', $po_exp['supplier_id']) : [];
 
-$cheque_no        = $po_exp['cheque_no']          ?? '';
-$bank_name        = $po_exp['company_bank_name']  ?? '';
-$recv_date        = !empty($po_exp['cheque_recv_date']) ? $po_exp['cheque_recv_date'] : date('Y-m-d');
-$cheque_date      = !empty($po_exp['cheque_date'])      ? $po_exp['cheque_date']      : date('Y-m-d');
+$expense_date      = !empty($po_exp['expense_date'])      ? $po_exp['expense_date']      : date('Y-m-d');
 $narration        = $po_exp['narration'] ?? '';
 
 $sub_total  = isset($po_exp['sub_total'])   ? number_format((float)$po_exp['sub_total'], 2, '.', '')   : '';
@@ -51,6 +48,14 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                     <?php echo html_escape($vno); ?>
                   </option>
                 <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Suppliers <span class="required">*</span></label>
+              <select class="form-control select2" name="supplier_id[]" id="supplier_id" multiple="multiple" required>
               </select>
             </div>
           </div>
@@ -96,7 +101,7 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
             </div>
           </div>
 
-          <div class="col-md-4 mb-1">
+          <div class="col-md-4 mb-1 gst-type-container">
             <div class="form-group">
               <label><?php echo get_phrase('gst_type'); ?> <span class="required">*</span></label>
               <select class="form-control" name="gst_type" id="gst_type" required>
@@ -107,52 +112,11 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
             </div>
           </div>
 
-          <div class="col-md-4 mb-1" id="payment_type_div">
-            <div class="form-group">
-              <label><?php echo get_phrase('payment_type'); ?> <span class="required">*</span></label>
-              <select class="form-control" name="payment_type" id="payment_type" onchange="check_provider(this.value)" required>
-                <option value="">Select</option>
-                <?php
-                  $payTypes = ['Cheque','RTGS','NEFT','IMPS','UPI','CASH','CARD'];
-                  foreach ($payTypes as $pt):
-                ?>
-                  <option value="<?php echo $pt; ?>" <?php echo ($selected_paytype === $pt) ? 'selected' : ''; ?>>
-                    <?php echo $pt; ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-          </div>
-
-          <div class="col-md-12" id="check" style="display:none">
-            <div class="row">
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="control-label"><span class="check"></span> No.</label>
-                  <input type="text" name="cheque_no" class="form-control" value="<?php echo html_escape($cheque_no); ?>">
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label><?php echo get_phrase('company_bank_name'); ?></label>
-                  <input type="text" name="company_bank_name" class="form-control" value="<?php echo html_escape($bank_name); ?>">
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="control-label"><span class="check"></span> Received Date</label>
-                  <input type="date" class="form-control" name="cheque_recv_date" value="<?php echo html_escape($recv_date); ?>" id="cheque_recv_date">
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div class="col-md-4 mb-1">
             <div class="form-group">
-              <label class="control-label"><span class="check"></span> Date <span class="required">*</span></label>
-              <input type="date" class="form-control" name="cheque_date" value="<?php echo html_escape($cheque_date); ?>" id="cheque_date" required>
+              <label class="control-label"> Expense Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expense_date" value="<?php echo html_escape($expense_date); ?>" id="expense_date" required>
             </div>
           </div>
 
@@ -177,8 +141,8 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                     <th style="width:70px">Sr No</th>
                     <th>Name <span class="required">*</span></th>
                     <th style="width:100px">Amount</th>
-                    <th style="width:100px">GST (In %)</th>
-                    <th style="width:100px">GST Amount</th>
+                    <th style="width:100px" class="gst-column">GST (In %)</th>
+                    <th style="width:100px" class="gst-column">GST Amount</th>
                     <th style="width:100px">Total Amount <span class="required">*</span></th>
                     <th style="width:100px">Action</th>
                   </tr>
@@ -199,19 +163,16 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                                  value="<?php echo number_format((float)($row['amount'] ?? 0), 2, '.', ''); ?>">
                         </td>
 
-                        <td>
-                          <input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"
-                                 value="<?php echo number_format((float)($row['gst'] ?? 0), 2, '.', ''); ?>">
+                        <td class="gst-column">
+                          <input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="<?php echo number_format((float)($row['gst'] ?? 0), 2, '.', ''); ?>">
+                        </td>
+
+                        <td class="gst-column">
+                          <input type="text" name="gst_amt[]" class="form-control gst_amt" readonly value="<?php echo number_format((float)($row['gst_amt'] ?? 0), 2, '.', ''); ?>">
                         </td>
 
                         <td>
-                          <input type="text" name="gst_amt[]" class="form-control gst_amt" readonly
-                                 value="<?php echo number_format((float)($row['gst_amt'] ?? 0), 2, '.', ''); ?>">
-                        </td>
-
-                        <td>
-                          <input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required
-                                 value="<?php echo number_format((float)($row['total_amt'] ?? 0), 2, '.', ''); ?>">
+                          <input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required value="<?php echo number_format((float)($row['total_amt'] ?? 0), 2, '.', ''); ?>">
                         </td>
 
                         <td class="text-center">
@@ -228,8 +189,8 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                       <td class="sr-no text-center">1</td>
                       <td><input type="text" name="expense_name[]" class="form-control expense_name" required></td>
                       <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
-                      <td><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"></td>
-                      <td><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
+                      <td class="gst-column"><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"></td>
+                      <td class="gst-column"><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
                       <td><input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required></td>
                       <td class="text-center"><span class="text-muted">—</span></td>
                     </tr>
@@ -249,7 +210,7 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                     <td><input type="text" name="sub_total" id="sub_total" class="form-control" readonly value="<?php echo html_escape($sub_total); ?>"></td>
                   </tr>
 
-                  <tr>
+                  <tr class="gst-total-row">
                     <td class="text-right"><label>GST Amount</label></td>
                     <td><input type="text" name="gst_total" id="gst_total" class="form-control" readonly value="<?php echo html_escape($gst_total); ?>"></td>
                   </tr>
@@ -259,7 +220,6 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                     <td>
                       <input type="text" name="grand_total" id="grand_total" class="form-control" readonly value="<?php echo html_escape($grand_total); ?>">
                       <input type="hidden" name="final_amount" id="final_amount_hidden" value="<?php echo html_escape($grand_total); ?>">
-                      <input type="hidden" name="cheque_amount" id="cheque_amount_hidden" value="<?php echo html_escape($grand_total); ?>">
                     </td>
                   </tr>
                 </tbody>
@@ -282,30 +242,6 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
 </div>
 
 <script>
-function check_provider(provider) {
-  // only affect cheque section fields (don’t touch other required fields)
-  const $check = $('#check');
-  const $chequeNo = $('input[name="cheque_no"]');
-  const $recvDate = $('input[name="cheque_recv_date"]');
-
-  if (provider === 'CASH') {
-    $check.hide();
-    $('.check').html('');
-    $chequeNo.prop('required', false);
-    $recvDate.prop('required', false);
-  } else if (provider) {
-    $check.show();
-    $('.check').html(provider);
-    // if you want these required for non-cash, enable:
-    // $chequeNo.prop('required', true);
-    // $recvDate.prop('required', true);
-  } else {
-    $check.hide();
-    $('.check').html('');
-    $chequeNo.prop('required', false);
-    $recvDate.prop('required', false);
-  }
-}
 
 $(function () {
   const $tbody = $('#expenseTable tbody');
@@ -405,7 +341,6 @@ $(function () {
     $('#grand_total').val(money(grandTotal));
 
     $('#final_amount_hidden').val(money(grandTotal));
-    $('#cheque_amount_hidden').val(money(grandTotal));
   }
 
   // ---------- events ----------
@@ -424,15 +359,68 @@ $(function () {
     updateTotals();
   });
 
+  function fetchSuppliers(batchNo, selectedIds = []) {
+    const $supplierSelect = $('#supplier_id');
+    if (batchNo) {
+      $.ajax({
+        url: '<?php echo base_url("inventory/get_suppliers_by_batch"); ?>',
+        type: 'POST',
+        data: { batch_no: batchNo },
+        dataType: 'json',
+        success: function(data) {
+          $supplierSelect.empty();
+          data.forEach(supplier => {
+            const isSelected = selectedIds.includes(supplier.id.toString());
+            const option = new Option(supplier.name, supplier.id, isSelected, isSelected);
+            $supplierSelect.append(option);
+          });
+          $supplierSelect.trigger('change');
+        }
+      });
+    } else {
+      $supplierSelect.empty().trigger('change');
+    }
+  }
+
+  function toggleGstFields() {
+    const type = $('#po_type').val();
+    const isOfficial = (type === 'official');
+
+    if (isOfficial) {
+      $('.gst-type-container').show();
+      $('.gst-column').show();
+      $('.gst-total-row').show();
+      $('#gst_type').prop('required', true);
+    } else {
+      $('.gst-type-container').hide();
+      $('.gst-column').hide();
+      $('.gst-total-row').hide();
+      $('#gst_type').prop('required', false).val('');
+      
+      // Reset GST values to 0 for unofficial
+      $('.gst').val(0);
+      $('.gst_amt').val('0.00');
+      updateTotals();
+    }
+  }
+
+  $('#po_type').on('change', toggleGstFields);
+
+  $('#batch_no').on('change', function() {
+    fetchSuppliers($(this).val());
+  });
+
   // add row
   $('#addExpenseRow').on('click', function () {
+    const isOfficial = ($('#po_type').val() === 'official');
+    const displayStyle = isOfficial ? '' : 'style="display:none"';
     const newRow = `
       <tr class="expense-row" data-mode="amount">
         <td class="sr-no text-center"></td>
         <td><input type="text" name="expense_name[]" class="form-control expense_name" required></td>
         <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
-        <td><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"></td>
-        <td><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
+        <td class="gst-column" ${displayStyle}><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="0"></td>
+        <td class="gst-column" ${displayStyle}><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
         <td><input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required></td>
         <td class="text-center">
           <button type="button" class="btn btn-sm btn-outline-danger removeExpenseRow">Remove</button>
@@ -456,11 +444,16 @@ $(function () {
   $('#company_id').val('<?php echo addslashes((string)$selected_vendor); ?>').trigger('change');
   $('#expense_type_id').val('<?php echo addslashes((string)$selected_expense); ?>').trigger('change');
 
-  // init cheque section visibility
-  check_provider($('#payment_type').val());
 
   // init totals
   renumberRows();
   updateTotals();
+
+  const initialBatch = $('#batch_no').val();
+  if (initialBatch) {
+    fetchSuppliers(initialBatch, <?php echo json_encode($selected_suppliers); ?>);
+  }
+
+  toggleGstFields();
 });
 </script>

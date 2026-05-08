@@ -73,8 +73,7 @@
               <th>Type</th>
               <th>Expense Type</th>
               <th>Amount</th>
-              <th>Payment Method</th>
-              <th>Date</th>
+              <th>Expense Date</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -125,7 +124,6 @@ $(document).ready(function($) {
       { "data": "type" },
       { "data": "expense_type" },
       { "data": "amount" },
-      { "data": "payment_method" },
       { "data": "date" },
       { "data": "action" }
     ],

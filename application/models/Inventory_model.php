@@ -3479,104 +3479,103 @@ class Inventory_model extends CI_Model
 	}
 
 	public function get_purchase_reports()
-{
-    $params['draw'] = $_REQUEST['draw'];
-    $start = $_REQUEST['start'];
-    $length = $_REQUEST['length'];
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
 
-    $filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
-    $date_range = isset($_REQUEST['date_range']) ? $_REQUEST['date_range'] : '';
-    $supplier_id = isset($_REQUEST['supplier_id']) ? $_REQUEST['supplier_id'] : '';
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$date_range = isset($_REQUEST['date_range']) ? $_REQUEST['date_range'] : '';
+		$supplier_id = isset($_REQUEST['supplier_id']) ? $_REQUEST['supplier_id'] : '';
 
-    $data = array();
-    $keyword_filter = "";
-    $date_filter = "";
-    $supplier_filter = "";
-    $is_date_filtered = false;
+		$data = array();
+		$keyword_filter = "";
+		$date_filter = "";
+		$supplier_filter = "";
+		$is_date_filtered = false;
 
-    if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
-        $keyword = $filter_data['keywords'];
-        $keyword_filter = " AND (po.supplier_name LIKE '%" . $keyword . "%' 
-                      OR pop.item_code LIKE '%" . $keyword . "%'
-                      OR pop.item_name LIKE '%" . $keyword . "%')";
-    }
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $filter_data['keywords'];
+			$keyword_filter = " AND (po.supplier_name LIKE '%" . $keyword . "%' 
+										OR pop.item_code LIKE '%" . $keyword . "%'
+										OR pop.item_name LIKE '%" . $keyword . "%')";
+		}
 
-    if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
-        $is_date_filtered = true;
-        $added_date = explode(' - ', $_REQUEST['date_range']);
-        $from =  date('Y-m-d', strtotime($added_date[0]));
-        $to =  date('Y-m-d', strtotime($added_date[1]));
-        if ($from == $to) {
-            $keyword_filter .= " AND (DATE(date) = '$from')";
-        } else {
-            $keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
-        }
-    }
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$is_date_filtered = true;
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			}
+		}
 
-    if (!empty($supplier_id)) {
-        $supplier_filter = " AND po.supplier_id = '" . $supplier_id . "'";
-    }
+		if (!empty($supplier_id)) {
+			$supplier_filter = " AND po.supplier_id = '" . $supplier_id . "'";
+		}
 
-    $total_count = $this->db->query("
-        SELECT pop.id 
-        FROM purchase_order_product pop
-        JOIN purchase_order po ON pop.parent_id = po.id
-        WHERE po.is_deleted='0' 
-        $keyword_filter  $supplier_filter
-    ")->num_rows();
+		$total_count = $this->db->query("
+			SELECT pop.id 
+			FROM purchase_order_product pop
+			JOIN purchase_order po ON pop.parent_id = po.id
+			WHERE po.is_deleted='0' 
+			$keyword_filter  $supplier_filter
+		")->num_rows();
 
-    // If date filter is applied, remove pagination limit
-    $limit_clause = "";
-    if (!$is_date_filtered) {
-        $limit_clause = "LIMIT $start, $length";
-    }
+		// If date filter is applied, remove pagination limit
+		$limit_clause = "";
+		if (!$is_date_filtered) {
+			$limit_clause = "LIMIT $start, $length";
+		}
 
-    $query = $this->db->query("
-        SELECT 
-            po.id,
-            po.supplier_name,
-            po.date,
-            pop.item_code as sku,
-            pop.rate as cp,
-            pop.quantity,
-            pop.gst,
-            (pop.rate * pop.quantity) as amount,
-            ((pop.rate * pop.quantity) * (1 + pop.gst/100)) as total_amount
-        FROM purchase_order po
-        JOIN purchase_order_product pop ON po.id = pop.parent_id
-        WHERE po.is_deleted='0' 
-        $keyword_filter  $supplier_filter
-        ORDER BY po.date DESC, po.id DESC, pop.id ASC
-        $limit_clause
-    ");
+		$query = $this->db->query("
+			SELECT 
+				po.id,
+				po.supplier_name,
+				po.date,
+				pop.item_code as sku,
+				pop.rate as cp,
+				pop.quantity,
+				pop.gst,
+				(pop.rate * pop.quantity) as amount,
+				((pop.rate * pop.quantity) * (1 + pop.gst/100)) as total_amount
+			FROM purchase_order po
+			JOIN purchase_order_product pop ON po.id = pop.parent_id
+			WHERE po.is_deleted='0' 
+			$keyword_filter  $supplier_filter
+			ORDER BY po.date DESC, po.id DESC, pop.id ASC
+			$limit_clause
+		");
 
-    if (!empty($query)) {
-        $sr_no = $start;
-        foreach ($query->result_array() as $item) {
-            $data[] = array(
-                "sr_no" => ++$sr_no,
-                "id" => $item['id'],
-                "supplier_name" => $item['supplier_name'],
-                "sku" => $item['sku'],
-                "cp" => number_format($item['cp'], 2),
-                "quantity" => $item['quantity'],
-                "gst" => $item['gst'] . '%',
-                "amount" => number_format($item['amount'], 2),
-                "total_amount" => number_format($item['total_amount'], 2),
-                "date" => date('d M, Y', strtotime($item['date'])),
-            );
-        }
-    }
+		if (!empty($query)) {
+			$sr_no = $start;
+			foreach ($query->result_array() as $item) {
+				$data[] = array(
+					"sr_no" => ++$sr_no,
+					"id" => $item['id'],
+					"supplier_name" => $item['supplier_name'],
+					"sku" => $item['sku'],
+					"cp" => number_format($item['cp'], 2),
+					"quantity" => $item['quantity'],
+					"gst" => $item['gst'] . '%',
+					"amount" => number_format($item['amount'], 2),
+					"total_amount" => number_format($item['total_amount'], 2),
+					"date" => date('d M, Y', strtotime($item['date'])),
+				);
+			}
+		}
 
-    $json_data = array(
-        "draw" => intval($params['draw']),
-        "recordsTotal" => $total_count,
-        "recordsFiltered" => $total_count,
-        "data" => $data
-    );
-    echo json_encode($json_data);
-}
-
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
 
 	public function add_purchase_entry()
 	{
@@ -12224,21 +12223,16 @@ class Inventory_model extends CI_Model
 			$data['company_id']        = $this->session->userdata('company_id');
 			$data['vendor_id']        = (int) $this->input->post('company_id');
 			$data['batch_no']          = clean_and_escape($this->input->post('batch_no'));
+			$supplier_ids              = $this->input->post('supplier_id');
+			$data['supplier_id']       = !empty($supplier_ids) ? implode(',', $supplier_ids) : null;
 			$data['type']              = clean_and_escape($this->input->post('type')); // official/unofficial
 			$data['expense_type']      = (int) $this->input->post('expense_type');
 			$data['gst_type']          = clean_and_escape($this->input->post('gst_type')); // '', igst, cgst_sgst
 
-			$data['payment_type']      = clean_and_escape($this->input->post('payment_type'));
-			$data['cheque_no']         = clean_and_escape($this->input->post('cheque_no'));
-			$data['company_bank_name'] = clean_and_escape($this->input->post('company_bank_name'));
-
-			$cheque_recv_date         = $this->input->post('cheque_recv_date');
-			$data['cheque_recv_date'] = $cheque_recv_date ? $cheque_recv_date : null;
-
-			$cheque_date         = $this->input->post('cheque_date');
-			$data['cheque_date'] = $cheque_date ? $cheque_date : null;
-
 			$data['narration']   = clean_and_escape($this->input->post('narration'));
+
+			$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;
+
 			$data['added_by_id'] = (int) $this->session->userdata('company_id');
 
 			// Totals are already coming from frontend (readonly inputs)
@@ -12249,14 +12243,6 @@ class Inventory_model extends CI_Model
 			$data['sub_total']   = number_format($sub_total, 5, '.', '');
 			$data['gst_total']   = number_format($gst_total, 5, '.', '');
 			$data['grand_total'] = number_format($grand_total, 5, '.', '');
-
-			// cheque_amount: prefer posted hidden cheque_amount, else use grand_total
-			$posted_cheque_amount = $this->input->post('cheque_amount');
-			$cheque_amount = ($posted_cheque_amount !== null && $posted_cheque_amount !== '')
-					? (float) $posted_cheque_amount
-					: $grand_total;
-
-			$data['cheque_amount'] = number_format($cheque_amount, 5, '.', '');
 
 			// Detail arrays
 			$expense_names = (array) $this->input->post('expense_name');
@@ -12395,20 +12381,14 @@ class Inventory_model extends CI_Model
 		$data['input_method']      = $this->input->post('input_method');
 		$data['vendor_id']         = (int) $this->input->post('company_id'); // vendor dropdown uses name="company_id"
 		$data['batch_no']          = clean_and_escape($this->input->post('batch_no'));
+		$supplier_ids              = $this->input->post('supplier_id');
+		$data['supplier_id']       = !empty($supplier_ids) ? implode(',', $supplier_ids) : null;
 		$data['type']              = clean_and_escape($this->input->post('type'));          // official/unofficial
 		$data['expense_type']      = (int) $this->input->post('expense_type');
 		$data['gst_type']          = clean_and_escape($this->input->post('gst_type'));      // '', igst, cgst_sgst
-		$data['payment_type']      = clean_and_escape($this->input->post('payment_type'));
-		$data['cheque_no']         = clean_and_escape($this->input->post('cheque_no'));
-		$data['company_bank_name'] = clean_and_escape($this->input->post('company_bank_name'));
-
-		$cheque_recv_date = $this->input->post('cheque_recv_date');
-		$data['cheque_recv_date'] = $cheque_recv_date ? $cheque_recv_date : null;
-
-		$cheque_date = $this->input->post('cheque_date');
-		$data['cheque_date'] = $cheque_date ? $cheque_date : null;
-
 		$data['narration'] = clean_and_escape($this->input->post('narration'));
+
+		$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;
 
 		// Totals from frontend (readonly)
 		$sub_total   = (float) $this->input->post('sub_total');
@@ -12418,14 +12398,6 @@ class Inventory_model extends CI_Model
 		$data['sub_total']   = number_format($sub_total, 5, '.', '');
 		$data['gst_total']   = number_format($gst_total, 5, '.', '');
 		$data['grand_total'] = number_format($grand_total, 5, '.', '');
-
-		// cheque_amount: prefer posted hidden cheque_amount, else use grand_total
-		$posted_cheque_amount = $this->input->post('cheque_amount');
-		$cheque_amount = ($posted_cheque_amount !== null && $posted_cheque_amount !== '')
-				? (float) $posted_cheque_amount
-				: $grand_total;
-
-		$data['cheque_amount'] = number_format($cheque_amount, 5, '.', '');
 
 		// ---- Transaction: update parent, delete old children, insert new children ----
 		$this->db->trans_begin();
@@ -12495,19 +12467,19 @@ class Inventory_model extends CI_Model
 			$from = date('Y-m-d', strtotime($date_range['0']));
 			$to = date('Y-m-d', strtotime($date_range['1']));
 
-			$keyword_filter .= " AND (DATE(cheque_date) >= '" . $from . "' AND DATE(cheque_date) <= '" . $to . "')";
+			$keyword_filter .= " AND (DATE(expense_date) >= '" . $from . "' AND DATE(expense_date) <= '" . $to . "')";
 		}
 
 		$company_id = $this->session->userdata('company_id');
 
 		$total_count = $this->db->query("SELECT id FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter)->num_rows();
-		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, grand_total, payment_type, cheque_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			$sr_no = $start;
 			foreach ($query->result_array() as $item) {
 				$company_name = $this->common_model->selectByidsParam(['id' => $item['vendor_id']], 'my_companies', 'name');
-				$expense_type = $this->common_model->selectByidsParam(['id' => $item['expense_type']], 'expense_type', 'name');	
+				$expense_type = $this->common_model->selectByidsParam(['id' => $item['expense_type']], 'expense_type', 'name');
 
 				$actions = '';
 				$actions .= '<a href="' . base_url() . 'inventory/po-expense/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
@@ -12518,10 +12490,9 @@ class Inventory_model extends CI_Model
 					"batch_no"      	=> $item['batch_no'],
 					"company_name"  	=> ($company_name) ? $company_name : '-',
 					"amount"        	=> number_format($item['grand_total'], 2),
-					"payment_method"	=> $item['payment_type'],
 					"type"						=> get_phrase($item['type']),
 					"expense_type"		=> ($expense_type) ? $expense_type : '-',
-					"date"          	=> $item['cheque_date'] ? date('d M, Y', strtotime($item['cheque_date'])) : '-',
+					"date"          	=> $item['expense_date'] ? date('d M, Y', strtotime($item['expense_date'])) : '-',
 					"action"					=> $actions,
 				);
 			}

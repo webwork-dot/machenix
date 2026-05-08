@@ -48,28 +48,6 @@
 
           <div class="mt-2" id="supplier-table-wrap"></div>
 
-          <div class="mt-2 d-none">
-            <h6 class="mb-1">Batch Expenses</h6>
-            <div class="table-responsive">
-              <table class="table table-bordered table-striped table-sm mb-0">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Type</th>
-                    <th>Payment Type</th>
-                    <th>Narration</th>
-                    <th class="text-end">Amount</th>
-                    <th class="text-end">GST Total</th>
-                    <th class="text-end">Grand Total</th>
-                  </tr>
-                </thead>
-                <tbody id="expense-tbody">
-                  <tr><td colspan="7" class="text-center">No expense data found</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -337,31 +315,6 @@
     `);
   }
 
-  function renderExpenses(expenses) {
-    const $tbody = $('#expense-tbody');
-    $tbody.empty();
-
-    if (!Array.isArray(expenses) || expenses.length === 0) {
-      $tbody.html('<tr><td colspan="7" class="text-center">No expense data found</td></tr>');
-      return;
-    }
-
-    let html = '';
-    expenses.forEach((e, i) => {
-      html += `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${escapeHtml(e.type)}</td>
-          <td>${escapeHtml(e.payment_type)}</td>
-          <td>${escapeHtml(e.narration)}</td>
-          <td class="text-end">${fmt(e.cheque_amount, 2)}</td>
-          <td class="text-end">${fmt(e.gst_total, 2)}</td>
-          <td class="text-end">${fmt(e.grand_total, 2)}</td>
-        </tr>
-      `;
-    });
-    $tbody.html(html);
-  }
 
   $(document).ready(function() {
     $('#view-batch-btn').on('click', function() {
@@ -384,7 +337,6 @@
           if (res && Number(res.status) === 200) {
             setHeaderFields(res.header || {});
             renderSupplierTables(res.suppliers || [], res.grand_totals || {}, res.expenses || []);
-            // renderExpenses(res.expenses || []);
             $('#batch-detail-wrap').removeClass('d-none');
           } else {
             $('#batch-detail-wrap').addClass('d-none');

@@ -723,6 +723,28 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_suppliers_by_batch()
+    {
+        $batch_no = $this->input->post('batch_no');
+        $po = $this->common_model->getRowById('purchase_order', 'id', ['voucher_no' => $batch_no]);
+        
+        if (!$po) {
+            echo json_encode([]);
+            return;
+        }
+
+        $suppliers = $this->db->query("
+            SELECT s.id, s.name 
+            FROM loading_po_product lpp
+            JOIN supplier s ON lpp.supplier_id = s.id
+            WHERE lpp.parent_id = " . (int)$po['id'] . " 
+            AND lpp.is_deleted = 0 
+            GROUP BY lpp.supplier_id
+        ")->result_array();
+
+        echo json_encode($suppliers);
+    }
+
     // payment receipt Starts
     public function payment_receipt($param1 = "", $param2 = "")
     {
@@ -1691,7 +1713,7 @@ class Inventory extends CI_Controller
                 pp.taxable_value,
                 pp.gst_amt,
                 pop.id AS purchase_order_product_id
-            FROM po_products pp
+            FROM loading_po_product pp
             LEFT JOIN supplier s
                 ON s.id = pp.supplier_id
             LEFT JOIN purchase_order_product pop
@@ -1824,12 +1846,8 @@ class Inventory extends CI_Controller
                 type,
                 expense_type,
                 vendor_id,
-                payment_type,
-                cheque_no,
-                cheque_recv_date,
-                cheque_date,
+                expense_date,
                 narration,
-                cheque_amount,
                 sub_total,
                 gst_total,
                 grand_total,
