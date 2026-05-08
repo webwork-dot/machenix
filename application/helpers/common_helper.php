@@ -1058,7 +1058,6 @@ if (!function_exists('array_to_list')) {
         } else {
             $html = '';
             foreach($arr as $a) {
-
                 $html .= '<li>' . (($a) ? $a : '-') . '</li>';
             }
 

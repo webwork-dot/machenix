@@ -2924,8 +2924,6 @@ class Inventory_model extends CI_Model
 
 				// Purchase In Action
 				$purchase_in_action ='-';
-				
-				
 				if ($delivery_status == 'purchase_in') {
 					$purchase_in_action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">

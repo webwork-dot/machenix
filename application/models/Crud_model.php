@@ -428,23 +428,22 @@ class Crud_model extends CI_Model
         $query = $this->db->query("SELECT id, first_name, last_name, type, email, phone, city_name, state_name,role_id, status,date_added FROM sys_users WHERE (is_deleted='0') AND type!='admin' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
         
         if (!empty($query)) {
-           foreach ($query->result_array() as $item) {
-              $id=$item['id'];
-              $role_id=$item['role_id'];
-              if($item['status']== 1){
-                $status='<div class="chip chip-success"><div class="chip-body"><span class="chip-text">Active</span></div></div>';   
-              }else{
-                $status='<div class="chip chip-danger"><div class="chip-body"><span class="chip-text">Inactive</span></div></div>';
-              }
-              
-             
-             $delete_url="confirm_modal('".admin_url()."staff/delete/".$id."','Are you sure want to delete!')";
-             $edit_url=base_url().'admin/staff/edit/'.$id;
-             $change_password_url=base_url().'admin/staff/change-password/'.$id;             
-              $action='';
-             $action .='<a href="'.$edit_url.'" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-             <a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-             <a href="'.$change_password_url.'"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" data-toggle="tooltip" data-bs-placement="top" title="Change Password"><i class="fa fa-key" aria-hidden="true"></i></button> </a>'; 
+            foreach ($query->result_array() as $item) {
+                $id=$item['id'];
+                $role_id=$item['role_id'];
+                if($item['status']== 1){
+                    $status='<div class="chip chip-success"><div class="chip-body"><span class="chip-text">Active</span></div></div>';   
+                }else{
+                    $status='<div class="chip chip-danger"><div class="chip-body"><span class="chip-text">Inactive</span></div></div>';
+                }
+                
+                $delete_url="confirm_modal('".admin_url()."staff/delete/".$id."','Are you sure want to delete!')";
+                $edit_url=base_url().'admin/staff/edit/'.$id;
+                $change_password_url=base_url().'admin/staff/change-password/'.$id;             
+                $action='';
+                $action .='<a href="'.$edit_url.'" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+                <a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
+                <a href="'.$change_password_url.'"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" data-toggle="tooltip" data-bs-placement="top" title="Change Password"><i class="fa fa-key" aria-hidden="true"></i></button> </a>'; 
               
                 $data[] = array(
                     "sr_no"       => ++$start,
@@ -460,7 +459,7 @@ class Crud_model extends CI_Model
                     "action"      => $action,
                 );
             }
-         }
+        }
    
         $json_data = array(
             "draw" => intval($params['draw']),
