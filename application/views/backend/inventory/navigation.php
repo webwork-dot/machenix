@@ -285,11 +285,25 @@
         <?php } ?>
 
 		<?php if($user_id == 4) {?>
-        <li class="nav-item <?php if($page_name == 'payments' || $page_name == 'payments_add' || $page_name == 'payments_edit') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payments">
+        <li class="nav-item <?php if($navigation == 'payments' || $navigation == 'vendor_payments') echo 'active'; ?>">   
+            <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">Payments</span>
-            </a>
+               <span class="menu-title text-truncate" data-i18n="Orders">Payments</span>
+           </a>
+           <ul class="menu-content">
+                <li class="nav-item <?php if($navigation == 'payments') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payments">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Supplier Payments</span>
+                    </a>
+                </li>
+                <li class="nav-item <?php if($navigation == 'vendor_payments') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/vendor-payments">
+                         <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Vendor Payments</span>
+                    </a>
+                </li>
+           </ul>
         </li>
         <?php } ?>
         

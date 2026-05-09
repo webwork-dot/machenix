@@ -871,6 +871,81 @@ class Inventory extends CI_Controller
         }
     }
 
+    // Vendor Payments Starts
+    public function vendor_payments($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_vendor_payments();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_vendor_payments($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_vendor_payments($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'vendor_payments';
+            $page_data['page_name']  = 'vendor_payments';
+            $page_data['page_title'] = 'Vendor Payments';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function vendor_payments_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $company_id = $this->session->userdata('company_id');
+        $vendor_list = $this->common_model->getResultById('my_companies', 'id, name', ['is_deleted' => '0', 'company_id' => $company_id]);
+        $page_data['vendor_list'] = ($vendor_list != '') ? $vendor_list : [];
+
+        $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
+        $page_data['bank_accounts'] = ($bank_accounts != '') ? $bank_accounts : [];
+
+        if ($param1 == 'add') {
+            $page_data['navigation']  = 'vendor_payments';
+            $page_data['page_name']  = 'vendor_payments_add';
+            $page_data['page_title'] = 'Add Vendor Payment';
+            $this->load->view('backend/index', $page_data);
+        } elseif($param1 == 'edit') {
+            $data = $this->common_model->getRowById('vendor_payments', '*', ['is_delete' => '0', 'id' => $param2]);
+            $page_data['data'] = ($data != '') ? $data : [];
+            $page_data['id'] = $param2;
+            $page_data['navigation']  = 'vendor_payments';
+            $page_data['page_name']  = 'vendor_payments_edit';
+            $page_data['page_title'] = 'Edit Vendor Payment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_vendor_payments()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_vendor_payments();
+        }
+    }
+
+    public function vendor_ledger($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['data'] = $this->inventory_model->get_my_company_by_id($id)->row_array();
+        $page_data['id'] = $id;
+        $page_data['outstanding'] = $this->inventory_model->get_vendor_ledger($id);
+        $page_data['payments'] = $this->inventory_model->get_vendor_payments_by_id($id);
+        $page_data['page_name'] = 'vendor_ledger';
+        $page_data['page_title'] = 'Vendor Ledger';
+        $this->load->view('backend/index', $page_data);
+    }
+    // Vendor Payments Ends
+
     
     // Loading List PO Starts
     public function po_purchase_in($param1 = "", $param2 = "")

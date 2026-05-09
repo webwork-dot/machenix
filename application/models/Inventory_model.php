@@ -11895,8 +11895,10 @@ class Inventory_model extends CI_Model
 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/my-company/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/my-company/edit/' . $id;
+				$ledger_url = base_url() . 'inventory/vendor-ledger/' . $id;
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+             <a href="' . $ledger_url . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 icon-btn-view"><i class="fa fa-list" aria-hidden="true"></i></button></a>
              <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
              ';
 
@@ -12208,6 +12210,290 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
+	// Vendor Payments Starts
+	public function add_vendor_payments()
+	{
+		$resultpost = array(
+				"status"  => 200,
+				"message" => "Vendor Payment added successfully",
+				"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$company_id = (int) $this->session->userdata('company_id');
+		$added_by   = (int) $this->session->userdata('super_user_id');
+
+		$supplier_id  = (int) $this->input->post('vendor_id'); // Using vendor_id from form
+		$invoice_no   = clean_and_escape($this->input->post('invoice_no'));
+		$amount       = (float) $this->input->post('amount');
+
+		$payment_type = clean_and_escape($this->input->post('payment_type')); // official/unofficial
+		$bank_account = (int) $this->input->post('bank_account');
+
+		$payment_date = $this->input->post('payment_date');
+		$payment_date = $payment_date ? $payment_date : null;
+
+		$narration = clean_and_escape($this->input->post('narration'));
+
+		// Validate vendor (using my_companies table)
+		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
+		if (empty($vendor)) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Invalid vendor selected.";
+				return simple_json_output($resultpost);
+		}
+		$supplier_name = $vendor['name'];
+
+		// Bank account logic
+		$bank_accounts_name = null;
+		if ($payment_type === 'official') {
+				if ($bank_account <= 0) {
+						$resultpost['status']  = 400;
+						$resultpost['message'] = "Bank account is required for official payment type.";
+						return simple_json_output($resultpost);
+				}
+
+				$bank = $this->db->get_where('bank_accounts', array('id' => $bank_account))->row_array();
+				if (empty($bank)) {
+						$resultpost['status']  = 400;
+						$resultpost['message'] = "Invalid bank account selected.";
+						return simple_json_output($resultpost);
+				}
+				$bank_accounts_name = $bank['bank_name'];
+		} else {
+				$bank_account = 0;
+				$bank_accounts_name = null;
+		}
+
+		$data = array(
+				'company_id'         => $company_id,
+				'vendor_id'          => $supplier_id, // storing vendor id in vendor_id
+				'vendor_name'        => $supplier_name, // storing vendor name in vendor_name
+				'invoice_no'         => $invoice_no,
+				'amount'             => number_format($amount, 5, '.', ''),
+				'payment_type'       => $payment_type,
+				'bank_account'       => $bank_account,
+				'bank_account_name'  => $bank_accounts_name,
+				'payment_date'       => $payment_date,
+				'narration'          => $narration,
+				'is_delete'          => 0,
+				'added_by'           => $added_by,
+		);
+
+		$this->db->trans_begin();
+		$this->db->insert('vendor_payments', $data);
+
+		if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Failed to add vendor payment. Please try again.";
+				return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', "Vendor Payment added successfully");
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_vendor_payments($param2)
+	{
+		$resultpost = array(
+				"status"  => 200,
+				"message" => "Vendor Payment updated successfully",
+				"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$id = (int) $param2;
+		$existing = $this->db->get_where('vendor_payments', array('id' => $id, 'is_delete' => 0))->row_array();
+		if (empty($existing)) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Vendor Payment not found.";
+				return simple_json_output($resultpost);
+		}
+
+		$supplier_id  = (int) $this->input->post('vendor_id');
+		$invoice_no   = clean_and_escape($this->input->post('invoice_no'));
+		$amount       = (float) $this->input->post('amount');
+
+		$payment_type = clean_and_escape($this->input->post('payment_type'));
+		$bank_account = (int) $this->input->post('bank_account');
+
+		$payment_date = $this->input->post('payment_date');
+		$payment_date = $payment_date ? $payment_date : null;
+
+		$narration = clean_and_escape($this->input->post('narration'));
+
+		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
+		if (empty($vendor)) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Invalid vendor selected.";
+				return simple_json_output($resultpost);
+		}
+		$supplier_name = $vendor['name'];
+
+		$bank_accounts_name = null;
+		if ($payment_type === 'official') {
+				if ($bank_account <= 0) {
+						$resultpost['status']  = 400;
+						$resultpost['message'] = "Bank account is required for official payment type.";
+						return simple_json_output($resultpost);
+				}
+
+				$bank = $this->db->get_where('bank_accounts', array('id' => $bank_account))->row_array();
+				if (empty($bank)) {
+						$resultpost['status']  = 400;
+						$resultpost['message'] = "Invalid bank account selected.";
+						return simple_json_output($resultpost);
+				}
+				$bank_accounts_name = $bank['bank_name'];
+		} else {
+				$bank_account = 0;
+				$bank_accounts_name = null;
+		}
+
+		$data = array(
+				'vendor_id'          => $supplier_id,
+				'vendor_name'        => $supplier_name,
+				'invoice_no'         => $invoice_no,
+				'amount'             => number_format($amount, 5, '.', ''),
+				'payment_type'       => $payment_type,
+				'bank_account'       => $bank_account,
+				'bank_account_name'  => $bank_accounts_name,
+				'payment_date'       => $payment_date,
+				'narration'          => $narration,
+		);
+
+		$this->db->trans_begin();
+		$this->db->where('id', $id);
+		$this->db->update('vendor_payments', $data);
+
+		if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Failed to update vendor payment. Please try again.";
+				return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', "Vendor Payment updated successfully");
+		return simple_json_output($resultpost);
+	}
+
+	public function get_vendor_payments()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $filter_data['keywords'];
+			$keyword_filter = " AND (vendor_name LIKE '%" . $keyword . "%' OR invoice_no LIKE '%" . $keyword . "%')";
+		}
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$date_range = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($date_range['0']));
+			$to = date('Y-m-d', strtotime($date_range['1']));
+
+			$keyword_filter .= " AND (DATE(payment_date) >= '" . $from . "' AND DATE(payment_date) <= '" . $to . "')";
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		$total_count = $this->db->query("SELECT id FROM vendor_payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter)->num_rows();
+		$query = $this->db->query("SELECT id, vendor_name, payment_type, invoice_no, amount, payment_date FROM vendor_payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		
+		if (!empty($query)) {
+			$sr_no = $start;
+			foreach ($query->result_array() as $item) {
+
+				$actions = '';
+				$actions .= '<a href="' . base_url() . 'inventory/vendor-payments/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
+				$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/vendor-payments/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+
+				$data[] = array(
+					"sr_no"         	=> ++$sr_no,
+					"type"						=> get_phrase($item['payment_type']),
+					"vendor_name"		=> $item['vendor_name'],
+					"amount"        	=> number_format($item['amount'], 2),
+					"invoice_no"			=> ($item['invoice_no']) ? $item['invoice_no'] : '-',
+					"date"          	=> $item['payment_date'] ? date('d M, Y', strtotime($item['payment_date'])) : '-',
+					"actions"        	=> $actions,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+	}
+
+	public function delete_vendor_payments($id)
+	{
+		$resultpost = array(
+				"status"  => 200,
+				"message" => "Vendor Payment deleted successfully",
+				"url"     => $this->agent->referrer(),
+		);
+
+		$this->db->trans_begin();
+		$this->db->where('id', $id);
+		$this->db->update('vendor_payments', array('is_delete' => 1));
+
+		if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Failed to delete vendor payment. Please try again.";
+				return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', "Vendor Payment deleted successfully");
+		return simple_json_output($resultpost);
+	}
+
+	public function get_vendor_ledger($vendor_id)
+	{
+		$query = $this->db->query("SELECT 
+										id, batch_no as voucher_no, expense_date as date, grand_total, added_by_id
+									FROM po_expense
+									WHERE vendor_id = '$vendor_id'
+									AND is_delete = '0'
+									ORDER BY expense_date DESC, id DESC");
+		
+		$result = $query->result_array();
+		foreach ($result as $key => $row) {
+			$user = $this->db->get_where('sys_users', array('id' => $row['added_by_id']))->row_array();
+			$result[$key]['added_by_name'] = $user ? $user['first_name'] : '-';
+		}
+		return $result;
+	}
+
+	public function get_vendor_payments_by_id($vendor_id)
+	{
+		$query = $this->db->query("SELECT 
+										id, invoice_no as inv_no, payment_date as date, amount, added_by
+									FROM vendor_payments
+									WHERE vendor_id = '$vendor_id'
+									AND is_delete = '0'
+									ORDER BY payment_date DESC, id DESC");
+		
+		$result = $query->result_array();
+		foreach ($result as $key => $row) {
+			$user = $this->db->get_where('sys_users', array('id' => $row['added_by']))->row_array();
+			$result[$key]['added_by_name'] = $user ? $user['first_name'] : '-';
+		}
+		return $result;
+	}
+	// Vendor Payments Ends
+
 	/* My Company End */
 
 	public function add_po_expense()
@@ -12233,7 +12519,7 @@ class Inventory_model extends CI_Model
 
 			$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;
 
-			$data['added_by_id'] = (int) $this->session->userdata('company_id');
+			$data['added_by_id'] = (int) $this->session->userdata('super_user_id');
 
 			// Totals are already coming from frontend (readonly inputs)
 			$sub_total   = (float) $this->input->post('sub_total');

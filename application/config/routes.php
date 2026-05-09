@@ -101,6 +101,11 @@ $route[$r_inventory . '/payments']          = 'inventory/payments';
 $route[$r_inventory . '/payments/add']      = 'inventory/payments_form/add';
 $route[$r_inventory . '/payments/edit/(:num)']      = 'inventory/payments_form/edit/$1';
 
+$route[$r_inventory . '/vendor-payments']          = 'inventory/vendor_payments';
+$route[$r_inventory . '/vendor-payments/add']      = 'inventory/vendor_payments_form/add';
+$route[$r_inventory . '/vendor-payments/edit/(:num)']      = 'inventory/vendor_payments_form/edit/$1';
+$route[$r_inventory . '/vendor-ledger/(:num)']          = 'inventory/vendor_ledger/$1';
+
 $route[$r_inventory . '/payment-receipt']             = 'inventory/payment_receipt';
 $route[$r_inventory . '/payment-receipt/add']         = 'inventory/payment_receipt_form/add';
 $route[$r_inventory . '/payment-receipt/edit/(:num)'] = 'inventory/payment_receipt_form/edit/$1';
