@@ -75,7 +75,7 @@
 
   function getTotalExpense(expenses) {
     if (!Array.isArray(expenses) || expenses.length === 0) return 0;
-    return expenses.reduce((sum, e) => sum + toNum(e?.grand_total), 0);
+    return expenses.reduce((sum, e) => sum + toNum(e?.sub_total), 0);
   }
 
   function setHeaderFields(header) {
@@ -86,7 +86,7 @@
     $('#view-po-date').val(header?.po_date || '');
   }
 
-  function renderSupplierTables(suppliers, grandTotals, expenses) {
+  function renderSupplierTables(suppliers, grandTotals, expenses, expenseItems, supplierAccounts) {
     const $wrap = $('#supplier-table-wrap');
     $wrap.empty();
 
@@ -105,6 +105,10 @@
       const products = Array.isArray(supplier.products) ? supplier.products : [];
       const totals = supplier.totals || {};
 
+      const supplierExpense = expenses.find(e => e.supplier_id == supplier.supplier_id)?.sub_total || 0;
+      const sAvgExpPerActCbm = toNum(totals.actual_cbm_total) > 0 ? (toNum(supplierExpense) / toNum(totals.actual_cbm_total)) : 0;
+      const sAvgExpPerOffCbm = toNum(totals.off_cbm_total) > 0 ? (toNum(supplierExpense) / toNum(totals.off_cbm_total)) : 0;
+
       let rowsHtml = '';
       products.forEach((p, i) => {
         rowsHtml += `
@@ -119,7 +123,7 @@
             <td class="text-end">${fmt(p.cbm_per_pc, 5)}</td>
             <td class="text-end">${fmt(p.off_cbm_total, 5)}</td>
             <td class="text-end">${fmt(p.actual_cbm_total, 5)}</td>
-            <td class="text-end">${fmt(toNum(p.act_qty) > 0 ? (toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerActualCbm * toNum(p.actual_cbm_total))) / toNum(p.act_qty) : 0, 2)}</td>
+            <td class="text-end">${fmt(toNum(p.act_qty) > 0 ? (toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerActCbm * toNum(p.actual_cbm_total))) / toNum(p.act_qty) : 0, 2)}</td>
             <td class="text-end">${fmt(p.rmb_per_pc, 2)}</td>
             <td class="text-end">${fmt(p.rmb_total, 2)}</td>
             <td class="text-end">${fmt(p.usd_per_pc, 2)}</td>
@@ -137,11 +141,11 @@
             <td class="text-end">${fmt(p.off_gst_percent, 2)}</td>
             <td class="text-end">${fmt(p.off_gst_amt, 2)}</td>
             <td class="text-end">${fmt(p.total_duty_gst, 2)}</td>
-            <td class="text-end">${fmt(avgExpensePerActualCbm * toNum(p.actual_cbm_total), 2)}</td>
-            <td class="text-end">${fmt(toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerActualCbm * toNum(p.actual_cbm_total)), 2)}</td>
-            <td class="text-end">${fmt(avgExpensePerOffCbm * toNum(p.off_cbm_total), 2)}</td>
-            <td class="text-end">${fmt(toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerOffCbm * toNum(p.off_cbm_total)), 2)}</td>
-            <td class="text-end">${fmt(toNum(p.official_qty) > 0 ? (toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (avgExpensePerOffCbm * toNum(p.off_cbm_total))) / toNum(p.official_qty) : 0, 2)}</td>
+            <td class="text-end">${fmt(sAvgExpPerActCbm * toNum(p.actual_cbm_total), 2)}</td>
+            <td class="text-end">${fmt(toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerActCbm * toNum(p.actual_cbm_total)), 2)}</td>
+            <td class="text-end">${fmt(sAvgExpPerOffCbm * toNum(p.off_cbm_total), 2)}</td>
+            <td class="text-end">${fmt(toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerOffCbm * toNum(p.off_cbm_total)), 2)}</td>
+            <td class="text-end">${fmt(toNum(p.official_qty) > 0 ? (toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerOffCbm * toNum(p.off_cbm_total))) / toNum(p.official_qty) : 0, 2)}</td>
           </tr>
         `;
       });
@@ -202,7 +206,7 @@
                   <td class="text-end">${fmt(totals.cbm_per_pc, 5)}</td>
                   <td class="text-end">${fmt(totals.off_cbm_total, 5)}</td>
                   <td class="text-end">${fmt(totals.actual_cbm_total, 5)}</td>
-                  <td class="text-end">${fmt(toNum(totals.act_qty) > 0 ? (toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerActualCbm * toNum(totals.actual_cbm_total))) / toNum(totals.act_qty) : 0, 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.act_qty) > 0 ? (toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerActCbm * toNum(totals.actual_cbm_total))) / toNum(totals.act_qty) : 0, 2)}</td>
                   <td class="text-end">${fmt(totals.rmb_per_pc, 2)}</td>
                   <td class="text-end">${fmt(totals.rmb_total, 2)}</td>
                   <td class="text-end">${fmt(totals.usd_per_pc, 2)}</td>
@@ -220,11 +224,11 @@
                   <td class="text-end">${fmt(totals.off_gst_percent, 2)}</td>
                   <td class="text-end">${fmt(totals.off_gst_amt, 2)}</td>
                   <td class="text-end">${fmt(totals.total_duty_gst, 2)}</td>
-                  <td class="text-end">${fmt(avgExpensePerActualCbm * toNum(totals.actual_cbm_total), 2)}</td>
-                  <td class="text-end">${fmt(toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerActualCbm * toNum(totals.actual_cbm_total)), 2)}</td>
-                  <td class="text-end">${fmt(avgExpensePerOffCbm * toNum(totals.off_cbm_total), 2)}</td>
-                  <td class="text-end">${fmt(toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerOffCbm * toNum(totals.off_cbm_total)), 2)}</td>
-                  <td class="text-end">${fmt(toNum(totals.official_qty) > 0 ? (toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (avgExpensePerOffCbm * toNum(totals.off_cbm_total))) / toNum(totals.official_qty) : 0, 2)}</td>
+                  <td class="text-end">${fmt(sAvgExpPerActCbm * toNum(totals.actual_cbm_total), 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerActCbm * toNum(totals.actual_cbm_total)), 2)}</td>
+                  <td class="text-end">${fmt(sAvgExpPerOffCbm * toNum(totals.off_cbm_total), 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerOffCbm * toNum(totals.off_cbm_total)), 2)}</td>
+                  <td class="text-end">${fmt(toNum(totals.official_qty) > 0 ? (toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerOffCbm * toNum(totals.off_cbm_total))) / toNum(totals.official_qty) : 0, 2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -313,6 +317,134 @@
         </div>
       </div>
     `);
+
+    $wrap.append(`
+      <div class="row mt-4">
+        <div class="col-md-6" id="supplier-accounts-col"></div>
+        <div class="col-md-6" id="expense-detail-col"></div>
+      </div>
+    `);
+
+    const $accountsCol = $('#supplier-accounts-col');
+    const $expenseCol = $('#expense-detail-col');
+
+    if (Array.isArray(expenseItems) && expenseItems.length > 0) {
+      let expRowsHtml = '';
+      let totalNet = 0;
+      let totalGst = 0;
+      let totalFinal = 0;
+
+      expenseItems.forEach(item => {
+        const net = toNum(item.amount);
+        const gst = toNum(item.gst_amt);
+        const final = toNum(item.total_amt);
+        totalNet += net;
+        totalGst += gst;
+        totalFinal += final;
+
+        expRowsHtml += `
+          <tr>
+            <td>${escapeHtml(item.expense_name)}</td>
+            <td class="text-end">${fmt(net, 2)}</td>
+            <td class="text-end">${fmt(gst, 2)}</td>
+            <td class="text-end">${fmt(final, 2)}</td>
+          </tr>
+        `;
+      });
+
+      $expenseCol.append(`
+        <div class="supplier-section mb-2">
+          <h6 class="mb-1">Expense Detail</h6>
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Expense Name</th>
+                  <th class="text-end">Net Amount</th>
+                  <th class="text-end">GST Amount</th>
+                  <th class="text-end">Final Total</th>
+                </tr>
+              </thead>
+              <tbody>${expRowsHtml}</tbody>
+              <tfoot>
+                <tr class="font-weight-bold">
+                  <td class="text-end">TOTAL</td>
+                  <td class="text-end">${fmt(totalNet, 2)}</td>
+                  <td class="text-end">${fmt(totalGst, 2)}</td>
+                  <td class="text-end">${fmt(totalFinal, 2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      `);
+    }
+
+    if (Array.isArray(supplierAccounts) && supplierAccounts.length > 0) {
+      supplierAccounts.forEach(acc => {
+        let paymentRows = '';
+        acc.payments.forEach(p => {
+          paymentRows += `
+            <tr>
+              <td>${p.date}</td>
+              <td class="text-end">${fmt(p.rmb)}</td>
+              <td class="text-end">${fmt(p.usd)}</td>
+              <td class="text-end">${fmt(p.inr)}</td>
+            </tr>
+          `;
+        });
+
+        $accountsCol.append(`
+          <div class="supplier-section mb-3">
+            <h6 class="mb-1">Supplier Account: ${escapeHtml(acc.supplier_name)}</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped table-sm mb-0">
+                <thead>
+                  <tr class="bg-light">
+                    <th>Date</th>
+                    <th class="text-end">RMB</th>
+                    <th class="text-end">USD</th>
+                    <th class="text-end">INR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>${acc.outstanding.date}</td>
+                    <td class="text-end">${fmt(acc.outstanding.rmb)}</td>
+                    <td class="text-end">${fmt(acc.outstanding.usd)}</td>
+                    <td class="text-end">${fmt(acc.outstanding.inr)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" class="py-0" style="background: #eee; height: 1px;"></td>
+                  </tr>
+                  ${paymentRows}
+                </tbody>
+                <tfoot>
+                  <tr class="font-weight-bold" style="background: #fdfdfd;">
+                    <td>Total</td>
+                    <td class="text-end">${fmt(acc.total.rmb)}</td>
+                    <td class="text-end">${fmt(acc.total.usd)}</td>
+                    <td class="text-end">${fmt(acc.total.inr)}</td>
+                  </tr>
+                  <tr class="text-primary fw-bold">
+                    <td>Loaded Amount</td>
+                    <td class="text-end">${fmt(acc.loaded.rmb)}</td>
+                    <td class="text-end">${fmt(acc.loaded.usd)}</td>
+                    <td class="text-end">${fmt(acc.loaded.inr)}</td>
+                  </tr>
+                  <tr class="bg-dark text-white fw-bold">
+                    <td>Remaining Balance</td>
+                    <td class="text-end">${fmt(acc.balance.rmb)}</td>
+                    <td class="text-end">${fmt(acc.balance.usd)}</td>
+                    <td class="text-end">${fmt(acc.balance.inr)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        `);
+      });
+    }
   }
 
 
@@ -336,7 +468,7 @@
         success: function(res) {
           if (res && Number(res.status) === 200) {
             setHeaderFields(res.header || {});
-            renderSupplierTables(res.suppliers || [], res.grand_totals || {}, res.expenses || []);
+            renderSupplierTables(res.suppliers || [], res.grand_totals || {}, res.expenses || [], res.expense_items || [], res.supplier_accounts || []);
             $('#batch-detail-wrap').removeClass('d-none');
           } else {
             $('#batch-detail-wrap').addClass('d-none');

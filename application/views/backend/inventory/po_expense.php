@@ -72,7 +72,9 @@
               <th>Vendor Name</th>
               <th>Type</th>
               <th>Expense Type</th>
-              <th>Amount</th>
+              <th>Net Amount Total</th>
+              <th>GST Amount</th>
+              <th>Final Amount</th>
               <th>Expense Date</th>
               <th>Action</th>
             </tr>
@@ -123,6 +125,8 @@ $(document).ready(function($) {
       { "data": "company_name" },
       { "data": "type" },
       { "data": "expense_type" },
+      { "data": "sub_total" },
+      { "data": "gst_total" },
       { "data": "amount" },
       { "data": "date" },
       { "data": "action" }
@@ -131,13 +135,13 @@ $(document).ready(function($) {
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8] }
       }
     ],
 

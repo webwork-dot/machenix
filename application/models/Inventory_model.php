@@ -12759,7 +12759,7 @@ class Inventory_model extends CI_Model
 		$company_id = $this->session->userdata('company_id');
 
 		$total_count = $this->db->query("SELECT id FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter)->num_rows();
-		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			$sr_no = $start;
@@ -12775,6 +12775,8 @@ class Inventory_model extends CI_Model
 					"sr_no"         	=> ++$sr_no,
 					"batch_no"      	=> $item['batch_no'],
 					"company_name"  	=> ($company_name) ? $company_name : '-',
+					"sub_total"         => number_format($item['sub_total'], 2),
+					"gst_total"         => number_format($item['gst_total'], 2),
 					"amount"        	=> number_format($item['grand_total'], 2),
 					"type"						=> get_phrase($item['type']),
 					"expense_type"		=> ($expense_type) ? $expense_type : '-',
@@ -15072,11 +15074,13 @@ public function get_sales_return_reports()
 										SUM(pp.actual_qty * pp.unit_price_rmb) as total_actual_rmb,
 										SUM(pp.actual_qty * pp.actual_usd) as total_actual_usd,
 										SUM(pp.actual_qty * pp.actual_inr) as total_actual_inr,
-										COALESCE(MAX(CONCAT(u.first_name, ' ', IFNULL(u.last_name, ''))), MAX(invh.added_by_name)) as added_by_name
+										(SELECT COALESCE(CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')), h.added_by_name)
+										 FROM inventory_history h
+										 LEFT JOIN sys_users u ON h.added_by_id = u.id
+										 WHERE h.order_id = po.id AND h.status IN ('in', 'Purchase In Updated')
+										 LIMIT 1) as added_by_name
 									FROM purchase_order po
 									JOIN purchase_in_product pp ON po.id = pp.parent_id
-									LEFT JOIN inventory_history invh ON po.id = invh.order_id AND invh.status IN ('in', 'Purchase In Updated')
-									LEFT JOIN sys_users u ON invh.added_by_id = u.id
 									WHERE pp.supplier_id = '$supplier_id'
 									AND po.delivery_status = 'purchase_in'
 									AND po.is_deleted = '0'
