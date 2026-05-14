@@ -834,6 +834,9 @@ function formatNumber($value)
   }
 
   function checkSKU(ele) {
+    if (!document.querySelector('#item_code').hasAttribute('required')) {
+      return;
+    }
     let sku = document.querySelector('#item_code').value;
     let otherSku = document.querySelectorAll('[name="other_sku[]"]');
     let skuList = [];

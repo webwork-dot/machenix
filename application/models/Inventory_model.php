@@ -1194,243 +1194,231 @@ class Inventory_model extends CI_Model
 
 			$name = clean_and_escape($this->input->post('name'));
 			$item_code = clean_and_escape($this->input->post('item_code'));
+			$categories = $this->input->post('category_id');
 
-			// Check for duplicate item_code
-			$checkProduct = $this->db->select('id')->where('item_code', $item_code)->get('raw_products');
-			if ($checkProduct->num_rows() > 0) {
-				$this->session->set_flashdata('error_message', get_phrase('sku_code_duplication'));
+			// Get category's parent_id to determine product type
+			$category = $this->common_model->getRowById('categories', 'parent_id', ['id' => $categories]);
+			
+			// Validate category parent_id and set product type
+			if (empty($category) || !isset($category['parent_id'])) {
+				$this->db->trans_rollback();
 				$resultpost = array(
 					"status" => 400,
-					"message" => 'Duplicate SKU: ' . $item_code
+					"message" => "Invalid category selected. Please select a valid category."
 				);
+				return simple_json_output($resultpost);
+			}
+			
+			$parent_id = $category['parent_id'];
+			$product_type = '';
+			
+			if ($parent_id == 2) {
+				$product_type = 'ready';
+			} elseif ($parent_id == 3) {
+				$product_type = 'spare';
 			} else {
-				$checkProduct = $this->db->select('id')->where('sku_code', $item_code)->where('sku_code!=', '')->get('product_sku');
+				$this->db->trans_rollback();
+				$resultpost = array(
+					"status" => 400,
+					"message" => "Invalid category. Product must belong to either 'Ready Goods' or 'Spare Parts' category."
+				);
+				return simple_json_output($resultpost);
+			}
+
+			// Check for duplicate item_code only for 'ready' goods
+			if ($product_type == 'ready') {
+				$checkProduct = $this->db->select('id')->where('item_code', $item_code)->get('raw_products');
 				if ($checkProduct->num_rows() > 0) {
 					$this->session->set_flashdata('error_message', get_phrase('sku_code_duplication'));
 					$resultpost = array(
 						"status" => 400,
 						"message" => 'Duplicate SKU: ' . $item_code
 					);
+					return simple_json_output($resultpost);
 				} else {
-					$this->load->model('upload_model');
-					$categories = $this->input->post('category_id');
-
-					// Get category's parent_id to determine product type
-					$category = $this->common_model->getRowById('categories', 'parent_id', ['id' => $categories]);
-					
-					// Validate category parent_id and set product type
-					if (empty($category) || !isset($category['parent_id'])) {
-						$this->db->trans_rollback();
+					$checkProduct = $this->db->select('id')->where('sku_code', $item_code)->where('sku_code!=', '')->get('product_sku');
+					if ($checkProduct->num_rows() > 0) {
+						$this->session->set_flashdata('error_message', get_phrase('sku_code_duplication'));
 						$resultpost = array(
 							"status" => 400,
-							"message" => "Invalid category selected. Please select a valid category."
+							"message" => 'Duplicate SKU: ' . $item_code
 						);
 						return simple_json_output($resultpost);
 					}
+				}
+			}
+
+			if ($resultpost['status'] == 200) {
+				$this->load->model('upload_model');
+				$gst = clean_and_escape($this->input->post('gst'));
+				$is_variation = clean_and_escape($this->input->post('is_variation'));
+
+				$data['is_variation']   = $is_variation;
+				$data['group_id']       = '';
+				$data['color_id']       = '';
+				$data['color_name']     = '';
+				$data['sizes']          = '';
+				$data['unit']           = '';
+				$data['type']           = $product_type;
+				$data['name']           = $name;
+				$data['alias']          = clean_and_escape($this->input->post('alias'));
+				$data['categories']     = $categories;
+				$data['item_code']      = $item_code;
+				$data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
+				$data['gst']            = ($gst) ? $gst : 0;
+
+				$supplier_id = $this->input->post('supplier_id');
+				$supplier = $this->common_model->getRowById('supplier', 'name', ['id' => $supplier_id]);
+				$data['supplier_id']   = $supplier_id;
+				$data['supplier_name'] = ($supplier != '') ? $supplier['name'] : '';
+
+				// Get variation data arrays
+				$variation_net_weight = $this->input->post('variation_net_weight');
+				$variation_gross_weight = $this->input->post('variation_gross_weight');
+				$variation_length = $this->input->post('variation_length');
+				$variation_width = $this->input->post('variation_width');
+				$variation_height = $this->input->post('variation_height');
+				$variation_cbm = $this->input->post('variation_cbm');
+
+				// Count total variation rows
+				$total_variations = !empty($variation_net_weight) ? count($variation_net_weight) : 1;
+				
+				// Calculate totals of all variation rows and store in raw_products
+				if (!empty($variation_net_weight) && is_array($variation_net_weight)) {
+					$data['cartoon_qty']    = $total_variations; // Total number of rows
 					
-					$parent_id = $category['parent_id'];
-					$product_type = '';
+					// Calculate sum of all variation values
+					$total_net_weight = 0;
+					$total_gross_weight = 0;
+					$total_length = 0;
+					$total_width = 0;
+					$total_height = 0;
+					$total_cbm = 0;
 					
-					if ($parent_id == 2) {
-						$product_type = 'ready';
-					} elseif ($parent_id == 3) {
-						$product_type = 'spare';
-					} else {
-						$this->db->trans_rollback();
-						$resultpost = array(
-							"status" => 400,
-							"message" => "Invalid category. Product must belong to either 'Ready Goods' or 'Spare Parts' category."
-						);
-						return simple_json_output($resultpost);
+					foreach ($variation_net_weight as $index => $net_weight) {
+						$total_net_weight += floatval($net_weight ?? 0);
+						$total_gross_weight += floatval($variation_gross_weight[$index] ?? 0);
+						$total_length += floatval($variation_length[$index] ?? 0);
+						$total_width += floatval($variation_width[$index] ?? 0);
+						$total_height += floatval($variation_height[$index] ?? 0);
+						$total_cbm += floatval($variation_cbm[$index] ?? 0);
 					}
 					
-					$gst = clean_and_escape($this->input->post('gst'));
-					$is_variation = clean_and_escape($this->input->post('is_variation'));
+					$data['net_weight']    	= clean_and_escape($total_net_weight);
+					$data['gross_weight']  	= clean_and_escape($total_gross_weight);
+					$data['length']			= clean_and_escape($total_length);
+					$data['width']			= clean_and_escape($total_width);
+					$data['height']  		= clean_and_escape($total_height);
+					$data['cbm']			= clean_and_escape($total_cbm);
+				} else {
+					$data['cartoon_qty']    = 1;
+					$data['net_weight']    	= 0;
+					$data['gross_weight']  	= 0;
+					$data['length']			= 0;
+					$data['width']			= 0;
+					$data['height']  		= 0;
+					$data['cbm']			= 0;
+				}
 
-					$data['is_variation']   = $is_variation;
-					$data['group_id']       = '';
-					$data['color_id']       = '';
-					$data['color_name']     = '';
-					$data['sizes']          = '';
-					$data['unit']           = '';
-					$data['type']           = $product_type;
-					$data['name']           = $name;
-					$data['alias']          = clean_and_escape($this->input->post('alias'));
-					$data['categories']     = $categories;
-					$data['item_code']      = $item_code;
-					$data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
-					$data['gst']            = ($gst) ? $gst : 0;
+				$data['rate']  					= clean_and_escape($this->input->post('rate'));
+				$data['usd_rate']  		= clean_and_escape($this->input->post('usd_rate'));
+				$data['actual_usd_rate']  = clean_and_escape($this->input->post('actual_usd_rate'));
+				$data['product_mrp']     = clean_and_escape($this->input->post('product_mrp'));
+				$data['costing_price']   = clean_and_escape($this->input->post('costing_price'));
+				$data['status']          = clean_and_escape($this->input->post('status'));
+				$data['min_stock']       = clean_and_escape($this->input->post('intimation'));
+				$data['intimation']      = clean_and_escape($this->input->post('intimation'));
+				$data['listed_1']        = clean_and_escape($this->input->post('p_listed_1'));
+				$data['listed_2']        = clean_and_escape($this->input->post('p_listed_2'));
+				$data['listed_3']        = clean_and_escape($this->input->post('p_listed_3'));
+				$data['listed_4']        = clean_and_escape($this->input->post('p_listed_4'));
+				$data['listed_5']        = clean_and_escape($this->input->post('p_listed_5'));
+				$data['listed_6']       = 1;
+				$data['listed_7']       = 1;
+				$data['is_other_sku']   = 0;
+				$data['added_date']     = date("Y-m-d H:i:s");
 
-					$supplier_id = $this->input->post('supplier_id');
-					$supplier = $this->common_model->getRowById('supplier', 'name', ['id' => $supplier_id]);
-					$data['supplier_id']   = $supplier_id;
-					$data['supplier_name'] = ($supplier != '') ? $supplier['name'] : '';
+				$this->db->insert('raw_products', $data);
+				$user_id = $this->db->insert_id();
+				$this->file_model->add_product_images($user_id);
 
-					// Get variation data arrays
-					$variation_net_weight = $this->input->post('variation_net_weight');
-					$variation_gross_weight = $this->input->post('variation_gross_weight');
-					$variation_length = $this->input->post('variation_length');
-					$variation_width = $this->input->post('variation_width');
-					$variation_height = $this->input->post('variation_height');
-					$variation_cbm = $this->input->post('variation_cbm');
-
-					// Count total variation rows
-					$total_variations = !empty($variation_net_weight) ? count($variation_net_weight) : 1;
-					
-					// Calculate totals of all variation rows and store in raw_products
-					if (!empty($variation_net_weight) && is_array($variation_net_weight)) {
-						$data['cartoon_qty']    = $total_variations; // Total number of rows
-						
-						// Calculate sum of all variation values
-						$total_net_weight = 0;
-						$total_gross_weight = 0;
-						$total_length = 0;
-						$total_width = 0;
-						$total_height = 0;
-						$total_cbm = 0;
-						
-						foreach ($variation_net_weight as $index => $net_weight) {
-							$total_net_weight += floatval($net_weight ?? 0);
-							$total_gross_weight += floatval($variation_gross_weight[$index] ?? 0);
-							$total_length += floatval($variation_length[$index] ?? 0);
-							$total_width += floatval($variation_width[$index] ?? 0);
-							$total_height += floatval($variation_height[$index] ?? 0);
-							$total_cbm += floatval($variation_cbm[$index] ?? 0);
-						}
-						
-						$data['net_weight']    	= clean_and_escape($total_net_weight);
-						$data['gross_weight']  	= clean_and_escape($total_gross_weight);
-						$data['length']			= clean_and_escape($total_length);
-						$data['width']			= clean_and_escape($total_width);
-						$data['height']  		= clean_and_escape($total_height);
-						$data['cbm']			= clean_and_escape($total_cbm);
-					} else {
-						$data['cartoon_qty']    = 1;
-						$data['net_weight']    	= 0;
-						$data['gross_weight']  	= 0;
-						$data['length']			= 0;
-						$data['width']			= 0;
-						$data['height']  		= 0;
-						$data['cbm']			= 0;
-					}
-
-					$data['rate']  					= clean_and_escape($this->input->post('rate'));
-					$data['usd_rate']  		= clean_and_escape($this->input->post('usd_rate'));
-					$data['actual_usd_rate']  = clean_and_escape($this->input->post('actual_usd_rate'));
-					$data['product_mrp']     = clean_and_escape($this->input->post('product_mrp'));
-					$data['costing_price']   = clean_and_escape($this->input->post('costing_price'));
-					$data['status']          = clean_and_escape($this->input->post('status'));
-					$data['min_stock']       = clean_and_escape($this->input->post('intimation'));
-					$data['intimation']      = clean_and_escape($this->input->post('intimation'));
-					$data['listed_1']        = clean_and_escape($this->input->post('p_listed_1'));
-					$data['listed_2']        = clean_and_escape($this->input->post('p_listed_2'));
-					$data['listed_3']        = clean_and_escape($this->input->post('p_listed_3'));
-					$data['listed_4']        = clean_and_escape($this->input->post('p_listed_4'));
-					$data['listed_5']        = clean_and_escape($this->input->post('p_listed_5'));
-					$data['listed_6']       = 1;
-					$data['listed_7']       = 1;
-					$data['is_other_sku']   = 0;
-					$data['added_date']     = date("Y-m-d H:i:s");
-
-					// if ($is_variation == 1) {
-					// 	$temp_path = $this->upload_model->upload_temp_image('image');
-					// 	if (!empty($temp_path)) {
-					// 		$year      = date("Y");
-					// 		$month     = date("m");
-					// 		$day       = date("d");
-					// 		$directory = "uploads/products/" . "$year/$month/$day/";
-
-					// 		if (!is_dir($directory)) {
-					// 			mkdir($directory, 0755, true);
-					// 		}
-
-					// 		$data['image'] = $this->upload_model->flash_image_upload($temp_path, $directory);
-					// 		$this->upload_model->delete_temp_image($temp_path);
-					// 	}
-					// }
-
-					$this->db->insert('raw_products', $data);
-					$user_id = $this->db->insert_id();
-					$this->file_model->add_product_images($user_id);
-
-					// Insert all variation rows (including first row) into product_variation
-					if (!empty($variation_net_weight) && is_array($variation_net_weight)) {
-						foreach ($variation_net_weight as $index => $net_weight) {
-							$variation = [];
-							$variation['product_id']     = $user_id;
-							$variation['size_id']        = '';
-							$variation['size_name']      = '';
-							$variation['name']           = $name;
-							$variation['sku_code']       = $item_code;
-							$variation['cartoon_qty']    = 1; // Always 1 for each variation row
-							$variation['net_weight']     = clean_and_escape($net_weight ?? 0);
-							$variation['gross_weight']  = clean_and_escape($variation_gross_weight[$index] ?? 0);
-							$variation['length']         = clean_and_escape($variation_length[$index] ?? 0);
-							$variation['width']          = clean_and_escape($variation_width[$index] ?? 0);
-							$variation['height']         = clean_and_escape($variation_height[$index] ?? 0);
-							$variation['cbm']            = clean_and_escape($variation_cbm[$index] ?? 0);
-							$variation['is_other']       = 0;
-							$variation['listed_1']       = $this->input->post('p_listed_1');
-							$variation['listed_2']       = $this->input->post('p_listed_2');
-							$variation['listed_3']      = $this->input->post('p_listed_3');
-							$variation['listed_4']       = $this->input->post('p_listed_4');
-							$variation['listed_5']       = $this->input->post('p_listed_5');
-							$variation['listed_6']      = 1;
-							$variation['listed_7']       = 1;
-							
-							// Set variation image if product image exists
-							if (isset($data['image']) && !empty($data['image'])) {
-								$variation['image'] = $data['image'];
-							}
-
-							$this->db->insert('product_variation', $variation);
-						}
-					} else {
-						// Fallback: Insert single variation if no array data
+				// Insert all variation rows (including first row) into product_variation
+				if (!empty($variation_net_weight) && is_array($variation_net_weight)) {
+					foreach ($variation_net_weight as $index => $net_weight) {
 						$variation = [];
-						$variation['product_id']    = $user_id;
-						$variation['size_id']       = '';
-						$variation['size_name']     = '';
-						$variation['name']          = $name;
-						$variation['sku_code']      = $item_code;
+						$variation['product_id']     = $user_id;
+						$variation['size_id']        = '';
+						$variation['size_name']      = '';
+						$variation['name']           = $name;
+						$variation['sku_code']       = $item_code;
 						$variation['cartoon_qty']    = 1; // Always 1 for each variation row
-						$variation['net_weight']     = $data['net_weight'];
-						$variation['gross_weight']   = $data['gross_weight'];
-						$variation['length']         = $data['length'];
-						$variation['width']          = $data['width'];
-						$variation['height']         = $data['height'];
-						$variation['cbm']            = $data['cbm'];
-						$variation['is_other']      = 0;
-						$variation['listed_1']      = $this->input->post('p_listed_1');
-						$variation['listed_2']      = $this->input->post('p_listed_2');
+						$variation['net_weight']     = clean_and_escape($net_weight ?? 0);
+						$variation['gross_weight']  = clean_and_escape($variation_gross_weight[$index] ?? 0);
+						$variation['length']         = clean_and_escape($variation_length[$index] ?? 0);
+						$variation['width']          = clean_and_escape($variation_width[$index] ?? 0);
+						$variation['height']         = clean_and_escape($variation_height[$index] ?? 0);
+						$variation['cbm']            = clean_and_escape($variation_cbm[$index] ?? 0);
+						$variation['is_other']       = 0;
+						$variation['listed_1']       = $this->input->post('p_listed_1');
+						$variation['listed_2']       = $this->input->post('p_listed_2');
 						$variation['listed_3']      = $this->input->post('p_listed_3');
-						$variation['listed_4']      = $this->input->post('p_listed_4');
-						$variation['listed_5']      = $this->input->post('p_listed_5');
+						$variation['listed_4']       = $this->input->post('p_listed_4');
+						$variation['listed_5']       = $this->input->post('p_listed_5');
 						$variation['listed_6']      = 1;
-						$variation['listed_7']      = 1;
+						$variation['listed_7']       = 1;
 						
+						// Set variation image if product image exists
 						if (isset($data['image']) && !empty($data['image'])) {
 							$variation['image'] = $data['image'];
 						}
 
 						$this->db->insert('product_variation', $variation);
 					}
-
-					if ($this->db->trans_status() === FALSE) {
-						$this->db->trans_rollback();
-						$resultpost = array(
-							"status" => 400,
-							"message" => "Error occurred while adding Product",
-						);
-					} else {
-						$this->db->trans_commit();
-						$this->session->set_flashdata('flash_message', get_phrase('products_added_successfully'));
-						$resultpost = array(
-							"status" => 200,
-							"message" => get_phrase('product_added_successfully'),
-							"url" => $this->session->userdata('previous_url'),
-						);
+				} else {
+					// Fallback: Insert single variation if no array data
+					$variation = [];
+					$variation['product_id']    = $user_id;
+					$variation['size_id']       = '';
+					$variation['size_name']     = '';
+					$variation['name']          = $name;
+					$variation['sku_code']      = $item_code;
+					$variation['cartoon_qty']    = 1; // Always 1 for each variation row
+					$variation['net_weight']     = $data['net_weight'];
+					$variation['gross_weight']   = $data['gross_weight'];
+					$variation['length']         = $data['length'];
+					$variation['width']          = $data['width'];
+					$variation['height']         = $data['height'];
+					$variation['cbm']            = $data['cbm'];
+					$variation['is_other']      = 0;
+					$variation['listed_1']      = $this->input->post('p_listed_1');
+					$variation['listed_2']      = $this->input->post('p_listed_2');
+					$variation['listed_3']      = $this->input->post('p_listed_3');
+					$variation['listed_4']      = $this->input->post('p_listed_4');
+					$variation['listed_5']      = $this->input->post('p_listed_5');
+					$variation['listed_6']      = 1;
+					$variation['listed_7']      = 1;
+					
+					if (isset($data['image']) && !empty($data['image'])) {
+						$variation['image'] = $data['image'];
 					}
+
+					$this->db->insert('product_variation', $variation);
+				}
+
+				if ($this->db->trans_status() === FALSE) {
+					$this->db->trans_rollback();
+					$resultpost = array(
+						"status" => 400,
+						"message" => "Error occurred while adding Product",
+					);
+				} else {
+					$this->db->trans_commit();
+					$this->session->set_flashdata('flash_message', get_phrase('products_added_successfully'));
+					$resultpost = array(
+						"status" => 200,
+						"message" => get_phrase('product_added_successfully'),
+						"url" => $this->session->userdata('previous_url'),
+					);
 				}
 			}
 		} catch (Exception $e) {
@@ -1455,6 +1443,35 @@ class Inventory_model extends CI_Model
 		$name = clean_and_escape($this->input->post('name'));
 
 		$item_code = clean_and_escape($this->input->post('item_code'));
+		$categories = $this->input->post('category_id');
+		
+		// Get category's parent_id to determine product type
+		$category = $this->common_model->getRowById('categories', 'parent_id', ['id' => $categories]);
+		
+		// Validate category parent_id and set product type
+		if (empty($category) || !isset($category['parent_id'])) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Invalid category selected. Please select a valid category."
+			);
+			return simple_json_output($resultpost);
+		}
+		
+		$parent_id = $category['parent_id'];
+		$product_type = '';
+		
+		if ($parent_id == 2) {
+			$product_type = 'ready';
+		} elseif ($parent_id == 3) {
+			$product_type = 'spare';
+		} else {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Invalid category. Product must belong to either 'Ready Goods' or 'Spare Parts' category."
+			);
+			return simple_json_output($resultpost);
+		}
+
 		$is_other_sku = clean_and_escape($this->input->post('is_other_sku'));
 		$other_skus = [];
 		if ($is_other_sku == 1) {
@@ -1466,14 +1483,18 @@ class Inventory_model extends CI_Model
 
 		$other_skus[] = $item_code;
 		$exist_sku = [];
-		foreach ($other_skus as $sku) {
-			$checkProduct = $this->db->select('id')->where('item_code', $sku)->where('item_code!=', '')->where('id!=', $id)->get('raw_products');
-			if ($checkProduct->num_rows() > 0) {
-				$exist_sku[] = $sku;
-			} else {
-				$checkProduct = $this->db->select('id')->where('sku_code', $sku)->where('sku_code!=', '')->where('product_id!=', $id)->get('product_sku');
+
+		// SKU Duplication check only for 'ready' goods
+		if ($product_type == 'ready') {
+			foreach ($other_skus as $sku) {
+				$checkProduct = $this->db->select('id')->where('item_code', $sku)->where('item_code!=', '')->where('id!=', $id)->get('raw_products');
 				if ($checkProduct->num_rows() > 0) {
 					$exist_sku[] = $sku;
+				} else {
+					$checkProduct = $this->db->select('id')->where('sku_code', $sku)->where('sku_code!=', '')->where('product_id!=', $id)->get('product_sku');
+					if ($checkProduct->num_rows() > 0) {
+						$exist_sku[] = $sku;
+					}
 				}
 			}
 		}
@@ -1486,40 +1507,6 @@ class Inventory_model extends CI_Model
 			);
 		} else {
 			$this->load->model('upload_model');
-
-			$item_code = clean_and_escape($this->input->post('item_code'));
-			// $color_id = clean_and_escape($this->input->post('color_id'));
-			// $color = $this->common_model->getRowById('colors', 'name', ['id' => $color_id]);
-			// $group_id = clean_and_escape($this->input->post('group_id'));
-			// $sizes = $this->input->post('sizes');
-			$categories = $this->input->post('category_id');
-			
-			// Get category's parent_id to determine product type
-			$category = $this->common_model->getRowById('categories', 'parent_id', ['id' => $categories]);
-			
-			// Validate category parent_id and set product type
-			if (empty($category) || !isset($category['parent_id'])) {
-				$resultpost = array(
-					"status" => 400,
-					"message" => "Invalid category selected. Please select a valid category."
-				);
-				return simple_json_output($resultpost);
-			}
-			
-			$parent_id = $category['parent_id'];
-			$product_type = '';
-			
-			if ($parent_id == 2) {
-				$product_type = 'ready';
-			} elseif ($parent_id == 3) {
-				$product_type = 'spare';
-			} else {
-				$resultpost = array(
-					"status" => 400,
-					"message" => "Invalid category. Product must belong to either 'Ready Goods' or 'Spare Parts' category."
-				);
-				return simple_json_output($resultpost);
-			}
 
 			$gst = clean_and_escape($this->input->post('gst'));
 

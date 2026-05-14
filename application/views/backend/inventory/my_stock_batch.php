@@ -90,8 +90,8 @@
             },   
                      
             "columns": [
-                 { "data": "sr_no" },
-                 { "data": "category" },
+                { "data": "sr_no" },
+                { "data": "category" },
                 { "data": "product_name" },
                 { "data": "batch_no" },
                 { "data": "quantity" },

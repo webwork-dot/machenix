@@ -138,7 +138,7 @@
                 processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
             },
             "ajax": {
-                "url": "<?php echo base_url('inventory/get-overall-stock-company'); ?>",
+                "url": "<?php echo base_url('inventory/get_overall_stock_company'); ?>",
                 "type": "POST",
                 "data": function(d) {
                     d.product_id = "<?php echo $product_id; ?>";
