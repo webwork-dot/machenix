@@ -154,9 +154,27 @@
         rowsHtml = '<tr><td colspan="33" class="text-center">No records</td></tr>';
       }
 
+      function formatDate(dateStr) {
+        if (!dateStr || dateStr === '0000-00-00') return '-';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${date.getDate().toString().padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()}`;
+      }
+
       const tableHtml = `
         <div class="supplier-section mb-2">
-          <h6 class="mb-1">Supplier: ${escapeHtml(supplier.supplier_name || ('Supplier ' + (supplierIdx + 1)))}</h6>
+          <h6 class="mb-1">
+            Supplier: ${escapeHtml(supplier.supplier_name || ('Supplier ' + (supplierIdx + 1)))}
+            ${supplier.invoice ? `
+              <span class="badge badge-soft-primary ms-2" style="font-size: 0.8rem; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                <i class="fa fa-file-invoice me-1"></i> Inv: ${escapeHtml(supplier.invoice)}
+              </span>
+              <span class="badge badge-soft-secondary ms-1" style="font-size: 0.8rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">
+                <i class="fa fa-calendar-alt me-1"></i> ${formatDate(supplier.invoice_date)}
+              </span>
+            ` : ''}
+          </h6>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-sm mb-0">
               <thead>

@@ -1787,6 +1787,9 @@ class Inventory extends CI_Controller
                 pp.duty_surcharge,
                 pp.taxable_value,
                 pp.gst_amt,
+                pp.invoice,
+                pp.invoice_date,
+                pp.invoice_supplier_id,
                 pop.id AS purchase_order_product_id
             FROM purchase_in_product pp
             LEFT JOIN supplier s
@@ -1844,9 +1847,16 @@ class Inventory extends CI_Controller
                 $suppliers[$supplier_id] = array(
                     'supplier_id' => $supplier_id,
                     'supplier_name' => (string)($r['supplier_name'] ?? 'Unknown Supplier'),
+                    'invoice' => '',
+                    'invoice_date' => '',
                     'products' => array(),
                     'totals' => $initTotals()
                 );
+            }
+
+            if (!empty($r['invoice']) && isset($r['invoice_supplier_id']) && (int)$r['invoice_supplier_id'] === $supplier_id) {
+                $suppliers[$supplier_id]['invoice'] = (string)$r['invoice'];
+                $suppliers[$supplier_id]['invoice_date'] = !empty($r['invoice_date']) ? date('Y-m-d', strtotime($r['invoice_date'])) : '';
             }
 
             $official_qty = (float)($r['official_ci_qty'] ?? 0);
