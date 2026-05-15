@@ -424,9 +424,18 @@
   // Get PO details
   $po_data = $this->db->query("SELECT * FROM purchase_order WHERE id = '$po_id'")->row_array();
 
+  // PO products 
+  $po_products = $this->db->query("SELECT supplier_id FROM purchase_order_product WHERE parent_id = '$po_id' GROUP BY supplier_id ORDER BY id ASC");
+
+  if($po_products->num_rows() > 0){
+    $po_products = $po_products->result_array();
+    $supplier_order = implode(",", array_column($po_products, 'supplier_id'));
+    $order_by = "ORDER BY FIELD(pop.supplier_id, $supplier_order) = 0, FIELD(pop.supplier_id, $supplier_order)";
+  } else {
+    $order_by = "ORDER BY pop.supplier_id ASC";
+  }
   
   // Get products from loading_po_product
-
   $products_raw = $this->db->query("
     SELECT 
         pop.*, 
@@ -453,8 +462,10 @@
     LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
     WHERE pop.parent_id = '$po_id' AND pop.is_deleted = '0'
     GROUP BY pop.product_id, pv.id
-    ORDER BY pop.sort ASC
+    $order_by
   ")->result_array();
+
+    // echo $this->db->last_query();
   
 
   // Group raw rows by po_products.id and collect variations

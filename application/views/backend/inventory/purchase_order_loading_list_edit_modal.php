@@ -416,7 +416,7 @@
 </style>
 
 <?php
-   $company_id = $this->session->userdata('company_id');
+  $company_id = $this->session->userdata('company_id');
 
   // Get PO ID from param2
   $po_id = $param2;
@@ -449,9 +449,10 @@
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
       WHERE pop.parent_id = '$po_id' AND pop.is_deleted = '0'
-      ORDER BY pop.supplier_id DESC, pop.id ASC, pv.id ASC
+      ORDER BY pop.id ASC
   ")->result_array();
 
+//   ORDER BY pop.supplier_id DESC, pop.id ASC, pv.id ASC
   // Get existing loading_product_total data for this PO
   $loading_totals = $this->db->query("SELECT * FROM loading_product_total WHERE po_id = '$po_id'")->result_array();
   $loading_totals_by_parent = [];

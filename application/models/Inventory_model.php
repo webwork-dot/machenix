@@ -2963,7 +2963,7 @@ class Inventory_model extends CI_Model
 	public function generate_priotity_purchase_order_excel($id)
 	{
 		$data = $this->db->query("
-		SELECT p.notes, po.supplier_id, po.is_priority, po.item_code, po.categories, po.product_name, po.quantity, po.cbm, po.total_cbm FROM purchase_order as p INNER JOIN po_products as po ON p.id = po.parent_id WHERE p.id='$id' GROUP BY po.id ORDER BY po.is_priority DESC");
+		SELECT p.notes, po.supplier_id, po.is_priority, po.item_code, po.categories, po.product_name, po.quantity, po.cbm, po.total_cbm FROM purchase_order as p INNER JOIN po_products as po ON p.id = po.parent_id WHERE p.id='$id' GROUP BY po.id ORDER BY po.sort ASC, po.is_priority DESC");
 
 		$excel_data = [
 			'priority' => [
