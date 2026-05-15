@@ -89,8 +89,8 @@
             <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
                <span class="menu-title text-truncate" data-i18n="Orders">Purchase</span>
-           </a>
-           <ul class="menu-content">
+            </a>
+            <ul class="menu-content">
                 <li class="nav-item <?php if($navigation == 'import_purchase_order') echo 'active'; ?>">
                     <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/imp-purchase-order">
                         <i class="feather icon-circle"></i>
@@ -103,7 +103,7 @@
                         <span class="menu-title text-truncate">Local PO</span>
                     </a>
                 </li>
-           </ul>
+            </ul>
         </li>
 
         <li class="nav-item <?php if($page_name == 'batch_detail') echo 'active'; ?>">
@@ -205,13 +205,13 @@
 		   </a>
 		   <ul class="menu-content">
 		       
-                <?php if($user_id == 4 || in_array('30',$access_array)) {?>
+               <?php if($user_id == 4 || in_array('30',$access_array)) {?>
 				<li class="nav-item ">
 				   <a class="d-flex align-items-center " href="<?php echo site_url('inventory/purchase-reports'); ?>">
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Purchase</span>
 				   </a>
-			   </li>
+			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('16',$access_array)) {?>
 				<li class="nav-item hidden">
@@ -219,7 +219,7 @@
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Purchase Return</span>
 				   </a>
-			   </li>
+			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('31',$access_array)) {?>
 				<li class="nav-item ">
@@ -227,7 +227,7 @@
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Sales</span>
 				   </a>
-			   </li>
+			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('32',$access_array)) {?>
 				<li class="nav-item ">
@@ -235,7 +235,7 @@
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Sales Return</span>
 				   </a>
-			   </li>
+			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('37',$access_array)) {?>
 				<li class="nav-item ">
@@ -243,7 +243,7 @@
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Stock Report</span>
 				   </a>
-			   </li>
+			    </li>
                <?php } ?>
 		   </ul>
 		</li>
@@ -275,7 +275,7 @@
         </li>
         <?php } ?>
 
-        <?php if($user_id == 4 || in_array('2',$access_array)) {?>
+        <?php if($user_id == 4 || in_array('2',$access_array)) { ?>
         <li class="nav-item <?php if($navigation == 'leads') echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads/<?php echo ($this->session->userdata('super_type') == 'Inventory') ? 'all' : 'new';?>">
                 <i class="feather icon-layers"></i>

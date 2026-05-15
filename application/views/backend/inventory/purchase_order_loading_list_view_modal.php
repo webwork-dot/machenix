@@ -420,9 +420,14 @@
       </div>
       <div class="row">
         <div class="col-md-6">
-          <span class="label">Loading Date:</span> <?php echo date('d M, Y', strtotime($po_data['delivery_date'])); ?>
+          <span class="label">Loading Date:</span> <?php echo !empty($po_data['expected_date']) ? date('d M, Y', strtotime($po_data['expected_date'])) : 'N/A'; ?>
         </div>
         <div class="col-md-6">
+          <span class="label">Expected Arrival Date:</span> <?php echo !empty($po_data['arrival_date']) ? date('d M, Y', strtotime($po_data['arrival_date'])) : 'N/A'; ?>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
           <span class="label">Warehouse:</span> <?php echo $warehouse['name'] ?? 'N/A'; ?>
         </div>
       </div>
@@ -610,7 +615,7 @@
                                 <td class="text-center"><?php echo number_format($supplier_total_loading_qty, 0); ?></td>
                                 <td class="text-center"><?php echo number_format($supplier_total_official_ci_qty, 0); ?></td>
                                 <td class="text-center"><?php echo number_format($supplier_total_black_qty, 0); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_unit_price_rmb, 2); ?></td>
+                                <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_amount_rmb, 2); ?></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_official_ci_unit_price_usd, 2); ?></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_amount_usd, 2); ?></td>

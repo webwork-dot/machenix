@@ -162,23 +162,24 @@
                 value="<?php echo date('Y-m-d');?>" id="date_picker">
             </div>
           </div>
-          <div class="col-12 col-sm-4 mb-1">
+          <!-- <div class="col-12 col-sm-4 mb-1">
             <div class="form-group">
               <label> Loading Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="delivery_date" value="<?php echo date('Y-m-d');?>"
                 id="date_picker">
             </div>
-          </div>
+          </div> -->
           <div class="col-12 col-sm-4 mb-1">
+            <input type="hidden" name="delivery_date" value="<?php echo date('Y-m-d');?>" >
             <div class="form-group">
-              <label>Expected Loading Date <span class="required">*</span></label>
-              <input type="date" class="form-control" name="expected_date" value="<?php echo date('Y-m-d');?>" >
+              <label>Loading Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expected_date" value="<?php echo date('Y-m-d');?>" required>
             </div>
           </div>
           <div class="col-12 col-sm-4 mb-1">
             <div class="form-group">
-              <label>Arrival Date <span class="required">*</span></label>
-              <input type="date" class="form-control" name="arrival_date" value="<?php echo date('Y-m-d');?>">
+              <label>Expected Arrival Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="arrival_date" value="<?php echo date('Y-m-d');?>" required>
             </div>
           </div>
           <input type="hidden" name="warehouse_state" id="warehouse_state" value="">
@@ -339,7 +340,7 @@
                       <th>Product Name</th>
                       <th>Model No.</th>
                       <th>Quantity</th>
-                      <th>Unit Price (RMB)</th>
+                      <!-- <th>Unit Price (RMB)</th> -->
                       <th>Official Quantity</th>
                       <th>Black Qty</th>
                       <th>Total Amount (RMB)</th>
@@ -361,7 +362,7 @@
                     <tr id="grand-total-row">
                       <td colspan="3" style="text-align:right; padding:10px;"><strong>Grand Total:</strong></td>
                       <td class="grand-total-qty">0</td>
-                      <td class="grand-total-unit-price-rmb">0.00</td>
+                      <!-- <td class="grand-total-unit-price-rmb"></td> -->
                       <td class="grand-total-official-qty">0</td>
                       <td class="grand-total-black-qty">0</td>
                       <!-- <td class="grand-total-amount-rmb">0.00</td> -->
@@ -1340,7 +1341,7 @@ function updateGrandTotalsRow() {
   }
 
   $grandTotalRow.find('.grand-total-qty').text(Math.round(totals.qty));
-  $grandTotalRow.find('.grand-total-unit-price-rmb').text(totals.unitPriceRMB.toFixed(2));
+  $grandTotalRow.find('.grand-total-unit-price-rmb').text('');
   $grandTotalRow.find('.grand-total-official-qty').text(Math.round(totals.officialQty));
   $grandTotalRow.find('.grand-total-black-qty').text(Math.round(totals.blackQty));
   // $grandTotalRow.find('.grand-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));

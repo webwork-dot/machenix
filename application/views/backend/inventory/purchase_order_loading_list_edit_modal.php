@@ -578,13 +578,13 @@
         <div class="col-md-4"></div>
         <div class="col-md-4">
             <div class="form-group">
-              <label>Expected Loading Date <span class="required">*</span></label>
+              <label>Loading Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="expected_date" value="<?php echo (!empty($po_data['expected_date']) ? date('Y-m-d', strtotime($po_data['expected_date'])) : date('Y-m-d')); ?>" >
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group">
-              <label>Arrival Date <span class="required">*</span></label>
+              <label>Expected Arrival Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="arrival_date" value="<?php echo (!empty($po_data['arrival_date']) ? date('Y-m-d', strtotime($po_data['arrival_date'])) : date('Y-m-d')); ?>">
             </div>
         </div>
@@ -953,7 +953,7 @@
                                     <th style="width: 200px;">Product Name</th>
                                     <th style="width: 100px;">Priority List <br> (Qty)</th>
                                     <th style="width: 100px;">Loading Qty <br> (PCS)</th>
-                                    <th style="width: 100px;">Unit Price <br> (RMB)</th>
+                                    <!-- <th style="width: 100px;">Unit Price <br> (RMB)</th> -->
                                     <th style="width: 80px;">Official CI <br> Qty</th>
                                     <th style="width: 80px;">Black Qty</th>
                                     <th style="width: 110px;">Total Amount <br> (RMB)</th>
@@ -976,7 +976,7 @@
                                     <td colspan="4" style="text-align: right; padding: 10px; color: #000;"><strong>Grand Total:</strong></td>
                                     <td class="grand-total-priority-qty" style="color: #000;">0</td>
                                     <td class="grand-total-loading-qty" style="color: #000;">0</td>
-                                    <td class="grand-total-unit-price-rmb" style="color: #000;"></td>
+                                    <!-- <td class="grand-total-unit-price-rmb" style="color: #000;"></td> -->
                                     <td class="grand-total-official-ci-qty" style="color: #000;">0</td>
                                     <td class="grand-total-black-qty" style="color: #000;">0</td>
                                     <td class="grand-total-amount-rmb" style="color: #000;">0.00</td>
@@ -2158,7 +2158,7 @@ $(document).on('click', '#add_supplier_btn', function() {
     html += '</div>';
 
     if (count === 0) {
-        html = '<div class="alert-warning">All available suppliers are already added to the list.</div>';
+        html = '<div class="alert-warning p-1">All available suppliers are already added to the list.</div>';
         $('#confirm_add_supplier_btn').hide();
     } else {
         $('#confirm_add_supplier_btn').show();
