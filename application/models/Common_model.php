@@ -235,7 +235,6 @@ class Common_model extends CI_Model{
     
   public function get_state_name($id)
     {
-        $id = clean_number($id);
         $this->db->where('states.id', $id);
         $query = $this->db->get('states');
         $sql=$query->row();
@@ -244,7 +243,6 @@ class Common_model extends CI_Model{
     
     public function get_city_name($id)
     {
-        $id = clean_number($id);
         $this->db->where('cities.id', $id);
         $query = $this->db->get('cities');
         $sql= $query->row();

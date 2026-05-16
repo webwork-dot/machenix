@@ -617,17 +617,17 @@
                                 <td class="text-center"><?php echo number_format($supplier_total_black_qty, 0); ?></td>
                                 <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_amount_rmb, 2); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_official_ci_unit_price_usd, 2); ?></td>
+                                <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_amount_usd, 2); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_black_total_price, 2); ?></td>
+                                <td class="text-right"></td>
                                 <td class="text-center"><?php echo number_format($supplier_total_pkg_ctn, 0); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_nw_kg, 2); ?></td>
+                                <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_total_nw, 2); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_gw_kg, 2); ?></td>
+                                <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_total_gw, 2); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_length, 2); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_width, 2); ?></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_height, 2); ?></td>
+                                <td class="text-right"></td>
+                                <td class="text-right"></td>
+                                <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_total_cbm, 6); ?></td>
                             </tr>
                         </tbody>
@@ -726,10 +726,7 @@
                 <div class="grand-total-label">Total Amount (USD)</div>
                 <div class="grand-total-value"><?php echo number_format($grand_total_amount_usd, 2); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total Black Price</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_black_price, 2); ?></div>
-            </div>
+            
             <div class="grand-total-item">
                 <div class="grand-total-label">Total N.W. (kg)</div>
                 <div class="grand-total-value"><?php echo number_format($grand_total_nw, 2); ?></div>

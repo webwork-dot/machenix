@@ -911,17 +911,17 @@
                                         <td class="supplier-total-official-ci-qty">0</td>
                                         <td class="supplier-total-black-qty">0</td>
                                         <td class="supplier-total-amount-rmb">0.00</td>
-                                        <td class="supplier-total-official-ci-unit-price-usd">0.00</td>
+                                        <td class="supplier-total-official-ci-unit-price-usd"></td>
                                         <td class="supplier-total-amount-usd">0.00</td>
                                         <td class="supplier-total-black-total-price"></td>
                                         <td class="supplier-total-pkg-ctn">0</td>
-                                        <td class="supplier-total-nw-kg">0.00</td>
+                                        <td class="supplier-total-nw-kg"></td>
                                         <td class="supplier-total-total-nw">0.00</td>
-                                        <td class="supplier-total-gw-kg">0.00</td>
+                                        <td class="supplier-total-gw-kg"></td>
                                         <td class="supplier-total-total-gw">0.00</td>
-                                        <td class="supplier-total-length">0.00</td>
-                                        <td class="supplier-total-width">0.00</td>
-                                        <td class="supplier-total-height">0.00</td>
+                                        <td class="supplier-total-length"></td>
+                                        <td class="supplier-total-width"></td>
+                                        <td class="supplier-total-height"></td>
                                         <td class="supplier-total-total-cbm">0.000000</td>
                                     </tr>
                                 </tbody>
@@ -957,17 +957,17 @@
                                     <th style="width: 80px;">Official CI <br> Qty</th>
                                     <th style="width: 80px;">Black Qty</th>
                                     <th style="width: 110px;">Total Amount <br> (RMB)</th>
-                                    <th style="width: 130px;">Official CI <br>Unit Price (USD)</th>
+                                    <!-- <th style="width: 130px;">Official CI <br>Unit Price (USD)</th> -->
                                     <th style="width: 110px;">Total Amount <br> (USD)</th>
-                                    <th style="width: 100px;">Black Total <br> Price</th>
+                                    <!-- <th style="width: 100px;">Black Total <br> Price</th> -->
                                     <th style="width: 80px;">PKG <br> (ctn)</th>
-                                    <th style="width: 80px;">N.W. <br> (kg)</th>
+                                    <!-- <th style="width: 80px;">N.W. <br> (kg)</th> -->
                                     <th style="width: 100px;">Total N.W.</th>
-                                    <th style="width: 80px;">G.W. <br> (kg)</th>
+                                    <!-- <th style="width: 80px;">G.W. <br> (kg)</th> -->
                                     <th style="width: 100px;">Total G.W.</th>
-                                    <th style="width: 70px;">L</th>
+                                    <!-- <th style="width: 70px;">L</th>
                                     <th style="width: 70px;">W</th>
-                                    <th style="width: 70px;">H</th>
+                                    <th style="width: 70px;">H</th> -->
                                     <th style="width: 110px;">Total CBM</th>
                                 </tr>
                             </thead>
@@ -980,17 +980,17 @@
                                     <td class="grand-total-official-ci-qty" style="color: #000;">0</td>
                                     <td class="grand-total-black-qty" style="color: #000;">0</td>
                                     <td class="grand-total-amount-rmb" style="color: #000;">0.00</td>
-                                    <td class="grand-total-official-ci-unit-price-usd" style="color: #000;">0.00</td>
+                                    <!-- <td class="grand-total-official-ci-unit-price-usd" style="color: #000;">0.00</td> -->
                                     <td class="grand-total-amount-usd" style="color: #000;">0.00</td>
-                                    <td class="grand-total-black-total-price" style="color: #000;"></td>
+                                    <!-- <td class="grand-total-black-total-price" style="color: #000;"></td> -->
                                     <td class="grand-total-pkg-ctn" style="color: #000;">0</td>
-                                    <td class="grand-total-nw-kg" style="color: #000;">0.00</td>
+                                    <!-- <td class="grand-total-nw-kg" style="color: #000;">0.00</td> -->
                                     <td class="grand-total-total-nw" style="color: #000;">0.00</td>
-                                    <td class="grand-total-gw-kg" style="color: #000;">0.00</td>
+                                    <!-- <td class="grand-total-gw-kg" style="color: #000;">0.00</td> -->
                                     <td class="grand-total-total-gw" style="color: #000;">0.00</td>
-                                    <td class="grand-total-length" style="color: #000;">0.00</td>
+                                    <!-- <td class="grand-total-length" style="color: #000;">0.00</td>
                                     <td class="grand-total-width" style="color: #000;">0.00</td>
-                                    <td class="grand-total-height" style="color: #000;">0.00</td>
+                                    <td class="grand-total-height" style="color: #000;">0.00</td> -->
                                     <td class="grand-total-total-cbm" style="color: #000;">0.00</td>
                                 </tr>
                             </tbody>
@@ -1031,8 +1031,13 @@
         <h5 class="modal-title-" id="staticBackdropLabel">Load Supplier Product</h5>
         <button type="button" class="btn-close" id="close-sub-modal" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body" id="temp-supp-prods">
-        
+      <div class="modal-body">
+        <div class="mb-1">
+            <input type="text" id="product_search" class="form-control" placeholder="Search product name or model no..." onkeyup="searchProducts()">
+        </div>
+        <div id="temp-supp-prods" style="max-height: 300px; overflow-y: auto;">
+            <!-- Table will be loaded here -->
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1051,7 +1056,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div id="available_suppliers_list">
+        <div class="mb-1">
+            <input type="text" id="supplier_search" class="form-control" placeholder="Search supplier name..." onkeyup="searchSuppliers()">
+        </div>
+        <div id="available_suppliers_list" style="max-height: 300px; overflow-y: auto;">
             <!-- Suppliers checkboxes will be loaded here -->
             <div class="text-center p-3">
                 <i class="fa fa-spinner fa-spin fa-2x"></i>
@@ -1505,7 +1513,8 @@ function processReloadSupplierProducts(buttonEl, loadProducts, existingProductId
                     </table>
                     `;
 
-                    jQuery('.inner-modal').modal('show', {backdrop: 'true'});
+                    $('#product_search').val('');
+                    jQuery('#staticBackdrop').modal('show');
                     $("#temp-supp-prods").html(html);
                     document.querySelector("#load-product-btn").setAttribute('onclick',`supplierProducts(${supplierId})`);
                 } else {
@@ -1681,19 +1690,19 @@ function updateInvoiceSuppliers() {
                 '</div>' +
                 '<div class="invoice-field-group">' +
                 '<label class="invoice-supplier-label">' +
-                '<i class="fa fa-clipboard"></i> ' +
-                'Terms of Payment ' +
-                '</label>' +
-                '<textarea class="form-control invoice-field-textarea" name="invoice_terms[' + invoiceNo + ']" ' +
-                'id="invoice_terms_' + invoiceNo + '" placeholder="Enter Terms of Payment">' + escapeHtml(existingInvoiceTerms) + '</textarea>' +
-                '</div>' +
-                '<div class="invoice-field-group">' +
-                '<label class="invoice-supplier-label">' +
                 '<i class="fa fa-dollar-sign"></i> ' +
                 'Terms of Price' +
                 '</label>' +
                 '<input type="text" class="form-control invoice-field-input" name="invoice_price_terms[' + invoiceNo + ']" ' +
                 'id="invoice_price_terms_' + invoiceNo + '" value="' + escapeAttr(existingInvoicePriceTerms) + '" placeholder="Enter terms of price">' +
+                '</div>' +
+                '<div class="invoice-field-group">' +
+                '<label class="invoice-supplier-label">' +
+                '<i class="fa fa-clipboard"></i> ' +
+                'Terms of Payment ' +
+                '</label>' +
+                '<textarea class="form-control invoice-field-textarea" name="invoice_terms[' + invoiceNo + ']" ' +
+                'id="invoice_terms_' + invoiceNo + '" placeholder="Enter Terms of Payment">' + escapeHtml(existingInvoiceTerms) + '</textarea>' +
                 '</div>' +
                 '</div>' +
                 '</div>';
@@ -1941,17 +1950,17 @@ function updateSupplierTotals($supplierSection) {
     $totalRow.find('.supplier-total-black-qty').text(Math.round(totals.blackQty));
     // $totalRow.find('.supplier-total-unit-price-rmb').text(totals.unitPriceRMB.toFixed(2));
     $totalRow.find('.supplier-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));
-    $totalRow.find('.supplier-total-official-ci-unit-price-usd').text(totals.officialCIUnitPriceUSD.toFixed(2));
+    // $totalRow.find('.supplier-total-official-ci-unit-price-usd').text(totals.officialCIUnitPriceUSD.toFixed(2));
     $totalRow.find('.supplier-total-amount-usd').text(totals.totalAmountUSD.toFixed(2));
     // $totalRow.find('.supplier-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
     $totalRow.find('.supplier-total-pkg-ctn').text(Math.round(totals.pkgCtn));
-    $totalRow.find('.supplier-total-nw-kg').text(totals.nwKg.toFixed(2));
+    // $totalRow.find('.supplier-total-nw-kg').text(totals.nwKg.toFixed(2));
     $totalRow.find('.supplier-total-total-nw').text(totals.totalNW.toFixed(2));
-    $totalRow.find('.supplier-total-gw-kg').text(totals.gwKg.toFixed(2));
+    // $totalRow.find('.supplier-total-gw-kg').text(totals.gwKg.toFixed(2));
     $totalRow.find('.supplier-total-total-gw').text(totals.totalGW.toFixed(2));
-    $totalRow.find('.supplier-total-length').text(totals.length.toFixed(2));
-    $totalRow.find('.supplier-total-width').text(totals.width.toFixed(2));
-    $totalRow.find('.supplier-total-height').text(totals.height.toFixed(2));
+    // $totalRow.find('.supplier-total-length').text(totals.length.toFixed(2));
+    // $totalRow.find('.supplier-total-width').text(totals.width.toFixed(2));
+    // $totalRow.find('.supplier-total-height').text(totals.height.toFixed(2));
     $totalRow.find('.supplier-total-total-cbm').text(totals.totalCBM.toFixed(6));
 }
 
@@ -2017,17 +2026,17 @@ function updateGrandTotals() {
         $grandTotalRow.find('.grand-total-black-qty').text(Math.round(grandTotals.blackQty));
         // $grandTotalRow.find('.grand-total-unit-price-rmb').text(grandTotals.unitPriceRMB.toFixed(2));
         $grandTotalRow.find('.grand-total-amount-rmb').text(grandTotals.totalAmountRMB.toFixed(2));
-        $grandTotalRow.find('.grand-total-official-ci-unit-price-usd').text(grandTotals.officialCIUnitPriceUSD.toFixed(2));
+        // $grandTotalRow.find('.grand-total-official-ci-unit-price-usd').text(grandTotals.officialCIUnitPriceUSD.toFixed(2));
         $grandTotalRow.find('.grand-total-amount-usd').text(grandTotals.totalAmountUSD.toFixed(2));
         // $grandTotalRow.find('.grand-total-black-total-price').text(grandTotals.blackTotalPrice.toFixed(2));
         $grandTotalRow.find('.grand-total-pkg-ctn').text(Math.round(grandTotals.pkgCtn));
-        $grandTotalRow.find('.grand-total-nw-kg').text(grandTotals.nwKg.toFixed(2));
+        // $grandTotalRow.find('.grand-total-nw-kg').text(grandTotals.nwKg.toFixed(2));
         $grandTotalRow.find('.grand-total-total-nw').text(grandTotals.totalNW.toFixed(2));
-        $grandTotalRow.find('.grand-total-gw-kg').text(grandTotals.gwKg.toFixed(2));
+        // $grandTotalRow.find('.grand-total-gw-kg').text(grandTotals.gwKg.toFixed(2));
         $grandTotalRow.find('.grand-total-total-gw').text(grandTotals.totalGW.toFixed(2));
-        $grandTotalRow.find('.grand-total-length').text(grandTotals.length.toFixed(2));
-        $grandTotalRow.find('.grand-total-width').text(grandTotals.width.toFixed(2));
-        $grandTotalRow.find('.grand-total-height').text(grandTotals.height.toFixed(2));
+        // $grandTotalRow.find('.grand-total-length').text(grandTotals.length.toFixed(2));
+        // $grandTotalRow.find('.grand-total-width').text(grandTotals.width.toFixed(2));
+        // $grandTotalRow.find('.grand-total-height').text(grandTotals.height.toFixed(2));
         $grandTotalRow.find('.grand-total-total-cbm').text(grandTotals.totalCBM.toFixed(2));
     }
 }
@@ -2164,6 +2173,7 @@ $(document).on('click', '#add_supplier_btn', function() {
         $('#confirm_add_supplier_btn').show();
     }
 
+    $('#supplier_search').val('');
     $('#available_suppliers_list').html(html);
     $('#addSupplierModal').modal('show');
 });
@@ -2247,17 +2257,17 @@ function createSupplierSection(supplierId, supplierName) {
                             <td class="supplier-total-official-ci-qty">0</td>
                             <td class="supplier-total-black-qty">0</td>
                             <td class="supplier-total-amount-rmb">0.00</td>
-                            <td class="supplier-total-official-ci-unit-price-usd">0.00</td>
+                            <td class="supplier-total-official-ci-unit-price-usd"></td>
                             <td class="supplier-total-amount-usd">0.00</td>
                             <td class="supplier-total-black-total-price"></td>
                             <td class="supplier-total-pkg-ctn">0</td>
-                            <td class="supplier-total-nw-kg">0.00</td>
+                            <td class="supplier-total-nw-kg"></td>
                             <td class="supplier-total-total-nw">0.00</td>
-                            <td class="supplier-total-gw-kg">0.00</td>
+                            <td class="supplier-total-gw-kg"></td>
                             <td class="supplier-total-total-gw">0.00</td>
-                            <td class="supplier-total-length">0.00</td>
-                            <td class="supplier-total-width">0.00</td>
-                            <td class="supplier-total-height">0.00</td>
+                            <td class="supplier-total-length"></td>
+                            <td class="supplier-total-width"></td>
+                            <td class="supplier-total-height"></td>
                             <td class="supplier-total-total-cbm">0.000000</td>
                         </tr>
                     </tbody>
@@ -2268,6 +2278,47 @@ function createSupplierSection(supplierId, supplierName) {
 
     $('#add_supplier_btn').parent().before(sectionHtml);
     $('.grand-total-section').show();
+}
+
+function searchProducts() {
+    var input = document.getElementById("product_search");
+    var filter = input.value.toLowerCase();
+    var table = document.querySelector("#temp-supp-prods table");
+    if (!table) return;
+    var tr = table.getElementsByTagName("tr");
+
+    for (var i = 1; i < tr.length; i++) { // Skip header
+        var tdName = tr[i].getElementsByTagName("td")[1]; // Product Name
+        var tdModel = tr[i].getElementsByTagName("td")[3]; // Model No
+        if (tdName || tdModel) {
+            var txtValueName = tdName.textContent || tdName.innerText;
+            var txtValueModel = tdModel.textContent || tdModel.innerText;
+            if (txtValueName.toLowerCase().indexOf(filter) > -1 || txtValueModel.toLowerCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+
+function searchSuppliers() {
+    var input = document.getElementById("supplier_search");
+    var filter = input.value.toLowerCase();
+    var list = document.getElementById("available_suppliers_list");
+    var items = list.getElementsByClassName("col-md-6");
+
+    for (var i = 0; i < items.length; i++) {
+        var label = items[i].getElementsByClassName("form-check-label")[0];
+        if (label) {
+            var txtValue = label.textContent || label.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
 }
 
 </script>

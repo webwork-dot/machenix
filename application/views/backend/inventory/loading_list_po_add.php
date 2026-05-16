@@ -344,17 +344,17 @@
                       <th>Official Quantity</th>
                       <th>Black Qty</th>
                       <th>Total Amount (RMB)</th>
-                      <th>Official CI Unit Price (USD)</th>
+                      <!-- <th>Official CI Unit Price (USD)</th> -->
                       <th>Total Amount (USD)</th>
-                      <th>Black Total Price</th>
+                      <!-- <th>Black Total Price</th> -->
                       <th>PKG (ctn)</th>
-                      <th>N.W. (kg)</th>
+                      <!-- <th>N.W. (kg)</th> -->
                       <th>Total N.W. (kg)</th>
-                      <th>G.W. (kg)</th>
+                      <!-- <th>G.W. (kg)</th> -->
                       <th>Total G.W. (kg)</th>
-                      <th>L</th>
+                      <!-- <th>L</th>
                       <th>W</th>
-                      <th>H</th>
+                      <th>H</th> -->
                       <th>Total CBM</th>
                     </tr>
                   </thead>
@@ -365,19 +365,18 @@
                       <!-- <td class="grand-total-unit-price-rmb"></td> -->
                       <td class="grand-total-official-qty">0</td>
                       <td class="grand-total-black-qty">0</td>
-                      <!-- <td class="grand-total-amount-rmb">0.00</td> -->
-                      <td class="grand-total-amount-rmb"></td>
-                      <td class="grand-total-official-ci-unit-price-usd">0.00</td>
+                      <td class="grand-total-amount-rmb">0</td>
+                      <!-- <td class="grand-total-official-ci-unit-price-usd">0.00</td> -->
                       <td class="grand-total-amount-usd">0.00</td>
-                      <td class="grand-total-black-total-price">0.00</td>
+                      <!-- <td class="grand-total-black-total-price">0.00</td> -->
                       <td class="grand-total-pkg-ctn">0</td>
-                      <td class="grand-total-nw-kg">0.00</td>
+                      <!-- <td class="grand-total-nw-kg">0.00</td> -->
                       <td class="grand-total-total-nw">0.00</td>
-                      <td class="grand-total-gw-kg">0.00</td>
+                      <!-- <td class="grand-total-gw-kg">0.00</td> -->
                       <td class="grand-total-total-gw">0.00</td>
-                      <td class="grand-total-length">0.00</td>
+                      <!-- <td class="grand-total-length">0.00</td>
                       <td class="grand-total-width">0.00</td>
-                      <td class="grand-total-height">0.00</td>
+                      <td class="grand-total-height">0.00</td> -->
                       <td class="grand-total-total-cbm">0.00</td>
                     </tr>
                   </tbody>
@@ -514,17 +513,17 @@ function updateInvoiceSuppliers() {
         '</div>' +
         '<div class="invoice-field-group">' +
         '<label class="invoice-supplier-label">' +
-        '<i class="fa fa-clipboard"></i> Invoice Terms' +
-        '</label>' +
-        '<textarea class="form-control invoice-field-textarea" name="invoice_terms[' + invoiceNo + ']" ' +
-        'id="invoice_terms_' + invoiceNo + '" placeholder="Enter invoice terms"></textarea>' +
-        '</div>' +
-        '<div class="invoice-field-group">' +
-        '<label class="invoice-supplier-label">' +
         '<i class="fa fa-dollar-sign"></i> Price Term' +
         '</label>' +
         '<input type="text" class="form-control invoice-field-input" name="invoice_price_terms[' + invoiceNo + ']" ' +
         'id="invoice_price_terms_' + invoiceNo + '" placeholder="Enter price term">' +
+        '</div>' +
+        '<div class="invoice-field-group">' +
+        '<label class="invoice-supplier-label">' +
+        '<i class="fa fa-clipboard"></i> Invoice Terms' +
+        '</label>' +
+        '<textarea class="form-control invoice-field-textarea" name="invoice_terms[' + invoiceNo + ']" ' +
+        'id="invoice_terms_' + invoiceNo + '" placeholder="Enter invoice terms"></textarea>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -1159,7 +1158,7 @@ function createProductTotalRow(supplierRowId) {
       <span class="stotal-qty-${supplierRowId}">${qtySum}</span>
     </td>
     <td>
-      <span class="stotal-unit-rmb-${supplierRowId}">${unitRmbSum}</span>
+      <span class="stotal-unit-rmb-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-official-${supplierRowId}">${officialQtySum}</span>
@@ -1168,40 +1167,40 @@ function createProductTotalRow(supplierRowId) {
       <span class="stotal-black-${supplierRowId}">${blackQtySum}</span>
     </td>
     <td>
-      <span class="stotal-rmb-${supplierRowId}"></span>
+      <span class="stotal-rmb-${supplierRowId}">${totalAmountSum}</span>
     </td>
     <td>
-      <span class="stotal-ci-${supplierRowId}">${officialCiUsdSum}</span>
+      <span class="stotal-ci-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-amount-${supplierRowId}">${usdSum}</span>
     </td>
     <td>
-      <span class="stotal-black-price-${supplierRowId}">${blackPriceSum}</span>
+      <span class="stotal-black-price-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-pkg-${supplierRowId}">${pkgQtySum}</span>
     </td>
     <td>
-      <span class="stotal-nw-${supplierRowId}">${netWeightSum}</span>
+      <span class="stotal-nw-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-total-nw-${supplierRowId}">${totalNetWeightSum}</span>
     </td>
     <td>
-      <span class="stotal-gw-${supplierRowId}">${grossWeightSum}</span>
+      <span class="stotal-gw-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-total-gw-${supplierRowId}">${totalGrossWeightSum}</span>
     </td>
     <td>
-      <span class="stotal-l-${supplierRowId}">${lengthSum}</span>
+      <span class="stotal-l-${supplierRowId}"></span>
     </td>
     <td>
-      <span class="stotal-w-${supplierRowId}">${widthSum}</span>
+      <span class="stotal-w-${supplierRowId}"></span>
     </td>
     <td>
-      <span class="stotal-h-${supplierRowId}">${heightSum}</span>
+      <span class="stotal-h-${supplierRowId}"></span>
     </td>
     <td>
       <span class="stotal-cbm-${supplierRowId}">${totalCbmSum}</span>
@@ -1344,19 +1343,18 @@ function updateGrandTotalsRow() {
   $grandTotalRow.find('.grand-total-unit-price-rmb').text('');
   $grandTotalRow.find('.grand-total-official-qty').text(Math.round(totals.officialQty));
   $grandTotalRow.find('.grand-total-black-qty').text(Math.round(totals.blackQty));
-  // $grandTotalRow.find('.grand-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));
-  $grandTotalRow.find('.grand-total-amount-rmb').text('');
+  $grandTotalRow.find('.grand-total-amount-rmb').text(totals.totalAmountRMB.toFixed(2));
   $grandTotalRow.find('.grand-total-official-ci-unit-price-usd').text(totals.officialCIUnitPriceUSD.toFixed(2));
   $grandTotalRow.find('.grand-total-amount-usd').text(totals.totalAmountUSD.toFixed(2));
-  $grandTotalRow.find('.grand-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
+  // $grandTotalRow.find('.grand-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
   $grandTotalRow.find('.grand-total-pkg-ctn').text(Math.round(totals.pkgCtn));
-  $grandTotalRow.find('.grand-total-nw-kg').text(totals.nwKg.toFixed(2));
+  // $grandTotalRow.find('.grand-total-nw-kg').text(totals.nwKg.toFixed(2));
   $grandTotalRow.find('.grand-total-total-nw').text(totals.totalNW.toFixed(2));
-  $grandTotalRow.find('.grand-total-gw-kg').text(totals.gwKg.toFixed(2));
+  // $grandTotalRow.find('.grand-total-gw-kg').text(totals.gwKg.toFixed(2));
   $grandTotalRow.find('.grand-total-total-gw').text(totals.totalGW.toFixed(2));
-  $grandTotalRow.find('.grand-total-length').text(totals.length.toFixed(2));
-  $grandTotalRow.find('.grand-total-width').text(totals.width.toFixed(2));
-  $grandTotalRow.find('.grand-total-height').text(totals.height.toFixed(2));
+  // $grandTotalRow.find('.grand-total-length').text(totals.length.toFixed(2));
+  // $grandTotalRow.find('.grand-total-width').text(totals.width.toFixed(2));
+  // $grandTotalRow.find('.grand-total-height').text(totals.height.toFixed(2));
   $grandTotalRow.find('.grand-total-total-cbm').text(totals.totalCBM.toFixed(2));
 }
 

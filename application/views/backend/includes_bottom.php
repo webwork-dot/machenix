@@ -28,6 +28,54 @@
 
 
 <script>
+    
+var phInput = $(".cphone");
+var telInput = $(".tphone");
+var phoneConfigs = {
+    allowExtensions: true,
+    formatOnDisplay: true,
+    autoFormat: false,
+    autoHideDialCode: true,
+    autoPlaceholder: true,
+    defaultCountry: "auto",
+    ipinfoToken: "yolo",
+    nationalMode: true,
+    numberType: "MOBILE",
+    //onlyCountries: ['us', 'gb', 'ch', 'ca', 'do'],
+    preferredCountries: ['sa', 'ae', 'qa','om','bh','kw','ma'],
+    preventInvalidNumbers: true,
+    separateDialCode: true,   
+    initialCountry: "auto",
+    geoIpLookup: function(callback) {
+        $.get("https://ipinfo.io", function() {}, "jsonp").always(function(resp) {
+            var countryCode = (resp && resp.country) ? resp.country : "";
+            callback(countryCode);
+            $(".country-code").val(countryCode);
+        });
+    },
+    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/11.0.9/js/utils.js"
+}
+
+phInput.each(function() {
+    var $this = $(this);
+    $this.intlTelInput(phoneConfigs);
+    var code = $this.data('code');
+    var val = $this.val();
+    if (code && val) {
+        $this.intlTelInput("setNumber", "+" + code + val);
+    }
+});
+
+telInput.each(function() {
+    var $this = $(this);
+    $this.intlTelInput(phoneConfigs);
+    var code = $this.data('code');
+    var val = $this.val();
+    if (code && val) {
+        $this.intlTelInput("setNumber", "+" + code + val);
+    }
+});
+
 function clearValue(input) {
   if (input.value === '0') {
     input.value = '';
@@ -561,7 +609,7 @@ function isWholeNumberKey(evt, element) {
             },
             cache: true
         }
-     });  
+    });  
     
     function confirm_delete_(b,url) {
        var a = {
@@ -629,36 +677,36 @@ function isWholeNumberKey(evt, element) {
         }
       });
       confirmDlg.show();
-   } 
+    } 
   
-  function checkForm(form) // Submit button clicked
-  {
-    form.btn_verify.disabled = true; 
-	$('.btn_verify').attr("disabled", true);
-	$('.btn_verify').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
-     
-    return true;
-  } 
-  
-    function checkFm(form) // Submit button clicked
-  {
-    form.btn_vefy.disabled = true; 
-	$('.btn_vefy').attr("disabled", true);
-	$('.btn_vefy').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
-     
-    return true;
-  } 
-  
-  function checkFormLoader(form) {
-    $(".loader").show(); 
-    form.btn_verify.disabled = true; 
-	$('.btn_verify').attr("disabled", true);
-	$('.btn_verify').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
-    $(".loader").fadeOut("slow"); 
-    return true;
-  }
+    function checkForm(form) // Submit button clicked
+    {
+        form.btn_verify.disabled = true; 
+        $('.btn_verify').attr("disabled", true);
+        $('.btn_verify').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
+        
+        return true;
+    } 
     
-        $('.add-ajax-form').submit(function(e) { 
+    function checkFm(form) // Submit button clicked
+    {
+        form.btn_vefy.disabled = true; 
+        $('.btn_vefy').attr("disabled", true);
+        $('.btn_vefy').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
+        
+        return true;
+    } 
+    
+    function checkFormLoader(form) {
+        $(".loader").show(); 
+        form.btn_verify.disabled = true; 
+        $('.btn_verify').attr("disabled", true);
+        $('.btn_verify').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
+        $(".loader").fadeOut("slow"); 
+        return true;
+    }
+    
+    $('.add-ajax-form').submit(function(e) { 
         e.preventDefault();  
 		var buttonText=$(".btn_verify").val().trim()==="" ? "Submit":$(".btn_verify").val();
 		
@@ -696,9 +744,7 @@ function isWholeNumberKey(evt, element) {
         return false;
     });
     
-    
-      
-   $('.add-ajax-image-form').submit(function(e) {
+    $('.add-ajax-image-form').submit(function(e) {
         e.preventDefault();  
 		var buttonText=$(".btn_verify").val().trim()==="" ? "Submit":$(".btn_verify").val();
 		
@@ -756,7 +802,7 @@ function isWholeNumberKey(evt, element) {
     }); 
     
      
-      $('.add-ajax-datatable-form').submit(function(e) {
+    $('.add-ajax-datatable-form').submit(function(e) {
         e.preventDefault();  
 		var buttonText=$(".btn_verify").val().trim()==="" ? "Submit":$(".btn_verify").val();
 		
@@ -807,8 +853,6 @@ function isWholeNumberKey(evt, element) {
         });
         return false;
     });
-     
-      
 
     $('.add-ajax-redirect-form').submit(function(e) {
         e.preventDefault();  
@@ -857,7 +901,70 @@ function isWholeNumberKey(evt, element) {
         return false;
     });
 	
-	
+	$('.add-ajax-ph-form').submit(function(e) {
+        var $form_el = $(this);
+        let c_code = $form_el.find(".cphone").intlTelInput("getSelectedCountryData").dialCode;
+        let t_code = $form_el.find(".tphone").intlTelInput("getSelectedCountryData").dialCode;
+
+        e.preventDefault();  
+        var buttonText = $(".btn_verify").val().trim() === "" ? "Submit" : $(".btn_verify").val();
+    
+        $(".loader").show(); 
+        $('.btn_verify').attr("disabled", true);
+        $('.btn_verify').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="ms-25 align-middle">Loading...</span>');
+        var url = $(this).attr('action');
+   
+        // Get form
+        var form = $('.add-ajax-ph-form')[0];
+
+        // FormData object 
+        var data = new FormData(form);
+        data.append('c_code', c_code);
+        data.append('t_code', t_code);
+        
+        $.ajax({
+            type: 'POST',
+            url: url,
+            async: true,
+            dataType: 'json',
+            data: data,     
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if (res.status == '200') { 
+                  $(".loader").fadeOut("slow"); 
+                  Swal.fire({
+            		title: "Success!",
+            		text: res.message,
+            		icon: "success",
+            		customClass: {
+            			confirmButton: "btn btn-primary"
+            		},
+            		buttonsStyling: !1
+            	  }).then(() => {
+            	      window.location.href = res.url;
+            	  });
+                } else {    
+                   Swal.fire({
+            			title: "Error!",
+            			html: res.message ,
+            			icon: "error",
+            			customClass: {
+            				confirmButton: "btn btn-primary"
+            			},
+            			buttonsStyling: !1
+            		});
+
+                    $('.btn_verify').html(buttonText);
+                    $('.btn_verify').attr("disabled", false);
+                    $(".loader").fadeOut("slow"); 
+                }
+            }
+        });
+
+        return false;
+    }); 
+
 	  $('.add-ajax-redirect-image-form').submit(function(e) {
           e.preventDefault();  
 		  var buttonText=$(".btn_verify").val().trim()==="" ? "Submit":$(".btn_verify").val();

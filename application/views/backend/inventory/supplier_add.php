@@ -4,7 +4,7 @@
     <div class="card">
       <div class="card-body py-1 my-0">
 
-        <?php echo form_open('inventory/supplier/add_post', ['class' => 'add-ajax-redirect-image-form','onsubmit' => 'return checkForm(this);']);?>
+        <?php echo form_open('inventory/supplier/add_post', ['class' => 'add-ajax-ph-form','onsubmit' => 'return checkForm(this);']);?>
 
         <!-- Personal Info Section -->
         <div class="row mb-2">
@@ -26,10 +26,23 @@
           </div>
 
           <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group d-flex flex-column">
+              <label>Contact Person No</label>
+                <input class="form-control cphone" style="padding-left: 84px;" type="text" name="contact_no" onkeypress="return isNumberKey(event,this)" minlength="10" maxlength="15" placeholder="Enter Contact No" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
             <div class="form-group">
-              <label>Contact Person No </label>
-              <input type="text" class="form-control" onkeyup="this.value=this.value.replace(/[^0-9]/g,'');"
-                minlength="10" maxlength="10" placeholder="Enter Contact No" name="contact_no">
+              <label>Email </label>
+              <input type="email" class="form-control" placeholder="Enter Email" name="email">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group d-flex flex-column">
+              <label>Telephone No </label>
+              <input class="form-control tphone" style="padding-left: 84px;" type="text" name="tel_no" onkeypress="return isNumberKey(event,this)" minlength="10" maxlength="15" placeholder="Enter Telephone No" autocomplete="off">
             </div>
           </div>
 
@@ -76,7 +89,7 @@
 
           <div class="col-12 col-sm-4 mb-1">
             <label class="form-label" for="country">Select Country </label>
-            <select class=" form-select select2 country_id" name="country_id">
+            <select class=" form-select select2 country_id" name="country_id" onchange="get_states_(this.value);">
               <option value="">Select Country</option>
               <?php foreach($countries as $country){?>
               <option value="<?php echo $country['id'];?>"><?php echo $country['name'];?></option>
@@ -86,7 +99,7 @@
 
           <div class="col-12 col-sm-4 mb-1">
             <label class="form-label" for="state">Select State </label>
-            <select class=" form-select select2 state_id" name="state_id" onchange="get_city_(this.value);">
+            <select class=" form-select select2 state_id" name="state_id" id="state_id_" onchange="get_city_(this.value);">
               <option value="">Select State</option>
               <?php foreach($states as $state){?>
               <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
@@ -175,19 +188,27 @@
 </div>
 
 <script>
-function get_city_(b) {
-  var a = {
-    state_id: b
-  };
+function get_states_(country_id) {
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url();?>admin/get_states",
+    data: { country_id: country_id },
+    success: function(response) {
+      $("#state_id_").html(response);
+      $("#states_").html('<option value="">Select City</option>'); // Clear cities
+    }
+  });
+}
+
+function get_city_(state_id) {
   $.ajax({
     type: "POST",
     url: "<?php echo base_url();?>admin/get_cities",
-    data: a,
-    success: function(c) {
-      $("#states_").children("option:not(:first)").remove();
-      $("#states_").append(c);
+    data: { state_id: state_id },
+    success: function(response) {
+      $("#states_").html(response);
     }
-  })
+  });
 }
 
 function validatePNGFile(input) {

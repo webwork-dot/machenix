@@ -124,10 +124,20 @@ class Admin extends CI_Controller{
     }
     
 
+    public function get_states() {
+        $country_id = $this->input->post('country_id', true);
+        $states     = $this->crud_model->get_states_by_country($country_id);
+        echo '<option value="">Select State</option>';
+        foreach ($states as $item) {
+            echo '<option value="' . $item['id'] . '">' . $item['name'] . '</option>';
+        }
+    }
+
     public function get_cities() {
         $state_id = $this->input->post('state_id', true);
-        $states   = $this->crud_model->get_city_by_state($state_id);
-        foreach ($states as $item) {
+        $cities   = $this->crud_model->get_city_by_state($state_id);
+        echo '<option value="">Select City</option>';
+        foreach ($cities as $item) {
             echo '<option value="' . $item['id'] . '">' . $item['name'] . '</option>';
         }
     }

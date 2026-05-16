@@ -341,13 +341,30 @@ class Crud_model extends CI_Model
     
     public function get_states(){
         $resultdata=array();
-        $query = $this->db->query("SELECT id, state  FROM `state_list` ORDER BY id asc");
+        $query = $this->db->query("SELECT id, name  FROM `states` ORDER BY name asc");
         if (!empty($query)) { 
             $data=array();
             foreach ($query->result_array() as $item) {
                 $resultdata[] = array(
                  "id"   => $item['id'],
-                 "name" => $item['state'],
+                 "name" => $item['name'],
+              );
+        
+            }
+        }
+        
+      return $resultdata;
+    }
+
+    public function get_states_by_country($country_id){
+        $resultdata=array();
+        $query = $this->db->query("SELECT id, name  FROM `states` WHERE country_id='$country_id' ORDER BY name asc");
+        if (!empty($query)) { 
+            $data=array();
+            foreach ($query->result_array() as $item) {
+                $resultdata[] = array(
+                 "id"   => $item['id'],
+                 "name" => $item['name'],
               );
         
             }
@@ -358,13 +375,13 @@ class Crud_model extends CI_Model
 
     public function get_city_by_state($state_id){
         $resultdata=array();
-        $query = $this->db->query("SELECT id, district FROM `city_list` WHERE state_id='$state_id' ORDER BY district asc");
+        $query = $this->db->query("SELECT id, name FROM `cities` WHERE state_id='$state_id' ORDER BY name asc");
         if (!empty($query)) { 
             $data=array();
             foreach ($query->result_array() as $item) {
                 $resultdata[] = array(
                  "id"   => $item['id'],
-                 "name" => $item['district'],
+                 "name" => $item['name'],
               );
         
             }

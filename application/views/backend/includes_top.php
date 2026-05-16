@@ -48,6 +48,10 @@
     <!-- ************ Table ********** -->  
     <script src="<?php echo base_url('app-assets/vendors/js/vendors.min.js');?>"></script>
     <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="<?php echo base_url();?>assets/css/intlTelInput.css" />
+    <script type="text/javascript" src="<?php echo base_url();?>assets/js/intlTelInput-jquery.min.js"></script> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/16.0.8/css/intlTelInput.css" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/16.0.8/js/intlTelInput-jquery.min.js"></script>
     <script src="<?php echo base_url();?>app-assets/vendors/js/extensions/toastr.min.js"></script>
 
     <!-- breadcrumb-area-end --><!-- Fancybox CSS -->

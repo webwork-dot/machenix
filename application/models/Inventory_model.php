@@ -265,13 +265,13 @@ class Inventory_model extends CI_Model
 		} else {
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+				$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 				$state_name = '';
 			}
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-				$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+				$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 				$city_name = '';
 			}
@@ -331,13 +331,13 @@ class Inventory_model extends CI_Model
 
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+				$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 				$state_name = '';
 			}
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-				$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+				$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 				$city_name = '';
 			}
@@ -473,13 +473,13 @@ class Inventory_model extends CI_Model
 			}
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+				$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 				$state_name = '';
 			}
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-				$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+				$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 				$city_name = '';
 			}
@@ -492,6 +492,10 @@ class Inventory_model extends CI_Model
 			$data['pincode']   = clean_and_escape($this->input->post('pincode'));
 			$data['contact_name'] = clean_and_escape($this->input->post('contact_name'));
 			$data['contact_no']   = clean_and_escape($this->input->post('contact_no'));
+			$data['t_code']       = clean_and_escape($this->input->post('t_code'));
+			$data['email']        = clean_and_escape($this->input->post('email'));
+			$data['tel_no']       = clean_and_escape($this->input->post('tel_no'));
+			$data['c_code']       = clean_and_escape($this->input->post('c_code'));
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']       = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']       = clean_and_escape($this->input->post('state_code'));
@@ -567,13 +571,13 @@ class Inventory_model extends CI_Model
 			}
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+				$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 				$state_name = '';
 			}
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-				$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+				$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 				$city_name = '';
 			}
@@ -585,6 +589,10 @@ class Inventory_model extends CI_Model
 			$data['pincode']   = clean_and_escape($this->input->post('pincode'));
 			$data['contact_name'] = clean_and_escape($this->input->post('contact_name'));
 			$data['contact_no']   = clean_and_escape($this->input->post('contact_no'));
+			$data['c_code']       = clean_and_escape($this->input->post('c_code'));
+			$data['email']        = clean_and_escape($this->input->post('email'));
+			$data['tel_no']       = clean_and_escape($this->input->post('tel_no'));
+			$data['t_code']       = clean_and_escape($this->input->post('t_code'));
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']       = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']       = clean_and_escape($this->input->post('state_code'));
@@ -11495,13 +11503,13 @@ class Inventory_model extends CI_Model
 		} else {
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+				$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 				$state_name = '';
 			}
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-				$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+				$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 				$city_name = '';
 			}
@@ -11514,7 +11522,10 @@ class Inventory_model extends CI_Model
 			$data['pincode']   = clean_and_escape($this->input->post('pincode'));
 			$data['contact_name'] = clean_and_escape($this->input->post('contact_name'));
 			$data['contact_no']   = clean_and_escape($this->input->post('contact_no'));
-			$data['email']   = clean_and_escape($this->input->post('email'));
+			$data['c_code']       = clean_and_escape($this->input->post('c_code'));
+			$data['email']        = clean_and_escape($this->input->post('email'));
+			$data['tel_no']       = clean_and_escape($this->input->post('tel_no'));
+			$data['t_code']       = clean_and_escape($this->input->post('t_code'));
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']       = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']       = clean_and_escape($this->input->post('state_code'));
@@ -11561,13 +11572,13 @@ class Inventory_model extends CI_Model
 
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-				$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+				$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 				$state_name = '';
 			}
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-				$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+				$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 				$city_name = '';
 			}
@@ -11580,7 +11591,10 @@ class Inventory_model extends CI_Model
 			$data['pincode']   = clean_and_escape($this->input->post('pincode'));
 			$data['contact_name'] = clean_and_escape($this->input->post('contact_name'));
 			$data['contact_no']   = clean_and_escape($this->input->post('contact_no'));
-			$data['email']   = clean_and_escape($this->input->post('email'));
+			$data['c_code']       = clean_and_escape($this->input->post('c_code'));
+			$data['email']        = clean_and_escape($this->input->post('email'));
+			$data['tel_no']       = clean_and_escape($this->input->post('tel_no'));
+			$data['t_code']       = clean_and_escape($this->input->post('t_code'));
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']       = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']       = clean_and_escape($this->input->post('state_code'));
@@ -11714,14 +11728,14 @@ class Inventory_model extends CI_Model
 			// ---- rest of your code same ----
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
-					$state_name = $this->common_model->selectByidParam($state_id, 'state_list', 'state');
+					$state_name = $this->common_model->get_state_name($state_id);
 			} else {
 					$state_name = '';
 			}
 
 			$city_id = $this->input->post('city_id');
 			if ($city_id != '') {
-					$city_name = $this->common_model->selectByidParam($city_id, 'city_list', 'district');
+					$city_name = $this->common_model->get_city_name($city_id);
 			} else {
 					$city_name = '';
 			}
