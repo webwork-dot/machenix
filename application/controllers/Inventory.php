@@ -1609,6 +1609,7 @@ class Inventory extends CI_Controller
                 'rate' => ($product->rate > 0) ? $product->rate : 0,
                 'usd_rate' => ($product->usd_rate > 0) ? $product->usd_rate : 0,
                 'actual_usd_rate' => ($product->actual_usd_rate > 0) ? $product->actual_usd_rate : 0,
+                'duty_charge' => ($product->duty_charge > 0) ? $product->duty_charge : 0,
                 'cartoon_qty' => $product->cartoon_qty ?? 0,
                 'cbm' => $product->cbm ?? 0,
                 'pending_po_qty' => $pending_po_qty,
@@ -1648,6 +1649,7 @@ class Inventory extends CI_Controller
                 'rate' => ($product->rate > 0) ? $product->rate : 0,
                 'usd_rate' => ($product->usd_rate > 0) ? $product->usd_rate : 0,
                 'actual_usd_rate' => ($product->actual_usd_rate > 0) ? $product->actual_usd_rate : 0,
+                'duty_charge' => ($product->duty_charge > 0) ? $product->duty_charge : 0,
                 'cartoon_qty' => $product->cartoon_qty ?? 0,
                 'cbm' => $product->cbm ?? 0,
                 'pending_po_qty' => $pending_po_qty,
@@ -3157,9 +3159,10 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['states']     = $this->crud_model->get_states_by_country(101);
+        $page_data['countries']     = $this->crud_model->get_countries();
 
         if ($param1 == 'my_company_add') {
+            $page_data['states']     = array(); // Start with empty states for add mode
             $page_data['navigation']  = 'my_company';
             $page_data['page_name']  = 'my_company_add';
             $page_data['page_title'] = 'Add Vendor';
@@ -3167,6 +3170,7 @@ class Inventory extends CI_Controller
         } elseif ($param1 == 'my_company_edit') {
             $data                    = $this->inventory_model->get_my_company_by_id($param2)->row_array();
             $page_data['data']       = $data;
+            $page_data['states']     = $this->crud_model->get_states_by_country($data['country_id']);
             $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
             $page_data['navigation']  = 'my_company';
             $page_data['page_name']  = 'my_company_edit';

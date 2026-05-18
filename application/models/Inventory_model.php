@@ -1275,6 +1275,9 @@ class Inventory_model extends CI_Model
 				$data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
 				$data['gst']            = ($gst) ? $gst : 0;
 
+				$duty_charge = clean_and_escape($this->input->post('duty_charge') ?? 0);
+				$data['duty_charge']    = $duty_charge;
+
 				$supplier_id = $this->input->post('supplier_id');
 				$supplier = $this->common_model->getRowById('supplier', 'name', ['id' => $supplier_id]);
 				$data['supplier_id']   = $supplier_id;
@@ -1531,6 +1534,9 @@ class Inventory_model extends CI_Model
 			$data['product_mrp']    	= clean_and_escape($this->input->post('product_mrp'));
 			$data['costing_price']  	= clean_and_escape($this->input->post('costing_price'));
 			$data['gst']            	= ($gst) ? $gst : 0;
+
+			$duty_charge = clean_and_escape($this->input->post('duty_charge') ?? 0);
+			$data['duty_charge']    = $duty_charge;
 			$data['net_weight']    		= clean_and_escape($this->input->post('net_weight'));
 			$data['gross_weight']  		= clean_and_escape($this->input->post('gross_weight'));
 			$data['length']						= clean_and_escape($this->input->post('length'));
@@ -11726,6 +11732,13 @@ class Inventory_model extends CI_Model
 			}
 
 			// ---- rest of your code same ----
+			$country_id = $this->input->post('country_id');
+			if ($country_id != '') {
+					$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+			} else {
+					$country_name = '';
+			}
+
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
 					$state_name = $this->common_model->get_state_name($state_id);
@@ -11755,6 +11768,8 @@ class Inventory_model extends CI_Model
 			$user_id               = $this->session->userdata('super_user_id');
 			$user_name             = $this->session->userdata('super_name');
 
+			$data['country_id']    = $country_id;
+			$data['country_name']  = $country_name;
 			$data['state_id']      = $state_id;
 			$data['state_name']    = $state_name;
 			$data['city_id']       = $city_id;
@@ -11811,7 +11826,13 @@ class Inventory_model extends CI_Model
 					return simple_json_output($resultpost);
 			}
 
-			// ---- rest of your code same ----
+			$country_id = $this->input->post('country_id');
+			if ($country_id != '') {
+					$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+			} else {
+					$country_name = '';
+			}
+
 			$state_id = $this->input->post('state_id');
 			$state_name = ($state_id != '')
 					? $this->common_model->selectByidParam($state_id, 'state_list', 'state')
@@ -11833,6 +11854,8 @@ class Inventory_model extends CI_Model
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']     = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']   = clean_and_escape($this->input->post('state_code'));
+			$data['country_id']   = $country_id;
+			$data['country_name'] = $country_name;
 			$data['state_id']     = $state_id;
 			$data['state_name']   = $state_name;
 			$data['city_id']      = $city_id;

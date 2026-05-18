@@ -74,8 +74,18 @@
             </div>
             
             <div class="col-12 col-sm-4 mb-1">
+              <label class="form-label" for="country">Select Country </label>
+              <select class=" form-select select2 country_id" name="country_id" onchange="get_states_(this.value);">
+                <option value="">Select Country</option>
+                <?php foreach($countries as $country){?>
+                <option value="<?php echo $country['id'];?>"><?php echo $country['name'];?></option>
+                <?php }?>
+              </select>
+            </div>
+
+            <div class="col-12 col-sm-4 mb-1">
               <label class="form-label" for="state">Select State </label>
-              <select class=" form-select select2 state_id" name="state_id" onchange="get_city_(this.value);" >
+              <select class=" form-select select2 state_id" name="state_id" id="state_id_" onchange="get_city_(this.value);" >
                 <option value="">Select State</option>
                 <?php foreach($states as $state){?>
                 <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
@@ -108,20 +118,28 @@
 </div>
 
 <script>
-   function get_city_(b) {
-       var a = {
-           state_id: b
-       };
-       $.ajax({
-           type: "POST",
-           url: "<?php echo base_url();?>admin/get_cities",
-           data: a,
-           success: function(c) {
-               $("#states_").children("option:not(:first)").remove();
-               $("#states_").append(c);
-           }
-       })
-   } 
+function get_states_(country_id) {
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url();?>admin/get_states",
+    data: { country_id: country_id },
+    success: function(response) {
+      $("#state_id_").html(response);
+      $("#states_").html('<option value="">Select City</option>'); // Clear cities
+    }
+  });
+}
+
+function get_city_(state_id) {
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url();?>admin/get_cities",
+    data: { state_id: state_id },
+    success: function(response) {
+      $("#states_").html(response);
+    }
+  });
+}
 
     $(document).ready(function () {
         $(document).on('focus', '.state_id + .select2 .select2-selection', function () {

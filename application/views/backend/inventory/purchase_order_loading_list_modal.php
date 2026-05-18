@@ -830,7 +830,7 @@
                                         <td class="supplier-total-length"></td>
                                         <td class="supplier-total-width"></td>
                                         <td class="supplier-total-height"></td>
-                                        <td class="supplier-total-total-cbm">0.000000</td>
+                                        <td class="supplier-total-total-cbm">0.00</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1630,7 +1630,7 @@ function calculateCTN(rowId) {
             totalCBM = volumeM3PerUnit * pkgCtn;
         }
 
-        $row.find('.total-cbm').val(totalCBM.toFixed(6));
+        $row.find('.total-cbm').val(totalCBM.toFixed(2));
     });
     
     // Update supplier totals after row calculation
@@ -1727,7 +1727,7 @@ function calculateRow(rowId) {
             // totalCBM = volumeM3PerUnit * loadingQty;
         }
 
-        $row.find('.total-cbm').val(totalCBM.toFixed(6));
+        $row.find('.total-cbm').val(totalCBM.toFixed(2));
     });
     
     // Update supplier totals after row calculation
@@ -1812,7 +1812,7 @@ function updateSupplierTotals($supplierSection) {
     // $totalRow.find('.supplier-total-length').text(totals.length.toFixed(2));
     // $totalRow.find('.supplier-total-width').text(totals.width.toFixed(2));
     // $totalRow.find('.supplier-total-height').text(totals.height.toFixed(2));
-    $totalRow.find('.supplier-total-total-cbm').text(totals.totalCBM.toFixed(6));
+    $totalRow.find('.supplier-total-total-cbm').text(totals.totalCBM.toFixed(2));
 }
 
 // Calculate grand totals across all suppliers
@@ -2127,7 +2127,7 @@ function createSupplierSection(supplierId, supplierName) {
                             <td class="supplier-total-length"></td>
                             <td class="supplier-total-width"></td>
                             <td class="supplier-total-height"></td>
-                            <td class="supplier-total-total-cbm">0.000000</td>
+                            <td class="supplier-total-total-cbm">0.00</td>
                         </tr>
                     </tbody>
                 </table>

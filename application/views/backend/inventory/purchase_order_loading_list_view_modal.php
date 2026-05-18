@@ -415,7 +415,7 @@
           <span class="label">Batch No:</span> <?php echo $po_data['voucher_no']; ?>
         </div>
         <div class="col-md-6">
-          <span class="label">Date:</span> <?php echo date('d M, Y', strtotime($po_data['date'])); ?>
+          <span class="label">Order Date:</span> <?php echo date('d M, Y', strtotime($po_data['date'])); ?>
         </div>
       </div>
       <div class="row">
@@ -527,7 +527,7 @@
                                 <td class="text-right"><?php echo number_format($first_lt ? $first_lt['length'] : ($product['length'] ?? 0), 2); ?></td>
                                 <td class="text-right"><?php echo number_format($first_lt ? $first_lt['width'] : ($product['width'] ?? 0), 2); ?></td>
                                 <td class="text-right"><?php echo number_format($first_lt ? $first_lt['height'] : ($product['height'] ?? 0), 2); ?></td>
-                                <td class="text-right"><?php echo number_format($first_lt ? $first_lt['total_cbm_value'] : ($product['total_cbm_value'] ?? 0), 6); ?></td>
+                                <td class="text-right"><?php echo number_format($first_lt ? $first_lt['total_cbm_value'] : ($product['total_cbm_value'] ?? 0), 2); ?></td>
                             </tr>
 
                             <?php if (count($lt_data) > 1): ?>
@@ -541,7 +541,7 @@
                                         <td class="text-right"><?php echo number_format($lt['length'], 2); ?></td>
                                         <td class="text-right"><?php echo number_format($lt['width'], 2); ?></td>
                                         <td class="text-right"><?php echo number_format($lt['height'], 2); ?></td>
-                                        <td class="text-right"><?php echo number_format($lt['total_cbm_value'], 6); ?></td>
+                                        <td class="text-right"><?php echo number_format($lt['total_cbm_value'], 2); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -628,7 +628,7 @@
                                 <td class="text-right"></td>
                                 <td class="text-right"></td>
                                 <td class="text-right"></td>
-                                <td class="text-right"><?php echo number_format($supplier_total_total_cbm, 6); ?></td>
+                                <td class="text-right"><?php echo number_format($supplier_total_total_cbm, 2); ?></td>
                             </tr>
                         </tbody>
                     </table>
@@ -737,7 +737,7 @@
             </div>
             <div class="grand-total-item">
                 <div class="grand-total-label">Total CBM</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_cbm, 6); ?></div>
+                <div class="grand-total-value"><?php echo number_format($grand_total_cbm, 2); ?></div>
             </div>
         </div>
     </div>

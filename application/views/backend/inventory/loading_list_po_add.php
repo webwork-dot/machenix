@@ -1106,7 +1106,7 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
         <input type="number" step="any" class="form-control form-control-sm height-input-${supplierRowId}" name="${inputPrefix}_height[${supplierKey}][${productKey}][]" id="${inputPrefix}_height_${supplierRowId}_${productRowId}_${i}" value="${height.toFixed(5)}" oninput="updateVariationCalculations('${sectionType}', ${supplierRowId}, ${productRowId}, ${i});">
       </td>
       <td>
-        <input type="number" step="any" class="form-control form-control-sm var-total-cbm-${supplierRowId}-${productRowId} total-cbm-input-${supplierRowId}" name="${inputPrefix}_variation_total_cbm[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_cbm_var_${supplierRowId}_${productRowId}_${i}" value="0.000000" readonly>
+        <input type="number" step="any" class="form-control form-control-sm var-total-cbm-${supplierRowId}-${productRowId} total-cbm-input-${supplierRowId}" name="${inputPrefix}_variation_total_cbm[${supplierKey}][${productKey}][]" id="${inputPrefix}_total_cbm_var_${supplierRowId}_${productRowId}_${i}" value="0.00" readonly>
       </td>
     `;
 
@@ -1284,7 +1284,7 @@ function updateVariationCalculations(sectionType, supplierRowId, productRowId, v
 
   $('#' + inputPrefix + '_total_net_weight_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalNetWeight.toFixed(5));
   $('#' + inputPrefix + '_total_gross_weight_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalGrossWeight.toFixed(5));
-  $('#' + inputPrefix + '_total_cbm_var_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalCBM.toFixed(6));
+  $('#' + inputPrefix + '_total_cbm_var_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalCBM.toFixed(2));
 
   if (shouldUpdateProductTotal !== false) {
     updateProductTotalCBM(sectionType, supplierRowId, productRowId);

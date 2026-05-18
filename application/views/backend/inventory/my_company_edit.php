@@ -75,30 +75,40 @@
             </div>
             
             <div class="col-12 col-sm-4 mb-1">
-              <label class="form-label" for="state">Select State </label>
-              <select class="form-select select2 state_id" name="state_id" onchange="get_city_(this.value);"  >
-                <option value="">Select State</option>
-                <?php foreach($states as $state){?>
-                <option value="<?php echo $state['id']; ?>" <?php if($state['id']== $data['state_id']) { echo 'selected';} ?>><?php echo $state['name'] ?></option>';
-                <?php }?>
-              </select>
+                <label class="form-label" for="country">Select Country </label>
+                <select class=" form-select select2 country_id" name="country_id" onchange="get_states_(this.value);">
+                    <option value="">Select Country</option>
+                    <?php foreach($countries as $country){?>
+                        <option value="<?php echo $country['id'];?>" <?php if($country['id'] == $data['country_id']){ echo 'selected'; } ?>><?php echo $country['name'];?></option>
+                    <?php }?>
+                </select>
+            </div>
+
+            <div class="col-12 col-sm-4 mb-1">
+                <label class="form-label" for="state">Select State </label>
+                <select class="form-select select2 state_id" name="state_id" id="state_id_" onchange="get_city_(this.value);"  >
+                    <option value="">Select State</option>
+                    <?php foreach($states as $state){?>
+                        <option value="<?php echo $state['id']; ?>" <?php if($state['id']== $data['state_id']) { echo 'selected';} ?>><?php echo $state['name'] ?></option>';
+                    <?php }?>
+                </select>
             </div>
             
             <div class="col-12 col-sm-4 mb-1">
-              <label class="form-label" for="city">Select City </label>
-              <select class="form-select select2 city_id" name="city_id"  id="states_" >
-                <option value="">Select City</option>
-                <?php foreach($citys as $cit){?>
-                <option value="<?php echo $cit['id'];?>" <?php if($cit['id'] == $data['city_id']){ echo 'selected'; } ?>><?php echo $cit['name'];?></option>
-                <?php }?>
-              </select>
+                <label class="form-label" for="city">Select City </label>
+                <select class="form-select select2 city_id" name="city_id"  id="states_" >
+                    <option value="">Select City</option>
+                    <?php foreach($citys as $cit){?>
+                        <option value="<?php echo $cit['id'];?>" <?php if($cit['id'] == $data['city_id']){ echo 'selected'; } ?>><?php echo $cit['name'];?></option>
+                    <?php }?>
+                </select>
             </div>
             
             <div class="col-12 col-sm-4 mb-1">
                 <div class="form-group">
                     <label>State Code </label>
-                     <input type="text" class="form-control" placeholder="Enter State Code" name="state_code" value="<?php echo $data['state_code']; ?>">
-               </div>
+                    <input type="text" class="form-control" placeholder="Enter State Code" name="state_code" value="<?php echo $data['state_code']; ?>">
+                </div>
             </div> 
               
             <div class="col-12">
@@ -107,24 +117,32 @@
           <?php echo form_close(); ?>	
       </div>
     </div>
-    </div>
+  </div>
 </div>
 
 <script>
-   function get_city_(b) {
-       var a = {
-           state_id: b
-       };
-       $.ajax({
-           type: "POST",
-           url: "<?php echo base_url();?>admin/get_cities",
-           data: a,
-           success: function(c) {
-               $("#states_").children("option:not(:first)").remove();
-               $("#states_").append(c);
-           }
-       })
-   } 
+    function get_states_(country_id) {
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url();?>admin/get_states",
+            data: { country_id: country_id },
+            success: function(response) {
+                $("#state_id_").html(response);
+                $("#states_").html('<option value="">Select City</option>'); // Clear cities
+            }
+        });
+    }
+
+    function get_city_(state_id) {
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url();?>admin/get_cities",
+            data: { state_id: state_id },
+            success: function(response) {
+                $("#states_").html(response);
+            }
+        });
+    }
 
     $(document).ready(function () {
         $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
@@ -134,6 +152,6 @@
         $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
             $('.city_id').select2('open');
         });
-   });
+    });
 </script>   
 

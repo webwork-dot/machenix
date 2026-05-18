@@ -242,6 +242,14 @@ function formatNumber($value)
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
+              <label>Duty Charge (%)</label>
+              <input type="number" class="form-control" placeholder="Enter Duty Charge" name="duty_charge" min="0" max="100" step="any"
+                value="<?php echo isset($data['duty_charge']) ? formatNumber($data['duty_charge']) : '0'; ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
               <label>Tax Rate (in %)<span class="required req-cont">*</span></label>
               <input type="number" class="form-control req-inp" placeholder="Enter Tax Rate (in %)" name="gst"
                 value="<?php echo $data['gst']; ?>">
@@ -611,6 +619,15 @@ function formatNumber($value)
 
     $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
       $('#supplier_id').select2('open');
+    });
+
+    $(document).on('input', 'input[name="duty_charge"]', function () {
+      let val = parseFloat($(this).val());
+      if (val > 100) {
+        $(this).val(100);
+      } else if (val < 0) {
+        $(this).val(0);
+      }
     });
   });
 
