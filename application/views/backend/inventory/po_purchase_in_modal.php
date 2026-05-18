@@ -84,7 +84,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                 type="date"
                 name="boe_date"
                 class="form-control form-control-sm text-right"
-                value="<?php echo $po_raw['boe_date'] ?? ''; ?>"
+                value="<?php echo (!empty($po_raw['boe_date']) && $po_raw['boe_date'] !== '0000-00-00 00:00:00' && $po_raw['boe_date'] !== '0000-00-00') ? date('Y-m-d', strtotime($po_raw['boe_date'])) : ''; ?>"
                 required
             >
         </div>
