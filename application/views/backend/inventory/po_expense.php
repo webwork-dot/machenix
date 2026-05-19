@@ -73,8 +73,8 @@
               <th>Type</th>
               <th>Expense Type</th>
               <th>Net Amount Total</th>
-              <th>GST Amount</th>
-              <th>Final Amount</th>
+              <th>GST Amount Total</th>
+              <th>Final Amount Total</th>
               <th>Expense Date</th>
               <th>Action</th>
             </tr>

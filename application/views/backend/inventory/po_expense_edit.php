@@ -356,6 +356,10 @@ $(function () {
 
   $(document).on('input', '#expenseTable .gst', function () {
     // if user changes gst, use the row’s current mode to recalc
+    const $row = $(this).closest('tr');
+    if (getMode($row) === 'keep') {
+      setMode($row, 'amount');
+    }
     updateTotals();
   });
 
