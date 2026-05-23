@@ -1364,6 +1364,7 @@ function addNewRow() {
   });
   
   updateRowNumbers();
+  $('#priority_tbody').closest('.table-responsive').animate({ scrollTop: $('#priority_tbody').closest('.table-responsive')[0].scrollHeight }, "fast");
 }
 
 // Handle type change - populate product dropdown filtered by supplier
@@ -1827,6 +1828,7 @@ function addLoadingProductRow() {
   });
 
   updateLoadingRowNumbers();
+  $('#loading_products_tbody').closest('.table-responsive').animate({ scrollTop: $('#loading_products_tbody').closest('.table-responsive')[0].scrollHeight }, "fast");
 }
 
 // Handle loading product type change - filter by supplier

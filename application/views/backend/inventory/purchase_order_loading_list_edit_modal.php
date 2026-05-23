@@ -1757,11 +1757,11 @@ function calculateCTN(rowId) {
 
         // Calculate Total N.W.
         var totalNW = nwKg * pkgCtn;
-        $row.find('.total-nw').val(totalNW.toFixed(2));
+        $row.find('.total-nw').val(Math.round(totalNW));
         
         // Calculate Total G.W.
         var totalGW = gwKg * pkgCtn;
-        $row.find('.total-gw').val(totalGW.toFixed(2));
+        $row.find('.total-gw').val(Math.round(totalGW));
         
         // Calculate Total CBM: (L * W * H / 1000000000) * PKG (ctn)
         // Dimensions are in mm, dividing by 1000000000 converts mm³ to m³
@@ -1850,11 +1850,11 @@ function calculateRow(rowId) {
         // $row.find('.pkg-ctn').val(loadingQty);
         // Calculate Total N.W.
         var totalNW = nwKg * pkgCtn;
-        $row.find('.total-nw').val(totalNW.toFixed(2));
+        $row.find('.total-nw').val(Math.round(totalNW));
         
         // Calculate Total G.W.
         var totalGW = gwKg * pkgCtn;
-        $row.find('.total-gw').val(totalGW.toFixed(2));
+        $row.find('.total-gw').val(Math.round(totalGW));
         
         // Calculate Total CBM: (L * W * H / 1000000000) * PKG (ctn)
         // Dimensions are in mm, dividing by 1000000000 converts mm³ to m³
@@ -1954,10 +1954,10 @@ function updateSupplierTotals($supplierSection) {
     $totalRow.find('.supplier-total-amount-usd').text(totals.totalAmountUSD.toFixed(2));
     // $totalRow.find('.supplier-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
     $totalRow.find('.supplier-total-pkg-ctn').text(Math.round(totals.pkgCtn));
-    // $totalRow.find('.supplier-total-nw-kg').text(totals.nwKg.toFixed(2));
-    $totalRow.find('.supplier-total-total-nw').text(totals.totalNW.toFixed(2));
-    // $totalRow.find('.supplier-total-gw-kg').text(totals.gwKg.toFixed(2));
-    $totalRow.find('.supplier-total-total-gw').text(totals.totalGW.toFixed(2));
+    // $totalRow.find('.supplier-total-nw-kg').text(Math.round(totals.nwKg));
+    $totalRow.find('.supplier-total-total-nw').text(Math.round(totals.totalNW));
+    // $totalRow.find('.supplier-total-gw-kg').text(Math.round(totals.gwKg));
+    $totalRow.find('.supplier-total-total-gw').text(Math.round(totals.totalGW));
     // $totalRow.find('.supplier-total-length').text(totals.length.toFixed(2));
     // $totalRow.find('.supplier-total-width').text(totals.width.toFixed(2));
     // $totalRow.find('.supplier-total-height').text(totals.height.toFixed(2));
@@ -2030,10 +2030,10 @@ function updateGrandTotals() {
         $grandTotalRow.find('.grand-total-amount-usd').text(grandTotals.totalAmountUSD.toFixed(2));
         // $grandTotalRow.find('.grand-total-black-total-price').text(grandTotals.blackTotalPrice.toFixed(2));
         $grandTotalRow.find('.grand-total-pkg-ctn').text(Math.round(grandTotals.pkgCtn));
-        // $grandTotalRow.find('.grand-total-nw-kg').text(grandTotals.nwKg.toFixed(2));
-        $grandTotalRow.find('.grand-total-total-nw').text(grandTotals.totalNW.toFixed(2));
-        // $grandTotalRow.find('.grand-total-gw-kg').text(grandTotals.gwKg.toFixed(2));
-        $grandTotalRow.find('.grand-total-total-gw').text(grandTotals.totalGW.toFixed(2));
+        // $grandTotalRow.find('.grand-total-nw-kg').text(Math.round(grandTotals.nwKg));
+        $grandTotalRow.find('.grand-total-total-nw').text(Math.round(grandTotals.totalNW));
+        // $grandTotalRow.find('.grand-total-gw-kg').text(Math.round(grandTotals.gwKg));
+        $grandTotalRow.find('.grand-total-total-gw').text(Math.round(grandTotals.totalGW));
         // $grandTotalRow.find('.grand-total-length').text(grandTotals.length.toFixed(2));
         // $grandTotalRow.find('.grand-total-width').text(grandTotals.width.toFixed(2));
         // $grandTotalRow.find('.grand-total-height').text(grandTotals.height.toFixed(2));

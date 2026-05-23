@@ -930,96 +930,97 @@ function addNewRow() {
   rowCounter++;
 
   var newRow = `
-        <tr id="row_${newRowId}" data-product-id="${newRowId}">
-            <td>
-                ${rowCounter}
-                <input type="hidden" name="old_product_id[${newRowId}]" value="0">
-                <input type="hidden" name="sort[${newRowId}]" value="${rowCounter}" class="sort-input">
-            </td>
-            <td>
-                <select class="form-control form-control-sm supplier-select select2 supplier-${newRowId}" name="supplier_id[${newRowId}]" 
-                    onchange="handleSupplierChange(this, '${newRowId}')" required>
-                    <option value="">Select Supplier</option>
-                    <?php foreach($supplier_list as $supplier): ?>
-                    <option value="<?php echo $supplier->id; ?>"><?php echo addslashes($supplier->name); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </td>
-            <td>
-                <select class="form-control form-control-sm type-select select2 type-${newRowId}" name="product_type[${newRowId}]" 
-                    onchange="handleTypeChange(this, '${newRowId}')" required>
-                    <option value="">Select Type</option>
-                    <option value="ready">Ready Goods</option>
-                    <option value="spare">Spare Parts</option>
-                </select>
-            </td>
-            <td>
-                <select class="form-control form-control-sm product-select select2 product-${newRowId}" name="product_id[${newRowId}]" 
-                    id="product_select_${newRowId}" onchange="handleProductChange(this, '${newRowId}')" required>
-                    <option value="">Select Product</option>
-                </select>
-                <input type="hidden" name="product_name[${newRowId}]" id="product_name_${newRowId}">
-            </td>
-            <td>
-                <input type="text" class="form-control form-control-sm" name="item_code[${newRowId}]" 
-                    id="item_code_${newRowId}" readonly>
-            </td>
-            <td>
-                <input type="number" min="0" step="1" class="form-control form-control-sm qty-input" 
-                    name="quantity[${newRowId}]" value="0" 
-                    oninput="this.value = this.value.replace(/[^0-9]/g, '');"
-                    onchange="updateTotalCBM('${newRowId}')">
-                <input type="hidden" name="loading_list[${newRowId}]" value="0">
-            </td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm" 
-                    name="cbm[${newRowId}]" id="cbm_${newRowId}" readonly>
-            </td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm total-cbm-input" 
-                    name="total_cbm[${newRowId}]" id="total_cbm_${newRowId}" readonly>
-            </td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm" 
-                    name="pending_po_qty[${newRowId}]" id="pending_po_qty_${newRowId}" readonly>
-            </td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm" 
-                    name="loading_list_qty[${newRowId}]" id="loading_list_qty_${newRowId}" readonly>
-            </td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm" 
-                    name="in_stock_qty[${newRowId}]" id="in_stock_qty_${newRowId}" readonly>
-            </td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm" 
-                    name="company_stock[${newRowId}]" id="company_stock_${newRowId}" readonly>
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeRow('${newRowId}')">
-                    <i class="fa fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `;
+      <tr id="row_${newRowId}" data-product-id="${newRowId}">
+          <td>
+              ${rowCounter}
+              <input type="hidden" name="old_product_id[${newRowId}]" value="0">
+              <input type="hidden" name="sort[${newRowId}]" value="${rowCounter}" class="sort-input">
+          </td>
+          <td>
+              <select class="form-control form-control-sm supplier-select select2 supplier-${newRowId}" name="supplier_id[${newRowId}]" 
+                  onchange="handleSupplierChange(this, '${newRowId}')" required>
+                  <option value="">Select Supplier</option>
+                  <?php foreach($supplier_list as $supplier): ?>
+                  <option value="<?php echo $supplier->id; ?>"><?php echo addslashes($supplier->name); ?></option>
+                  <?php endforeach; ?>
+              </select>
+          </td>
+          <td>
+              <select class="form-control form-control-sm type-select select2 type-${newRowId}" name="product_type[${newRowId}]" 
+                  onchange="handleTypeChange(this, '${newRowId}')" required>
+                  <option value="">Select Type</option>
+                  <option value="ready">Ready Goods</option>
+                  <option value="spare">Spare Parts</option>
+              </select>
+          </td>
+          <td>
+              <select class="form-control form-control-sm product-select select2 product-${newRowId}" name="product_id[${newRowId}]" 
+                  id="product_select_${newRowId}" onchange="handleProductChange(this, '${newRowId}')" required>
+                  <option value="">Select Product</option>
+              </select>
+              <input type="hidden" name="product_name[${newRowId}]" id="product_name_${newRowId}">
+          </td>
+          <td>
+              <input type="text" class="form-control form-control-sm" name="item_code[${newRowId}]" 
+                  id="item_code_${newRowId}" readonly>
+          </td>
+          <td>
+              <input type="number" min="0" step="1" class="form-control form-control-sm qty-input" 
+                  name="quantity[${newRowId}]" value="0" 
+                  oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                  onchange="updateTotalCBM('${newRowId}')">
+              <input type="hidden" name="loading_list[${newRowId}]" value="0">
+          </td>
+          <td>
+              <input type="number" step="any" class="form-control form-control-sm" 
+                  name="cbm[${newRowId}]" id="cbm_${newRowId}" readonly>
+          </td>
+          <td>
+              <input type="number" step="any" class="form-control form-control-sm total-cbm-input" 
+                  name="total_cbm[${newRowId}]" id="total_cbm_${newRowId}" readonly>
+          </td>
+          <td>
+              <input type="number" step="any" class="form-control form-control-sm" 
+                  name="pending_po_qty[${newRowId}]" id="pending_po_qty_${newRowId}" readonly>
+          </td>
+          <td>
+              <input type="number" step="any" class="form-control form-control-sm" 
+                  name="loading_list_qty[${newRowId}]" id="loading_list_qty_${newRowId}" readonly>
+          </td>
+          <td>
+              <input type="number" step="any" class="form-control form-control-sm" 
+                  name="in_stock_qty[${newRowId}]" id="in_stock_qty_${newRowId}" readonly>
+          </td>
+          <td>
+              <input type="number" step="any" class="form-control form-control-sm" 
+                  name="company_stock[${newRowId}]" id="company_stock_${newRowId}" readonly>
+          </td>
+          <td>
+              <button type="button" class="btn btn-sm btn-danger" onclick="removeRow('${newRowId}')">
+                  <i class="fa fa-trash"></i>
+              </button>
+          </td>
+      </tr>
+  `;
 
-    // Insert new row before the Total CBM row (at the end of tbody)
-    $('#priority_tbody').append(newRow);
-    $('.select2').select2({
-      dropdownParent: $('#large-modal .modal-content')
-    });
+  // Insert new row before the Total CBM row (at the end of tbody)
+  $('#priority_tbody').append(newRow);
+  $('.select2').select2({
+    dropdownParent: $('#large-modal .modal-content')
+  });
 
-    $(document).on('focus', '.supplier-' + newRowId + ' + .select2 .select2-selection', function () {
-        $('.supplier-' + newRowId).select2('open');
-    });
-    $(document).on('focus', '.type-' + newRowId + ' + .select2 .select2-selection', function () {
-        $('.type-' + newRowId).select2('open');
-    });
-    $(document).on('focus', '.product-' + newRowId + ' + .select2 .select2-selection', function () {
-        $('.product-' + newRowId).select2('open');
-    });
+  $(document).on('focus', '.supplier-' + newRowId + ' + .select2 .select2-selection', function () {
+      $('.supplier-' + newRowId).select2('open');
+  });
+  $(document).on('focus', '.type-' + newRowId + ' + .select2 .select2-selection', function () {
+      $('.type-' + newRowId).select2('open');
+  });
+  $(document).on('focus', '.product-' + newRowId + ' + .select2 .select2-selection', function () {
+      $('.product-' + newRowId).select2('open');
+  });
     
   updateRowNumbers();
+  $('#priority_tbody').closest('.table-responsive').animate({ scrollTop: $('#priority_tbody').closest('.table-responsive')[0].scrollHeight }, "fast");
 }
 
 // Handle type change - populate product dropdown filtered by supplier
@@ -1598,6 +1599,7 @@ function addLoadingProductRow() {
   });
   
   updateLoadingRowNumbers();
+  $('#loading_products_tbody').closest('.table-responsive').animate({ scrollTop: $('#loading_products_tbody').closest('.table-responsive')[0].scrollHeight }, "fast");
 }
 
 // Handle loading product type change - filter by supplier

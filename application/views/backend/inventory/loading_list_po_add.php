@@ -1282,8 +1282,8 @@ function updateVariationCalculations(sectionType, supplierRowId, productRowId, v
   var totalGrossWeight = grossWeight * pkg;
   var totalCBM = ((length * width * height) / 1000000000) * pkg;
 
-  $('#' + inputPrefix + '_total_net_weight_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalNetWeight.toFixed(5));
-  $('#' + inputPrefix + '_total_gross_weight_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalGrossWeight.toFixed(5));
+  $('#' + inputPrefix + '_total_net_weight_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(Math.round(totalNetWeight));
+  $('#' + inputPrefix + '_total_gross_weight_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(Math.round(totalGrossWeight));
   $('#' + inputPrefix + '_total_cbm_var_' + supplierRowId + '_' + productRowId + '_' + variationIndex).val(totalCBM.toFixed(2));
 
   if (shouldUpdateProductTotal !== false) {
@@ -1348,10 +1348,10 @@ function updateGrandTotalsRow() {
   $grandTotalRow.find('.grand-total-amount-usd').text(totals.totalAmountUSD.toFixed(2));
   // $grandTotalRow.find('.grand-total-black-total-price').text(totals.blackTotalPrice.toFixed(2));
   $grandTotalRow.find('.grand-total-pkg-ctn').text(Math.round(totals.pkgCtn));
-  // $grandTotalRow.find('.grand-total-nw-kg').text(totals.nwKg.toFixed(2));
-  $grandTotalRow.find('.grand-total-total-nw').text(totals.totalNW.toFixed(2));
-  // $grandTotalRow.find('.grand-total-gw-kg').text(totals.gwKg.toFixed(2));
-  $grandTotalRow.find('.grand-total-total-gw').text(totals.totalGW.toFixed(2));
+  // $grandTotalRow.find('.grand-total-nw-kg').text(Math.round(totals.nwKg));
+  $grandTotalRow.find('.grand-total-total-nw').text(Math.round(totals.totalNW));
+  // $grandTotalRow.find('.grand-total-gw-kg').text(Math.round(totals.gwKg));
+  $grandTotalRow.find('.grand-total-total-gw').text(Math.round(totals.totalGW));
   // $grandTotalRow.find('.grand-total-length').text(totals.length.toFixed(2));
   // $grandTotalRow.find('.grand-total-width').text(totals.width.toFixed(2));
   // $grandTotalRow.find('.grand-total-height').text(totals.height.toFixed(2));
