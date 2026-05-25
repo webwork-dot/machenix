@@ -129,11 +129,11 @@ if (empty($invoice_date_formatted)) {
         <tr>
           <td style="text-align: center; padding: 0px 3px; line-height: 1.2;">
             <span class="bold-text" style="color: #000; font-size: 14px;">
-              <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : ''; ?>
+              <?php echo !empty($supplier['name']) ? html_entity_decode($supplier['name']) : ''; ?>
             </span><br>
             <?php if (!empty($supplier_address)): ?>
             <span class="bold-text" style="color: #000; font-size: 11px;">
-              <?php echo htmlspecialchars($supplier_address); ?>
+              <?php echo html_entity_decode($supplier_address); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($supplier_contact) || !empty($supplier['contact_no'])): ?>
@@ -141,13 +141,13 @@ if (empty($invoice_date_formatted)) {
               <?php 
               $contact_display = [];
               if (!empty($supplier['email'])) {
-                  $contact_display[] = htmlspecialchars($supplier['email']);
+                  $contact_display[] = html_entity_decode($supplier['email']);
               }
               if (!empty($supplier['contact_no'])) {
-                  $contact_display[] = 'Tel: ' . htmlspecialchars($supplier['contact_no']);
+                  $contact_display[] = 'Tel: ' . html_entity_decode($supplier['contact_no']);
               }
               if (!empty($supplier['contact_name'])) {
-                  $contact_display[] = 'Contact: ' . htmlspecialchars($supplier['contact_name']);
+                  $contact_display[] = 'Contact: ' . html_entity_decode($supplier['contact_name']);
               }
               echo implode(' | ', $contact_display);
               ?>
@@ -175,39 +175,39 @@ if (empty($invoice_date_formatted)) {
         <tr>
           <td style="width:50%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
             <span class="bold-text" style="color: #000;font-size: 11px;">
-              <span class="bold-text">Buyer:</span> <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : 'Central Exportrade'; ?>
+              <span class="bold-text">Buyer:</span> <?php echo !empty($company_info['name']) ? html_entity_decode($company_info['name']) : 'Central Exportrade'; ?>
             </span><br>
             <?php if (!empty($company_address)): ?>
             <span class="bold-text" style="color: #000;font-size: 11px;">
-              <span class="bold-text">Add:</span> <?php echo htmlspecialchars($company_address); ?>
+              <span class="bold-text">Add:</span> <?php echo html_entity_decode($company_address); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($company_info['contact_no'])): ?>
             <span class="bold-text" style="color: #000;font-size: 11px;">
-              <span class="bold-text">Tel:</span> <?php echo htmlspecialchars($company_info['contact_no']); ?>
+              <span class="bold-text">Tel:</span> <?php echo html_entity_decode($company_info['contact_no']); ?>
             </span><br>
             <?php endif; ?>
             <?php if (!empty($company_info['email'])): ?>
             <span class="bold-text" style="color: #000;font-size: 11px;">
-              <span class="bold-text">E-mail:</span> <?php echo htmlspecialchars($company_info['email']); ?>
+              <span class="bold-text">E-mail:</span> <?php echo html_entity_decode($company_info['email']); ?>
             </span>
             <?php endif; ?>
           </td>
           <td style="width:50%;text-align: left;padding: 5px 3px; line-height: 1.3; height: auto;" colspan="3">
             <?php if (!empty($invoice_no)): ?>
             <span class="bold-text" style="color: #000;font-size: 11px;">
-              <span class="bold-text">C/I No:</span> <?php echo htmlspecialchars($invoice_no); ?>
+              <span class="bold-text">C/I No:</span> <?php echo html_entity_decode($invoice_no); ?>
             </span><br>
             <?php endif; ?>
             <span class="bold-text" style="color: #000;font-size: 11px;">
               <span class="bold-text">Date:</span> <?php echo $invoice_date_formatted; ?>
             </span><br>
             <span class="bold-text" style="color: #000;font-size: 11px;">
-              <span class="bold-text">Terms Of Price:</span> <?php echo htmlspecialchars($price_terms); ?>
+              <span class="bold-text">Terms Of Price:</span> <?php echo html_entity_decode($price_terms); ?>
             </span><br>
             <?php if ($invoice_type == '1'): ?>
               <span class="bold-text" style="color: #000;font-size: 11px;">
-                <span class="bold-text">Terms Of Payment:</span> <?php echo htmlspecialchars($payment_terms); ?>
+                <span class="bold-text">Terms Of Payment:</span> <?php echo html_entity_decode($payment_terms); ?>
               </span>
             <?php endif; ?>
           </td>
@@ -257,8 +257,8 @@ if (empty($invoice_date_formatted)) {
         ?>
         <tr>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $sr_no++; ?></td>
-          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars(explode('(', $product['product_name'])[0] ?? '-'); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo htmlspecialchars($product['item_code'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo html_entity_decode(explode('(', $product['product_name'])[0] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo html_entity_decode($product['item_code'] ?? '-'); ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;"><?php echo $official_ci_qty; ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">US$<?php echo number_format($official_ci_unit_price_usd, 2, '.', ','); ?></td>
           <td class="bold-text" style="text-align: center;padding: 3px; line-height: 0.75; height: auto;border:1px solid; font-size: 10px; color: #000;">US$<?php echo number_format($total_amount_usd, 2, '.', ','); ?></td>
@@ -304,21 +304,21 @@ if (empty($invoice_date_formatted)) {
             <span class="bold-text" style="color: #000; font-size: 12px;">BANK DETAILS</span><br><br>
             <span class="bold-text" style="color: #000; font-size: 11px;">
               <?php if (!empty($supplier['beneficiary'])): ?>
-              1. BENEFICIARY: <?php echo htmlspecialchars($supplier['beneficiary']); ?><br>
+              1. BENEFICIARY: <?php echo html_entity_decode($supplier['beneficiary']); ?><br>
               <?php else: ?>
-              1. BENEFICIARY: <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : '-'; ?><br>
+              1. BENEFICIARY: <?php echo !empty($supplier['name']) ? html_entity_decode($supplier['name']) : '-'; ?><br>
               <?php endif; ?>
               <?php if (!empty($supplier['account_no'])): ?>
-              2. ACCOUNT NO: <?php echo htmlspecialchars($supplier['account_no']); ?><br>
+              2. ACCOUNT NO: <?php echo html_entity_decode($supplier['account_no']); ?><br>
               <?php endif; ?>
               <?php if (!empty($supplier['advising_bank'])): ?>
-              3. ADVISING BANK: <?php echo htmlspecialchars($supplier['advising_bank']); ?><br>
+              3. ADVISING BANK: <?php echo html_entity_decode($supplier['advising_bank']); ?><br>
               <?php endif; ?>
               <?php if (!empty($supplier['bank_address'])): ?>
-              4. BANK ADDRESS: <?php echo htmlspecialchars($supplier['bank_address']); ?><br>
+              4. BANK ADDRESS: <?php echo html_entity_decode($supplier['bank_address']); ?><br>
               <?php endif; ?>
               <?php if (!empty($supplier['swift_code'])): ?>
-              5. SWIFT CODE: <?php echo htmlspecialchars($supplier['swift_code']); ?>
+              5. SWIFT CODE: <?php echo html_entity_decode($supplier['swift_code']); ?>
               <?php endif; ?>
             </span>
           </td>
@@ -328,7 +328,7 @@ if (empty($invoice_date_formatted)) {
                 <br><br>
               <?php endif; ?>
               <span class="bold-text" style="color: #000; font-size: 12px;">
-                BUYER: <?php echo !empty($company_info['name']) ? htmlspecialchars($company_info['name']) : '-'; ?>
+                BUYER: <?php echo !empty($company_info['name']) ? html_entity_decode($company_info['name']) : '-'; ?>
               </span>
             </td>
         </tr>
@@ -341,7 +341,7 @@ if (empty($invoice_date_formatted)) {
         <tr>
           <td style="width:50%;text-align: left; padding: 10px 3px; line-height: 1.2; vertical-align: top;">
             <span class="bold-text" style="color: #000; font-size: 12px;">
-              SELLER: <?php echo !empty($supplier['name']) ? htmlspecialchars($supplier['name']) : '-'; ?>
+              SELLER: <?php echo !empty($supplier['name']) ? html_entity_decode($supplier['name']) : '-'; ?>
             </span>
           </td>
         </tr>

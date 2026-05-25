@@ -593,7 +593,10 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div id="available_suppliers_list">
+        <div class="mb-1">
+            <input type="text" id="supplier_search" class="form-control" placeholder="Search supplier name..." onkeyup="searchSuppliers()">
+        </div>
+        <div id="available_suppliers_list" style="max-height: 300px; overflow-y: auto;">
             <!-- Suppliers checkboxes will be loaded here -->
             <div class="text-center p-3">
                 <i class="fa fa-spinner fa-spin fa-2x"></i>
@@ -617,8 +620,13 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
         <h5 class="modal-title" id="staticBackdropLabel">Load Supplier Product</h5>
         <button type="button" class="btn-close" id="close-sub-modal" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body" id="temp-supp-prods">
-        
+      <div class="modal-body">
+        <div class="mb-2">
+            <input type="text" id="product_search" class="form-control" placeholder="Search product by name or model..." onkeyup="searchProducts()">
+        </div>
+        <div id="temp-supp-prods" style="max-height: 400px; overflow-y: auto;">
+            
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -956,6 +964,7 @@ $(document).ready(function () {
         $('#confirm_add_supplier_btn').show();
     }
 
+    $('#supplier_search').val('');
     $('#available_suppliers_list').html(html);
     $('#addSupplierModal').modal('show');
   });
@@ -1198,8 +1207,9 @@ function processReloadSupplierProducts(buttonEl, loadProducts, existingProductId
                     });
                     html += body || '<tr><td colspan="4" class="text-center">No Products Found</td></tr>';
                     html += `</tbody></table>`;
-                    $('#staticBackdrop').modal('show');
+                    $('#product_search').val('');
                     $("#temp-supp-prods").html(html);
+                    $('#staticBackdrop').modal('show');
                     $("#load-product-btn").attr('onclick', `supplierProducts(${supplierId})`);
                 } else {
                     loadProducts.forEach(function(pId) {
@@ -1329,5 +1339,46 @@ function removePurchaseInRow(btn, rowId) {
             }
         }
     });
+}
+
+function searchSuppliers() {
+    var input = document.getElementById("supplier_search");
+    var filter = input.value.toLowerCase();
+    var list = document.getElementById("available_suppliers_list");
+    var items = list.getElementsByClassName("col-md-6");
+
+    for (var i = 0; i < items.length; i++) {
+        var label = items[i].getElementsByClassName("form-check-label")[0];
+        if (label) {
+            var txtValue = label.textContent || label.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+}
+
+function searchProducts() {
+    var input = document.getElementById("product_search");
+    var filter = input.value.toLowerCase();
+    var table = document.querySelector("#temp-supp-prods table");
+    if (!table) return;
+    var tr = table.getElementsByTagName("tr");
+
+    for (var i = 1; i < tr.length; i++) { // Skip header
+        var tdName = tr[i].getElementsByTagName("td")[1]; // Product Name
+        var tdModel = tr[i].getElementsByTagName("td")[3]; // Model No
+        if (tdName || tdModel) {
+            var txtValueName = tdName.textContent || tdName.innerText;
+            var txtValueModel = tdModel.textContent || tdModel.innerText;
+            if (txtValueName.toLowerCase().indexOf(filter) > -1 || txtValueModel.toLowerCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
 }
 </script>
