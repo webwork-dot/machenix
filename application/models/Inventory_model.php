@@ -2763,6 +2763,9 @@ class Inventory_model extends CI_Model
 
 				// Loading List
 				$loading_list = [
+					"ll_ready"    			=> [],
+					"ll_spare"    			=> [],
+
 					"lo_loading_qty"		=> [],
 					"lo_official_qty"		=> [],
 
@@ -2780,7 +2783,9 @@ class Inventory_model extends CI_Model
 						SUM(pop.loading_qty) AS lo_loading_qty,
 						SUM(pop.official_ci_qty) AS lo_official_qty,
 						SUM(pop.total_amount_rmb) AS lo_total_rmb,
-						SUM(pop.total_amount_usd) AS lo_total_usd
+						SUM(pop.total_amount_usd) AS lo_total_usd,
+						SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS ll_spare_qty,
+						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS ll_ready_qty
 					FROM loading_po_product pop
 					LEFT JOIN supplier s ON s.id = pop.supplier_id
 					WHERE pop.parent_id = '$id'
@@ -2790,6 +2795,8 @@ class Inventory_model extends CI_Model
 
 				$rows = $this->db->query($sql)->result_array();
 				foreach ($rows as $r) {
+					$loading_list['ll_ready'][]    = $r['ll_ready_qty'];
+					$loading_list['ll_spare'][]    = $r['ll_spare_qty'];
 					$loading_list['supplier'][] = $r['supplier_name'];
 					$loading_list['lo_loading_qty'][] = $r['lo_loading_qty'];
 					$loading_list['lo_official_qty'][] = $r['lo_official_qty'];
@@ -2951,6 +2958,8 @@ class Inventory_model extends CI_Model
 					"pl_suppliers"						=> array_to_list($priority_loading['supplier']),
 					"pl_spare_parts_count"		=> array_to_list($priority_loading['pl_spare']),
 					"pl_ready_goods_count"		=> array_to_list($priority_loading['pl_ready']),
+					"ll_spare_parts_count"		=> array_to_list($loading_list['ll_ready']),
+					"ll_ready_goods_count"		=> array_to_list($loading_list['ll_spare']),
 					"lo_suppliers"						=> array_to_list($loading_list['supplier']),
 					"loading_qty"							=> array_to_list($loading_list['lo_loading_qty']),
 					"official_qty"						=> array_to_list($loading_list['lo_official_qty']),
@@ -4612,6 +4621,7 @@ class Inventory_model extends CI_Model
 		// Update PO status back to Loading List and clear BOE
 		$this->db->where('id', $po_id)->update('purchase_order', [
 			'delivery_status' => 'loading',
+			'inr_rate' => '0',
 			'boe_no' => '',
 			'boe_date' => NULL,
 			'completed_date' => NULL,

@@ -17,7 +17,7 @@
     }
 
     .table-responsive {
-        max-height: 600px;
+        max-height: 55vh;
         overflow-x: auto;
         overflow-y: auto;
         width: 100%;
@@ -617,7 +617,7 @@
                                         <th style="width: 110px;">Total Amount <br> (RMB)</th>
                                         <th style="width: 130px;">Official CI <br>Unit Price (USD)</th>
                                         <th style="width: 110px;">Total Amount <br> (USD)</th>
-                                        <th style="width: 100px;">Black Total <br> Price</th>
+                                        <th style="width: 100px; display: none;">Black Total <br> Price</th>
                                         <th style="width: 80px;">PKG <br> (ctn)</th>
                                         <th style="width: 80px;">N.W. <br> (kg)</th>
                                         <th style="width: 100px;">Total N.W.</th>
@@ -738,7 +738,7 @@
                                                 id="total_amount_usd_<?php echo $product['id']; ?>" name="total_amount_usd[<?php echo $product['id']; ?>]" 
                                                 value="<?php echo isset($product['total_amount_usd']) ? number_format($product['total_amount_usd'], 2, '.', '') : ''; ?>" readonly>
                                         </td>
-                                        <td rowspan="<?php echo $rowspan; ?>">
+                                        <td rowspan="<?php echo $rowspan; ?>" style="display: none;">
                                             <input type="number" step="0.01" class="form-control form-control-sm black-total-price" 
                                                 id="black_total_price_<?php echo $product['id']; ?>" name="black_total_price[<?php echo $product['id']; ?>]" 
                                                 value="<?php echo isset($product['black_total_price']) ? number_format($product['black_total_price'], 2, '.', '') : ''; ?>" readonly>
@@ -913,7 +913,7 @@
                                         <td class="supplier-total-amount-rmb">0.00</td>
                                         <td class="supplier-total-official-ci-unit-price-usd"></td>
                                         <td class="supplier-total-amount-usd">0.00</td>
-                                        <td class="supplier-total-black-total-price"></td>
+                                        <td class="supplier-total-black-total-price" style="display: none;"></td>
                                         <td class="supplier-total-pkg-ctn">0</td>
                                         <td class="supplier-total-nw-kg"></td>
                                         <td class="supplier-total-total-nw">0.00</td>
@@ -1232,7 +1232,7 @@ function appendLoadingListProductRow($section, productData) {
                 <input type="number" step="0.01" class="form-control form-control-sm total-amount-usd" id="total_amount_usd_${rowKey}" name="total_amount_usd[${rowKey}]" readonly >
             </td>
 
-            <td rowspan="${rowSpan}">
+            <td rowspan="${rowSpan}" style="display: none;">
                 <input type="number" step="0.01" class="form-control form-control-sm black-total-price" id="black_total_price_${rowKey}" name="black_total_price[${rowKey}]" readonly >
             </td>
             `;
@@ -2075,7 +2075,7 @@ $(document).ready(function() {
     });
 
     // Recalculate when key fields are edited
-    $(document).on('keyup change', '.official-ci-unit-price-usd, .nw-kg, .gw-kg, .length, .width, .height', function() {
+    $(document).on('keyup change', '.nw-kg, .gw-kg, .length, .width, .height', function() {
         var $row = $(this).closest('tr');
         var rowId = $row.data('row-id');
         if (!rowId) {
@@ -2088,6 +2088,22 @@ $(document).ready(function() {
 
         if (rowId) {
             calculateCTN(rowId);
+        }
+    });
+
+    $(document).on('keyup change', '.official-ci-unit-price-usd', function() {
+        var $row = $(this).closest('tr');
+        var rowId = $row.data('row-id');
+        if (!rowId) {
+            // Fallback for main row where id attribute is used
+            var idAttr = $row.attr('id') || '';
+            if (idAttr.indexOf('loading_row_') === 0) {
+                rowId = idAttr.replace('loading_row_', '');
+            }
+        }
+
+        if (rowId) {
+            calculateRow(rowId);
         }
     });
     
@@ -2235,7 +2251,7 @@ function createSupplierSection(supplierId, supplierName) {
                             <th style="width: 110px;">Total Amount <br> (RMB)</th>
                             <th style="width: 130px;">Official CI <br>Unit Price (USD)</th>
                             <th style="width: 110px;">Total Amount <br> (USD)</th>
-                            <th style="width: 100px;">Black Total <br> Price</th>
+                            <th style="width: 100px; display: none;">Black Total <br> Price</th>
                             <th style="width: 80px;">PKG <br> (ctn)</th>
                             <th style="width: 80px;">N.W. <br> (kg)</th>
                             <th style="width: 100px;">Total N.W.</th>
@@ -2259,7 +2275,7 @@ function createSupplierSection(supplierId, supplierName) {
                             <td class="supplier-total-amount-rmb">0.00</td>
                             <td class="supplier-total-official-ci-unit-price-usd"></td>
                             <td class="supplier-total-amount-usd">0.00</td>
-                            <td class="supplier-total-black-total-price"></td>
+                            <td class="supplier-total-black-total-price" style="display: none;"></td>
                             <td class="supplier-total-pkg-ctn">0</td>
                             <td class="supplier-total-nw-kg"></td>
                             <td class="supplier-total-total-nw">0.00</td>

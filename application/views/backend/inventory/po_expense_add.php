@@ -330,7 +330,7 @@ $(function () {
           $supplierSelect.empty();
           if (data.length > 0) {
             data.forEach(supplier => {
-              $supplierSelect.append(new Option(supplier.name, supplier.id));
+              $supplierSelect.append(new Option(supplier.name, supplier.id, true, true));
             });
           }
           $supplierSelect.trigger('change');

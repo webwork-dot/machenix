@@ -293,7 +293,7 @@
                                 <th>Total Amount (RMB)</th>
                                 <th>Official CI Unit Price (USD)</th>
                                 <th>Total Amount (USD)</th>
-                                <th>Black Total Price</th>
+                                <th style="display: none;">Black Total Price</th>
                                 <th>PKG (ctn)</th>
                                 <th>N.W. (kg)</th>
                                 <th>Total N.W. (kg)</th>
@@ -586,7 +586,7 @@ function addSupplierRow() {
                 <th>Total Amount (RMB)</th>
                 <th>Official CI Unit Price (USD)</th>
                 <th>Total Amount (USD)</th>
-                <th>Black Total Price</th>
+                <th style="display: none;">Black Total Price</th>
                 <th>PKG (ctn)</th>
                 <th>N.W. (kg)</th>
                 <th>Total N.W. (kg)</th>
@@ -1067,7 +1067,7 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
         <td rowspan="${variationCount}">
           <input type="number" step="any" class="form-control form-control-sm usd-input-${supplierRowId}" name="${inputPrefix}_total_amount_usd[${supplierKey}][]" id="${inputPrefix}_total_amount_usd_${supplierRowId}_${productRowId}" value="0.00" readonly>
         </td>
-        <td rowspan="${variationCount}">
+        <td rowspan="${variationCount}" style="display: none;">
           <input type="number" step="any" class="form-control form-control-sm black-price-input-${supplierRowId}" name="${inputPrefix}_black_total_price[${supplierKey}][]" id="${inputPrefix}_black_total_price_${supplierRowId}_${productRowId}" value="0.00" readonly>
           <input type="hidden" name="${inputPrefix}_cbm[${supplierKey}][]" id="${inputPrefix}_cbm_${supplierRowId}_${productRowId}" value="${cbm.toFixed(6)}">
           <input type="hidden" name="${inputPrefix}_total_cbm[${supplierKey}][]" id="${inputPrefix}_total_cbm_${supplierRowId}_${productRowId}" value="0">
@@ -1175,7 +1175,7 @@ function createProductTotalRow(supplierRowId) {
     <td>
       <span class="stotal-amount-${supplierRowId}">${usdSum}</span>
     </td>
-    <td>
+    <td style="display: none;">
       <span class="stotal-black-price-${supplierRowId}"></span>
     </td>
     <td>

@@ -374,7 +374,7 @@ $(function () {
         success: function(data) {
           $supplierSelect.empty();
           data.forEach(supplier => {
-            const isSelected = selectedIds.includes(supplier.id.toString());
+            const isSelected = selectedIds.length > 0 ? selectedIds.includes(supplier.id.toString()) : true;
             const option = new Option(supplier.name, supplier.id, isSelected, isSelected);
             $supplierSelect.append(option);
           });

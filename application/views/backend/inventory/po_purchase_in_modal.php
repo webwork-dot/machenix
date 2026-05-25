@@ -63,6 +63,17 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
     .inner-modal {
         background: rgba(0, 0, 0, 0.25);
     }
+    .supplier-table-container {
+        max-height: 55vh;
+        overflow-y: auto;
+    }
+    .supplier-table-container thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background-color: #f8f9fa;
+        box-shadow: inset 0 -2px 0 #dee2e6; /* Ensures bottom border remains visible */
+    }
 </style>
 
 <?php echo form_open('inventory/update_purchase_order_in', ['class' => 'priority-list-form', 'onsubmit' => 'return checkForm(this);']); ?>
@@ -138,7 +149,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                 </button>
                             </span>
                         </h5>
-                        <div class="table-responsive">
+                        <div class="table-responsive supplier-table-container">
                             <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
                                 <thead>
                                     <tr>
@@ -211,7 +222,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                         
                                         // Official Details
                                         $official_qty = (float)($product['official_ci_qty'] ?? 0);
-                                        if ($official_qty == 0) $official_qty = $actual_qty; 
+                                        // if ($official_qty == 0) $official_qty = $actual_qty; 
                                         
                                         $official_rate_usd = (float)($product['official_ci_unit_price_usd'] ?? 0);
                                         $official_rate_rs = ($official_qty > 0) ? ($official_rate_usd * $inr_rate) : 0.0;
@@ -385,7 +396,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                             <input type="text"
                                             class="form-control form-control-sm text-right official-qty"
                                             name="official_qty[]"
-                                            value="<?php echo $official_qty !== 0.0 ? number_format($official_qty, 0) : ''; ?>"
+                                            value="<?php echo $official_qty !== 0.0 ? number_format($official_qty, 0) : '0'; ?>"
                                             readonly>
                                         </td>
 
@@ -476,14 +487,14 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     <tr class="font-weight-bold js-totals-row">
                                         <td colspan="3" class="text-right">TOTAL</td>
                                         <td class="text-right"><span class="js-sum-actual-qty"><?php echo number_format($t_actual_qty, 0); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-actual-rmb"><?php echo number_format($t_actual_rmb, 2, '.', ''); ?></span></td>
+                                        <td class="text-right"><span class="js-sum-actual-rmb"><?php // echo number_format($t_actual_rmb, 2, '.', ''); ?>-</span></td>
                                         <td class="text-right"><span class="js-sum-total-rmb"><?php echo number_format($t_total_rmb, 2, '.', ''); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-actual-usd"><?php echo number_format($t_actual_usd, 2, '.', ''); ?></span></td>
+                                        <td class="text-right"><span class="js-sum-actual-usd"><?php // echo number_format($t_actual_usd, 2, '.', ''); ?>-</span></td>
                                         <td class="text-right"><span class="js-sum-total-usd"><?php echo number_format($t_total_usd, 2, '.', ''); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-actual-inr"><?php echo number_format($t_actual_inr, 2, '.', ''); ?></span></td>
+                                        <td class="text-right"><span class="js-sum-actual-inr"><?php // echo number_format($t_actual_inr, 2, '.', ''); ?>-</span></td>
                                         <td class="text-right"><span class="js-sum-total-inr"><?php echo number_format($t_total_inr, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-official-qty"><?php echo number_format($t_official_qty, 0); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-official-rate-usd"><?php echo number_format($t_official_rate_usd, 2, '.', ''); ?></span></td>
+                                        <td class="text-right"><span class="js-sum-official-rate-usd"><?php // echo number_format($t_official_rate_usd, 2, '.', ''); ?>-</span></td>
                                         <td class="text-right"><span class="js-sum-official-rate-rs"><?php echo number_format($t_official_rate_rs, 2, '.', ''); ?></span></td>
                                         <td class="text-right"><span class="js-sum-official-total"><?php echo number_format($t_official_total_rs, 2, '.', ''); ?></span></td>
                                         <td class="text-right">-</td>
@@ -715,14 +726,14 @@ function updateTableTotals($table) {
   });
 
   $table.find('.js-sum-actual-qty').text(fmtQty(sum.actual_qty));
-  $table.find('.js-sum-actual-rmb').text(fmtAmt(sum.actual_rmb));
+//   $table.find('.js-sum-actual-rmb').text(fmtAmt(sum.actual_rmb));
   $table.find('.js-sum-total-rmb').text(fmtAmt(sum.total_rmb));
-  $table.find('.js-sum-actual-usd').text(fmtAmt(sum.actual_usd));
+//   $table.find('.js-sum-actual-usd').text(fmtAmt(sum.actual_usd));
   $table.find('.js-sum-total-usd').text(fmtAmt(sum.total_usd));
-  $table.find('.js-sum-actual-inr').text(fmtAmt(sum.actual_inr));
+//   $table.find('.js-sum-actual-inr').text(fmtAmt(sum.actual_inr));
   $table.find('.js-sum-total-inr').text(fmtAmt(sum.total_inr));
   $table.find('.js-sum-official-qty').text(fmtQty(sum.official_qty));
-  $table.find('.js-sum-official-rate-usd').text(fmtAmt(sum.official_rate_usd));
+//   $table.find('.js-sum-official-rate-usd').text(fmtAmt(sum.official_rate_usd));
   $table.find('.js-sum-official-rate-rs').text(fmtAmt(sum.official_rate_rs));
   $table.find('.js-sum-official-total').text(fmtAmt(sum.official_total));
   $table.find('.js-sum-duty-amt').text(fmtAmt(sum.duty_amt));
@@ -984,7 +995,7 @@ function createSupplierSection(supplierId, supplierName) {
                 </button>
             </span>
         </h5>
-        <div class="table-responsive">
+        <div class="table-responsive supplier-table-container">
             <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
                 <thead>
                     <tr>
@@ -1017,14 +1028,14 @@ function createSupplierSection(supplierId, supplierName) {
                     <tr class="font-weight-bold js-totals-row">
                         <td colspan="3" class="text-right">TOTAL</td>
                         <td class="text-right"><span class="js-sum-actual-qty">0</span></td>
-                        <td class="text-right"><span class="js-sum-actual-rmb">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-actual-rmb">-</span></td>
                         <td class="text-right"><span class="js-sum-total-rmb">0.00</span></td>
-                        <td class="text-right"><span class="js-sum-actual-usd">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-actual-usd">-</span></td>
                         <td class="text-right"><span class="js-sum-total-usd">0.00</span></td>
-                        <td class="text-right"><span class="js-sum-actual-inr">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-actual-inr">-</span></td>
                         <td class="text-right"><span class="js-sum-total-inr">0.00</span></td>
                         <td class="text-right"><span class="js-sum-official-qty">0</span></td>
-                        <td class="text-right"><span class="js-sum-official-rate-usd">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-official-rate-usd">-</span></td>
                         <td class="text-right"><span class="js-sum-official-rate-rs">0.00</span></td>
                         <td class="text-right"><span class="js-sum-official-total">0.00</span></td>
                         <td class="text-right">-</td>

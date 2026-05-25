@@ -20,7 +20,7 @@
       FROM purchase_order_product pop
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       WHERE pop.parent_id = '$po_id'
-      ORDER BY pop.supplier_id ASC, pop.product_type ASC, pop.id ASC
+      ORDER BY pop.id
   ")->result_array();
 
   // Group products by supplier and product_type
