@@ -130,10 +130,10 @@
         <?php } ?>
         
         <?php if($user_id == 4 || in_array('26',$access_array)) {?>
-	    <li class="nav-item <?php if($page_name == 'sales_order' || $page_name == 'sales_order_add' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
+	    <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
            <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-order'); ?>">
                <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales</span>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Booking</span>
            </a>
         </li>
         <li class="nav-item <?php if($page_name == 'black_order') echo 'active'; ?>">

@@ -22,13 +22,17 @@ $products_raw = $this->db
             s.name AS supplier_name,
             rp.actual_usd_rate,
             rp.duty_charge,
-            inv.quantity AS inv_qty
+            inv.quantity AS inv_qty,
+            (SELECT is_complete FROM purchase_overflow_product WHERE parent_id = pop.id LIMIT 1) AS overflow_is_complete
         FROM $source_table pop
         LEFT JOIN supplier s ON s.id = pop.supplier_id
         LEFT JOIN raw_products rp ON rp.id = pop.product_id
-        LEFT JOIN inventory inv ON inv.product_id = pop.product_id 
-             AND inv.batch_no = (SELECT voucher_no FROM purchase_order WHERE id = '$po_id')
-             AND inv.warehouse_id = (SELECT warehouse_id FROM purchase_order WHERE id = '$po_id')
+        LEFT JOIN inventory inv ON 
+             (inv.po_row_id = pop.id) 
+             OR 
+             (inv.po_row_id = 0 AND inv.product_id = pop.product_id 
+              AND inv.batch_no = (SELECT voucher_no FROM purchase_order WHERE id = '$po_id')
+              AND inv.warehouse_id = (SELECT warehouse_id FROM purchase_order WHERE id = '$po_id'))
         WHERE pop.parent_id = '$po_id' AND pop.loading_qty > 0 AND pop.is_deleted = 0
         ORDER BY pop.id ASC
     ")
@@ -238,6 +242,10 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                                 $is_locked = true;
                                                 $lock_reason = "Stock Used (Stocked: $stocked_qty, Current: $current_inv)";
                                             }
+                                        }
+                                        if (isset($product['overflow_is_complete']) && $product['overflow_is_complete'] == 1) {
+                                            $is_locked = true;
+                                            $lock_reason = "Overflow complete";
                                         }
 
                                         if ($po_raw['delivery_status'] != 'purchase_in') {
@@ -1074,6 +1082,7 @@ function createSupplierSection(supplierId, supplierName) {
 $(document).ready(function() {
     $('.priority-list-form').submit(function(e) {
         e.preventDefault();  
+		
 		var buttonText=$(".btn_verify").val().trim()==="" ? "Submit":$(".btn_verify").val();
 		
         $(".loader").show(); 

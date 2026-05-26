@@ -971,6 +971,177 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function add_other_charges()
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Charge added successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$name   = clean_and_escape($this->input->post('name'));
+		$gst    = clean_and_escape($this->input->post('gst'));
+		$price  = clean_and_escape($this->input->post('price'));
+
+		if ($name == '' || $gst == '' || $price == '') {
+			$this->session->set_flashdata('error_message', 'All fields are required');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "All fields are required",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$check = $this->db->query(
+			"SELECT id FROM other_charges 
+			WHERE name = ? AND is_delete = '0' 
+			LIMIT 1",
+			array($name)
+		);
+
+		if ($check->num_rows() > 0) {
+			$this->session->set_flashdata('error_message', 'Duplicate name not allowed');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Duplicate name not allowed",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$data = array(
+			'name'       => $name,
+			'gst'        => (float) $gst,
+			'price'      => (float) $price,
+			'added_by'   => (int) $this->session->userdata('super_user_id'),
+			'created_at' => date("Y-m-d H:i:s"),
+		);
+
+		$this->db->insert('other_charges', $data);
+		$this->session->set_flashdata('flash_message', 'Charge added successfully');
+
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_other_charges($id = "")
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Charge updated successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$name   = clean_and_escape($this->input->post('name'));
+		$gst    = clean_and_escape($this->input->post('gst'));
+		$price  = clean_and_escape($this->input->post('price'));
+		$id     = (int) $id;
+
+		if ($name == '' || $gst == '' || $price == '') {
+			$this->session->set_flashdata('error_message', 'All fields are required');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "All fields are required",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$check = $this->db->query(
+			"SELECT id FROM other_charges 
+			WHERE name = ? AND is_delete = '0' AND id != ?
+			LIMIT 1",
+			array($name, $id)
+		);
+
+		if ($check->num_rows() > 0) {
+			$this->session->set_flashdata('error_message', 'Duplicate name not allowed');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Duplicate name not allowed",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$data = array(
+			'name'  => $name,
+			'gst'   => (float) $gst,
+			'price' => (float) $price,
+		);
+
+		$this->db->where('id', $id);
+		$this->db->update('other_charges', $data);
+
+		$this->session->set_flashdata('flash_message', 'Charge updated successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function delete_other_charges($id)
+	{
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Charge deleted successfully",
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		$data['is_delete'] = '1';
+		$this->db->where('id', $id);
+		$this->db->update('other_charges', $data);
+
+		return simple_json_output($resultpost);
+	}
+
+	public function get_other_charges_by_id($id)
+	{
+		$this->db->where('id', $id);
+		return $this->db->get('other_charges');
+	}
+
+	public function get_other_charges()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (name like '%" . $keyword . "%')";
+		endif;
+
+		$total_count = $this->db->query("SELECT id FROM other_charges WHERE (is_delete='0') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, name, gst, price FROM other_charges WHERE (is_delete='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delete_url = "confirm_modal('" . base_url() . "inventory/charges/delete/" . $id . "','Are you sure want to delete!')";
+				$edit_url = base_url() . 'inventory/charges/edit/' . $id;
+				$action = '';
+				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
+				';
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"id"          => $item['id'],
+					"name"        => $item['name'],
+					"gst"         => $item['gst'],
+					"price"       => $item['price'],
+					"action"      => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
 	public function raw_products_delete_sku()
 	{
 		$id = $this->input->post('id');
@@ -4250,11 +4421,16 @@ class Inventory_model extends CI_Model
 			"boe_no" => $boe_no,
 			"boe_date" => $boe_date,
 			"delivery_status" => 'purchase_in',
-			"completed_date" => date("Y-m-d H:i:s"),
 			"net_sales_value_1" => 0,
 			"transport_gst_amount" => 0,
 			"grand_total" => 0,
 		];
+
+		if (!$is_edit) {
+			$po["completed_date"] = date("Y-m-d H:i:s");
+		}
+		
+		$stock_in_date = ($is_edit && !empty($po_row['completed_date'])) ? $po_row['completed_date'] : date("Y-m-d H:i:s");
 		
 		// base key list (must exist)
 		$row_ids = $this->input->post('row_id'); // array
@@ -4322,9 +4498,13 @@ class Inventory_model extends CI_Model
 						$po["transport_gst_amount"]  = $po["transport_gst_amount"] + ($gst_amt[$i] ?? 0);
 						$po["grand_total"]  = $po["grand_total"] + ($total_amt[$i] ?? 0);
 
+						$act_q = (int) ($actual_qty[$i] ?? 0);
+						$off_q = (int) ($official_qty[$i] ?? 0);
+						$black_qty_val = ($act_q > $off_q) ? ($act_q - $off_q) : 0;
+
 						// PO Prod Update
 						$po_prods = [
-								'actual_qty'        => (int) ($actual_qty[$i] ?? 0),
+								'actual_qty'        => $act_q,
 								'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
 								'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
 								'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
@@ -4338,14 +4518,47 @@ class Inventory_model extends CI_Model
 								'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
 								'total_amt'         => (float) ($total_amt[$i] ?? 0),
 								'invoice_no'        => $invoice_no[$i] ?? 1,
+								'black_qty'         => $black_qty_val,
 						];
 
 						if ($is_edit && $row_id != 0) {
 							$this->db->where('id', $row_id)->update('purchase_in_product', $po_prods);
+							$pip_id = $row_id;
 						} else {
 							$insert_data = array_merge($po_prod_row, $po_prods);
 							if (isset($insert_data['id'])) unset($insert_data['id']);
 							$this->db->insert('purchase_in_product', $insert_data);
+							$pip_id = $this->db->insert_id();
+						}
+
+						// Overflow management
+						$existing_overflow = $this->db->get_where('purchase_overflow_product', ['parent_id' => $pip_id])->row_array();
+
+						if ($act_q >= $off_q) {
+							if ($existing_overflow) {
+								$this->db->where('id', $existing_overflow['id'])->delete('purchase_overflow_product');
+							}
+						} else {
+							$overflow_qty = $off_q - $act_q;
+							$pip_row = $this->db->get_where('purchase_in_product', ['id' => $pip_id])->row_array();
+
+							if ($existing_overflow) {
+								$update_overflow_data = $pip_row;
+								unset($update_overflow_data['id']);
+								unset($update_overflow_data['parent_id']);
+								unset($update_overflow_data['is_complete']);
+								unset($update_overflow_data['is_deleted']);
+								$update_overflow_data['quantity'] = $overflow_qty;
+
+								$this->db->where('id', $existing_overflow['id'])->update('purchase_overflow_product', $update_overflow_data);
+							} else {
+								$overflow_data = $pip_row;
+								unset($overflow_data['id']);
+								$overflow_data['parent_id'] = $pip_id;
+								$overflow_data['quantity'] = $overflow_qty;
+
+								$this->db->insert('purchase_overflow_product', $overflow_data);
+							}
 						}
 
 						// Inventory In
@@ -4357,6 +4570,7 @@ class Inventory_model extends CI_Model
 							'product_id' 				=> $po_prod_row["product_id"],
 							'categories' 				=> $po_prod_row["categories"],
 							'batch_no' 					=> $po_row["voucher_no"],
+							'po_row_id'					=> $pip_id,
 							'product_name'			=> $product_name[$i]      ?? '',
 							'item_code'					=> $item_code[$i]         ?? '',
 							'sku'         			=> $item_code[$i]         ?? '',
@@ -4369,7 +4583,7 @@ class Inventory_model extends CI_Model
 							'official_qty'      => (int) ($official_qty[$i] ?? 0),
 							'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
 							'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
-							'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
+							'black_qty'         => $black_qty_val,
 							'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
 							'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
 							'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
@@ -4381,12 +4595,15 @@ class Inventory_model extends CI_Model
 						// Usage Check for Edit Mode
 						$skip_inventory_update = false;
 						if ($is_edit) {
-							$current_inv_row = $this->db->get_where('inventory', [
-								'product_id' => $po_prod_row["product_id"],
-								'warehouse_id' => $po_row["warehouse_id"],
-								'company_id' => $po_row["company_id"],
-								'batch_no' => $po_row["voucher_no"]
-							])->row_array();
+							$current_inv_row = $this->db->get_where('inventory', ['po_row_id' => $pip_id])->row_array();
+							if (!$current_inv_row) {
+								$current_inv_row = $this->db->get_where('inventory', [
+									'product_id' => $po_prod_row["product_id"],
+									'warehouse_id' => $po_row["warehouse_id"],
+									'company_id' => $po_row["company_id"],
+									'batch_no' => $po_row["voucher_no"]
+								])->row_array();
+							}
 
 							if ($current_inv_row && (int)$current_inv_row['quantity'] != (int)$po_prod_row['actual_qty']) {
 								$skip_inventory_update = true;
@@ -4394,7 +4611,19 @@ class Inventory_model extends CI_Model
 						}
 
 						if (!$skip_inventory_update) {
-							$check_inv = $this->common_model->getRowById('inventory', '*', ['product_id' => $po_prod_row["product_id"], 'warehouse_id' => $po_row["warehouse_id"], 'company_id' => $po_row["company_id"], 'batch_no' => $po_row["voucher_no"]]);
+							if ($is_edit) {
+								$check_inv = $this->db->get_where('inventory', ['po_row_id' => $pip_id])->row_array();
+								if (!$check_inv) {
+									$check_inv = $this->db->get_where('inventory', [
+										'product_id' => $po_prod_row["product_id"],
+										'warehouse_id' => $po_row["warehouse_id"],
+										'company_id' => $po_row["company_id"],
+										'batch_no' => $po_row["voucher_no"]
+									])->row_array();
+								}
+							} else {
+								$check_inv = "";
+							}
 
 							if($check_inv == "") {
 								$this->db->insert('inventory', $inv);
@@ -4424,47 +4653,26 @@ class Inventory_model extends CI_Model
 									'official_qty'      => (int) ($official_qty[$i] ?? 0),
 									'official_rate_rs'  => (float) ($official_rate_rs[$i] ?? 0),
 									'official_total_rs' => (float) ($official_total_rs[$i] ?? 0),
-									'black_qty'         => (int) ($po_prod_row['black_qty'] ?? 0),
+									'black_qty'         => $black_qty_val,
 									'duty_percent'      => (float) ($duty_percent[$i] ?? 0),
 									'duty_amt'          => (float) ($duty_amt[$i] ?? 0),
 									'duty_surcharge'    => (float) ($duty_surcharge[$i] ?? 0),
 									'taxable_value'     => (float) ($taxable_value[$i] ?? 0),
 									'gst_amt'           => (float) ($gst_amt[$i] ?? 0),
-									'total_amt'         => (float) ($total_amt[$i] ?? 0),	
+									'total_amt'         => (float) ($total_amt[$i] ?? 0),
 									
-									'received_date'							=> date('Y-m-d'),
-									'invoice_no'         	=> $invoice_no[$i] ?? 1,	
-									'added_date'         	=> date('Y-m-d H:i:s'),
+									'received_date'       => date('Y-m-d', strtotime($stock_in_date)),
+									'invoice_no'         	=> $invoice_no[$i] ?? 1,
+									'added_date'         	=> $stock_in_date,
 									"added_by_id"         => $this->session->userdata('super_user_id'),
 									"added_by_name"       => $this->session->userdata('super_name'),
 								];
 
 								$this->db->insert('inventory_history', $inv_his);
 							} else {
-								if ($is_edit) {
-									// In Edit Mode, we OVERWRITE the existing batch quantity/costs
-									$updated_inv = $inv;
-									unset($updated_inv['company_id'], $updated_inv['warehouse_id'], $updated_inv['product_id'], $updated_inv['batch_no']);
-								} else {
-									// Original logic for first-time Stock In: Accumulate
-									$updated_inv = [
-										'quantity'        	=> $check_inv['quantity'] + $inv['quantity'],
-										'actual_rmb'        => $check_inv['actual_rmb'] + $inv['actual_rmb'],
-										'total_rmb'         => $check_inv['total_rmb'] + $inv['total_rmb'],
-										'actual_usd'        => $inv['actual_usd'],
-										'actual_inr'        => $inv['actual_inr'],
-										'official_qty'      => $check_inv['official_qty'] + $inv['official_qty'],
-										'official_rate_rs'  => $check_inv['official_rate_rs'] + $inv['official_rate_rs'],
-										'official_total_rs' => $check_inv['official_total_rs'] + $inv['official_total_rs'],
-										'black_qty'         => $check_inv['black_qty'] + $inv['black_qty'],
-										'duty_percent'      => $check_inv['duty_percent'] + $inv['duty_percent'],
-										'duty_amt'          => $check_inv['duty_amt'] + $inv['duty_amt'],
-										'duty_surcharge'    => $check_inv['duty_surcharge'] + $inv['duty_surcharge'],
-										'taxable_value'     => $check_inv['taxable_value'] + $inv['taxable_value'],
-										'gst_amt'           => $check_inv['gst_amt'] + $inv['gst_amt'],
-										'total_amt'         => $check_inv['total_amt'] + $inv['total_amt'],
-									];
-								}
+								// In Edit Mode, we OVERWRITE the existing batch quantity/costs
+								$updated_inv = $inv;
+								unset($updated_inv['company_id'], $updated_inv['warehouse_id'], $updated_inv['product_id'], $updated_inv['batch_no']);
 
 								$this->db->where('id', $check_inv['id'])->update('inventory', $updated_inv);
 								$inventory_id = $check_inv['id'];
@@ -4493,7 +4701,7 @@ class Inventory_model extends CI_Model
 									'official_qty'      	=> (int) ($official_qty[$i] ?? 0),
 									'official_rate_rs'  	=> (float) ($official_rate_rs[$i] ?? 0),
 									'official_total_rs' 	=> (float) ($official_total_rs[$i] ?? 0),
-									'black_qty'         	=> (int) ($po_prod_row['black_qty'] ?? 0),
+									'black_qty'         	=> $black_qty_val,
 									'duty_percent'      	=> (float) ($duty_percent[$i] ?? 0),
 									'duty_amt'          	=> (float) ($duty_amt[$i] ?? 0),
 									'duty_surcharge'    	=> (float) ($duty_surcharge[$i] ?? 0),
@@ -4501,11 +4709,7 @@ class Inventory_model extends CI_Model
 									'gst_amt'           	=> (float) ($gst_amt[$i] ?? 0),
 									'total_amt'         	=> (float) ($total_amt[$i] ?? 0),	
 
-									'received_date'				=> date('Y-m-d'),
 									'invoice_no'         	=> $invoice_no[$i] ?? 1,	
-									'added_date'         	=> date('Y-m-d H:i:s'),
-									"added_by_id"         => $this->session->userdata('super_user_id'),
-									"added_by_name"       => $this->session->userdata('super_name'),
 								];
 
 								$this->db->where('parent_id', $check_inv['id'])->update('inventory_history', $inv_his);
@@ -4547,18 +4751,28 @@ class Inventory_model extends CI_Model
 			return ['status' => 400, 'message' => 'No products found with actual quantity in this PO.'];
 		}
 
+		// Delete related overflow records first
+		$all_po_products = $this->db->get_where('purchase_in_product', ['parent_id' => $po_id])->result_array();
+		if (!empty($all_po_products)) {
+			$pip_ids = array_column($all_po_products, 'id');
+			$this->db->where_in('parent_id', $pip_ids)->delete('purchase_overflow_product');
+		}
+
 		// 2. Strict validation loop
 		foreach ($po_products as $product) {
 			$product_id = $product['product_id'];
 			$stocked_qty = (int)$product['actual_qty'];
 
 			// Check current inventory for this batch
-			$inv = $this->db->get_where('inventory', [
-				'product_id' => $product_id,
-				'warehouse_id' => $warehouse_id,
-				'company_id' => $company_id,
-				'batch_no' => $batch_no
-			])->row_array();
+			$inv = $this->db->get_where('inventory', ['po_row_id' => $product['id']])->row_array();
+			if (!$inv) {
+				$inv = $this->db->get_where('inventory', [
+					'product_id' => $product_id,
+					'warehouse_id' => $warehouse_id,
+					'company_id' => $company_id,
+					'batch_no' => $batch_no
+				])->row_array();
+			}
 
 			if (!$inv) {
 				return [
@@ -4607,12 +4821,18 @@ class Inventory_model extends CI_Model
 			$this->db->insert('inventory_history', $inv_his);
 
 			// Delete from Inventory
-			$this->db->where([
-				'product_id' => $product_id,
-				'warehouse_id' => $warehouse_id,
-				'company_id' => $company_id,
-				'batch_no' => $batch_no
-			])->delete('inventory');
+			$inv_to_delete = $this->db->get_where('inventory', ['po_row_id' => $product['id']])->row_array();
+			if (!$inv_to_delete) {
+				$inv_to_delete = $this->db->get_where('inventory', [
+					'product_id' => $product_id,
+					'warehouse_id' => $warehouse_id,
+					'company_id' => $company_id,
+					'batch_no' => $batch_no
+				])->row_array();
+			}
+			if ($inv_to_delete) {
+				$this->db->where('id', $inv_to_delete['id'])->delete('inventory');
+			}
 		}
 
 		// Delete Purchase In Products snapshot
@@ -8602,6 +8822,32 @@ class Inventory_model extends CI_Model
 						}
 					}
 
+					$charge_id_arr = $this->input->post('charge_id');
+					$charge_gst_arr = $this->input->post('charge_gst');
+					$charge_price_arr = $this->input->post('charge_price');
+					$charge_total_arr = $this->input->post('charge_total');
+
+					if(!empty($charge_id_arr)) {
+						for ($i = 0; $i < count($charge_id_arr); $i++) {
+							if (!empty($charge_id_arr[$i])) {
+								$type_id = $charge_id_arr[$i];
+								
+								$other_charge = $this->db->get_where('other_charges', ['id' => $type_id])->row_array();
+								$type_name = $other_charge ? $other_charge['name'] : '';
+
+								$data_charge = array(
+									'order_id'   => $order_id,
+									'type_id'    => $type_id,
+									'type'       => $type_name,
+									'gst'        => (float) ($charge_gst_arr[$i] ?? 0),
+									'amount'     => (float) ($charge_price_arr[$i] ?? 0),
+									'total_amt'  => (float) ($charge_total_arr[$i] ?? 0),
+								);
+								$this->db->insert('sales_order_charges', $data_charge);
+							}
+						}
+					}
+
 					$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 				} else {
 					$resultpost = array(
@@ -8653,6 +8899,17 @@ class Inventory_model extends CI_Model
             OR order_no like '%" . $keyword . "%')";
 		endif;
 		
+		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
+			$status        = $_REQUEST['status'];
+			if ($status == 'pending') {
+				$keyword_filter .= " AND (is_approved = '0')";
+			} elseif ($status == 'invoice') {
+				$keyword_filter .= " AND (is_approved = '1' AND is_generated = '0')";
+			} elseif ($status == 'complete') {
+				$keyword_filter .= " AND (is_approved = '1' AND is_generated = '1')";
+			} 
+		endif;
+		
 		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
 			$keyword        = $_REQUEST['customer_id'];
 			$keyword_filter .= " AND (customer_id = '" . $keyword . "')";
@@ -8678,7 +8935,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, order_type, order_no, refrence_no, is_generated, is_approved, date, customer_id, customer_name, warehouse_name, grand_total, company_name, remark FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -14681,7 +14938,7 @@ public function get_sales_return_reports()
 				// Test PDF - Uncomment the code below and change the pdf file name if needed
 			  // $receipt_no = sprintf('%05d', $id);
 				// $page_data['data'] = $item;
-				// $html_content = $this->load->view('invoice/po/packing_list', $page_data, TRUE);
+				// $html_content = $this->load->view('invoice/po/commercial', $page_data, TRUE);
 				// $this->pdf->set_paper("A4", "portrait");
 				// $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
 				// $this->pdf->load_html($html_content);

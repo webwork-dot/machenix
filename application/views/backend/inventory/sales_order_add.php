@@ -167,13 +167,60 @@
 		border-color: #d3deef;
 	}
 
-	.sales-line-item .btn-remove-line {
+	.sales-line-item .btn-remove-line,
+	.sales-line-item .btn-add-line,
+	.charge-line-item .btn-remove-charge,
+	.charge-line-item .btn-add-charge {
 		width: 34px;
 		height: 34px;
 		padding: 0;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+	}
+	.sales-line-item .btn-remove-line:focus,
+	.sales-line-item .btn-add-line:focus,
+	.charge-line-item .btn-remove-charge:focus,
+	.charge-line-item .btn-add-charge:focus {
+		box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.4) !important;
+		outline: none;
+	}
+
+	/* Compact Table Styles */
+	#requirement_area tr .btn-add-line {
+		display: none;
+	}
+	#requirement_area tr:last-child .btn-add-line {
+		display: inline-flex;
+	}
+	#charges_area tr .btn-add-charge {
+		display: none;
+	}
+	#charges_area tr:last-child .btn-add-charge {
+		display: inline-flex;
+	}
+	.compact-table th, .compact-table td {
+		padding: 4px !important;
+		vertical-align: middle;
+	}
+	.compact-table .form-control {
+		height: 32px;
+		min-height: 32px;
+		padding: 4px 8px;
+		font-size: 13px;
+		border-radius: 3px;
+	}
+	.compact-table .input-group-text {
+		height: 32px;
+		min-height: 32px;
+		padding: 0 8px !important;
+	}
+	.compact-table select.form-control {
+		width: 100%;
+	}
+	.compact-table th {
+		font-size: 12px;
+		white-space: nowrap;
 	}
 </style>
 
@@ -242,129 +289,98 @@
           </div>
 
           <div class="col-12">
-            <div id="requirement_area">
-
-              <div class="d-block mt-2 element-1 fx-border sales-line-item" id="product_1" data-id="1">
-                <b class="jsr-no">1</b>
-                <div class="flex-grow-1 ">
-                  <div class="row g-1 align-items-end">
-
-                      <div class="col-xl-3 col-lg-4 col-md-6 px-1">
-                        <input type="hidden" name="x_value[]" id="x_value_1" value="1">
-                        <div class="form-group">
-                          <label>Select Product<span class="required">*</span></label>
-                          <select class="form-control select2 product_id" name="product_id[]" id="product_id_1"
-                            data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
-                            <option value="">Select Product</option>
-                          </select>
-                        </div>
+            <h6 class="mb-1">Products</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm compact-table">
+                <thead class="table-light text-center">
+                  <tr>
+                    <th style="min-width:200px;">Product <span class="text-danger">*</span></th>
+                    <th style="min-width:50px;">Qty <span class="text-danger">*</span></th>
+                    <th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
+                    <th style="min-width:100px;">Total Amt</th>
+                    <th style="min-width:120px;">Per Qty Bill <span class="text-danger">*</span></th>
+                    <th style="min-width:100px;">Total Bill</th>
+                    <th style="min-width:60px;">GST % <span class="text-danger">*</span></th>
+                    <th style="min-width:100px;">GST Amt</th>
+                    <th style="min-width:120px;">Total Bill GST</th>
+                    <th style="min-width:110px;">Per Qty Black</th>
+                    <th style="min-width:100px;">Total Black</th>
+                    <th style="min-width:120px;">Final Total</th>
+                    <th style="min-width:50px;">Act</th>
+                  </tr>
+                </thead>
+                <tbody id="requirement_area">
+                  <tr class="element-1 sales-line-item" id="product_1" data-id="1">
+                    <td>
+                      <input type="hidden" name="x_value[]" id="x_value_1" value="1">
+                      <select class="form-control select2 product_id" name="product_id[]" id="product_id_1" data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
+                        <option value="">Select Product</option>
+                      </select>
+                    </td>
+                    <td><input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('1')" value="1" class="form-control" required=""></td>
+                    <td>
+                      <div class="input-group">
+                        <input type="number" step="any" id="master_amount_1" name="master_amount[]" onkeyup="calculate_amt('1')" value="" class="form-control">
+                        <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('1')"><i class="fa fa-history px-1"></i></span>
                       </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Qty <span class="required">*</span></label>
-                          <input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty"
-                            onkeyup="calculate_amt('1')" value="1" class="form-control" required="">
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Per Qty Amount <span class="required">*</span></label>
-                          <div class="input-group">
-                            <input type="number" step="any" id="master_amount_1" name="master_amount[]"
-                              onkeyup="calculate_amt('1')" value="" class="form-control">
-                            <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('1')"><i class="fa fa-history px-1"></i></span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Total Amount</label>
-                          <input type="number" step="any" id="total_amount_1" name="total_amount[]" class="form-control" readonly>
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Per Qty Bill Amt <span class="required">*</span></label>
-                          <input type="number" step="any" id="bill_amount_1" name="bill_amount[]"
-                            onkeyup="markManual('1'); calculate_amt('1')" value="" class="form-control" data-manual="false">
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Total Bill Amt</label>
-                          <input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('1')">
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>GST % <span class="required">*</span></label>
-                          <input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_amt('1')" value="" class="form-control">
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>GST Amt</label>
-                          <input type="number" step="any" id="gst_amount_1" name="gst_amount[]" value="" class="form-control" readonly>
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Total Bill GST Amount</label>
-                          <input type="number" step="any" id="total_bill_gst_amount_1" name="total_bill_gst_amount[]" class="form-control" readonly>
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Per Qty Black Amt</label>
-                          <input type="number" step="any" id="black_amount_per_unit_1" name="black_amt[]" class="form-control" readonly>
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Total Black Amount</label>
-                          <input type="number" step="any" id="black_amount_1" name="black_total[]" value="" class="form-control" readonly>
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>Final Total</label>
-                          <input type="number" step="any" id="final_total_1" name="final_total[]" class="form-control" readonly>
-                          <input type="hidden" id="available_1" name="available[]" value="0">
-                        </div>
-                      </div>
-
-                      <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                        <div class="form-group">
-                          <label>&nbsp;</label><br />
-                          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line"
-                            onclick="removeRequirement(this,1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
-                        </div>
-                      </div>
-
-                  </div>
-                </div>
-              </div>
-
+                    </td>
+                    <td><input type="number" step="any" id="total_amount_1" name="total_amount[]" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="bill_amount_1" name="bill_amount[]" onkeyup="markManual('1'); calculate_amt('1')" value="" class="form-control" data-manual="false"></td>
+                    <td><input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('1')"></td>
+                    <td><input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_amt('1')" value="" class="form-control"></td>
+                    <td><input type="number" step="any" id="gst_amount_1" name="gst_amount[]" value="" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="total_bill_gst_amount_1" name="total_bill_gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="black_amount_per_unit_1" name="black_amt[]" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="black_amount_1" name="black_total[]" value="" class="form-control" tabindex="-1" readonly></td>
+                    <td>
+                      <input type="number" step="any" id="final_total_1" name="final_total[]" class="form-control" tabindex="-1" readonly>
+                      <input type="hidden" id="available_1" name="available[]" value="0">
+                    </td>
+                    <td class="text-center align-middle" style="white-space:nowrap;">
+                      <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+                      <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line" onclick="removeRequirement(this,1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <center>
-            <div class="col-md-12  pl-0 m-auto">
-              <button type="button" class="btn btn-outline-primary waves-effect" onclick="appendRequirement()"> <i
-                  class="fa fa-plus" aria-hidden="true"></i> Add New Product</button>
+          <div class="col-12 mt-1">
+            <h6 class="mb-1">Other Charges</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm compact-table">
+                <thead class="table-light text-center">
+                  <tr>
+                    <th style="min-width:200px;">Type</th>
+                    <th style="min-width:80px;">GST %</th>
+                    <th style="min-width:120px;">Amount</th>
+                    <th style="min-width:120px;">Total Amount</th>
+                    <th style="min-width:50px;">Act</th>
+                  </tr>
+                </thead>
+                <tbody id="charges_area">
+                  <tr class="element-charge-1 charge-line-item" id="charge_1" data-id="1">
+                    <td>
+                      <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_1" data-toggle="select2" onchange="get_charge_details(this.value, '1');">
+                        <option value="">Select Charges</option>
+                        <?php foreach($other_charges as $charge){ ?>
+                          <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
+                        <?php } ?>
+                      </select>
+                    </td>
+                    <td><input type="number" step="any" id="charge_gst_1" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+                    <td><input type="number" step="any" id="charge_price_1" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+                    <td><input type="number" step="any" id="charge_total_1" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+                    <td class="text-center align-middle" style="white-space:nowrap;">
+                      <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+                      <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, 1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </center>
+          </div>
 
           <div class="col-12 col-sm-12 mb-1">
             <div class="table-responsive">
@@ -444,14 +460,11 @@
                     </tr>
                     <tr>
                       <td colspan="4" class="text-right">
-                        <label>Add : Other Charges</label>
-                        <input type="text" step="any" name="other_charges_name" id="other_charges_name" value=""
-                          placeholder="Charge Name" class="form-control dis-input-1">
+                        <label>Other Charges</label>
                       </td>
                       <td colspan="1">
                         <p class="td-blank"><input type="number" step="any" name="other_charges_amount"
-                            id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="0"
-                            onkeyup="recalculate()"></p>
+                            id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="0" readonly></p>
                       </td>
                     </tr>
                     <tr>
@@ -551,10 +564,17 @@ function subtotal_cal() {
     $('#igst').val('0.00');
   }
 
-  var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
+  var total_charge_amt = 0;
+  let chargeTotalArr = document.querySelectorAll('[name="charge_total[]"]');
+  chargeTotalArr.forEach((element) => {
+    total_charge_amt += Number(element.value) || 0;
+  });
+
+  $("#other_charges_amount").val(total_charge_amt.toFixed(2));
+
   var round_of = parseFloat($("#round_of").val()) || 0;
 
-  grand_total = final_total_sum + other_charges_amount + round_of;
+  grand_total = final_total_sum + total_charge_amt + round_of;
   $('#grand_total').val(grand_total.toFixed(2));
 }
 
@@ -614,120 +634,41 @@ function appendRequirement() {
     $(".loader").show();
     
       $('#requirement_area').append(`
-        <div class="d-block mt-2 element-1 fx-border sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
-          <b class="jsr-no">${nextindex}</b>
-
-          <div class="flex-grow-1 px-0 ml-15">
-            <div class="row g-1 align-items-end">
-
-              <div class="col-xl-3 col-lg-4 col-md-6 px-1">
-                <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
-                <div class="form-group">
-                  <label>Select Product<span class="required">*</span></label>
-                  <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
-                    <option value="">Select Product</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Qty <span class="required">*</span></label>
-                  <input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1"
-                    class="form-control" onkeyup="calculate_amt('${nextindex}')" required>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Per Qty Amount <span class="required">*</span></label>
-                  <div class="input-group">
-                    <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
-                    <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Total Amount</label>
-                  <input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" readonly>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Per Qty Bill Amt <span class="required">*</span></label>
-                  <input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" 
-                    onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false">
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Total Bill Amt</label>
-                  <input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" 
-                    onkeyup="calculate_amt_reverse('${nextindex}')">
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>GST % <span class="required">*</span></label>
-                  <input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control"
-                    onkeyup="calculate_amt('${nextindex}')">
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>GST Amt</label>
-                  <input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" readonly>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Total Bill GST Amount</label>
-                  <input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" readonly>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Per Qty Black Amt</label>
-                  <input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" readonly>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Total Black Amount</label>
-                  <input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" readonly>
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>Final Total</label>
-                  <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" readonly>
-                  <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
-                </div>
-              </div>
-
-              <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-                <div class="form-group">
-                  <label>&nbsp;</label><br>
-                  <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line"
-                    onclick="removeRequirement(this,${nextindex})">
-                    <i class="fa fa-times"></i>
-                  </button>
-                </div>
-              </div>
-
+        <tr class="element-1 sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
+          <td>
+            <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
+            <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
+              <option value="">Select Product</option>
+            </select>
+          </td>
+          <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
+          <td>
+            <div class="input-group">
+              <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
+              <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
             </div>
-          </div>
-        </div>
+          </td>
+          <td><input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" tabindex="-1" readonly></td>
+          <td><input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false"></td>
+          <td><input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('${nextindex}')"></td>
+          <td><input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control" onkeyup="calculate_amt('${nextindex}')"></td>
+          <td><input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+          <td><input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+          <td><input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" tabindex="-1" readonly></td>
+          <td><input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" tabindex="-1" readonly></td>
+          <td>
+            <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" tabindex="-1" readonly>
+            <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
+          </td>
+          <td class="text-center align-middle" style="white-space:nowrap;">
+            <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()">
+              <i class="fa fa-plus"></i>
+            </button>
+            <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line" onclick="removeRequirement(this,${nextindex})">
+              <i class="fa fa-times"></i>
+            </button>
+          </td>
+        </tr>
       `);
       
       $.ajax({
@@ -738,7 +679,8 @@ function appendRequirement() {
           console.log("Products Loaded:", res);
           var select = $('#product_id_' + nextindex);
           select.html('<option value="">Select Product</option>' + res).trigger('change');
-          select.select2();
+          select.select2({ dropdownParent: $('body') });
+          select.select2('open');
           $(".loader").fadeOut("slow");
           
           $('html, body').animate({
@@ -902,14 +844,111 @@ function appendRequirement() {
 
   function removeRequirement(requirementElem) {
     if(document.querySelector('#requirement_area').children.length > 1){
-      $(requirementElem).parent().parent().parent().parent().parent().remove();
+      $(requirementElem).closest('tr').remove();
       recalculate();
     } else {
       alert('Atleast one line item is required');
     }
   }
 
+  function get_charge_details(val, index) {
+    if (val == "") {
+      $('#charge_gst_' + index).val(0);
+      $('#charge_price_' + index).val(0);
+      calculate_charge(index);
+    } else {
+      var option = $('#charge_id_' + index).find('option:selected');
+      var gst = option.data('gst') || 0;
+      var price = option.data('price') || 0;
+      $('#charge_gst_' + index).val(gst);
+      $('#charge_price_' + index).val(price);
+      calculate_charge(index);
+    }
+  }
+
+  function calculate_charge(index) {
+    var charge_id = $('#charge_id_' + index).val();
+    var gst = parseFloat($('#charge_gst_' + index).val()) || 0;
+    var price = parseFloat($('#charge_price_' + index).val()) || 0;
+    
+    if (charge_id == "" && (gst > 0 || price > 0)) {
+      Swal.fire({
+        title: "Error!",
+        text: "select the charges first",
+        icon: "error"
+      });
+      $('#charge_gst_' + index).val(0);
+      $('#charge_price_' + index).val(0);
+      $('#charge_total_' + index).val(0);
+      recalculate();
+      return;
+    }
+    
+    var total = price + (price * gst / 100);
+    $('#charge_total_' + index).val(total.toFixed(2));
+    recalculate();
+  }
+
+  function appendCharge() {
+    var last_row = $("#charges_area .charge-line-item:last");
+    var nextindex = 1;
+    if (last_row.length > 0) {
+      var currentId = last_row.data("id") || 0;
+      nextindex = parseInt(currentId) + 1;
+      
+      var prev_charge = $('#charge_id_' + currentId).val();
+      if (prev_charge == '') {
+        Swal.fire({
+          title: "Error!",
+          text: "Please select previous charge !!",
+          icon: "error"
+        });
+        return;
+      }
+    }
+    
+    $('#charges_area').append(`
+      <tr class="element-charge-${nextindex} charge-line-item" id="charge_${nextindex}" data-id="${nextindex}">
+        <td>
+          <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_${nextindex}" data-toggle="select2" onchange="get_charge_details(this.value, '${nextindex}');">
+            <option value="">Select Charges</option>
+            <?php foreach($other_charges as $charge){ ?>
+              <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
+            <?php } ?>
+          </select>
+        </td>
+        <td><input type="number" step="any" id="charge_gst_${nextindex}" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('${nextindex}')" value="0"></td>
+        <td><input type="number" step="any" id="charge_price_${nextindex}" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('${nextindex}')" value="0"></td>
+        <td><input type="number" step="any" id="charge_total_${nextindex}" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+        <td class="text-center align-middle" style="white-space:nowrap;">
+          <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, ${nextindex})"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+        </td>
+      </tr>
+    `);
+    
+    $('#charge_id_' + nextindex).select2({ dropdownParent: $('body') });
+    $('#charge_id_' + nextindex).select2('open');
+  }
+
+  function removeCharge(element, index) {
+    if(document.querySelector('#charges_area').children.length > 1){
+      $(element).closest('tr').remove();
+      recalculate();
+    } else {
+      $('#charge_id_' + index).val("").trigger('change');
+      $('#charge_gst_' + index).val(0);
+      $('#charge_price_' + index).val(0);
+      $('#charge_total_' + index).val(0);
+      recalculate();
+    }
+  }
+
   $(document).ready(function ($) {
+    // Re-init the first row select2 to attach to body and prevent clipping
+    $('#product_id_1').select2({ dropdownParent: $('body') });
+    $('#charge_id_1').select2({ dropdownParent: $('body') });
+
     // Init first product row
     $.ajax({
       type: "POST",
@@ -928,6 +967,38 @@ function appendRequirement() {
 
     change_gst($('#gst_type').val());
     recalculate();
+
+    // Excel-like Keyboard Navigation
+    $(document).on('keydown', '.compact-table input, .compact-table select', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var $focusable = $('.compact-table').find('input:not([readonly]), select').filter(':visible');
+        var index = $focusable.index(this);
+        if (index > -1 && index < $focusable.length - 1) {
+          var $next = $focusable.eq(index + 1);
+          // If it's a select2, open it or focus it
+          if ($next.hasClass('select2-hidden-accessible')) {
+             $next.select2('focus');
+             $next.select2('open');
+          } else {
+             $next.focus();
+             $next.select();
+          }
+        }
+      }
+    });
+
+    // Auto-open Select2 dropdown on focus (e.g. via Tab key)
+    $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
+      $(this).closest(".select2-container").siblings('select:enabled').select2('open');
+    });
+
+    // To prevent infinite loop if dropdown closes and focuses back on selection
+    $('select.select2').on('select2:closing', function (e) {
+      $(e.target).data('select2').$selection.one('focus focusin', function (e) {
+        e.stopPropagation();
+      });
+    });
   });
 </script>
 
