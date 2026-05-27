@@ -320,8 +320,6 @@ class Crud_model extends CI_Model
         }
     }
     
-
-    
     public function get_countries(){
         $resultdata=array();
         $query = $this->db->query("SELECT id, name  FROM `countries` ORDER BY id asc");
@@ -341,7 +339,7 @@ class Crud_model extends CI_Model
     
     public function get_states(){
         $resultdata=array();
-        $query = $this->db->query("SELECT id, name  FROM `states` ORDER BY name asc");
+        $query = $this->db->query("SELECT id, name FROM `states` WHERE is_deleted = '0' ORDER BY name asc");
         if (!empty($query)) { 
             $data=array();
             foreach ($query->result_array() as $item) {
@@ -358,7 +356,7 @@ class Crud_model extends CI_Model
 
     public function get_states_by_country($country_id){
         $resultdata=array();
-        $query = $this->db->query("SELECT id, name  FROM `states` WHERE country_id='$country_id' ORDER BY name asc");
+        $query = $this->db->query("SELECT id, name FROM `states` WHERE is_deleted = '0' AND country_id='$country_id' ORDER BY name asc");
         if (!empty($query)) { 
             $data=array();
             foreach ($query->result_array() as $item) {
@@ -375,7 +373,7 @@ class Crud_model extends CI_Model
 
     public function get_city_by_state($state_id){
         $resultdata=array();
-        $query = $this->db->query("SELECT id, name FROM `cities` WHERE state_id='$state_id' ORDER BY name asc");
+        $query = $this->db->query("SELECT id, name FROM `cities` WHERE is_deleted='0' AND state_id='$state_id' ORDER BY name asc");
         if (!empty($query)) { 
             $data=array();
             foreach ($query->result_array() as $item) {

@@ -7425,8 +7425,8 @@ class Inventory_model extends CI_Model
 		$other_whatsapp_digits = preg_replace('/[^0-9]/', '', $other_whatsapp);
 
 		// Get state/city names
-		$state_name = ($state_id > 0) ? (string) $this->common_model->selectByidParam($state_id, 'state_list', 'state') : '';
-		$city_name  = ($city_id > 0)  ? (string) $this->common_model->selectByidParam($city_id, 'city_list', 'district') : '';
+		$state_name = ($state_id > 0) ? (string) $this->common_model->get_state_name($state_id) : '';
+		$city_name  = ($city_id > 0)  ? (string) $this->common_model->get_city_name($city_id) : '';
 
 		/**
 		 * RULE #1 (within same customer form):
@@ -7644,8 +7644,8 @@ class Inventory_model extends CI_Model
 		$other_whatsapp_digits = preg_replace('/[^0-9]/', '', $other_whatsapp);
 
 		// names
-		$state_name = ($state_id > 0) ? (string) $this->common_model->selectByidParam($state_id, 'state_list', 'state') : '';
-		$city_name  = ($city_id > 0)  ? (string) $this->common_model->selectByidParam($city_id, 'city_list', 'district') : '';
+		$state_name = ($state_id > 0) ? (string) $this->common_model->get_state_name($state_id) : '';
+		$city_name  = ($city_id > 0)  ? (string) $this->common_model->get_city_name($city_id) : '';
 
 		// --- phone rules (same as add) ---
 		$ownerNums = array_values(array_unique(array_filter([$owner_mobile_digits, $owner_whatsapp_digits]))); // mandatory (as in add)
@@ -8464,11 +8464,14 @@ class Inventory_model extends CI_Model
 
 		$this->db->where('order_id', $id);
 		$data['products'] = $this->db->get('sales_order_product')->result_array();
+
+		$this->db->where('order_id', $id);
+		$data['other_charges'] = $this->db->get('sales_order_charges')->result_array();
 		
 		return $data;
 	}
 
-	public function edit_sales_order($id)
+	public function approve_sales_order($id)
 	{
 		$this->db->trans_begin();
 		try {
@@ -8676,6 +8679,255 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
+	public function edit_sales_order($id)
+	{
+		$this->db->trans_begin();
+		try {
+			$resultpost = array(
+				"status" => 200,
+				"message" => get_phrase('sales_order_updated_successfully'),
+				"url" => $this->session->userdata('previous_url'),
+			);
+
+			$sales_record = $this->common_model->getRowById('sales_order', '*', ['id' => $id]);
+			$sales_products = $this->common_model->getResultById('sales_order_product', '*', ['order_id' => $id]);
+			$sales_batches = $this->common_model->getResultById('sales_order_product_batch', '*', ['order_id' => $id]);
+
+			$this->db->insert('sales_history', [
+				'parent_id' => $id,
+				'json' => json_encode([
+					'sales' => $sales_record,
+					'products' => $sales_products,
+					'batches' => $sales_batches,
+				])
+			]);
+
+			$old_sales_record = $this->common_model->getRowById('sales_order', '*', ['id' => $id]);
+			$old_sales_products = $this->common_model->getResultById('sales_order_product', '*', ['order_id' => $id]);
+			$old_sales_charges = $this->common_model->getResultById('sales_order_charges', '*', ['order_id' => $id]);
+
+			$customer_id = $this->input->post('customer_id');
+			if ($customer_id != '') {
+				$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'owner_name');
+			} else {
+				$customer_name = '';
+			}
+
+			$warehouse_id = $this->input->post('warehouse_id');
+			$warehouse_name = '';
+			if ($warehouse_id != '') {
+				$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+			}
+
+			$round_of       	= ($this->input->post('round_of') != '') ? $this->input->post('round_of') : 0;
+			$gst_type       	= clean_and_escape($this->input->post('gst_type'));
+
+			$other_charges_name   = clean_and_escape($this->input->post('other_charges_name'));
+			$other_charges_amount = ($this->input->post('other_charges_amount') != '') ? $this->input->post('other_charges_amount') : 0;
+			$basic_value          = price_format_decimal($this->input->post('basic_value'));
+			$net_sales_value_1    = price_format_decimal($this->input->post('net_sales_value_1'));
+			$total_black_amt      = price_format_decimal($this->input->post('total_black_amount_summary'));
+			$net_sales_value_2    = price_format_decimal($this->input->post('net_sales_value_2'));
+			$grand_total          = price_format_decimal($this->input->post('grand_total'));
+			$central_gst          = price_format_decimal($this->input->post('central_gst'));
+			$state_gst            = price_format_decimal($this->input->post('state_gst'));
+			$igst                 = price_format_decimal($this->input->post('igst'));
+			$gst_total            = ($gst_type == 'IGST') ? $igst : ($central_gst + $state_gst);
+
+			$data = array();
+			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
+			$data['date']     		   	 		= ($this->input->post('date'));
+			$data['customer_id']       		= $customer_id;
+			$data['customer_name']     		= $customer_name;
+			$data['warehouse_id']      		= $warehouse_id;
+			$data['warehouse_name']    		= $warehouse_name;
+			$data['remark'] 		   		 		= ($this->input->post('remark'));
+			$data['narration']         		= ($this->input->post('narration'));
+			$data['gst_type']     	   		= $gst_type;
+			$data['igst_per']     	   		= 0;
+			$data['cgst_per']     	   		= 0;
+			$data['sgst_per']     	   		= 0;
+			$data['basic_value']          = $basic_value;
+			$data['net_sales_value_1']    = $net_sales_value_1;
+			$data['total_black_amt']      = $total_black_amt;
+			$data['central_gst']          = $central_gst;
+			$data['state_gst']            = $state_gst;
+			$data['igst']                 = $igst;
+			$data['gst_total']            = $gst_total;
+			$data['net_sales_value_2']    = $net_sales_value_2;
+			$data['round_of']             = $round_of;
+			$data['grand_total']          = $grand_total;
+			$data['other_charges_name']   = $other_charges_name;
+			$data['other_charges_amount'] = $other_charges_amount;
+
+			$shipping_state_id = $this->input->post('shipping_state_id');
+			$shipping_city_id  = $this->input->post('shipping_city_id');
+			$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+			$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
+
+			$billing_state_id  = $this->input->post('billing_state_id');
+			$billing_city_id   = $this->input->post('billing_city_id');
+			$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+			$billing_address   = clean_and_escape($this->input->post('billing_address'));
+
+			$data['shipping_state_id']   = $shipping_state_id;
+			$data['shipping_state_name'] = ($shipping_state_id > 0) ? (string) $this->common_model->get_state_name($shipping_state_id) : '';
+			$data['shipping_city_id']    = $shipping_city_id;
+			$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
+			$data['shipping_pincode']    = $shipping_pincode;
+			$data['shipping_address']    = $shipping_address;
+
+			$data['billing_state_id']    = $billing_state_id;
+			$data['billing_state_name']  = ($billing_state_id > 0) ? (string) $this->common_model->get_state_name($billing_state_id) : '';
+			$data['billing_city_id']     = $billing_city_id;
+			$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
+			$data['billing_pincode']     = $billing_pincode;
+			$data['billing_address']     = $billing_address;
+
+			$this->db->where('id', $id)->update('sales_order', $data);
+			$order_id = $id;
+
+			// Delete existing products for this order
+			$this->db->where('order_id', $order_id)->delete('sales_order_product');
+
+			$product_id_arr     = ($this->input->post('product_id'));
+			$quantity_arr       = ($this->input->post('quantity'));
+			$master_amount_arr  = ($this->input->post('master_amount'));
+			$total_amount_arr   = ($this->input->post('total_amount'));
+			$bill_amount_arr    = ($this->input->post('bill_amount'));
+			$gst_arr       			= ($this->input->post('gst'));
+			$gst_amount_arr     = ($this->input->post('gst_amount'));
+			$bill_total_arr     = ($this->input->post('bill_total'));
+			$total_bill_gst_amount_arr = ($this->input->post('total_bill_gst_amount'));
+			$black_amt_arr       = ($this->input->post('black_amt'));
+			$black_total_arr		 = ($this->input->post('black_total'));
+			$final_total_arr    = ($this->input->post('final_total'));
+			$available_arr			= ($this->input->post('available'));
+
+			$log_json = array(
+				'old_sale_order' => array(
+					'sale_order'    => $old_sales_record,
+					'products'      => $old_sales_products,
+					'other_charges' => $old_sales_charges
+				),
+				'new_sale_order' => array(
+					'sale_order'    => $data,
+					'products'      => array(),
+					'other_charges' => array()
+				)
+			);
+
+			for ($i = 0; $i < count($product_id_arr); $i++) {
+				if ($quantity_arr[$i] > 0) {
+					$xpro 			=  explode('|', $product_id_arr[$i]);
+					$product_id 	= $xpro[0];
+
+					$product    	= $this->crud_model->get_raw_products_by_id($product_id)->row_array();
+					if (empty($product)) {
+						throw new Exception('No Product Found');
+					}
+
+					$item_code = $product['item_code'] ?? '';
+					if ($item_code == '') {
+						$inv_prod = $this->db->where('product_id', $product_id)->get('inventory')->row_array();
+						$item_code = $inv_prod['item_code'] ?? '';
+					}
+
+					$data_product = array(
+						'order_id'                => $order_id,
+						'product_id'              => $product_id,
+						'item_code'               => $item_code,
+						'product_name'            => $product['name'],
+						'qty'                     => (float) ($quantity_arr[$i] ?? 0),
+						'amount'                  => (float) ($master_amount_arr[$i] ?? 0),
+						'total_amount'            => (float) ($total_amount_arr[$i] ?? 0),
+						'bill_amount'             => (float) ($bill_amount_arr[$i] ?? 0),
+						'bill_total'              => (float) ($bill_total_arr[$i] ?? 0),
+						'available'               => (float) ($available_arr[$i] ?? 0),
+						'gst'                     => (float) ($gst_arr[$i] ?? 0),
+						'gst_amount'              => (float) ($gst_amount_arr[$i] ?? 0),
+						'total_bill_gst_amount'   => (float) ($total_bill_gst_amount_arr[$i] ?? 0),
+						'black_amount'            => (float) ($black_amt_arr[$i] ?? 0),
+						'black_total'             => (float) ($black_total_arr[$i] ?? 0),
+						'final_total'             => (float) ($final_total_arr[$i] ?? 0),
+					);
+
+					$this->db->insert('sales_order_product', $data_product);
+					$log_json['new_sale_order']['products'][] = $data_product;
+				}
+			}
+
+			// Delete existing charges
+			$this->db->where('order_id', $order_id)->delete('sales_order_charges');
+
+			$charge_id_arr = $this->input->post('charge_id');
+			$charge_gst_arr = $this->input->post('charge_gst');
+			$charge_price_arr = $this->input->post('charge_price');
+			$charge_total_arr = $this->input->post('charge_total');
+
+			if(!empty($charge_id_arr)) {
+				for ($i = 0; $i < count($charge_id_arr); $i++) {
+					if (!empty($charge_id_arr[$i])) {
+						$type_id = $charge_id_arr[$i];
+						
+						$other_charge = $this->db->get_where('other_charges', ['id' => $type_id])->row_array();
+						$type_name = $other_charge ? $other_charge['name'] : '';
+
+						$data_charge = array(
+							'order_id'   => $order_id,
+							'type_id'    => $type_id,
+							'type'       => $type_name,
+							'gst'        => (float) ($charge_gst_arr[$i] ?? 0),
+							'amount'     => (float) ($charge_price_arr[$i] ?? 0),
+							'total_amt'  => (float) ($charge_total_arr[$i] ?? 0),
+						);
+						$this->db->insert('sales_order_charges', $data_charge);
+						$log_json['new_sale_order']['other_charges'][] = $data_charge;
+					}
+				}
+			}
+
+			$log_data = array(
+				'parent_id'      => $order_id,
+				'ref_id'         => NULL,
+				'module'         => 'sales',
+				'action'         => 'edit',
+				'message'        => 'Sale Order edited by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($log_json),
+				'table_name'     => 'sales_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			$this->session->set_flashdata('flash_message', get_phrase('sales_order_updated_successfully'));
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost = array(
+					"status" => 400,
+					"message" => "Error occurred while editing Sales Order",
+				);
+			} else {
+				$this->db->trans_commit();
+				$resultpost = array(
+					"status" => 200,
+					"message" => get_phrase('sales_order_updated_successfully'),
+					"url" => $this->session->userdata('previous_url'),
+				);
+			}
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" =>  "Exception occurred: " . $e->getMessage(),
+			);
+		}
+		return simple_json_output($resultpost);
+	}
+
 	public function add_sales_order()
 	{
 		$this->db->trans_begin();
@@ -8761,9 +9013,41 @@ class Inventory_model extends CI_Model
 				$data['grand_total']          = $grand_total;
 				$data['other_charges_name']   = $other_charges_name;
 				$data['other_charges_amount'] = $other_charges_amount;
+
+				$shipping_state_id = $this->input->post('shipping_state_id');
+				$shipping_city_id  = $this->input->post('shipping_city_id');
+				$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+				$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
+
+				$billing_state_id  = $this->input->post('billing_state_id');
+				$billing_city_id   = $this->input->post('billing_city_id');
+				$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+				$billing_address   = clean_and_escape($this->input->post('billing_address'));
+
+				$data['shipping_state_id']   = $shipping_state_id;
+				$data['shipping_state_name'] = ($shipping_state_id > 0) ? (string) $this->common_model->get_state_name($shipping_state_id) : '';
+				$data['shipping_city_id']    = $shipping_city_id;
+				$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
+				$data['shipping_pincode']    = $shipping_pincode;
+				$data['shipping_address']    = $shipping_address;
+
+				$data['billing_state_id']    = $billing_state_id;
+				$data['billing_state_name']  = ($billing_state_id > 0) ? (string) $this->common_model->get_state_name($billing_state_id) : '';
+				$data['billing_city_id']     = $billing_city_id;
+				$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
+				$data['billing_pincode']     = $billing_pincode;
+				$data['billing_address']     = $billing_address;
+
 				$data['added_by_id']          = $this->session->userdata('super_user_id');
 				$data['added_by_name']        = $this->session->userdata('super_name');
 				$data['added_date']   	      = date("Y-m-d H:i:s");
+
+				$log_json = array(
+					'sale_order'    => $data,
+					'products'      => array(),
+					'other_charges' => array()
+				);
+
 				if ($this->db->insert('sales_order', $data)) {
 					$order_id = $this->db->insert_id();
 					$this->update_order_no($order_no);
@@ -8819,6 +9103,7 @@ class Inventory_model extends CI_Model
 							);
 
 							$this->db->insert('sales_order_product', $data_product);
+							$log_json['products'][] = $data_product;
 						}
 					}
 
@@ -8844,9 +9129,25 @@ class Inventory_model extends CI_Model
 									'total_amt'  => (float) ($charge_total_arr[$i] ?? 0),
 								);
 								$this->db->insert('sales_order_charges', $data_charge);
+								$log_json['other_charges'][] = $data_charge;
 							}
 						}
 					}
+
+					$log_data = array(
+						'parent_id'      => $order_id,
+						'ref_id'         => NULL,
+						'module'         => 'sales',
+						'action'         => 'add',
+						'message'        => 'Sale Order added by ' . $this->session->userdata('super_name'),
+						'json'           => json_encode($log_json),
+						'table_name'     => 'sales_order',
+						'added_by'       => $this->session->userdata('super_user_id'),
+						'added_by_email' => $this->session->userdata('super_email'),
+						'added_by_name'  => $this->session->userdata('super_name'),
+						'added_by_type'  => $this->session->userdata('super_type')
+					);
+					$this->db->insert('sys_logs', $log_data);
 
 					$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 				} else {
@@ -8946,7 +9247,7 @@ class Inventory_model extends CI_Model
 				$view_url = base_url() . 'inventory/sales-order/view/' . $id;
 				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
 				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
-				$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
+				
 				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
 				$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
 				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $id;
@@ -8960,12 +9261,16 @@ class Inventory_model extends CI_Model
     		// 	 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
     		// 	 ';
 
-				if($this->session->userdata('super_type_id') != 4 && $item['is_approved'] == 0) {
+				// if($this->session->userdata('super_type_id') != 4 && $item['is_approved'] == 0) {
+				if($item['is_approved'] == 0 && $item['is_generated'] == 0) {
+					$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
+					$approve_url = base_url() . 'inventory/sales-order/approve/' . $id;
+
 					$action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
-							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+							<a class="dropdown-item" href="' . $approve_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Approve</a>
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 0) {

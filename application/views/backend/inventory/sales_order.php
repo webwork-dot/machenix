@@ -113,10 +113,9 @@
 					<th>Total Products</th>
 					<th>Total Amount</th>
 				    <!--<th>Remark</th>-->
-                    <?php if ($staff_access !== 7) { ?>
+                    <?php // if ($staff_access !== 7) { ?>
                     <th>Actions</th>
-                    <?php } ?>
-            
+                    <?php // } ?>
                   </tr>
                </thead>
             </table>
@@ -173,9 +172,9 @@
                 { "data": "total_pro" },
                 { "data": "grand_total" },
                 // { "data": "remark" },
-                <?php if ($staff_access !== 7) { ?>
+                <?php // if ($staff_access !== 7) { ?>
                    { "data": "action" },
-                <?php } ?>
+                <?php // } ?>
             ], 
            
             "buttons": [

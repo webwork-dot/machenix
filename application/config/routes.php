@@ -183,8 +183,10 @@ $route[$r_inventory . '/black-order'] = 'inventory/black_order';
 
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
 $route[$r_inventory . '/sales-order/add']    = 'inventory/sales_order_form/add';
-$route[$r_inventory . '/sales-order/view/(:num)']    = 'inventory/sales_order_form/view/$1';
+$route[$r_inventory . '/sales-order/approve/(:num)']    = 'inventory/sales_order_form/approve/$1';
 $route[$r_inventory . '/sales-order/edit/(:num)']    = 'inventory/sales_order_form/edit/$1';
+
+$route[$r_inventory . '/sales-order/view/(:num)']    = 'inventory/sales_order_form/view/$1';
 $route[$r_inventory . '/sales-order/not-uploaded/(:num)']    = 'inventory/sales_order_form/excel/$1';
 $route[$r_inventory . '/sales-order/products/(:num)']    = 'inventory/sales_order_form/products/$1';
 

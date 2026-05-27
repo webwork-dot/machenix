@@ -265,6 +265,76 @@
             </select>
           </div>
 
+          <div class="col-6 mb-1">
+            <div class="row">
+              <h6 class="mb-1">Shipping Address</h6>
+              <div class="col-4 mb-1">
+                <label class="form-label" for="shipping_state">Select State <span class="required">*</span></label>
+                <select class="form-select select2 shipping_state_id" name="shipping_state_id" id="shipping_state_id" onchange="get_shipping_city(this.value);" required>
+                  <option value="">Select State</option>
+                  <?php foreach($states as $state){?>
+                  <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
+                  <?php }?>
+                </select>
+              </div>
+              <div class="col-4 mb-1">
+                <label class="form-label" for="shipping_city">Select City <span class="required">*</span></label>
+                <select class="form-select select2 shipping_city_id" name="shipping_city_id" id="shipping_city_id" required>
+                  <option value="">Select City</option>
+                </select>
+              </div>
+              <div class="col-4 mb-1">
+                <div class="form-group">
+                  <label>Pincode <span class="required">*</span></label>
+                  <input type="text" class="form-control" placeholder="Pincode" name="shipping_pincode" id="shipping_pincode" required>
+                </div>
+              </div>
+              <div class="col-12 mb-1">
+                <div class="form-group">
+                  <label>Address <span class="required">*</span></label>
+                  <textarea class="form-control" placeholder="Shipping Address" rows="2" name="shipping_address" id="shipping_address" required></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 mb-1">
+            <div class="row">
+              <h6 class="mb-1">Billing Address</h6>
+              <div class="col-4 mb-1">
+                <label class="form-label" for="billing_state">Select State <span class="required">*</span></label>
+                <select class="form-select select2 billing_state_id" name="billing_state_id" id="billing_state_id" onchange="get_billing_city(this.value);" required>
+                  <option value="">Select State</option>
+                  <?php foreach($states as $state){?>
+                  <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
+                  <?php }?>
+                </select>
+              </div>
+              <div class="col-4 mb-1">
+                <label class="form-label" for="billing_city">Select City <span class="required">*</span></label>
+                <select class="form-select select2 billing_city_id" name="billing_city_id" id="billing_city_id" required>
+                  <option value="">Select City</option>
+                </select>
+              </div>
+              <div class="col-4 mb-1">
+                <div class="form-group">
+                  <label>Pincode <span class="required">*</span></label>
+                  <input type="text" class="form-control" placeholder="Pincode" name="billing_pincode" id="billing_pincode" required>
+                </div>
+              </div>
+              <div class="col-12 mb-1">
+                <div class="form-group">
+                  <label>Address <span class="required">*</span></label>
+                  <textarea class="form-control" placeholder="Billing Address" rows="2" name="billing_address" id="billing_address" required></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 mb-1">
+            
+          </div>
+
           <div class="col-12 col-sm-3 mb-1 d-none">
             <label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
             <select class=" form-select select2" name="warehouse_id" id="warehouse_id">
@@ -999,7 +1069,72 @@ function appendRequirement() {
         e.stopPropagation();
       });
     });
+
+    $('#customer_id').on('change', function() {
+      var customer_id = $(this).val();
+      if(customer_id) {
+        $.ajax({
+          type: "POST",
+          url: "<?php echo base_url();?>inventory/get_customer_details_ajax",
+          data: { customer_id: customer_id },
+          dataType: "json",
+          success: function(res) {
+            if(res.status === 200) {
+              var data = res.data;
+              var cityHtml = res.city_html;
+
+              var shipOnchange = $('#shipping_state_id').attr('onchange');
+              $('#shipping_state_id').removeAttr('onchange');
+              $('#shipping_state_id').val(data.state_id).trigger('change');
+              if (shipOnchange) {
+                  $('#shipping_state_id').attr('onchange', shipOnchange);
+              }
+              
+              $('#shipping_city_id').html(cityHtml);
+              $('#shipping_city_id').val(data.city_id).trigger('change');
+              $('#shipping_pincode').val(data.pincode);
+              $('#shipping_address').val(data.address);
+
+              // Update Billing fields
+              var billOnchange = $('#billing_state_id').attr('onchange');
+              $('#billing_state_id').removeAttr('onchange');
+              $('#billing_state_id').val(data.state_id).trigger('change');
+              if (billOnchange) {
+                  $('#billing_state_id').attr('onchange', billOnchange);
+              }
+
+              $('#billing_city_id').html(cityHtml);
+              $('#billing_city_id').val(data.city_id).trigger('change');
+              $('#billing_pincode').val(data.pincode);
+              $('#billing_address').val(data.address);
+            }
+          }
+        });
+      }
+    });
   });
+
+  function get_shipping_city(stateId) {
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url();?>admin/get_cities",
+      data: { state_id: stateId },
+      success: function (html) {
+        $("#shipping_city_id").html(html);
+      }
+    });
+  }
+
+  function get_billing_city(stateId) {
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url();?>admin/get_cities",
+      data: { state_id: stateId },
+      success: function (html) {
+        $("#billing_city_id").html(html);
+      }
+    });
+  }
 </script>
 
 <!-- Price History Modal -->

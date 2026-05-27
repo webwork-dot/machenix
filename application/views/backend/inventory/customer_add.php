@@ -71,8 +71,8 @@
               <input type="hidden" name="staff_id" value="<?php echo $this->session->userdata('super_user_id');?>">
             <?php } ?>
             <div class="col-12 col-sm-3 mb-1">
-              <label class="form-label" for="state_id">Select State</label>
-              <select class="form-select select2" name="state_id" id="state_id" onchange="get_city_(this.value);">
+              <label class="form-label" for="state">Select State </label>
+              <select class="form-select select2 state_id" name="state_id" onchange="get_city_(this.value);">
                 <option value="">Select State</option>
                 <?php foreach($states as $state){?>
                   <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
@@ -80,8 +80,8 @@
               </select>
             </div>
             <div class="col-12 col-sm-3 mb-1">
-              <label class="form-label" for="city_id">Select City</label>
-              <select class="form-select select2" name="city_id" id="city_id" >
+              <label class="form-label" for="city">Select City </label>
+              <select class="form-select select2 city_id" name="city_id" id="states_" >
                 <option value="">Select City</option>
               </select>
             </div>
@@ -322,16 +322,16 @@
 </div>
 
 <script>
-  function get_city_(stateId) {
+  function get_city_(b) {
+    var a = {
+        state_id: b
+    };
     $.ajax({
       type: "POST",
       url: "<?php echo base_url();?>admin/get_cities",
-      data: { state_id: stateId },
-      success: function (html) {
-        $("#city_id").children("option:not(:first)").remove();
-        $("#city_id").append(html);
-        // If select2 is used and you want it to refresh:
-        // $("#city_id").trigger("change.select2");
+      data: a,
+      success: function (c) {
+        $("#states_").html(c);
       }
     });
   }
@@ -365,11 +365,11 @@
       $(document).on('focus', '#staff_id + .select2 .select2-selection', function () {
          $('#staff_id').select2('open');
       });
-      $(document).on('focus', '#state_id + .select2 .select2-selection', function () {
-         $('#state_id').select2('open');
+      $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
+         $('.state_id').select2('open');
       });
-      $(document).on('focus', '#city_id + .select2 .select2-selection', function () {
-         $('#city_id').select2('open');
+      $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
+         $('.city_id').select2('open');
       });
       
       $(document).on('keydown', function(e) {

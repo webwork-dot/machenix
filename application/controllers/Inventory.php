@@ -2582,7 +2582,7 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['states']     = $this->crud_model->get_states();
+        $page_data['states']     = $this->crud_model->get_states_by_country(101);
         $page_data['companies'] = $this->common_model->getSessionCompanies();
         $page_data['navigation']  = 'customer';
 
@@ -2722,6 +2722,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_sales_order($param2);
+        } elseif ($param1 == "approve_post") {
+            $this->inventory_model->approve_sales_order($param2);
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_sales_order($param2);
         } elseif ($param1 == "invoice") {
@@ -2786,6 +2788,7 @@ class Inventory extends CI_Controller
         $page_data['customer_list']     = $this->common_model->getSessionCustomers();
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
 
+        $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
         if ($param1 == 'add') {
             $page_data['order_no']  = $this->inventory_model->get_sales_order_no();
             
@@ -2797,12 +2800,8 @@ class Inventory extends CI_Controller
                 $staff_access = (int)($usr_det->staff_access ?? 0);
             }
 
-            // if ($staff_access === 7) {
-            //     $page_data['page_name']  = 'sales_order_add_salesman';
-            // } else {
-            $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
+            $page_data['states'] = $this->crud_model->get_states_by_country(101);
             $page_data['page_name']  = 'sales_order_add';
-            // }
 
             $page_data['navigation']  = 'sales_order';
             $page_data['page_title'] = 'Add Sales';
@@ -2835,6 +2834,30 @@ class Inventory extends CI_Controller
             $page_data['page_name']  = 'sales_order_products';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'View Sales Products';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'approve') {
+            $data                    = $this->inventory_model->get_sales_order_details($param2);
+            $page_data['data']       = $data;
+            $page_data['products_list']   = $this->inventory_model->get_product_id_by_warehouse($data['warehouse_id']);
+            $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
+            
+            // Robust check for salesman role (staff_access == 7)
+            $staff_access = (int)$this->session->userdata('super_type_id');
+            if ($staff_access === 0) {
+                $user_id = $this->session->userdata('super_user_id');
+                $usr_det = $this->db->get_where('sys_users', array('id' => $user_id))->row();
+                $staff_access = (int)($usr_det->staff_access ?? 0);
+            }
+
+            // if ($staff_access === 7) {
+            //     $page_data['page_name']  = 'sales_order_edit_salesman';
+            // } else {
+            $page_data['page_name']  = 'sales_order_approve';
+            // }
+
+            $page_data['navigation']  = 'sales_order';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Approve Sales Order';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'edit') {
             $data                    = $this->inventory_model->get_sales_order_details($param2);
@@ -3761,5 +3784,41 @@ class Inventory extends CI_Controller
 			  </div>';
 
 		echo $html;
+	}
+
+	public function get_customer_details_ajax()
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			echo json_encode(["status" => 401]);
+			return;
+		}
+
+		$customer_id = $this->input->post('customer_id', true);
+		if ($customer_id) {
+			$customer = $this->db->get_where('customer', ['id' => $customer_id])->row_array();
+			if ($customer) {
+				$city_html = '<option value="">Select City</option>';
+				if ($customer['state_id']) {
+					$cities = $this->crud_model->get_city_by_state($customer['state_id']);
+					foreach ($cities as $cit) {
+						$selected = ($cit['id'] == $customer['city_id']) ? 'selected' : '';
+						$city_html .= '<option value="' . $cit['id'] . '" ' . $selected . '>' . $cit['name'] . '</option>';
+					}
+				}
+
+				echo json_encode([
+					"status" => 200,
+					"data" => [
+						"state_id" => $customer['state_id'],
+						"city_id"  => $customer['city_id'],
+						"pincode"  => $customer['pincode'],
+						"address"  => $customer['address']
+					],
+					"city_html" => $city_html
+				]);
+			} else {
+				echo json_encode(["status" => 404]);
+			}
+		}
 	}
 }
