@@ -79,7 +79,6 @@
                 </ul>
             </div>
         </div>
-    
     <?php // } ?>
 
    <div class="col-12">
@@ -124,7 +123,7 @@
    </div>
 </div>
 
-<script type="text/javascript">       
+<script type="text/javascript">
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',

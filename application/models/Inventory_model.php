@@ -9337,22 +9337,29 @@ class Inventory_model extends CI_Model
 				$order_type = $item['order_type'];
 				$customer_id = $item['customer_id'];
 
-				$view_url = base_url() . 'inventory/sales-order/view/' . $id;
 				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
 				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
-				
 				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
-				$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
-				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $id;
-				$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $id;
-
-				$action = '';
-
-				$customer_name = $item['customer_name'];
 				
+				// $view_url = base_url() . 'inventory/sales-order/view/' . $id;
 				// $action .= '
     		// 	 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
     		// 	 ';
+
+				$action = '';
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
+
+				$delete_html = '';
+				if ($this->session->userdata('super_type_id') !== 7) {
+					$delete_url = "confirm_modal('" . base_url() . "inventory/sales_order/delete/" . $id . "','Are you sure want to delete!')";
+					$delete_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+				}
+
+				$edit_order_html = '';
+				// if ($this->session->userdata('super_type_id') !== 7) {
+				// 	$edit_order_url = base_url() . 'inventory/sales-order/edit-order/' . $id;
+				// 	$edit_order_html = '<a class="dropdown-item" href="' . $edit_order_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+				// }
 
 				// if($this->session->userdata('super_type_id') != 4 && $item['is_approved'] == 0) {
 				if($item['is_approved'] == 0 && $item['is_generated'] == 0) {
@@ -9368,25 +9375,38 @@ class Inventory_model extends CI_Model
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 						   ' . $approve_html . '
 							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+							' . $delete_html . '
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 0) {
+					$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
+
 					$action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 							<a class="dropdown-item" href="javascript:void(0)" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')"><i class="fa fa-refresh" aria-hidden="true"></i> Generate Invoice</a>
+							' . $delete_html . '
+							' . $edit_order_html . '
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 1 && $item['is_approved'] == 1) {
+					$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $id;
+					$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $id;
+
 					$action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 							<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View White Invoice</a>
 							<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
+							' . $delete_html . '
+							' . $edit_order_html . '
 						</div>
 					</div>';
 				}
@@ -9410,6 +9430,8 @@ class Inventory_model extends CI_Model
 				}
 
 				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
+
+				$customer_name = $item['customer_name'];
 				$data[] = array(
 					"sr_no"       => ++$start,
 					"id"          => $item['id'],
@@ -10982,71 +11004,100 @@ class Inventory_model extends CI_Model
 
 	function delete_sales_order($id)
 	{
-		$this->db->trans_start(); // Start transaction
+		$this->db->trans_begin(); // Start transaction
 
 		try {
-			$sales = $this->common_model->getRowById('sales_order', 'warehouse_id', ['id' => $id]);
+			$sales = $this->common_model->getRowById('sales_order', '*', ['id' => $id]);
 			if (!$sales) {
 				throw new Exception(get_phrase('sales_order_not_found'));
 			}
 
-			$so_products = $this->common_model->getResultById('sales_order_product', 'id, product_id, product_name, item_code, size_id', ['order_id' => $id]);
+			$reverted_data = [];
+			$history_data = [];
 
-			if ($so_products) {
-				foreach ($so_products as $prod) {
-					$so_batch = $this->common_model->getRowById('sales_order_product_batch', 'batch_qty', ['order_id' => $id, 'order_product_id' => $prod['id']]);
-					if ($so_batch) {
-						$inv = $this->common_model->getRowById('inventory', '*', [
-							'size_id' => $prod['size_id'],
-							'product_id' => $prod['product_id'],
-							'warehouse_id' => $sales['warehouse_id']
-						]);
+			if ($sales['is_approved'] != 0) {
+				// Retrieve stock history records associated with this sales order that are not deleted and have status 'out'
+				$history_records = $this->common_model->getResultById('inventory_history', '*', [
+					'order_id' => $id,
+					'status' => 'out',
+					'is_deleted' => 0
+				]);
 
+				if (!empty($history_records)) {
+					foreach ($history_records as $his) {
+						$inv_id = $his['parent_id'];
+						$inv = $this->common_model->getRowById('inventory', '*', ['id' => $inv_id]);
 						if ($inv) {
-							$new_qty = $inv['quantity'] + $so_batch['batch_qty'];
-							$this->db->where('id', $inv['id'])->update('inventory', ['quantity' => $new_qty]);
+							$new_qty = $inv['quantity'] + $his['quantity'];
+							$new_official = $inv['official_qty'] + $his['official_qty'];
+							$new_black = $inv['black_qty'] + $his['black_qty'];
 
-							$stocks_data = [
-								'order_id'       => $id,
-								'parent_id'      => $inv['id'],
-								'warehouse_name' => $inv['warehouse_name'],
-								'warehouse_id'   => $inv['warehouse_id'],
-								'product_id'     => $prod['product_id'],
-								'product_name'   => $inv['product_name'],
-								'quantity'       => $so_batch['batch_qty'],
-								'batch_no'       => NULL,
-								'item_code'      => $prod['item_code'],
-								'size_id'   	  	=> $inv['size_id'],
-								'size_name'         => $inv['size_name'],
-								'group_id'          => $inv['group_id'],
-								'color_id'          => $inv['color_id'],
-								'color_name'        => $inv['color_name'],
-								'sku'               => $inv['sku'],
-								'categories'        => $inv['categories'],
-								'expiry_date'    => NULL,
-								'status'         => 'sales_delete',
-								'received_date'  => date("Y-m-d H:i:s"),
-								'added_date'     => date("Y-m-d H:i:s"),
-								'added_by_id'    => $this->session->userdata('super_user_id'),
-								'added_by_name'  => $this->session->userdata('super_name')
+							// Revert stock in inventory batch
+							$this->db->where('id', $inv_id)->update('inventory', [
+								'quantity' => $new_qty,
+								'official_qty' => $new_official,
+								'black_qty' => $new_black
+							]);
+
+							$reverted_data[] = [
+								'inventory_id' => $inv_id,
+								'product_id'   => $inv['product_id'],
+								'batch_no'     => $inv['batch_no'],
+								'old_qty'      => $inv['quantity'],
+								'new_qty'      => $new_qty,
+								'old_official' => $inv['official_qty'],
+								'new_official' => $new_official,
+								'old_black'    => $inv['black_qty'],
+								'new_black'    => $new_black
 							];
-
-							$this->db->insert('inventory_history', $stocks_data);
 						}
+
+						// Soft delete stock history entry
+						$this->db->where('id', $his['id'])->update('inventory_history', ['is_deleted' => 1]);
+						$history_data[] = $his;
 					}
 				}
 			}
 
-			// Soft delete sales order
+			// Soft delete the sales order itself
 			$this->db->where('id', $id)->update('sales_order', ['is_deleted' => 1]);
 
-			$this->db->trans_commit(); // Commit transaction
-
-			$resultpost = [
-				"status" => 200,
-				"message" => get_phrase('sales_order_delete_successfully'),
-				"url" => $this->session->userdata('previous_url'),
+			// Create JSON log details
+			$log_json = [
+				'sale_order'    => $sales,
+				'reverted_data' => $reverted_data,
+				'history_data'  => $history_data
 			];
+
+			$log_data = array(
+				'parent_id'      => $id,
+				'ref_id'         => NULL,
+				'module'         => 'sales',
+				'action'         => 'delete',
+				'message'        => 'Sale Order deleted by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($log_json),
+				'table_name'     => 'sales_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost = [
+					"status" => 400,
+					"message" => "Error occurred while deleting Sales Order",
+				];
+			} else {
+				$this->db->trans_commit();
+				$resultpost = [
+					"status" => 200,
+					"message" => get_phrase('sales_order_delete_successfully'),
+					"url" => $this->session->userdata('previous_url'),
+				];
+			}
 		} catch (Exception $e) {
 			$this->db->trans_rollback(); // Rollback on error
 			$resultpost = [

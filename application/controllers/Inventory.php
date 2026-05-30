@@ -2848,15 +2848,29 @@ class Inventory extends CI_Controller
                 $staff_access = (int)($usr_det->staff_access ?? 0);
             }
 
-            // if ($staff_access === 7) {
-            //     $page_data['page_name']  = 'sales_order_edit_salesman';
-            // } else {
             $page_data['page_name']  = 'sales_order_approve';
-            // }
-
             $page_data['navigation']  = 'sales_order';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Approve Sales Order';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit_order') {
+            $data                    = $this->inventory_model->get_sales_order_details($param2);
+            $page_data['data']       = $data;
+            $page_data['products_list']   = $this->inventory_model->get_product_id_by_warehouse($data['warehouse_id']);
+            $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
+            
+            // Robust check for salesman role (staff_access == 7)
+            $staff_access = (int)$this->session->userdata('super_type_id');
+            if ($staff_access === 0) {
+                $user_id = $this->session->userdata('super_user_id');
+                $usr_det = $this->db->get_where('sys_users', array('id' => $user_id))->row();
+                $staff_access = (int)($usr_det->staff_access ?? 0);
+            }
+
+            $page_data['page_name']  = 'sales_edit_approved_order';
+            $page_data['navigation']  = 'sales_order';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Sales Order';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'edit') {
             $data                    = $this->inventory_model->get_sales_order_details($param2);
