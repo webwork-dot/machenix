@@ -8539,8 +8539,79 @@ class Inventory_model extends CI_Model
 			$data['grand_total']          = $grand_total;
 			$data['other_charges_name']   = $other_charges_name;
 			$data['other_charges_amount'] = $other_charges_amount;
+
+			$shipping_state_id = $this->input->post('shipping_state_id');
+			$shipping_city_id  = $this->input->post('shipping_city_id');
+			$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+			$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
+
+			$billing_state_id  = $this->input->post('billing_state_id');
+			$billing_city_id   = $this->input->post('billing_city_id');
+			$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+			$billing_address   = clean_and_escape($this->input->post('billing_address'));
+
+			$data['shipping_state_id']   = $shipping_state_id;
+			$data['shipping_state_name'] = ($shipping_state_id > 0) ? (string) $this->common_model->get_state_name($shipping_state_id) : '';
+			$data['shipping_city_id']    = $shipping_city_id;
+			$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
+			$data['shipping_pincode']    = $shipping_pincode;
+			$data['shipping_address']    = $shipping_address;
+
+			$data['billing_state_id']    = $billing_state_id;
+			$data['billing_state_name']  = ($billing_state_id > 0) ? (string) $this->common_model->get_state_name($billing_state_id) : '';
+			$data['billing_city_id']     = $billing_city_id;
+			$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
+			$data['billing_pincode']     = $billing_pincode;
+			$data['billing_address']     = $billing_address;
+
 			$this->db->where('id', $id)->update('sales_order', $data);
 			$order_id = $id;
+
+			$old_sales_charges = $this->common_model->getResultById('sales_order_charges', '*', ['order_id' => $id]);
+
+			$log_json = array(
+				'old_sale_order' => array(
+					'sale_order'    => $sales_record,
+					'products'      => $sales_products,
+					'other_charges' => $old_sales_charges,
+					'batches'       => $sales_batches
+				),
+				'new_sale_order' => array(
+					'sale_order'    => $data,
+					'products'      => array(),
+					'other_charges' => array()
+				)
+			);
+
+			// Delete existing charges
+			$this->db->where('order_id', $order_id)->delete('sales_order_charges');
+
+			$charge_id_arr = $this->input->post('charge_id');
+			$charge_gst_arr = $this->input->post('charge_gst');
+			$charge_price_arr = $this->input->post('charge_price');
+			$charge_total_arr = $this->input->post('charge_total');
+
+			if(!empty($charge_id_arr)) {
+				for ($i = 0; $i < count($charge_id_arr); $i++) {
+					if (!empty($charge_id_arr[$i])) {
+						$type_id = $charge_id_arr[$i];
+						
+						$other_charge = $this->db->get_where('other_charges', ['id' => $type_id])->row_array();
+						$type_name = $other_charge ? $other_charge['name'] : '';
+
+						$data_charge = array(
+							'order_id'   => $order_id,
+							'type_id'    => $type_id,
+							'type'       => $type_name,
+							'gst'        => (float) ($charge_gst_arr[$i] ?? 0),
+							'amount'     => (float) ($charge_price_arr[$i] ?? 0),
+							'total_amt'  => (float) ($charge_total_arr[$i] ?? 0),
+						);
+						$this->db->insert('sales_order_charges', $data_charge);
+						$log_json['new_sale_order']['other_charges'][] = $data_charge;
+					}
+				}
+			}
 
 			$x_value_arr = ($this->input->post('x_value'));
 			$old_id_arr = ($this->input->post('old_id'));
@@ -8563,6 +8634,11 @@ class Inventory_model extends CI_Model
 			
 			for ($in = 0; $in < count($x_value_arr); $in++) {
 				$i = $x_value_arr[$in];
+				
+				$order_product_id = $old_id_arr[$in];
+				$product_log_data = $this->db->where('id', $order_product_id)->get('sales_order_product')->row_array();
+				$product_log_data['batches'] = array();
+
 				foreach($batch_id[$i] as $index => $bid) {
 					$batch_detail = $this->db->where('id', $bid)->get('inventory')->row_array();
 
@@ -8592,6 +8668,7 @@ class Inventory_model extends CI_Model
 					);
 
 					$this->db->insert('sales_order_product_batch', $data_product_bat);
+					$product_log_data['batches'][] = $data_product_bat;
 
 					if($batch_detail['quantity'] < ($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]) || $batch_detail['quantity'] == 0) {
 						throw new Exception('Insufficient stock for ' . $product_name . '. Available Live Qty: ' . $stocks . '.');
@@ -8649,7 +8726,23 @@ class Inventory_model extends CI_Model
 						$this->db->insert('inventory_history', $inv_his);
 					}
 				}
+				$log_json['new_sale_order']['products'][] = $product_log_data;
 			}
+
+			$log_data = array(
+				'parent_id'      => $order_id,
+				'ref_id'         => NULL,
+				'module'         => 'sales',
+				'action'         => 'approve',
+				'message'        => 'Sale Order approved by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($log_json),
+				'table_name'     => 'sales_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
 
 			$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 
@@ -9264,13 +9357,19 @@ class Inventory_model extends CI_Model
 				// if($this->session->userdata('super_type_id') != 4 && $item['is_approved'] == 0) {
 				if($item['is_approved'] == 0 && $item['is_generated'] == 0) {
 					$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
-					$approve_url = base_url() . 'inventory/sales-order/approve/' . $id;
+					
+					$approve_html = '';
+					if ($this->session->userdata('super_type_id') !== 7) {
+						$approve_url = base_url() . 'inventory/sales-order/approve/' . $id;
+						$approve_html = '<a class="dropdown-item" href="' . $approve_url . '"><i class="fa fa-check" aria-hidden="true"></i> Approve</a>';
+					}
 
 					$action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
-							<a class="dropdown-item" href="' . $approve_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Approve</a>
+						   ' . $approve_html . '
+							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 0) {

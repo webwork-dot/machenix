@@ -2789,6 +2789,7 @@ class Inventory extends CI_Controller
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
 
         $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
+        $page_data['states'] = $this->crud_model->get_states_by_country(101);
         if ($param1 == 'add') {
             $page_data['order_no']  = $this->inventory_model->get_sales_order_no();
             
@@ -2800,9 +2801,7 @@ class Inventory extends CI_Controller
                 $staff_access = (int)($usr_det->staff_access ?? 0);
             }
 
-            $page_data['states'] = $this->crud_model->get_states_by_country(101);
             $page_data['page_name']  = 'sales_order_add';
-
             $page_data['navigation']  = 'sales_order';
             $page_data['page_title'] = 'Add Sales';
             $this->load->view('backend/index', $page_data);

@@ -150,7 +150,7 @@
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']:'' ?>';	
+                    data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']: 'pending'; ?>';	
                 },
                 "beforeSend": function() {
                     $('.loader').show();

@@ -437,8 +437,11 @@
                 </thead>
                 <tbody id="charges_area">
                   
-                  <?php $c = 1; foreach($data['other_charges'] as $chg) { ?>
-                  <tr class="element-charge-1 charge-line-item" id="charge_<?php echo $c; ?>" data-id="<?php echo $c; ?>">
+                  <?php 
+                  $c = 1; 
+                  if(!empty($data['other_charges'])){
+                    foreach($data['other_charges'] as $chg) { ?>
+                  <tr class="element-charge-<?php echo $c; ?> charge-line-item" id="charge_<?php echo $c; ?>" data-id="<?php echo $c; ?>">
                     <td>
                       <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_<?php echo $c; ?>" data-toggle="select2" onchange="get_charge_details(this.value, '<?php echo $c; ?>');">
                         <option value="">Select Charges</option>
@@ -455,7 +458,26 @@
                       <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, <?php echo $c; ?>)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
                     </td>
                   </tr>
-                  <?php $c++; } ?>
+                  <?php $c++; }
+                  } else { ?>
+                  <tr class="element-charge-1 charge-line-item" id="charge_1" data-id="1">
+                    <td>
+                      <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_1" data-toggle="select2" onchange="get_charge_details(this.value, '1');">
+                        <option value="">Select Charges</option>
+                        <?php foreach($other_charges as $charge){ ?>
+                          <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
+                        <?php } ?>
+                      </select>
+                    </td>
+                    <td><input type="number" step="any" id="charge_gst_1" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+                    <td><input type="number" step="any" id="charge_price_1" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+                    <td><input type="number" step="any" id="charge_total_1" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+                    <td class="text-center align-middle" style="white-space:nowrap;">
+                      <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+                      <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, 1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+                    </td>
+                  </tr>
+                  <?php } ?>
 
                 </tbody>
               </table>

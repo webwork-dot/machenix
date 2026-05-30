@@ -19,38 +19,9 @@
 		margin-bottom: 10px;
 	}
 
-	.jsr-no {
-		border: 1px dashed #4a4949;
-		display: inline-block;
-		padding: 0.3em 0.44em;
-		font-weight: 700;
-		line-height: 15px;
-		padding-right: 0.7em;
-		padding-left: 0.7em;
-		border-radius: 10rem;
-		position: absolute;
-		left: -10px;
-		top: -10px;
-		background: #4a4949;
-		color: #fff;
-		font-size: 12px;
-	}
-
 	.select2-results__option[aria-selected] {
 		cursor: pointer;
 		font-weight: 800;
-	}
-
-	.pl-0 {
-		padding-left: 0px !important;
-	}
-
-	.pr-0 {
-		padding-right: 0px !important;
-	}
-
-	#requirement_area .flex-grow-1 .form-group label {
-		font-size: 12px;
 	}
 
 	.mn-table td {
@@ -65,105 +36,100 @@
 		height: 30px;
 	}
 
-	#requirement_area .select2-container--default .select2-selection--single .select2-selection__rendered,
-		{
-		color: #444;
-		line-height: normal;
-		font-weight: 800;
+	.compact-table th, .compact-table td {
+		padding: 4px !important;
+		vertical-align: middle;
 	}
-
-	.select2-container--default .select2-selection--single .select2-selection__rendered {
-		line-height: 30px;
-		min-height: 30px;
-		line-height: normal;
-	}
-
-	.select2-container--default .select2-selection--single {
-		height: 30px;
-		min-height: 30px;
-		line-height: normal;
-	}
-
-	.select2-container--default .select2-selection--single .select2-selection__arrow {
-		height: 26px;
-		position: absolute;
-		top: -5px;
-		right: 1px;
-		width: 20px;
-	}
-
-	.sales-line-item {
-		background: #f8fbff;
-		border: 1px solid #dbe6f5;
-		border-radius: 10px;
-		padding: 10px 0px;
-	}
-
-	.sales-line-item .jsr-no {
-		width: 24px;
-		height: 24px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		background: #2f3b52;
-		color: #fff;
-		font-size: 12px;
+	.compact-table thead th {
+		background-color: #f3f6f9 !important;
+		color: #3f4254 !important;
 		font-weight: 700;
-		margin-bottom: 8px;
+		text-transform: uppercase;
+		font-size: 11px;
+		letter-spacing: 0.5px;
+		border-bottom: 2px solid #ebedf3 !important;
+		padding: 10px 6px !important;
+		white-space: nowrap;
 	}
-
-	.sales-line-item .form-group {
-		margin-bottom: 6px;
-	}
-
-	.sales-line-item .form-group label {
-		font-size: 12px;
-		font-weight: 600;
-		color: #2f3b52;
-		margin-bottom: 4px;
-		line-height: 1.2;
-	}
-
-	.sales-line-item .form-control,
-	.sales-line-item .input-group-text {
-		min-height: 34px;
+	.compact-table .form-control {
+		height: 32px;
+		min-height: 32px;
+		padding: 4px 8px;
 		font-size: 13px;
+		border-radius: 4px;
+		border: 1px solid #e4e6ef;
+		transition: all 0.2s ease-in-out;
 	}
-
-	.sales-line-item input[readonly] {
-		background: #eef3fa;
+	.compact-table .form-control:focus {
+		border-color: #3699ff;
+		box-shadow: 0 0 0 0.2rem rgba(54, 153, 255, 0.15);
 	}
-
-	.sales-line-item .input-group-text {
-		background: #eef3fa;
-		border-color: #d3deef;
+	.compact-table .form-control[readonly] {
+		background-color: transparent !important;
+		border-color: transparent !important;
+		font-weight: 600;
+		color: #3f4254;
+		padding: 0;
+		box-shadow: none;
 	}
-
-	.batch-section-box {
-		border: 1px solid #ccd9ea;
-		background: #ffffff;
-		padding: 10px;
-		border-radius: 8px;
-		margin-top: 5px;
-		box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+	.compact-table .input-group-text {
+		height: 32px;
+		min-height: 32px;
+		padding: 0 8px !important;
+		background: transparent;
+		border: none;
+		color: #a1a5b7;
 	}
-
+	.compact-table select.form-control {
+		width: 100%;
+	}
+	.sales-line-item {
+		background-color: #ffffff;
+		border-bottom: 1px solid #ebedf3;
+	}
+	.sales-line-item td {
+		padding: 8px 6px !important;
+	}
 	.batch-row {
-		border-bottom: 1px dashed #dce5f0;
-		padding-bottom: 10px;
-		margin-bottom: 10px;
+		background-color: #f8f9fa !important;
+		border-bottom: 1px dashed #e4e6ef;
+	}
+	.batch-row td {
+		padding: 8px 6px !important;
+	}
+	.batch-row td:first-child {
+		position: relative;
+		padding-left: 28px !important;
+	}
+	.batch-row td:first-child::before {
+		content: '';
+		position: absolute;
+		left: 12px;
+		top: -1px;
+		bottom: 50%;
+		width: 12px;
+		border-left: 2px solid #b5b5c3;
+		border-bottom: 2px solid #b5b5c3;
+		border-bottom-left-radius: 4px;
+	}
+	.btn-add-batch-row:focus {
+		box-shadow: 0 0 0 0.2rem rgba(115, 103, 240, 0.5) !important;
+		outline: none;
+	}
+	.btn-remove-batch-row:focus {
+		box-shadow: 0 0 0 0.2rem rgba(234, 84, 85, 0.5) !important;
+		outline: none;
 	}
 
-	.batch-row:last-child {
-		border-bottom: none;
-		margin-bottom: 0;
-		padding-bottom: 0;
+	/* Other charges adjustments */
+	#charges_area tr .btn-add-charge {
+		display: none;
 	}
-
-	.batch-row label {
-		font-size: 11px !important;
-		color: #5e6d82 !important;
+	#charges_area tr:last-child .btn-add-charge {
+		display: inline-flex;
+	}
+	.gap-25 {
+		gap: 0.25rem !important;
 	}
 </style>
 
@@ -196,7 +162,7 @@
 					</div>
 
 					<div class="col-12 col-sm-3 mb-1">
-						<label class="form-label" for="state">Customer <span class="required">*</span></label>
+						<label class="form-label" for="customer_id">Customer <span class="required">*</span></label>
 						<select class="form-select select2" id="customer_id" disabled>
 							<option value="">Select Customer </option>
 							<?php foreach ($customer_list as $item) { ?>
@@ -208,9 +174,9 @@
 						<input type="hidden" name="customer_id" value="<?php echo $data['customer_id']; ?>">
 					</div>
 
-					<div class="col-12 col-sm-3 mb-1 ">
+					<div class="col-12 col-sm-3 mb-1">
 						<label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
-						<select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="clearAllBatches()">
+						<select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="clearAllBatches()" required>
 							<option value="0">Select Warehouse</option>
 							<?php foreach ($warehouse_list as $warehouse) { ?>
 								<option value="<?php echo $warehouse->id; ?>" <?php echo $data['warehouse_id'] == $warehouse->id ? 'selected' : ''; ?>>
@@ -223,150 +189,239 @@
 					<input type="hidden" name="company_id" value="<?php echo $data['company_id']; ?>">
 					<input type="hidden" name="narration" value="<?php echo htmlspecialchars($data['narration'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
-					<div class="col-12 col-sm-12 mb-1">
+					<div class="col-12 col-sm-9 mb-1">
 						<div class="form-group">
 							<label>Remark</label>
 							<textarea class="form-control" placeholder="" rows="1" name="remark" id="remark"><?php echo $data['remark']; ?></textarea>
 						</div>
 					</div>
 
-					<div class="col-12">
-						<div id="requirement_area">
-							<?php $i = 1; ?>
-							<?php foreach ($data['products'] as $item) { ?>
-								<?php
-								$qty = (float) ($item['qty'] ?? 0);
-								$amount = (float) ($item['amount'] ?? ($item['master_amount'] ?? 0));
-								$total_amount = (float) ($item['total_amount'] ?? ($qty * $amount));
-								$bill_amount = (float) ($item['bill_amount'] ?? ($item['white_amount'] ?? 0));
-								$bill_total = (float) ($item['bill_total'] ?? ($item['white_total'] ?? 0));
-								$gst = (float) ($item['gst'] ?? 0);
-								$gst_amount = (float) ($item['gst_amount'] ?? 0);
-								$total_bill_gst_amount = (float) ($item['total_bill_gst_amount'] ?? ($bill_total + $gst_amount));
-								$black_amt = (float) ($item['black_amount'] ?? 0);
-								$black_total = (float) ($item['black_total'] ?? ($item['black_amount'] ?? 0));
-								$final_total = (float) ($item['final_total'] ?? ($total_bill_gst_amount + $black_total));
-								?>
-								<div class="d-block mt-2 element-1 fx-border sales-line-item" id="product_<?php echo $i; ?>" data-id="<?php echo $i; ?>">
-									<b class="jsr-no"><?php echo $i; ?></b>
-									<div class="flex-grow-1 ">
-										<div class="row g-1 align-items-end">
-
-											<div class="col-xl-3 col-lg-4 col-md-6 px-1">
-												<input type="hidden" name="x_value[]" id="x_value_<?php echo $i; ?>" value="<?php echo $i; ?>">
-												<input type="hidden" name="old_id[]" id="old_id_<?php echo $i; ?>" value="<?php echo $item['id']; ?>">
-												<div class="form-group">
-													<label>Select Product<span class="required">*</span></label>
-													<select class="form-control select2 product_id" id="product_id_<?php echo $i; ?>" disabled>
-														<option value="">Select Product</option>
-														<?php foreach ($products_list as $p_item) { ?>
-															<option value="<?php echo $p_item['id']; ?>" <?php echo (string) $p_item['id'] === (string) $item['product_id'] ? 'selected' : ''; ?>>
-																<?php echo $p_item['name']; ?>
-															</option>
-														<?php } ?>
-													</select>
-													<input type="hidden" name="product_id[]" value="<?php echo $item['product_id']; ?>">
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-												<div class="form-group">
-													<label>Qty <span class="required">*</span></label>
-													<input type="number" step="any" id="quantity_<?php echo $i; ?>" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo $qty; ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-												<div class="form-group">
-													<label>Per Qty Amount <span class="required">*</span></label>
-													<div class="input-group">
-														<input type="number" step="any" id="master_amount_<?php echo $i; ?>" name="master_amount[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control" readonly>
-														<span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('<?php echo $i; ?>')"><i class="fa fa-history px-1"></i></span>
-													</div>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Total Amount</label>
-													<input type="number" step="any" id="total_amount_<?php echo $i; ?>" name="total_amount[]" value="<?php echo number_format($total_amount, 2, '.', ''); ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Bill Amt <span class="required">*</span></label>
-													<input type="number" step="any" id="bill_amount_<?php echo $i; ?>" name="bill_amount[]" onkeyup="markManual('<?php echo $i; ?>'); calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($bill_amount, 2, '.', ''); ?>" class="form-control" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Total Bill Amt</label>
-													<input type="number" step="any" id="bill_total_<?php echo $i; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>" class="form-control" onkeyup="calculate_amt_reverse('<?php echo $i; ?>')">
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-												<div class="form-group">
-													<label>GST % <span class="required">*</span></label>
-													<input type="number" step="any" id="gst_<?php echo $i; ?>" name="gst[]" onkeyup="calculate_amt('<?php echo $i; ?>')" value="<?php echo number_format($gst, 2, '.', ''); ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>GST Amt</label>
-													<input type="number" step="any" id="gst_amount_<?php echo $i; ?>" name="gst_amount[]" value="<?php echo number_format($gst_amount, 2, '.', ''); ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Total Bill GST Amount</label>
-													<input type="number" step="any" id="total_bill_gst_amount_<?php echo $i; ?>" name="total_bill_gst_amount[]" value="<?php echo number_format($total_bill_gst_amount, 2, '.', ''); ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Black Amt</label>
-													<input type="number" step="any" id="black_amount_per_unit_<?php echo $i; ?>" name="black_amt[]" value="<?php echo number_format($black_amt, 2, '.', ''); ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Total Black Amount</label>
-													<input type="number" step="any" id="black_amount_<?php echo $i; ?>" name="black_total[]" value="<?php echo number_format($black_total, 2, '.', ''); ?>" class="form-control" readonly>
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1 d-none">
-												<div class="form-group">
-													<label>Final Total</label>
-													<input type="number" step="any" id="final_total_<?php echo $i; ?>" name="final_total[]" value="<?php echo number_format($final_total, 2, '.', ''); ?>" class="form-control" readonly>
-													<input type="hidden" id="available_<?php echo $i; ?>" name="available[]" value="<?php echo (float) ($item['available'] ?? 0); ?>">
-												</div>
-											</div>
-
-											<div class="col-xl-1 col-lg-2 col-md-3 col-sm-6 px-1">
-												<div class="form-group">
-													<label>&nbsp;</label><br>
-													<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light" onclick="addBatch('<?php echo $i; ?>')">
-														<i class="fa fa-plus"></i> Add Batch
-													</button>
-												</div>
-											</div>
-										</div>
-
-										<div id="batch_container_<?php echo $i; ?>" class="mt-1 mx-1 batch-section-box" style="display:none;">
-											
-										</div>
-									</div>
+					<div class="col-6 mb-1">
+						<div class="row">
+							<h6 class="mb-1">Shipping Address</h6>
+							<div class="col-4 mb-1">
+								<label class="form-label" for="shipping_state_id">Select State <span class="required">*</span></label>
+								<select class="form-select select2 shipping_state_id" name="shipping_state_id" id="shipping_state_id" onchange="get_shipping_city(this.value);" required>
+									<option value="">Select State</option>
+									<?php foreach($states as $state){?>
+									<option value="<?php echo $state['id'];?>" <?php if($data['shipping_state_id'] == $state['id']) echo 'selected'; ?>><?php echo $state['name'];?></option>
+									<?php }?>
+								</select>
+							</div>
+							<div class="col-4 mb-1">
+								<label class="form-label" for="shipping_city_id">Select City <span class="required">*</span></label>
+								<select class="form-select select2 shipping_city_id" name="shipping_city_id" id="shipping_city_id" required>
+									<option value="">Select City</option>
+								</select>
+							</div>
+							<div class="col-4 mb-1">
+								<div class="form-group">
+									<label>Pincode <span class="required">*</span></label>
+									<input type="text" class="form-control" placeholder="Pincode" name="shipping_pincode" id="shipping_pincode" value="<?php echo $data['shipping_pincode'];?>" required>
 								</div>
-								<?php $i++; ?>
-							<?php } ?>
+							</div>
+							<div class="col-12 mb-1">
+								<div class="form-group">
+									<label>Address <span class="required">*</span></label>
+									<textarea class="form-control" placeholder="Shipping Address" rows="2" name="shipping_address" id="shipping_address" required><?php echo $data['shipping_address'];?></textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-6 mb-1">
+						<div class="row">
+							<h6 class="mb-1">Billing Address</h6>
+							<div class="col-4 mb-1">
+								<label class="form-label" for="billing_state_id">Select State <span class="required">*</span></label>
+								<select class="form-select select2 billing_state_id" name="billing_state_id" id="billing_state_id" onchange="get_billing_city(this.value);" required>
+									<option value="">Select State</option>
+									<?php foreach($states as $state){?>
+									<option value="<?php echo $state['id'];?>" <?php if($data['billing_state_id'] == $state['id']) echo 'selected'; ?>><?php echo $state['name'];?></option>
+									<?php }?>
+								</select>
+							</div>
+							<div class="col-4 mb-1">
+								<label class="form-label" for="billing_city_id">Select City <span class="required">*</span></label>
+								<select class="form-select select2 billing_city_id" name="billing_city_id" id="billing_city_id" required>
+									<option value="">Select City</option>
+								</select>
+							</div>
+							<div class="col-4 mb-1">
+								<div class="form-group">
+									<label>Pincode <span class="required">*</span></label>
+									<input type="text" class="form-control" placeholder="Pincode" name="billing_pincode" id="billing_pincode" value="<?php echo $data['billing_pincode'];?>" required>
+								</div>
+							</div>
+							<div class="col-12 mb-1">
+								<div class="form-group">
+									<label>Address <span class="required">*</span></label>
+									<textarea class="form-control" placeholder="Billing Address" rows="2" name="billing_address" id="billing_address" required><?php echo $data['billing_address'];?></textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-12">
+						<h6 class="mb-1">Products</h6>
+						<div class="table-responsive">
+							<table class="table table-bordered table-sm compact-table">
+								<thead class="table-light text-center">
+									<tr>
+										<th style="min-width:200px;">Product <span class="text-danger">*</span></th>
+										<th style="min-width:120px;">Qty <span class="text-danger">*</span></th>
+										<th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
+										<th style="min-width:100px;">Total Amt</th>
+										<th style="min-width:120px;">Per Qty Bill <span class="text-danger">*</span></th>
+										<th style="min-width:100px;">Total Bill</th>
+										<th style="min-width:60px;">GST % <span class="text-danger">*</span></th>
+										<th style="min-width:100px;">GST Amt</th>
+										<th style="min-width:120px;">Total Bill GST</th>
+										<th style="min-width:110px;">Per Qty Black</th>
+										<th style="min-width:100px;">Total Black</th>
+										<th style="min-width:120px;">Final Total</th>
+										<th style="min-width:100px;">Act</th>
+									</tr>
+								</thead>
+								<tbody id="requirement_area">
+									<?php $k = 1; foreach ($data['products'] as $product) { ?>
+									<?php
+										$qty = (float) ($product['qty'] ?? 0);
+										$amount = (float) ($product['amount'] ?? ($product['master_amount'] ?? 0));
+										$total_amount = (float) ($product['total_amount'] ?? ($qty * $amount));
+										$bill_amount = (float) ($product['bill_amount'] ?? ($product['white_amount'] ?? 0));
+										$bill_total = (float) ($product['bill_total'] ?? ($product['white_total'] ?? 0));
+										$gst = (float) ($product['gst'] ?? 0);
+										$gst_amount = (float) ($product['gst_amount'] ?? 0);
+										$total_bill_gst_amount = (float) ($product['total_bill_gst_amount'] ?? ($bill_total + $gst_amount));
+										$black_amt = (float) ($product['black_amount'] ?? 0);
+										$black_total = (float) ($product['black_total'] ?? ($product['black_amount'] ?? 0));
+										$final_total = (float) ($product['final_total'] ?? ($total_bill_gst_amount + $black_total));
+									?>
+									<tr class="element-1 sales-line-item" id="product_<?php echo $k; ?>" data-id="<?php echo $k; ?>">
+										<td>
+											<input type="hidden" name="x_value[]" id="x_value_<?php echo $k; ?>" value="<?php echo $k; ?>">
+											<input type="hidden" name="old_id[]" id="old_id_<?php echo $k; ?>" value="<?php echo $product['id']; ?>">
+											<select class="form-control select2 product_id" id="product_id_<?php echo $k; ?>" disabled>
+												<option value="">Select Product</option>
+												<?php foreach ($products_list as $pl) { ?>
+													<option value="<?php echo $pl['id']; ?>" <?php echo (string) $pl['id'] === (string) $product['product_id'] ? 'selected' : ''; ?>>
+														<?php echo $pl['name']; ?>
+													</option>
+												<?php } ?>
+											</select>
+											<input type="hidden" name="product_id[]" value="<?php echo $product['product_id']; ?>">
+										</td>
+										<td>
+											<input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" value="<?php echo $qty; ?>" class="form-control text-center" readonly>
+										</td>
+										<td>
+											<div class="input-group">
+												<input type="number" step="any" id="master_amount_<?php echo $k; ?>" name="master_amount[]" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control text-center" readonly>
+												<span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('<?php echo $k; ?>')"><i class="fa fa-history px-1"></i></span>
+											</div>
+										</td>
+										<td>
+											<input type="hidden" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo number_format($total_amount, 2, '.', ''); ?>">
+										</td>
+										<td>
+											<input type="hidden" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" value="<?php echo number_format($bill_amount, 2, '.', ''); ?>" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
+										</td>
+										<td>
+											<input type="hidden" id="bill_total_<?php echo $k; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>">
+										</td>
+										<td>
+											<input type="number" step="any" id="gst_<?php echo $k; ?>" name="gst[]" value="<?php echo number_format($gst, 2, '.', ''); ?>" class="form-control text-center" readonly>
+										</td>
+										<td>
+											<input type="hidden" id="gst_amount_<?php echo $k; ?>" name="gst_amount[]" value="<?php echo number_format($gst_amount, 2, '.', ''); ?>">
+										</td>
+										<td>
+											<input type="hidden" id="total_bill_gst_amount_<?php echo $k; ?>" name="total_bill_gst_amount[]" value="<?php echo number_format($total_bill_gst_amount, 2, '.', ''); ?>">
+										</td>
+										<td>
+											<input type="hidden" id="black_amount_per_unit_<?php echo $k; ?>" name="black_amt[]" value="<?php echo number_format($black_amt, 2, '.', ''); ?>">
+										</td>
+										<td>
+											<input type="hidden" id="black_amount_<?php echo $k; ?>" name="black_total[]" value="<?php echo number_format($black_total, 2, '.', ''); ?>">
+										</td>
+										<td>
+											<input type="hidden" id="final_total_<?php echo $k; ?>" name="final_total[]" value="<?php echo number_format($final_total, 2, '.', ''); ?>">
+											<input type="hidden" id="available_<?php echo $k; ?>" name="available[]" value="<?php echo (float) ($product['available'] ?? 0); ?>">
+										</td>
+										<td class="text-center align-middle" style="white-space:nowrap;">
+											<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-batch" onclick="addBatch('<?php echo $k; ?>')">
+												<i class="fa fa-plus"></i> Add Batch
+											</button>
+										</td>
+									</tr>
+									<?php $k++; } ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					<div class="col-12 mt-1">
+						<h6 class="mb-1">Other Charges</h6>
+						<div class="table-responsive">
+							<table class="table table-bordered table-sm compact-table">
+								<thead class="table-light text-center">
+									<tr>
+										<th style="min-width:200px;">Type</th>
+										<th style="min-width:80px;">GST %</th>
+										<th style="min-width:120px;">Amount</th>
+										<th style="min-width:120px;">Total Amount</th>
+										<th style="min-width:50px;">Act</th>
+									</tr>
+								</thead>
+								<tbody id="charges_area">
+									<?php 
+									$c = 1; 
+									if (!empty($data['other_charges'])) {
+										foreach ($data['other_charges'] as $chg) { ?>
+										<tr class="element-charge-<?php echo $c; ?> charge-line-item" id="charge_<?php echo $c; ?>" data-id="<?php echo $c; ?>">
+											<td>
+												<select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_<?php echo $c; ?>" data-toggle="select2" onchange="get_charge_details(this.value, '<?php echo $c; ?>');">
+													<option value="">Select Charges</option>
+													<?php foreach ($other_charges as $charge) { ?>
+														<option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>" <?php echo $chg['type_id'] == $charge['id'] ? 'selected' : ''; ?>>
+															<?php echo $charge['name']; ?>
+														</option>
+													<?php } ?>
+												</select>
+											</td>
+											<td><input type="number" step="any" id="charge_gst_<?php echo $c; ?>" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('<?php echo $c; ?>')" value="<?php echo $chg['gst']; ?>"></td>
+											<td><input type="number" step="any" id="charge_price_<?php echo $c; ?>" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('<?php echo $c; ?>')" value="<?php echo $chg['amount']; ?>"></td>
+											<td><input type="number" step="any" id="charge_total_<?php echo $c; ?>" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="<?php echo $chg['total_amt']; ?>"></td>
+											<td class="text-center align-middle" style="white-space:nowrap;">
+												<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+												<button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, <?php echo $c; ?>)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+											</td>
+										</tr>
+										<?php $c++; }
+									} else { ?>
+										<tr class="element-charge-1 charge-line-item" id="charge_1" data-id="1">
+											<td>
+												<select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_1" data-toggle="select2" onchange="get_charge_details(this.value, '1');">
+													<option value="">Select Charges</option>
+													<?php foreach ($other_charges as $charge) { ?>
+														<option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>">
+															<?php echo $charge['name']; ?>
+														</option>
+													<?php } ?>
+												</select>
+											</td>
+											<td><input type="number" step="any" id="charge_gst_1" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+											<td><input type="number" step="any" id="charge_price_1" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+											<td><input type="number" step="any" id="charge_total_1" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+											<td class="text-center align-middle" style="white-space:nowrap;">
+												<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+												<button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, 1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+											</td>
+										</tr>
+									<?php } ?>
+								</tbody>
+							</table>
 						</div>
 					</div>
 
@@ -388,7 +443,7 @@
 											<td colspan="4" class="text-right align-middle">
 												<div class="d-flex flex-column align-items-end">
 													<span class="mb-0 text-capitalize">Select GST</span>
-													<select class="form-control" name="gst_type" id="gst_type" onchange="change_gst(this.value); recalculate();" style="width : 200px !important;float:right !important">
+													<select class="form-control" name="gst_type" id="gst_type" onchange="change_gst(this.value); recalculate();" style="width: 200px !important; float: right !important">
 														<option value="Central GST / State GST" <?php echo (($data['gst_type'] ?? '') == 'IGST') ? '' : 'selected'; ?>>Central GST / State GST</option>
 														<option value="IGST" <?php echo (($data['gst_type'] ?? '') == 'IGST') ? 'selected' : ''; ?>>IGST</option>
 													</select>
@@ -437,11 +492,10 @@
 										</tr>
 										<tr>
 											<td colspan="4" class="text-right">
-												<label>Add : Other Charges</label>
-												<input type="text" step="any" name="other_charges_name" id="other_charges_name" value="<?php echo $data['other_charges_name']; ?>" placeholder="Charge Name" class="form-control dis-input-1">
+												<label>Other Charges</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="other_charges_amount" id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo number_format((float) ($data['other_charges_amount'] ?? 0), 2, '.', ''); ?>" onkeyup="recalculate()"></p>
+												<p class="td-blank"><input type="number" step="any" name="other_charges_amount" id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo number_format((float) ($data['other_charges_amount'] ?? 0), 2, '.', ''); ?>" readonly></p>
 											</td>
 										</tr>
 										<tr>
@@ -522,11 +576,18 @@ function subtotal_cal() {
 		$('#igst').val('0.00');
 	}
 
-	var other_charges_amount = parseFloat($("#other_charges_amount").val()) || 0;
+	var total_charge_amt = 0;
+	let chargeTotalArr = document.querySelectorAll('[name="charge_total[]"]');
+	chargeTotalArr.forEach((element) => {
+		total_charge_amt += Number(element.value) || 0;
+	});
+
+	$("#other_charges_amount").val(total_charge_amt.toFixed(2));
+
 	var round_of = parseFloat($("#round_of").val()) || 0;
 	
 	// Grand Total = Final Total + Add : Other Charges + Round Of
-	var grand_total = final_total_sum + other_charges_amount + round_of;
+	var grand_total = final_total_sum + total_charge_amt + round_of;
 	$('#grand_total').val(grand_total.toFixed(2));
 }
 
@@ -609,6 +670,43 @@ function markBatchManual(element) {
 	$(element).attr('data-manual', 'true');
 }
 
+function rollup_product_totals(index) {
+	var total_white = 0;
+	var total_black = 0;
+	var total_bill_amt = 0;
+	var total_gst_amt = 0;
+	var total_bill_gst = 0;
+	var total_black_amt = 0;
+	var total_final = 0;
+
+	$('.batch-row-' + index).each(function() {
+		total_white += parseFloat($(this).find('.batch_white_qty_input').val()) || 0;
+		total_black += parseFloat($(this).find('.batch_black_qty_input').val()) || 0;
+		total_bill_amt += parseFloat($(this).find('.batch_bill_total').val()) || 0;
+		total_gst_amt += parseFloat($(this).find('.batch_gst_amt').val()) || 0;
+		total_bill_gst += parseFloat($(this).find('.batch_total_bill_gst_amount').val()) || 0;
+		total_black_amt += parseFloat($(this).find('.batch_black_total_amt').val()) || 0;
+		total_final += parseFloat($(this).find('.batch_final_total').val()) || 0;
+	});
+
+	var total_allocated = total_white + total_black;
+
+	$('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+	$('#gst_amount_' + index).val(total_gst_amt.toFixed(2));
+	$('#total_bill_gst_amount_' + index).val(total_bill_gst.toFixed(2));
+	$('#black_amount_' + index).val(total_black_amt.toFixed(2));
+	$('#final_total_' + index).val(total_final.toFixed(2));
+
+	if (total_allocated > 0) {
+		$('#bill_amount_' + index).val((total_bill_amt / total_allocated).toFixed(2));
+		$('#black_amount_per_unit_' + index).val((total_black_amt / total_allocated).toFixed(2));
+	} else {
+		// Reset if no allocation
+		$('#bill_amount_' + index).val('0.00');
+		$('#black_amount_per_unit_' + index).val('0.00');
+	}
+}
+
 function calculate_batch_amt(element, index) {
 	var row = $(element).closest('.batch-row');
 	var activeId = document.activeElement.id;
@@ -626,16 +724,19 @@ function calculate_batch_amt(element, index) {
 		return;
 	}
 
-	var container = $('#batch_container_' + index);
 	var product_qty = parseFloat($('#quantity_' + index).val()) || 0;
 	
 	var white_qty = parseFloat(row.find('.batch_white_qty_input').val()) || 0;
 	var black_qty = parseFloat(row.find('.batch_black_qty_input').val()) || 0;
-	var rate = parseFloat(row.find('.batch_rate').val()) || 0;
+	var rate_el = row.find('.batch_rate');
+	var rate = parseFloat(rate_el.val()) || 0;
 	var bill_amt_el = row.find('.batch_bill_amount');
 	var is_manual = bill_amt_el.attr('data-manual') === 'true';
 
-	if (!is_manual && activeId !== bill_amt_el.attr('id')) {
+	if (activeId === rate_el.attr('id')) {
+		bill_amt_el.val(rate.toFixed(2));
+		bill_amt_el.attr('data-manual', 'false');
+	} else if (!is_manual && activeId !== bill_amt_el.attr('id')) {
 		bill_amt_el.val(rate.toFixed(2));
 	}
 
@@ -673,7 +774,7 @@ function calculate_batch_amt(element, index) {
 	// Validation: Total Batches White + Black Qty vs Product Qty
 	var total_white_across_batches = 0;
 	var total_black_across_batches = 0;
-	container.find('.batch-row').each(function() {
+	$('.batch-row-' + index).each(function() {
 		total_white_across_batches += parseFloat($(this).find('.batch_white_qty_input').val()) || 0;
 		total_black_across_batches += parseFloat($(this).find('.batch_black_qty_input').val()) || 0;
 	});
@@ -699,7 +800,9 @@ function calculate_batch_amt(element, index) {
 	var black_amt_unit = rate - bill_amt;
 	var black_total_amt = total_batch_qty * black_amt_unit;
 	var final_total = total_bill_gst_amt + black_total_amt;
+	var total_batch_amount_val = total_batch_qty * rate;
 
+	row.find('.batch_total_amount').val(total_batch_amount_val.toFixed(2));
 	if (activeId !== row.find('.batch_bill_total').attr('id')) {
 		row.find('.batch_bill_total').val(bill_total.toFixed(2));
 	}
@@ -709,6 +812,7 @@ function calculate_batch_amt(element, index) {
 	row.find('.batch_black_total_amt').val(black_total_amt.toFixed(2));
 	row.find('.batch_final_total').val(final_total.toFixed(2));
 
+	rollup_product_totals(index);
 	recalculate();
 }
 
@@ -733,7 +837,9 @@ function calculate_batch_amt_reverse(element, index) {
 }
 
 function clearAllBatches() {
-	$('.batch-section-box').empty().hide();
+	$('.batch-row').remove();
+	$('.btn-add-batch').show();
+	recalculate();
 }
 
 function showPriceHistory(index) {
@@ -776,11 +882,9 @@ function addBatch(index) {
 		return;
 	}
 
-	var batch_container = $('#batch_container_' + index);
-	batch_container.show();
 	var batch_index = 1;
-	batch_container.find('.batch_id').each(function() {
-		var existing_id = $(this).attr('id') || '';
+	$('.batch-row-' + index).each(function() {
+		var existing_id = $(this).find('.batch_id').attr('id') || '';
 		var split_id = existing_id.split('_');
 		var current_index = parseInt(split_id[split_id.length - 1], 10);
 		if (!isNaN(current_index) && current_index >= batch_index) {
@@ -789,101 +893,74 @@ function addBatch(index) {
 	});
 
 	var batch_row = `
-		<div class="row g-1 align-items-end mb-1 batch-row">
-			<div class="col-xl-2 col-lg-3 col-md-4 px-1">
-				<div class="form-group">
-					<label>Select Batch</label>
-					<select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
-						<option value="">Select Batch</option>
-					</select>
+		<tr class="batch-row batch-row-${index}">
+			<td style="padding-left: 20px !important;">
+				<select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
+					<option value="">Select Batch</option>
+				</select>
+			</td>
+			<td>
+				<div class="d-flex gap-25 align-items-center">
+					<div class="d-flex flex-column align-items-center" style="flex: 1;">
+						<span class="badge mb-25" style="font-size: 9px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold; display: inline-block;">Avail.<br> White: <span class="avail-white-text">0</span></span>
+						<input type="number" step="any" class="form-control form-control-sm text-center batch_white_qty_input" name="batch_white_qty[${index}][]" id="batch_white_qty_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="0" style="padding: 2px; height: 26px;">
+						<input type="hidden" class="available_white_qty" name="available_white_qty[${index}][]" id="available_white_qty_${index}_${batch_index}" value="0">
+					</div>
+					<div class="d-flex flex-column align-items-center" style="flex: 1;">
+						<span class="badge mb-25" style="font-size: 9px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; display: inline-block;">Avail.<br> Black: <span class="avail-black-text">0</span></span>
+						<input type="number" step="any" class="form-control form-control-sm text-center batch_black_qty_input" name="batch_black_qty[${index}][]" id="batch_black_qty_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="0" style="padding: 2px; height: 26px;">
+						<input type="hidden" class="available_black_qty" name="available_black_qty[${index}][]" id="available_black_qty_${index}_${batch_index}" value="0">
+					</div>
 				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Avail. White Qty</label>
-					<input type="number" class="form-control available_white_qty" name="available_white_qty[${index}][]" id="available_white_qty_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Avail. Black Qty</label>
-					<input type="number" class="form-control available_black_qty" name="available_black_qty[${index}][]" id="available_black_qty_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>White Qty</label>
-					<input type="number" class="form-control batch_white_qty_input" name="batch_white_qty[${index}][]" id="batch_white_qty_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="0">
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Black Qty</label>
-					<input type="number" class="form-control batch_black_qty_input" name="batch_black_qty[${index}][]" id="batch_black_qty_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="0">
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Per Qty Amount</label>
-					<input type="number" step="any" class="form-control batch_rate" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Per Qty Bill Amt</label>
-					<input type="number" step="any" class="form-control batch_bill_amount" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" data-manual="false">
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Total Bill Amt</label>
-					<input type="number" step="any" class="form-control batch_bill_total" name="batch_bill_total[${index}][]" id="batch_bill_total_${index}_${batch_index}" onkeyup="calculate_batch_amt_reverse(this, '${index}')">
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-1 col-md-1 px-1">
-				<div class="form-group">
-					<label>GST %</label>
-					<input type="number" step="any" class="form-control batch_gst_per" name="batch_gst_per[${index}][]" id="batch_gst_per_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>GST Amt</label>
-					<input type="number" class="form-control batch_gst_amt" name="batch_gst_amt[${index}][]" id="batch_gst_amt_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Total Bill GST</label>
-					<input type="number" class="form-control batch_total_bill_gst_amount" name="batch_total_bill_gst_amount[${index}][]" id="batch_total_bill_gst_amount_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Per Qty Black Amt</label>
-					<input type="number" class="form-control batch_black_amt" name="batch_black_amt[${index}][]" id="batch_black_amt_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Total Black Amt</label>
-					<input type="number" class="form-control batch_black_total_amt" name="batch_black_total_amt[${index}][]" id="batch_black_total_amt_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-2 col-md-2 px-1">
-				<div class="form-group">
-					<label>Final Total</label>
-					<input type="number" class="form-control batch_final_total" name="batch_final_total[${index}][]" id="batch_final_total_${index}_${batch_index}" readonly>
-				</div>
-			</div>
-			<div class="col-xl-1 col-lg-1 col-md-1 px-1">
-				<button type="button" class="btn btn-danger btn-sm mb-25" onclick="$(this).closest('.batch-row').remove(); recalculate();"><i class="fa fa-times"></i></button>
-			</div>
-		</div>
+			</td>
+			<td>
+				<input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
+			</td>
+			<td>
+				<input type="number" step="any" class="form-control batch_total_amount text-center" id="batch_total_amount_${index}_${batch_index}" readonly tabindex="-1">
+			</td>
+			<td>
+				<input type="number" step="any" class="form-control batch_bill_amount text-center" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" data-manual="false">
+			</td>
+			<td>
+				<input type="number" step="any" class="form-control batch_bill_total text-center" name="batch_bill_total[${index}][]" id="batch_bill_total_${index}_${batch_index}" onkeyup="calculate_batch_amt_reverse(this, '${index}')">
+			</td>
+			<td>
+				<input type="number" step="any" class="form-control batch_gst_per text-center" name="batch_gst_per[${index}][]" id="batch_gst_per_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
+			</td>
+			<td>
+				<input type="number" class="form-control batch_gst_amt text-center" name="batch_gst_amt[${index}][]" id="batch_gst_amt_${index}_${batch_index}" readonly tabindex="-1">
+			</td>
+			<td>
+				<input type="number" class="form-control batch_total_bill_gst_amount text-center" name="batch_total_bill_gst_amount[${index}][]" id="batch_total_bill_gst_amount_${index}_${batch_index}" readonly tabindex="-1">
+			</td>
+			<td>
+				<input type="number" class="form-control batch_black_amt text-center" name="batch_black_amt[${index}][]" id="batch_black_amt_${index}_${batch_index}" readonly tabindex="-1">
+			</td>
+			<td>
+				<input type="number" class="form-control batch_black_total_amt" name="batch_black_total_amt[${index}][]" id="batch_black_total_amt_${index}_${batch_index}" readonly tabindex="-1">
+			</td>
+			<td>
+				<input type="number" class="form-control batch_final_total text-center" name="batch_final_total[${index}][]" id="batch_final_total_${index}_${batch_index}" readonly tabindex="-1">
+			</td>
+			<td class="text-center align-middle" style="white-space:nowrap;">
+				<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-batch-row" onclick="addBatch('${index}')" title="Add another batch"><i class="fa fa-plus"></i></button>
+				<button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-batch-row" onclick="removeBatchRow(this, '${index}')" title="Remove batch"><i class="fa fa-times"></i></button>
+			</td>
+		</tr>
 	`;
 
-	batch_container.append(batch_row);
-	var new_select = $('#batch_container_' + index + ' .batch-row:last .batch_id');
+	var last_element = $('#product_' + index);
+	var existing_batches = $('.batch-row-' + index);
+	if (existing_batches.length > 0) {
+		last_element = existing_batches.last();
+	}
+	last_element.after(batch_row);
+
+	// Hide the main "Add Batch" button
+	$('#product_' + index).find('.btn-add-batch').hide();
+
+	var new_select = $('.batch-row-' + index + ':last .batch_id');
 	
 	$.ajax({
 		type: "POST",
@@ -895,18 +972,32 @@ function addBatch(index) {
 		success: function(res) {
 			new_select.append(res);
 			new_select.select2();
+			new_select.select2('open');
 		}
 	});
+}
+
+function removeBatchRow(element, index) {
+	$(element).closest('.batch-row').remove();
+	
+	var remaining = $('.batch-row-' + index);
+	if (remaining.length === 0) {
+		$('#product_' + index).find('.btn-add-batch').show();
+	}
+	
+	rollup_product_totals(index);
+	recalculate();
 }
 
 function getBatchDetails(element, index) {
 	var batch_id = $(element).val();
 	var row = $(element).closest('.batch-row');
-	var container = $('#batch_container_' + index);
 
 	if (batch_id == '') {
 		row.find('.available_white_qty').val(0);
 		row.find('.available_black_qty').val(0);
+		row.find('.avail-white-text').text(0);
+		row.find('.avail-black-text').text(0);
 		row.find('.batch_white_qty_input').val(0);
 		row.find('.batch_black_qty_input').val(0);
 		row.find('.batch_rate').val(0);
@@ -918,12 +1009,15 @@ function getBatchDetails(element, index) {
 		row.find('.batch_black_amt').val(0);
 		row.find('.batch_black_total_amt').val(0);
 		row.find('.batch_final_total').val(0);
+		row.find('.batch_total_amount').val(0);
+		rollup_product_totals(index);
+		recalculate();
 		return;
 	}
 
 	// Duplicate check within same product
 	var is_duplicate = false;
-	container.find('.batch_id').not(element).each(function() {
+	$('.batch-row-' + index + ' .batch_id').not(element).each(function() {
 		if ($(this).val() == batch_id) {
 			is_duplicate = true;
 			return false;
@@ -943,6 +1037,8 @@ function getBatchDetails(element, index) {
 		$(element).val('').trigger('change.select2');
 		row.find('.available_white_qty').val(0);
 		row.find('.available_black_qty').val(0);
+		row.find('.avail-white-text').text(0);
+		row.find('.avail-black-text').text(0);
 		row.find('.batch_white_qty_input').val(0);
 		row.find('.batch_black_qty_input').val(0);
 		row.find('.batch_rate').val(0);
@@ -954,6 +1050,9 @@ function getBatchDetails(element, index) {
 		row.find('.batch_black_amt').val(0);
 		row.find('.batch_black_total_amt').val(0);
 		row.find('.batch_final_total').val(0);
+		row.find('.batch_total_amount').val(0);
+		rollup_product_totals(index);
+		recalculate();
 		return;
 	}
 
@@ -967,6 +1066,8 @@ function getBatchDetails(element, index) {
 		success: function(res) {
 			row.find('.available_white_qty').val(res.official_qty);
 			row.find('.available_black_qty').val(res.black_qty);
+			row.find('.avail-white-text').text(res.official_qty);
+			row.find('.avail-black-text').text(res.black_qty);
 			
 			// Initialize Rate and GST from main row
 			var main_rate = $('#master_amount_' + index).val();
@@ -983,7 +1084,149 @@ function getBatchDetails(element, index) {
 	});
 }
 
+function get_charge_details(val, index) {
+	if (val == "") {
+		$('#charge_gst_' + index).val(0);
+		$('#charge_price_' + index).val(0);
+		calculate_charge(index);
+	} else {
+		var option = $('#charge_id_' + index).find('option:selected');
+		var gst = option.data('gst') || 0;
+		var price = option.data('price') || 0;
+		$('#charge_gst_' + index).val(gst);
+		$('#charge_price_' + index).val(price);
+		calculate_charge(index);
+	}
+}
+
+function calculate_charge(index) {
+	var charge_id = $('#charge_id_' + index).val();
+	var gst = parseFloat($('#charge_gst_' + index).val()) || 0;
+	var price = parseFloat($('#charge_price_' + index).val()) || 0;
+	
+	if (charge_id == "" && (gst > 0 || price > 0)) {
+		Swal.fire({
+			title: "Error!",
+			text: "select the charges first",
+			icon: "error"
+		});
+		$('#charge_gst_' + index).val(0);
+		$('#charge_price_' + index).val(0);
+		$('#charge_total_' + index).val(0);
+		recalculate();
+		return;
+	}
+	
+	var total = price + (price * gst / 100);
+	$('#charge_total_' + index).val(total.toFixed(2));
+	recalculate();
+}
+
+function appendCharge() {
+	var last_row = $("#charges_area .charge-line-item:last");
+	var nextindex = 1;
+	if (last_row.length > 0) {
+		var currentId = last_row.data("id") || 0;
+		nextindex = parseInt(currentId) + 1;
+		
+		var prev_charge = $('#charge_id_' + currentId).val();
+		if (prev_charge == '') {
+			Swal.fire({
+				title: "Error!",
+				text: "Please select previous charge !!",
+				icon: "error"
+			});
+			return;
+		}
+	}
+	
+	$('#charges_area').append(`
+		<tr class="element-charge-${nextindex} charge-line-item" id="charge_${nextindex}" data-id="${nextindex}">
+			<td>
+				<select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_${nextindex}" data-toggle="select2" onchange="get_charge_details(this.value, '${nextindex}');">
+					<option value="">Select Charges</option>
+					<?php foreach($other_charges as $charge){ ?>
+						<option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
+					<?php } ?>
+				</select>
+			</td>
+			<td><input type="number" step="any" id="charge_gst_${nextindex}" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('${nextindex}')" value="0"></td>
+			<td><input type="number" step="any" id="charge_price_${nextindex}" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('${nextindex}')" value="0"></td>
+			<td><input type="number" step="any" id="charge_total_${nextindex}" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+			<td class="text-center align-middle" style="white-space:nowrap;">
+				<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+				<button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, ${nextindex})"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+			</td>
+		</tr>
+	`);
+	
+	$('#charge_id_' + nextindex).select2({ dropdownParent: $('body') });
+	$('#charge_id_' + nextindex).select2('open');
+}
+
+function removeCharge(element, index) {
+	if(document.querySelector('#charges_area').children.length > 1){
+		$(element).closest('tr').remove();
+		recalculate();
+	} else {
+		$('#charge_id_' + index).val("").trigger('change');
+		$('#charge_gst_' + index).val(0);
+		$('#charge_price_' + index).val(0);
+		$('#charge_total_' + index).val(0);
+		recalculate();
+	}
+}
+
+function get_shipping_city(stateId) {
+	$.ajax({
+		type: "POST",
+		url: "<?php echo base_url();?>admin/get_cities",
+		data: { state_id: stateId },
+		success: function (html) {
+			$("#shipping_city_id").html(html);
+		}
+	});
+}
+
+function get_billing_city(stateId) {
+	$.ajax({
+		type: "POST",
+		url: "<?php echo base_url();?>admin/get_cities",
+		data: { state_id: stateId },
+		success: function (html) {
+			$("#billing_city_id").html(html);
+		}
+	});
+}
+
 $(document).ready(function() {
+	var s_state_id = "<?php echo $data['shipping_state_id']; ?>";
+	var s_city_id = "<?php echo $data['shipping_city_id']; ?>";
+	var b_state_id = "<?php echo $data['billing_state_id']; ?>";
+	var b_city_id = "<?php echo $data['billing_city_id']; ?>";
+
+	if (s_state_id) {
+		$.ajax({
+			type: "POST",
+			url: "<?php echo base_url(); ?>admin/get_cities",
+			data: { state_id: s_state_id },
+			success: function(response) {
+				$("#shipping_city_id").html(response).val(s_city_id).trigger("change");
+			}
+		});
+	}
+
+	if (b_state_id) {
+		$.ajax({
+			type: "POST",
+			url: "<?php echo base_url(); ?>admin/get_cities",
+			data: { state_id: b_state_id },
+			success: function(response) {
+				$("#billing_city_id").html(response).val(b_city_id).trigger("change");
+			}
+		});
+	}
+
 	<?php if ($this->session->userdata('super_type_id') == 7) : ?>
 		$('#date_picker').prop('readonly', true);
 		$('#date_picker').on('mousedown', function(e) {
@@ -994,6 +1237,7 @@ $(document).ready(function() {
 	change_gst($('#gst_type').val());
 	recalculate();
 	$('.select2').select2();
+	$('#charge_id_1').select2({ dropdownParent: $('body') });
 });
 </script>
 
