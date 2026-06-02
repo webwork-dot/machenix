@@ -6006,6 +6006,7 @@ class Inventory_model extends CI_Model
 		$invoice_dates = $this->input->post('invoice_date');
 		$invoice_termss = $this->input->post('invoice_terms');
 		$invoice_price_termss = $this->input->post('invoice_price_terms');
+		$sorts = $this->input->post('sort');
 		
 		// Get metric data arrays (nested arrays: [po_product_id][variation_index])
 		$pkg_ctns = $this->input->post('pkg_ctn');
@@ -6027,6 +6028,7 @@ class Inventory_model extends CI_Model
 				// Get values from arrays, default to 0 if not set
 				$loading_qty = isset($loading_qtys[$form_product_key]) ? intval($loading_qtys[$form_product_key]) : 0;
 				$priority_qty = isset($quantities[$form_product_key]) ? intval($quantities[$form_product_key]) : 0;
+				$sort = isset($sorts[$form_product_key]) ? intval($sorts[$form_product_key]) : 0;
 				
 				// Only process if loading quantity is greater than 0
 				if ($loading_qty <= 0) continue;
@@ -6169,7 +6171,8 @@ class Inventory_model extends CI_Model
 					'received' => 0,
 					'received_date' => null,
 					'is_priority' => 1,
-					'is_complete' => 0
+					'is_complete' => 0,
+					'sort' => $sort
 				];
 
 				// Insert into loading_po_product

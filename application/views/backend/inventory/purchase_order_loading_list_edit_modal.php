@@ -347,6 +347,7 @@
 
     .loading-table tbody tr.main-product-row {
         background-color: #ffffff;
+        cursor: move;
     }
 
     .loading-table tbody tr.variation-row {
@@ -449,7 +450,7 @@
       LEFT JOIN supplier s ON s.id = pop.supplier_id
       LEFT JOIN product_variation pv ON pv.product_id = pop.product_id
       WHERE pop.parent_id = '$po_id' AND pop.is_deleted = '0'
-      ORDER BY pop.id ASC
+      ORDER BY pop.sort ASC, pop.id ASC
   ")->result_array();
 
 //   ORDER BY pop.supplier_id DESC, pop.id ASC, pv.id ASC
@@ -591,7 +592,10 @@
 
         <div class="col-md-12">
             <?php if (!empty($supplier_products)): ?>
-                <?php foreach ($supplier_products as $supplier_id => $products): ?>
+                <?php 
+                $global_sort_counter = 1;
+                foreach ($supplier_products as $supplier_id => $products): 
+                ?>
                     <div class="supplier-section" data-supplier-id="<?php echo $supplier_id; ?>">
                         <h5>
                             Supplier: <?php echo htmlspecialchars($priority_supplier_ids[$supplier_id] ?? 'Unknown Supplier'); ?>
@@ -660,7 +664,10 @@
                                         $rowspan = max(1, count($variations));
                                     ?>
                                     <tr id="loading_row_<?php echo $product['id']; ?>" class="main-product-row" data-row-id="<?php echo $product['id']; ?>" data-product-id="<?php echo $product['product_id']; ?>">
-                                        <td rowspan="<?php echo $rowspan; ?>"><?php echo $sr_no++; ?> </td>
+                                        <td rowspan="<?php echo $rowspan; ?>">
+                                            <?php echo $sr_no++; ?>
+                                            <input type="hidden" name="sort[<?php echo $product['id']; ?>]" value="<?php echo $global_sort_counter++; ?>" class="sort-input">
+                                        </td>
                                         <td rowspan="<?php echo $rowspan; ?>">
                                             <select class="form-control form-control-sm invoice-select" 
                                                 name="invoice_no[<?php echo $product['id']; ?>]" 
@@ -1142,7 +1149,66 @@ function mergeSupplierProducts(readyProducts, spareProducts) {
 function updateSupplierRowNumbers($section) {
     var index = 1;
     $section.find('tr.main-product-row').each(function() {
-        $(this).find('td:first').text(index++);
+        var $firstTd = $(this).find('td:first');
+        var $hiddenInputs = $firstTd.find('input[type="hidden"]').detach();
+        $firstTd.empty().append(index++).append($hiddenInputs);
+    });
+}
+
+function reorderVariationRows($tbody) {
+    $tbody.find('tr.main-product-row').each(function() {
+        var $mainRow = $(this);
+        var rowId = $mainRow.data('row-id');
+        var $varRows = $tbody.find('tr.variation-row[data-row-id="' + rowId + '"]');
+        if ($varRows.length > 0) {
+            $mainRow.after($varRows);
+        }
+    });
+}
+
+function updateAllSortValues() {
+    var globalSortCounter = 1;
+    $('.supplier-section').each(function() {
+        var $section = $(this);
+        $section.find('tr.main-product-row').each(function() {
+            var $row = $(this);
+            var $sortInput = $row.find('.sort-input');
+            if ($sortInput.length) {
+                $sortInput.val(globalSortCounter++);
+            }
+        });
+    });
+}
+
+function initLoadingListSortable() {
+    if (!$.fn.sortable) {
+        return;
+    }
+    var fixHelper = function(e, tr) {
+        var $originals = tr.children();
+        var $helper = tr.clone();
+        $helper.children().each(function(index) {
+            $(this).width($originals.eq(index).outerWidth());
+        });
+        return $helper;
+    };
+    $('tbody.loading_list_tbody').sortable({
+        items: '> tr.main-product-row',
+        helper: fixHelper,
+        cancel: 'input,select,textarea,button,a',
+        stop: function(event, ui) {
+            var $tbody = $(this);
+            reorderVariationRows($tbody);
+            
+            var $totalRow = $tbody.find('.supplier-total-row');
+            if ($totalRow.length) {
+                $tbody.append($totalRow);
+            }
+            
+            var $section = $tbody.closest('.supplier-section');
+            updateSupplierRowNumbers($section);
+            updateAllSortValues();
+        }
     });
 }
 
@@ -1179,7 +1245,10 @@ function appendLoadingListProductRow($section, productData) {
 
         if (i === 0) {
             html += `
-            <td rowspan="${rowSpan}">0</td>
+            <td rowspan="${rowSpan}">
+                0
+                <input type="hidden" name="sort[${rowKey}]" value="0" class="sort-input">
+            </td>
 
             <td rowspan="${rowSpan}">
                 <select class="form-control form-control-sm invoice-select" name="invoice_no[${rowKey}]" id="invoice_no_${rowKey}" data-product-id="${rowKey}" onchange="updateInvoiceSuppliers();" >
@@ -1353,6 +1422,8 @@ function removeLoadingRow(btn, poProductId) {
                 $row.remove();
                 // variations rows
                 $section.find('tr.variation-row[data-row-id="' + poProductId + '"]').remove();
+                updateSupplierRowNumbers($section);
+                updateAllSortValues();
                 updateSupplierTotals($section);
                 updateGrandTotals();
             } else {
@@ -1366,6 +1437,8 @@ function removeLoadingRow(btn, poProductId) {
                         if (res.status == 200) {
                             $row.remove();
                             $section.find('tr.variation-row[data-row-id="' + poProductId + '"]').remove();
+                            updateSupplierRowNumbers($section);
+                            updateAllSortValues();
                             updateSupplierTotals($section);
                             updateGrandTotals();
                             Swal.fire({
@@ -1530,6 +1603,7 @@ function processReloadSupplierProducts(buttonEl, loadProducts, existingProductId
                     });
 
                     updateSupplierRowNumbers($section);
+                    updateAllSortValues();
                     updateSupplierTotals($section);
                     updateGrandTotals();
                     updateInvoiceSuppliers();
@@ -2044,6 +2118,9 @@ function updateGrandTotals() {
 
 // Initialize calculations on page load
 $(document).ready(function() {
+    initLoadingListSortable();
+    updateAllSortValues();
+
     // Calculate all main product rows
     $('.loading_list_tbody tr.main-product-row').each(function() {
         var rowId = $(this).data('row-id') || $(this).attr('id').replace('loading_row_', '');
@@ -2294,6 +2371,7 @@ function createSupplierSection(supplierId, supplierName) {
 
     $('#add_supplier_btn').parent().before(sectionHtml);
     $('.grand-total-section').show();
+    initLoadingListSortable();
 }
 
 function searchProducts() {
