@@ -2734,10 +2734,16 @@ class Inventory extends CI_Controller
             $receipt_no = sprintf('%05d', $id);
             $this->load->library('pdf');
             $this->load->library('zip');
+            
+            if($type == "white") {
+                $page_data['data'] = $this->inventory_model->get_white_sales_order_details_by_id($id, $type);
+                $html_content = $this->load->view('invoice/sales/sales_invoice', $page_data, TRUE);
+            } else {
+                $page_data['data'] = $this->inventory_model->get_black_sales_order_details_by_id($id, $type);
+                $html_content = $this->load->view('invoice/sales/black_sales_invoice', $page_data, TRUE);
+            }
 
-            $page_data['data'] = $this->inventory_model->get_sales_order_details_by_id($id, $type);
             // echo json_encode($page_data['data']); exit();
-            $html_content = $this->load->view('invoice/sales/sales_invoice', $page_data, TRUE);
             $this->pdf->set_paper("A4", "portrait");
             $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
             $this->pdf->load_html($html_content);

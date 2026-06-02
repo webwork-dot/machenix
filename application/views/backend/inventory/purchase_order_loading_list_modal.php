@@ -475,7 +475,7 @@
     $order_by
   ")->result_array();
 
-//   echo $this->db->last_query();
+  //   echo $this->db->last_query();
   
 
   // Group raw rows by po_products.id and collect variations

@@ -110,6 +110,9 @@ $(document).ready(function($) {
       "type": "POST",
       "data": function(data) {
         data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+        if ((data.search && data.search.value && data.search.value.trim() !== '') || (data.date_range && data.date_range.trim() !== '')) {
+          data.length = -1;
+        }
       },
       "beforeSend": function() {
         $('.loader').show();

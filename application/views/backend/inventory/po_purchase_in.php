@@ -139,10 +139,10 @@ $(document).ready(function($) {
         "data": "lo_suppliers"
       },
       {
-        "data": "pl_spare_parts_count"
+        "data": "ll_spare_parts_count"
       },
       {
-        "data": "pl_ready_goods_count"
+        "data": "ll_ready_goods_count"
       },
       {
         "data": "loading_qty"

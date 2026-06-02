@@ -2955,8 +2955,8 @@ class Inventory_model extends CI_Model
 						SUM(pop.official_ci_qty) AS lo_official_qty,
 						SUM(pop.total_amount_rmb) AS lo_total_rmb,
 						SUM(pop.total_amount_usd) AS lo_total_usd,
-						SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS ll_spare_qty,
-						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS ll_ready_qty
+						SUM(CASE WHEN pop.product_type = 'spare' THEN pop.loading_qty ELSE 0 END) AS ll_spare_qty,
+						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.loading_qty END) AS ll_ready_qty
 					FROM loading_po_product pop
 					LEFT JOIN supplier s ON s.id = pop.supplier_id
 					WHERE pop.parent_id = '$id'
@@ -9339,7 +9339,6 @@ class Inventory_model extends CI_Model
 
 				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
 				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
-				$delete_url = base_url() . 'inventory/sales_order/delete/' . $id;
 				
 				// $view_url = base_url() . 'inventory/sales-order/view/' . $id;
 				// $action .= '
@@ -9418,9 +9417,6 @@ class Inventory_model extends CI_Model
 				// if ($order_type == 'excel') {
 				// 	$action .= '<a href="' . $not_url . '" data-toggle="tooltip" data-bs-placement="top" title="Not Upload"><button type="button" class="btn mr-2 mb-1 icon-btn-edit"><i class="fa fa-times" aria-hidden="true"></i></button></a>';
 				// }
-
-				// $action .= '<a href="#" onclick="confirm_modal(\'' . $delete_url . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" data-bs-placement="top" title="" data-bs-original-title="Delete" aria-label="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
-
 
 				$qty = 0;
 				$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
@@ -11062,11 +11058,52 @@ class Inventory_model extends CI_Model
 			// Soft delete the sales order itself
 			$this->db->where('id', $id)->update('sales_order', ['is_deleted' => 1]);
 
+			// Reverting Payment Entries
+			$payment_log = [];
+			$payment_records = $this->db->where('order_id', $id)->get('customer_payment_record');
+			if ($payment_records->num_rows() > 0) {
+				foreach ($payment_records->result_array() as $record) {
+					$this->db->where('id', $record['id'])->update('customer_payment_record', ['is_deleted' => 1]);
+
+					$payment = $this->db->where('id', $record['payment_id'])->get('customer_payment');
+					if ($payment->num_rows() > 0) {
+						$payment = $payment->row_array();
+						$updated_record = [
+							"allocated_inv" => $payment['allocated_inv'] - $record['order_paid'],
+							"total_outstanding" => $payment['total_outstanding'] - $record['order_paid'],
+							"on_account" => $payment['on_account'] + $record['order_paid'],
+						];
+
+						$this->db->where('id', $record['payment_id'])->update('customer_payment', $updated_record);
+
+						$customer_credit = [
+							'payment_id' => $record['payment_id'],
+							'customer_id' => $payment['customer_id'],
+							'item_no' => "Sales Deleted - " . $id,
+							'date' => date('Y-m-d'),
+							'credit_balance' => $record['order_paid'],
+							'debit_balance' => "0",
+							'created_at' => date('Y-m-d H:i:s'),
+						];
+
+						$this->db->insert('customer_credit',$customer_credit);
+
+						$payment_log[] = [
+							"record" => $record,
+							"credit" => $customer_credit,
+							"updated_payment" => $updated_record,
+							"payment" => $payment
+						];
+					}
+				}
+			}
+
 			// Create JSON log details
 			$log_json = [
 				'sale_order'    => $sales,
 				'reverted_data' => $reverted_data,
-				'history_data'  => $history_data
+				'history_data'  => $history_data,
+				'payment_log'   => $payment_log
 			];
 
 			$log_data = array(
@@ -11540,7 +11577,7 @@ class Inventory_model extends CI_Model
 		return $this->db->get('sales_order');
 	}
 
-	public function get_sales_order_details_by_id($id, $type = 'white')
+	public function get_white_sales_order_details_by_id($id, $type = 'white')
 	{
 		$sales = $this->db->where('id', $id)->get('sales_order')->row_array();
 		
@@ -11555,28 +11592,36 @@ class Inventory_model extends CI_Model
 			WHERE sp.order_id = $id AND sb.bill_amount > 0
 			GROUP BY sp.id
 		");
+
+		$sales['products'] = ($white_products->num_rows() > 0) ? $white_products->result_array() : [];
+
+		$company = $this->common_model->getRowById('company', '*', ['id' => $sales['company_id']]);
+		$sales['company'] = ($company) ? $company : [];
+		
+		$customer = $this->common_model->getRowById('customer', '*', ['id' => $sales['customer_id']]);
+		$sales['customer'] = ($customer) ? $customer : [];
+
+		return $sales;
+	}
+
+	public function get_black_sales_order_details_by_id($id, $type = 'white')
+	{
+		$sales = $this->db->where('id', $id)->get('sales_order')->row_array();
 		
 		$black_products = $this->db->query("
 			SELECT 
 				sp.product_name, p.hsn_code, SUM(sb.white_qty + sb.black_qty) as qtys,
-				SUM(sb.black_total) as amount, 0 as gst_amount,
-				0 as gst, SUM(sb.black_total) as total 
+				SUM(sb.bill_amount) as white_amt, SUM(sb.black_amount) as black_amt, SUM(sb.gst_amount) as gst_amount,
+				sb.gst, (SUM(sb.bill_amount) + SUM(sb.gst_amount) + SUM(sb.black_total)) as total 
 			FROM sales_order_product as sp
 			INNER JOIN sales_order_product_batch as sb ON sb.order_product_id = sp.id
 			INNER JOIN raw_products as p ON p.id = sp.product_id
-			WHERE sp.order_id = $id AND sb.black_total > 0
+			WHERE sp.order_id = $id 
 			GROUP BY sp.id
 		");
 
-		$white_products = ($white_products->num_rows() > 0) ? $white_products->result_array() : [];
-		if($type == 'white') {
-			$black_products = [];
-		} else {
-			$black_products = ($black_products->num_rows() > 0) ? $black_products->result_array() : [];
-		}
-
 		// echo json_encode($black_products);exit();
-		$sales['products'] = array_merge($white_products, $black_products);
+		$sales['products'] = ($black_products->num_rows() > 0) ? $black_products->result_array() : [];
 		
 		$company = $this->common_model->getRowById('company', '*', ['id' => $sales['company_id']]);
 		$sales['company'] = ($company) ? $company : [];
@@ -13505,7 +13550,11 @@ class Inventory_model extends CI_Model
 		$company_id = $this->session->userdata('company_id');
 
 		$total_count = $this->db->query("SELECT id FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter)->num_rows();
-		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		$limit_clause = "";
+		if ($length != -1) {
+			$limit_clause = " LIMIT $start, $length";
+		}
+		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC" . $limit_clause);
 
 		if (!empty($query)) {
 			$sr_no = $start;

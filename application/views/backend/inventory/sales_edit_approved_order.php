@@ -347,11 +347,111 @@
 											<input type="hidden" id="available_<?php echo $k; ?>" name="available[]" value="<?php echo (float) ($product['available'] ?? 0); ?>">
 										</td>
 										<td class="text-center align-middle" style="white-space:nowrap;">
-											<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-batch" onclick="addBatch('<?php echo $k; ?>')">
+											<?php 
+												$product_batches = $this->db->get_where('sales_order_product_batch', [
+													'order_id' => $id,
+													'order_product_id' => $product['id']
+												])->result_array();
+											?>
+											<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-batch" onclick="addBatch('<?php echo $k; ?>')" style="<?php echo !empty($product_batches) ? 'display: none;' : ''; ?>">
 												<i class="fa fa-plus"></i> Add Batch
 											</button>
 										</td>
 									</tr>
+									<?php 
+										$batch_index = 1;
+										foreach ($product_batches as $batch) {
+											// Get all batches of this product in this warehouse
+											$all_batches = $this->db->query("SELECT id, batch_no, official_qty, black_qty FROM inventory WHERE warehouse_id = ? AND product_id = ? AND (batch_no = ?) GROUP BY batch_no", [$data['warehouse_id'], $product['product_id'], $batch['batch_no']])->result_array();
+											
+											// Find matching inventory batch
+											$inventory_batch = $this->db->get_where('inventory', [
+												'warehouse_id' => $data['warehouse_id'],
+												'product_id' => $product['product_id'],
+												'batch_no' => $batch['batch_no']
+											])->row_array();
+
+                      if($data['is_weird'] == 1) {
+                        $avail_white = $inventory_batch['official_qty'] + $batch['white_qty'] + ($batch['black_qty'] - $batch['avail_black_qty']);
+                        $avail_black = $inventory_batch['black_qty'];
+                      } else {
+                        $avail_white = $inventory_batch['official_qty'] + $batch['white_qty'];
+                        $avail_black = $inventory_batch['black_qty'] + $batch['black_qty'];
+                      }
+											
+											$selected_batch_id = $inventory_batch ? $inventory_batch['id'] : '';
+									?>
+										<tr class="batch-row batch-row-<?php echo $k; ?>">
+											<td style="padding-left: 20px !important;">
+												<select class="form-control select2 batch_id" readonly name="batch_id[<?php echo $k; ?>][]" id="batch_id_<?php echo $k; ?>_<?php echo $batch_index; ?>" onchange="getBatchDetails(this, '<?php echo $k; ?>')" >
+													<!-- <option value="">Select Batch</option> -->
+													<?php
+                           foreach ($all_batches as $ab) { 
+                            if($ab['id'] == $selected_batch_id) {
+                          ?>
+														<option value="<?php echo $ab['id']; ?>" <?php echo ($ab['id'] == $selected_batch_id) ? 'selected' : ''; ?>>
+															<?php echo $ab['batch_no']; ?>
+														</option>
+													<?php }
+                          } ?>
+												</select>
+											</td>
+											<td>
+												<div class="d-flex gap-25 align-items-center">
+													<div class="d-flex flex-column align-items-center" style="flex: 1;">
+														<span class="badge mb-25" style="font-size: 9px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold; display: inline-block;">Avail.<br> White: <span class="avail-white-text"><?php echo $avail_white; ?></span></span>
+														<input type="number" step="any" class="form-control form-control-sm text-center batch_white_qty_input" name="batch_white_qty[<?php echo $k; ?>][]" id="batch_white_qty_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="calculate_batch_amt(this, '<?php echo $k; ?>')" value="<?php echo $batch['white_qty']; ?>" style="padding: 2px; height: 26px;">
+														<input type="hidden" class="available_white_qty" name="available_white_qty[<?php echo $k; ?>][]" id="available_white_qty_<?php echo $k; ?>_<?php echo $batch_index; ?>" value="<?php echo $avail_white; ?>">
+													</div>
+													<div class="d-flex flex-column align-items-center" style="flex: 1;">
+														<span class="badge mb-25" style="font-size: 9px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; display: inline-block;">Avail.<br> Black: <span class="avail-black-text"><?php echo $avail_black; ?></span></span>
+														<input type="number" step="any" class="form-control form-control-sm text-center batch_black_qty_input" name="batch_black_qty[<?php echo $k; ?>][]" id="batch_black_qty_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="calculate_batch_amt(this, '<?php echo $k; ?>')" value="<?php echo $batch['black_qty']; ?>" style="padding: 2px; height: 26px;">
+														<input type="hidden" class="available_black_qty" name="available_black_qty[<?php echo $k; ?>][]" id="available_black_qty_<?php echo $k; ?>_<?php echo $batch_index; ?>" value="<?php echo $avail_black; ?>">
+													</div>
+												</div>
+											</td>
+											<td>
+												<div class="input-group">
+													<input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[<?php echo $k; ?>][]" id="batch_rate_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="calculate_batch_amt(this, '<?php echo $k; ?>')" value="<?php echo number_format($batch['amount'], 2, '.', ''); ?>">
+													<span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('<?php echo $k; ?>')"><i class="fa fa-history px-1"></i></span>
+												</div>
+											</td>
+											<td>
+												<input type="number" step="any" class="form-control batch_total_amount text-center" id="batch_total_amount_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo number_format(($batch['white_qty'] + $batch['black_qty']) * $batch['amount'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" step="any" class="form-control batch_bill_amount text-center" name="batch_bill_amount[<?php echo $k; ?>][]" id="batch_bill_amount_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="markBatchManual(this); calculate_batch_amt(this, '<?php echo $k; ?>')" data-manual="<?php echo ($batch['amount'] != $batch['bill_amount']) ? 'true' : 'false'; ?>" value="<?php echo number_format($batch['bill_amount'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" step="any" class="form-control batch_bill_total text-center" name="batch_bill_total[<?php echo $k; ?>][]" id="batch_bill_total_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="calculate_batch_amt_reverse(this, '<?php echo $k; ?>')" value="<?php echo number_format($batch['bill_total'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" step="any" class="form-control batch_gst_per text-center" name="batch_gst_per[<?php echo $k; ?>][]" id="batch_gst_per_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="calculate_batch_amt(this, '<?php echo $k; ?>')" value="<?php echo number_format($batch['gst'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" class="form-control batch_gst_amt text-center" name="batch_gst_amt[<?php echo $k; ?>][]" id="batch_gst_amt_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo number_format($batch['gst_amount'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" class="form-control batch_total_bill_gst_amount text-center" name="batch_total_bill_gst_amount[<?php echo $k; ?>][]" id="batch_total_bill_gst_amount_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo number_format($batch['total_bill_gst_amount'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" class="form-control batch_black_amt text-center" name="batch_black_amt[<?php echo $k; ?>][]" id="batch_black_amt_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo number_format($batch['black_amount'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" class="form-control batch_black_total_amt" name="batch_black_total_amt[<?php echo $k; ?>][]" id="batch_black_total_amt_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo number_format($batch['black_total'], 2, '.', ''); ?>">
+											</td>
+											<td>
+												<input type="number" class="form-control batch_final_total text-center" name="batch_final_total[<?php echo $k; ?>][]" id="batch_final_total_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo number_format($batch['final_total'], 2, '.', ''); ?>">
+											</td>
+											<td class="text-center align-middle" style="white-space:nowrap;">
+												<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-batch-row" onclick="addBatch('<?php echo $k; ?>')" title="Add another batch"><i class="fa fa-plus"></i></button>
+												<!-- <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-batch-row" onclick="removeBatchRow(this, '<?php echo $k; ?>')" title="Remove batch"><i class="fa fa-times"></i></button> -->
+											</td>
+										</tr>
+									<?php 
+											$batch_index++;
+										}
+									?>
 									<?php $k++; } ?>
 								</tbody>
 							</table>

@@ -434,7 +434,7 @@
                     <td>
                       <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_1" data-toggle="select2" onchange="get_charge_details(this.value, '1');">
                         <option value="">Select Charges</option>
-                        <?php foreach($other_charges as $charge){ ?>
+                        <?php foreach($other_charges as $charge) { ?>
                           <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
                         <?php } ?>
                       </select>
@@ -703,68 +703,68 @@ function appendRequirement() {
     
     $(".loader").show();
     
-      $('#requirement_area').append(`
-        <tr class="element-1 sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
-          <td>
-            <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
-            <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
-              <option value="">Select Product</option>
-            </select>
-          </td>
-          <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
-          <td>
-            <div class="input-group">
-              <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
-              <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
-            </div>
-          </td>
-          <td><input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" tabindex="-1" readonly></td>
-          <td><input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false"></td>
-          <td><input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('${nextindex}')"></td>
-          <td><input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control" onkeyup="calculate_amt('${nextindex}')"></td>
-          <td><input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" tabindex="-1" readonly></td>
-          <td><input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" tabindex="-1" readonly></td>
-          <td><input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" tabindex="-1" readonly></td>
-          <td><input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" tabindex="-1" readonly></td>
-          <td>
-            <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" tabindex="-1" readonly>
-            <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
-          </td>
-          <td class="text-center align-middle" style="white-space:nowrap;">
-            <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()">
-              <i class="fa fa-plus"></i>
-            </button>
-            <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line" onclick="removeRequirement(this,${nextindex})">
-              <i class="fa fa-times"></i>
-            </button>
-          </td>
-        </tr>
-      `);
-      
-      $.ajax({
-        type: "POST",
-        url: "<?php echo base_url()?>inventory/get_product_by_company",
-        data: {},
-        success: function(res) {
-          console.log("Products Loaded:", res);
-          var select = $('#product_id_' + nextindex);
-          select.html('<option value="">Select Product</option>' + res).trigger('change');
-          select.select2({ dropdownParent: $('body') });
-          select.select2('open');
-          $(".loader").fadeOut("slow");
-          
-          $('html, body').animate({
-            scrollTop: $("#product_" + nextindex).offset().top
-          }, 300);
-        },
-        error: function(xhr) {
-          console.log(xhr.responseText);
-          alert("Error loading products");
-          $(".loader").fadeOut("slow");
-        }
-      });
-    }
+    $('#requirement_area').append(`
+      <tr class="element-1 sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
+        <td>
+          <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
+          <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
+            <option value="">Select Product</option>
+          </select>
+        </td>
+        <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
+        <td>
+          <div class="input-group">
+            <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
+            <span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
+          </div>
+        </td>
+        <td><input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false"></td>
+        <td><input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('${nextindex}')"></td>
+        <td><input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control" onkeyup="calculate_amt('${nextindex}')"></td>
+        <td><input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" tabindex="-1" readonly></td>
+        <td>
+          <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" tabindex="-1" readonly>
+          <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
+        </td>
+        <td class="text-center align-middle" style="white-space:nowrap;">
+          <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()">
+            <i class="fa fa-plus"></i>
+          </button>
+          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line" onclick="removeRequirement(this,${nextindex})">
+            <i class="fa fa-times"></i>
+          </button>
+        </td>
+      </tr>
+    `);
+    
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url()?>inventory/get_product_by_company",
+      data: {},
+      success: function(res) {
+        console.log("Products Loaded:", res);
+        var select = $('#product_id_' + nextindex);
+        select.html('<option value="">Select Product</option>' + res).trigger('change');
+        select.select2({ dropdownParent: $('body') });
+        select.select2('open');
+        $(".loader").fadeOut("slow");
+        
+        $('html, body').animate({
+          scrollTop: $("#product_" + nextindex).offset().top
+        }, 300);
+      },
+      error: function(xhr) {
+        console.log(xhr.responseText);
+        alert("Error loading products");
+        $(".loader").fadeOut("slow");
+      }
+    });
   }
+}
 
   function markManual(index) {
       $('#bill_amount_' + index).attr('data-manual', 'true');
