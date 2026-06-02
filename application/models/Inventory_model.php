@@ -13550,11 +13550,7 @@ class Inventory_model extends CI_Model
 		$company_id = $this->session->userdata('company_id');
 
 		$total_count = $this->db->query("SELECT id FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter)->num_rows();
-		$limit_clause = "";
-		if ($length != -1) {
-			$limit_clause = " LIMIT $start, $length";
-		}
-		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC" . $limit_clause);
+		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			$sr_no = $start;
