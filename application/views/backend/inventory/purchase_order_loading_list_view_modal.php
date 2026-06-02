@@ -100,307 +100,201 @@
     max-width: 1800px !important;
   }
   
-  .po-header-section {
+  .po-meta-container {
     background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-  }
-  
-  .po-header-section h5 {
-    margin-bottom: 15px;
-    color: #333;
-    font-weight: bold;
-  }
-  
-  .po-header-section .row {
-    margin-bottom: 8px;
-  }
-  
-  .po-header-section .label {
-    font-weight: 600;
-    color: #555;
-    min-width: 150px;
-    display: inline-block;
-  }
-  
-  .supplier-section {
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 25px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e9ecef;
-  }
-
-  .supplier-section h5 {
-    color: #495057;
-    font-weight: 600;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #5a79c0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .supplier-section h5:before {
-    content: "🏭";
-    font-size: 1.2rem;
-  }
-  
-  .table-responsive {
-    max-height: 600px;
-    overflow-x: auto;
-    overflow-y: auto;
-    border-radius: 6px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
     border: 1px solid #dee2e6;
   }
   
-  .loading-view-table {
-    min-width: 2600px;
-    width: 100%;
-    margin-bottom: 0;
+  .po-meta-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 20px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #495057;
   }
   
-  .loading-view-table thead th {
-    background: linear-gradient(135deg, #5a79c0 0%, #4a6ba8 100%);
-    color: #ffffff;
-    font-weight: 600;
-    text-align: center;
-    border: none;
-    padding: 10px 8px;
-    font-size: 0.9rem;
+  .po-meta-item strong {
+    color: #212529;
+    margin-right: 4px;
+  }
+  
+  .supplier-header {
+    font-weight: bold;
+    font-size: 13px;
+    color: #5a79c0;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 2px;
+  }
+  
+  .table-responsive {
+    max-height: 450px;
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+  }
+  
+  .compact-table {
+    min-width: 2600px;
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+    font-size: 11px;
+  }
+  
+  .compact-table th {
     position: sticky;
     top: 0;
     z-index: 10;
-    white-space: nowrap;
+    background-color: #f1f3f5;
+    color: #495057;
+    padding: 4px 6px;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    font-size: 11px;
   }
   
-  .loading-view-table tbody td {
-    padding: 8px 10px;
-    white-space: nowrap;
-    border-right: 1px solid #e9ecef;
+  .compact-table td {
+    padding: 3px 6px;
+    border: 1px solid #dee2e6;
     vertical-align: middle;
+    font-size: 11px;
+  }
+  
+  .compact-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  
+  .compact-table .text-right {
+    text-align: right;
+  }
+  
+  .compact-table .text-center {
+    text-align: center;
   }
 
-  .loading-view-table tbody td:last-child {
-    border-right: none;
-  }
-
-  .loading-view-table tbody tr {
-    border-bottom: 1px solid #e9ecef;
-  }
-
-  .loading-view-table tbody tr.variation-row {
+  .variation-row-bg {
     background-color: #fafbfc;
   }
-
-  .loading-view-table tbody tr:hover {
-    background-color: #f8f9fa;
-  }
   
-  .totals-row {
-    background-color: #f8f9fa;
+  .totals-row-bg {
+    background-color: #f1f3f5 !important;
     font-weight: bold;
   }
 
-  .invoice-cell {
-    padding: 8px 5px !important;
-    vertical-align: top;
-  }
-
-  .invoice-number {
-    display: inline-block;
-    background: #28a745;
+  .invoice-cell-badge {
+    background-color: #198754;
     color: white;
-    padding: 5px 12px;
-    border-radius: 5px;
-    font-size: 0.85rem;
+    padding: 0px 3px;
+    font-size: 10px;
     font-weight: 600;
-    margin-bottom: 6px;
-    white-space: nowrap;
-  }
-
-  .invoice-supplier-name {
-    display: block;
-    color: #495057;
-    font-size: 0.8rem;
-    line-height: 1.4;
-    margin-top: 4px;
-    word-wrap: break-word;
-    white-space: normal;
-  }
-
-  .grand-totals-section {
-    background: linear-gradient(135deg, #5a79c0 0%, #4a6ba8 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 30px;
-  }
-
-  .grand-totals-section h4 {
-    color: white;
-    margin-bottom: 15px;
-    font-weight: bold;
-  }
-
-  .grand-totals-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-  }
-
-  .grand-total-item {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 12px;
-    border-radius: 6px;
-  }
-
-  .grand-total-label {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    margin-bottom: 5px;
-  }
-
-  .grand-total-value {
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-
-  /* Invoice Supplier Section Styles for View Modal */
-  .invoice-supplier-view-section {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 30px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    display: inline-block;
   }
 
   .invoice-supplier-view-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #5a79c0;
-  }
-
-  .invoice-supplier-view-header h5 {
-    margin: 0;
-    color: #333;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 1.1rem;
-  }
-
-  .invoice-supplier-view-header .badge {
-    background: #5a79c0;
-    color: white;
-    padding: 6px 14px;
-    border-radius: 30px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(90, 121, 192, 0.3);
+    font-weight: bold;
+    font-size: 13px;
+    color: #5a79c0;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 2px;
   }
 
   .invoice-card {
     background: #ffffff;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
     border: 1px solid #eef0f2;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .invoice-card:hover {
-    border-color: #5a79c0;
-    box-shadow: 0 8px 25px rgba(90, 121, 192, 0.12);
-    transform: translateY(-3px);
+    font-size: 11px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .invoice-card-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
-    padding-bottom: 14px;
+    margin-bottom: 8px;
     border-bottom: 1px solid #f1f3f5;
+    padding-bottom: 4px;
+    font-weight: bold;
   }
 
-  .invoice-number-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, #5a79c0 0%, #4a6ba8 100%);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 1rem;
-    box-shadow: 0 3px 8px rgba(90, 121, 192, 0.2);
-  }
-
-  .invoice-product-count {
-    background: #f1f3f9;
-    color: #4a6ba8;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid #e2e8f0;
-  }
-
-  .invoice-info-grid {
+  .invoice-card-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    gap: 8px;
   }
 
-  .invoice-info-item {
-    margin-bottom: 12px;
+  .invoice-card-item {
+    margin-bottom: 4px;
   }
 
-  .invoice-info-label {
-    font-size: 0.7rem;
+  .invoice-card-label {
+    font-size: 8px;
     text-transform: uppercase;
-    letter-spacing: 1px;
     color: #94a3b8;
-    margin-bottom: 6px;
     font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    margin-bottom: 1px;
   }
 
-  .invoice-info-value {
+  .invoice-card-value {
     color: #1e293b;
     font-weight: 600;
-    font-size: 0.95rem;
-    word-break: break-word;
   }
 
-  .invoice-info-full {
+  .invoice-card-full {
     grid-column: span 2;
     background: #f8fafc;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 5px;
+    padding: 6px 8px;
+    border-radius: 4px;
     border: 1px solid #f1f5f9;
   }
 
-  .invoice-info-full .invoice-info-value {
-    white-space: pre-wrap;
-    font-size: 0.9rem;
-    color: #475569;
-    line-height: 1.5;
+  .grand-totals-bar {
+    background-color: #f8f9fa;
+    border-top: 2px solid #5a79c0;
+    margin-top: 15px;
+    padding-top: 10px;
+  }
+
+  .grand-totals-bar .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    text-align: center;
+    font-size: 11px;
+    gap: 10px;
+  }
+
+  .grand-totals-bar .total-block {
+    border-right: 1px solid #dee2e6;
+    padding: 2px 5px;
+  }
+
+  .grand-totals-bar .total-block:last-child {
+    border-right: none;
+  }
+
+  .grand-totals-bar .total-title {
+    color: #6c757d;
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .grand-totals-bar .total-value {
+    font-size: 13px;
+    font-weight: bold;
+    color: #5a79c0;
   }
 </style>
 
@@ -408,74 +302,52 @@
   <div class="col-12">
     
     <!-- PO Header Information -->
-    <div class="po-header-section">
-      <h5>Purchase Order Information</h5>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Batch No:</span> <?php echo $po_data['voucher_no']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Order Date:</span> <?php echo date('d M, Y', strtotime($po_data['date'])); ?>
-        </div>
+    <div class="po-meta-container">
+      <div class="d-flex flex-wrap">
+        <div class="po-meta-item"><strong>Batch No:</strong> <?php echo $po_data['voucher_no']; ?></div>
+        <div class="po-meta-item"><strong>Order Date:</strong> <?php echo date('d M, Y', strtotime($po_data['date'])); ?></div>
+        <div class="po-meta-item"><strong>Loading Date:</strong> <?php echo !empty($po_data['expected_date']) ? date('d M, Y', strtotime($po_data['expected_date'])) : 'N/A'; ?></div>
+        <div class="po-meta-item"><strong>Expected Arrival Date:</strong> <?php echo !empty($po_data['arrival_date']) ? date('d M, Y', strtotime($po_data['arrival_date'])) : 'N/A'; ?></div>
+        <div class="po-meta-item"><strong>Warehouse:</strong> <?php echo $warehouse['name'] ?? 'N/A'; ?></div>
+        <?php if (!empty($po_data['mode_of_payment'])) { ?>
+          <div class="po-meta-item"><strong>Payment Mode/Terms:</strong> <?php echo $po_data['mode_of_payment']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['dispatch'])) { ?>
+          <div class="po-meta-item"><strong>Dispatch Through:</strong> <?php echo $po_data['dispatch']; ?></div>
+        <?php } ?>
+        <div class="po-meta-item w-100 mt-1"><strong>Delivery Address:</strong> <?php echo $po_data['delivery_address'] ?? 'N/A'; ?></div>
       </div>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Loading Date:</span> <?php echo !empty($po_data['expected_date']) ? date('d M, Y', strtotime($po_data['expected_date'])) : 'N/A'; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Expected Arrival Date:</span> <?php echo !empty($po_data['arrival_date']) ? date('d M, Y', strtotime($po_data['arrival_date'])) : 'N/A'; ?>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Warehouse:</span> <?php echo $warehouse['name'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Delivery Address:</span> <?php echo $po_data['delivery_address'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php if (!empty($po_data['mode_of_payment'])) { ?>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Mode / Terms of Payment:</span> <?php echo $po_data['mode_of_payment']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Dispatch Through:</span> <?php echo $po_data['dispatch'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php } ?>
     </div>
     
     <!-- Loading List by Supplier -->
     <?php if (!empty($supplier_products)): ?>
         <?php foreach ($supplier_products as $supplier_id => $supplier_data): ?>
-            <div class="supplier-section">
-                <h5>
+            <div>
+                <div class="supplier-header">
                     Supplier: <?php echo htmlspecialchars($supplier_data['supplier_name']); ?>
-                </h5>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped loading-view-table">
+                    <table class="compact-table">
                         <thead>
                             <tr>
                                 <th style="width: 50px;">Sr No.</th>
-                                <th style="width: 100px;">Invoice</th>
+                                <th style="width: 70px;">Invoice No.</th>
+                                <!-- <th style="width: 200px;">Invoice Supplier.</th> -->
                                 <th style="width: 150px;">Model No.</th>
                                 <th style="width: 200px;">Product Name</th>
-                                <th style="width: 100px;">Priority List <br> (Qty)</th>
-                                <th style="width: 100px;">Loading Qty <br> (PCS)</th>
-                                <th style="width: 80px;">Official CI <br> Qty</th>
-                                <th style="width: 80px;">Black Qty</th>
-                                <th style="width: 100px;">Unit Price <br> (RMB)</th>
-                                <th style="width: 110px;">Total Amount <br> (RMB)</th>
-                                <th style="width: 130px;">Official CI <br>Unit Price (USD)</th>
-                                <th style="width: 110px;">Total Amount <br> (USD)</th>
-                                <th style="width: 100px;">Black Total <br> Price</th>
-                                <th style="width: 80px;">PKG <br> (ctn)</th>
-                                <th style="width: 80px;">N.W. <br> (kg)</th>
+                                <th style="width: 60px;">Priority List (Qty)</th>
+                                <th style="width: 60px;">Loading Qty (PCS)</th>
+                                <th style="width: 60px;">Official CI Qty</th>
+                                <th style="width: 60px;">Black Qty</th>
+                                <th style="width: 100px;">Unit Price (RMB)</th>
+                                <th style="width: 110px;">Total Amount (RMB)</th>
+                                <th style="width: 130px;">Official CI Unit Price (USD)</th>
+                                <th style="width: 110px;">Total Amount (USD)</th>
+                                <th style="width: 100px;">Black Total Price</th>
+                                <th style="width: 80px;">PKG (ctn)</th>
+                                <th style="width: 80px;">N.W. (kg)</th>
                                 <th style="width: 100px;">Total N.W.</th>
-                                <th style="width: 80px;">G.W. <br> (kg)</th>
+                                <th style="width: 80px;">G.W. (kg)</th>
                                 <th style="width: 100px;">Total G.W.</th>
                                 <th style="width: 70px;">L</th>
                                 <th style="width: 70px;">W</th>
@@ -490,18 +362,24 @@
                                 $lt_data = $loading_totals_by_parent[$product['id']] ?? [];
                                 $rowspan = max(1, count($lt_data));
                             ?>
-                            <tr class="main-product-row">
+                            <tr>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-center"><?php echo $sr_no++; ?></td>
-                                <td rowspan="<?php echo $rowspan; ?>" class="invoice-cell">
+                                <td rowspan="<?php echo $rowspan; ?>" class="text-center">
                                     <?php if (!empty($product['invoice_no'])): ?>
-                                        <div class="invoice-number">Invoice #<?php echo $product['invoice_no']; ?></div>
-                                        <?php if (!empty($product['invoice_supplier_name'])): ?>
-                                            <div class="invoice-supplier-name"><?php echo htmlspecialchars($product['invoice_supplier_name']); ?></div>
-                                        <?php endif; ?>
+                                        <div class="invoice-cell-badge">Invoice #<?php echo $product['invoice_no']; ?></div>
                                     <?php else: ?>
                                         <span class="text-muted">-</span>
                                     <?php endif; ?>
                                 </td>
+                                <!-- <td rowspan="<?php echo $rowspan; ?>" class="text-center">
+                                    <?php if (!empty($product['invoice_no'])): ?>
+                                        <?php if (!empty($product['invoice_supplier_name'])): ?>
+                                            <div style="font-size: 9px; color: #495057; line-height: 1.2;"><?php echo htmlspecialchars($product['invoice_supplier_name']); ?></div>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td> -->
                                 <td rowspan="<?php echo $rowspan; ?>"><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>"><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-center"><?php echo number_format($product['quantity'] ?? 0, 0); ?></td>
@@ -513,7 +391,6 @@
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-right"><?php echo number_format($product['official_ci_unit_price_usd'] ?? 0, 2); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-right"><?php echo number_format($product['total_amount_usd'] ?? 0, 2); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-right"><?php echo number_format($product['black_total_price'] ?? 0, 2); ?></td>
-                                <!-- <td rowspan="<?php echo $rowspan; ?>" class="text-center"><?php echo number_format($product['pkg_ctn'] ?? 0, 0); ?></td> -->
                                 
                                 <?php
                                 // First variation or main product metrics
@@ -532,7 +409,7 @@
 
                             <?php if (count($lt_data) > 1): ?>
                                 <?php foreach (array_slice($lt_data, 1) as $lt): ?>
-                                    <tr class="variation-row">
+                                    <tr class="variation-row-bg">
                                         <td class="text-right"><?php echo number_format($lt['pkg_ctn'], 0); ?></td>
                                         <td class="text-right"><?php echo number_format($lt['nw_kg'], 2); ?></td>
                                         <td class="text-right"><?php echo number_format($lt['total_nw_kg'], 2); ?></td>
@@ -553,19 +430,11 @@
                             $supplier_total_loading_qty = 0;
                             $supplier_total_official_ci_qty = 0;
                             $supplier_total_black_qty = 0;
-                            $supplier_total_unit_price_rmb = 0;
                             $supplier_total_amount_rmb = 0;
-                            $supplier_total_official_ci_unit_price_usd = 0;
                             $supplier_total_amount_usd = 0;
-                            $supplier_total_black_total_price = 0;
                             $supplier_total_pkg_ctn = 0;
-                            $supplier_total_nw_kg = 0;
                             $supplier_total_total_nw = 0;
-                            $supplier_total_gw_kg = 0;
                             $supplier_total_total_gw = 0;
-                            $supplier_total_length = 0;
-                            $supplier_total_width = 0;
-                            $supplier_total_height = 0;
                             $supplier_total_total_cbm = 0;
                             
                             foreach ($supplier_data['products'] as $product):
@@ -573,44 +442,27 @@
                                 $supplier_total_loading_qty += floatval($product['loading_qty'] ?? 0);
                                 $supplier_total_official_ci_qty += floatval($product['official_ci_qty'] ?? 0);
                                 $supplier_total_black_qty += floatval($product['black_qty'] ?? 0);
-                                $supplier_total_unit_price_rmb += floatval($product['unit_price_rmb'] ?? 0);
                                 $supplier_total_amount_rmb += floatval($product['total_amount_rmb'] ?? 0);
-                                $supplier_total_official_ci_unit_price_usd += floatval($product['official_ci_unit_price_usd'] ?? 0);
                                 $supplier_total_amount_usd += floatval($product['total_amount_usd'] ?? 0);
-                                $supplier_total_black_total_price += floatval($product['black_total_price'] ?? 0);
                                 
-                                
-                                // Sum all variation rows for metrics
                                 $lt_data = $loading_totals_by_parent[$product['id']] ?? [];
                                 if (!empty($lt_data)) {
                                     foreach ($lt_data as $lt) {
                                         $supplier_total_pkg_ctn += floatval($lt['pkg_ctn'] ?? 0);
-                                        $supplier_total_nw_kg += floatval($lt['nw_kg'] ?? 0);
                                         $supplier_total_total_nw += floatval($lt['total_nw_kg'] ?? 0);
-                                        $supplier_total_gw_kg += floatval($lt['gw_kg'] ?? 0);
                                         $supplier_total_total_gw += floatval($lt['total_gw_kg'] ?? 0);
-                                        $supplier_total_length += floatval($lt['length'] ?? 0);
-                                        $supplier_total_width += floatval($lt['width'] ?? 0);
-                                        $supplier_total_height += floatval($lt['height'] ?? 0);
                                         $supplier_total_total_cbm += floatval($lt['total_cbm_value'] ?? 0);
                                     }
                                 } else {
-                                    // Fallback to product values if no variations
                                     $supplier_total_pkg_ctn += floatval($product['loading_qty'] ?? 0);
-                                    $supplier_total_nw_kg += floatval($product['nw_kg'] ?? 0);
                                     $supplier_total_total_nw += floatval($product['total_nw_kg'] ?? 0);
-                                    $supplier_total_gw_kg += floatval($product['gw_kg'] ?? 0);
                                     $supplier_total_total_gw += floatval($product['total_gw_kg'] ?? 0);
-                                    $supplier_total_length += floatval($product['length'] ?? 0);
-                                    $supplier_total_width += floatval($product['width'] ?? 0);
-                                    $supplier_total_height += floatval($product['height'] ?? 0);
                                     $supplier_total_total_cbm += floatval($product['total_cbm_value'] ?? 0);
                                 }
                             endforeach;
                             ?>
-                            <!-- Supplier Total Row -->
-                            <tr class="totals-row" style="background-color: #fafafc; font-weight: bold;">
-                                <td colspan="4" style="text-align: right; padding: 10px;"><strong>Total:</strong></td>
+                            <tr class="totals-row-bg">
+                                <td colspan="4" class="text-right">Total:</td>
                                 <td class="text-center"><?php echo number_format($supplier_total_priority_qty, 0); ?></td>
                                 <td class="text-center"><?php echo number_format($supplier_total_loading_qty, 0); ?></td>
                                 <td class="text-center"><?php echo number_format($supplier_total_official_ci_qty, 0); ?></td>
@@ -625,9 +477,7 @@
                                 <td class="text-right"><?php echo number_format($supplier_total_total_nw, 2); ?></td>
                                 <td class="text-right"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_total_gw, 2); ?></td>
-                                <td class="text-right"></td>
-                                <td class="text-right"></td>
-                                <td class="text-right"></td>
+                                <td colspan="3"></td>
                                 <td class="text-right"><?php echo number_format($supplier_total_total_cbm, 2); ?></td>
                             </tr>
                         </tbody>
@@ -641,56 +491,51 @@
 
     <!-- Supplier Invoices Section -->
     <?php if (!empty($invoices)): ?>
-    <div class="invoice-supplier-view-section">
+    <div>
         <div class="invoice-supplier-view-header">
-            <h5><i class="fa fa-file"></i> Supplier Invoices</h5>
-            <span class="badge ml-3"><?php echo count($invoices); ?> Invoices</span>
+             <i class="fa fa-file"></i> Supplier Invoices (<?php echo count($invoices); ?>)
         </div>
         
         <div class="row">
             <?php foreach ($invoices as $inv): ?>
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="invoice-card">
                     <div class="invoice-card-header">
-                        <span class="invoice-number-badge">
-                            <i class="fa fa-file-alt"></i> Invoice #<?php echo $inv['invoice_no']; ?>
-                        </span>
-                        <span class="invoice-product-count">
-                            <i class="fa fa-dropbox"></i> <?php echo $inv['product_count']; ?> <?php echo $inv['product_count'] == 1 ? 'Product' : 'Products'; ?>
-                        </span>
+                        <span>Invoice #<?php echo $inv['invoice_no']; ?></span>
+                        <span class="badge badge-light" style="color: #4a6ba8;"><?php echo $inv['product_count']; ?> <?php echo $inv['product_count'] == 1 ? 'Item' : 'Items'; ?></span>
                     </div>
                     
-                    <div class="invoice-info-grid">
-                        <div class="invoice-info-item">
-                            <div class="invoice-info-label"><i class="fa fa-truck"></i> Supplier</div>
-                            <div class="invoice-info-value"><?php echo htmlspecialchars($inv['supplier_name']); ?></div>
+                    <div class="invoice-card-grid">
+                        <div class="invoice-card-item">
+                            <div class="invoice-card-label">Supplier</div>
+                            <div class="invoice-card-value"><?php echo htmlspecialchars($inv['supplier_name']); ?></div>
                         </div>
                         
-                        <div class="invoice-info-item">
-                            <div class="invoice-info-label"><i class="fa fa-calendar-alt"></i> Date</div>
-                            <div class="invoice-info-value">
+                        <div class="invoice-card-item">
+                            <div class="invoice-card-label">Date</div>
+                            <div class="invoice-card-value">
                                 <?php echo !empty($inv['invoice_date']) ? date('d M, Y', strtotime($inv['invoice_date'])) : 'N/A'; ?>
                             </div>
                         </div>
                         
                         <?php if (!empty($inv['invoice_price_terms'])): ?>
-                        <div class="invoice-info-item">
-                            <div class="invoice-info-label"><i class="fa fa-usd"></i> Terms of Price</div>
-                            <div class="invoice-info-value"><?php echo htmlspecialchars($inv['invoice_price_terms']); ?></div>
+                        <div class="invoice-card-item">
+                            <div class="invoice-card-label">Terms of Price</div>
+                            <div class="invoice-card-value"><?php echo htmlspecialchars($inv['invoice_price_terms']); ?></div>
                         </div>
                         <?php endif; ?>
                         
                         <?php if (!empty($inv['invoice_info'])): ?>
-                        <div class="invoice-info-item">
-                            <div class="invoice-info-label"><i class="fa fa-info-circle"></i> Invoice Info</div>
-                            <div class="invoice-info-value"><?php echo htmlspecialchars($inv['invoice_info']); ?></div>
+                        <div class="invoice-card-item">
+                            <div class="invoice-card-label">Invoice Info</div>
+                            <div class="invoice-card-value"><?php echo htmlspecialchars($inv['invoice_info']); ?></div>
                         </div>
                         <?php endif; ?>
                         
                         <?php if (!empty($inv['invoice_terms'])): ?>
-                        <div class="invoice-info-item invoice-info-full">
-                            <div class="invoice-info-label"><i class="fa fa-clipboard"></i> Terms of Payment</div>
-                            <div class="invoice-info-value"><?php echo nl2br(htmlspecialchars($inv['invoice_terms'])); ?></div>
+                        <div class="invoice-card-item invoice-card-full">
+                            <div class="invoice-card-label">Terms of Payment</div>
+                            <div class="invoice-card-value" style="white-space: pre-wrap; font-size: 10px; line-height: 1.3; color: #475569;"><?php echo htmlspecialchars($inv['invoice_terms']); ?></div>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -703,41 +548,39 @@
 
     <!-- Grand Totals Section -->
     <?php if (!empty($products_raw)): ?>
-    <div class="grand-totals-section">
-        <h4><i class="fa fa-calculator"></i> Grand Totals</h4>
-        <div class="grand-totals-grid">
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total Loading Qty</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_loading_qty, 0); ?></div>
+    <div class="grand-totals-bar">
+        <div class="totals-grid">
+            <div class="total-block">
+                <div class="total-title">Loading Qty</div>
+                <div class="total-value"><?php echo number_format($grand_total_loading_qty, 0); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total Official CI Qty</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_official_ci_qty, 0); ?></div>
+            <div class="total-block">
+                <div class="total-title">Official CI Qty</div>
+                <div class="total-value"><?php echo number_format($grand_total_official_ci_qty, 0); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total Black Qty</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_black_qty, 0); ?></div>
+            <div class="total-block">
+                <div class="total-title">Black Qty</div>
+                <div class="total-value"><?php echo number_format($grand_total_black_qty, 0); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total Amount (RMB)</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_amount_rmb, 2); ?></div>
+            <div class="total-block">
+                <div class="total-title">Amt (RMB)</div>
+                <div class="total-value"><?php echo number_format($grand_total_amount_rmb, 2); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total Amount (USD)</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_amount_usd, 2); ?></div>
+            <div class="total-block">
+                <div class="total-title">Amt (USD)</div>
+                <div class="total-value"><?php echo number_format($grand_total_amount_usd, 2); ?></div>
             </div>
-            
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total N.W. (kg)</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_nw, 2); ?></div>
+            <div class="total-block">
+                <div class="total-title">N.W. (kg)</div>
+                <div class="total-value"><?php echo number_format($grand_total_nw, 2); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total G.W. (kg)</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_gw, 2); ?></div>
+            <div class="total-block">
+                <div class="total-title">G.W. (kg)</div>
+                <div class="total-value"><?php echo number_format($grand_total_gw, 2); ?></div>
             </div>
-            <div class="grand-total-item">
-                <div class="grand-total-label">Total CBM</div>
-                <div class="grand-total-value"><?php echo number_format($grand_total_cbm, 2); ?></div>
+            <div class="total-block">
+                <div class="total-title">Total CBM</div>
+                <div class="total-value"><?php echo number_format($grand_total_cbm, 2); ?></div>
             </div>
         </div>
     </div>
@@ -745,4 +588,3 @@
 
   </div>
 </div>
-

@@ -62,246 +62,177 @@
     max-width: 1400px !important;
   }
   
-  .po-header-section {
+  .po-meta-container {
     background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-  }
-  
-  .po-header-section h5 {
-    margin-bottom: 15px;
-    color: #333;
-    font-weight: bold;
-  }
-  
-  .po-header-section .row {
-    margin-bottom: 8px;
-  }
-  
-  .po-header-section .label {
-    font-weight: 600;
-    color: #555;
-    min-width: 150px;
-    display: inline-block;
-  }
-  
-  .supplier-section {
-    margin-bottom: 30px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
     border: 1px solid #dee2e6;
-    border-radius: 5px;
-    overflow: hidden;
+  }
+  
+  .po-meta-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 20px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #495057;
+  }
+  
+  .po-meta-item strong {
+    color: #212529;
+    margin-right: 4px;
   }
   
   .supplier-header {
-    background-color: #5a79c0;
-    color: white;
-    padding: 12px 15px;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 13px;
+    color: #5a79c0;
+    margin-top: 12px;
+    /* margin-bottom: 4px;
+    border-bottom: 1px solid #dee2e6; */
+    padding-bottom: 2px;
   }
   
-  .product-type-section {
-    margin: 15px;
-  }
-  
-  .product-type-header {
-    background-color: #e9ecef;
-    padding: 10px 15px;
-    font-weight: bold;
-    color: #495057;
-    margin-bottom: 10px;
-    border-left: 4px solid #5a79c0;
-  }
-  
-  .product-type-header.ready {
-    border-left-color: #28a745;
-  }
-  
-  .product-type-header.spare {
-    border-left-color: #ffc107;
-  }
-  
-  .products-table {
+  .compact-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    font-size: 11px;
   }
   
-  .products-table th {
-    background-color: #f8f9fa;
-    padding: 10px;
-    text-align: left;
-    border: 1px solid #dee2e6;
+  .compact-table th {
+    background-color: #f1f3f5;
+    color: #495057;
+    padding: 4px 6px;
     font-weight: 600;
-    font-size: 12px;
-  }
-  
-  .products-table td {
-    padding: 8px 10px;
     border: 1px solid #dee2e6;
-    font-size: 12px;
+    text-align: left;
   }
   
-  .products-table tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
+  .compact-table td {
+    padding: 4px 6px;
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
   }
   
-  .products-table .text-right {
+  .compact-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  
+  .compact-table .text-right {
     text-align: right;
   }
   
-  .products-table .text-center {
+  .compact-table .text-center {
     text-align: center;
   }
   
-  .totals-row {
-    background-color: #e9ecef !important;
-    font-weight: bold;
+  .badge-ready {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: 3px;
+    display: inline-block;
   }
   
-  .grand-totals-section {
+  .badge-spare {
+    background-color: #fff3cd;
+    color: #664d03;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  
+  .totals-row-bg {
+    background-color: #f1f3f5 !important;
+    font-weight: bold;
+  }
+
+  .grand-totals-bar {
     background-color: #f8f9fa;
-    padding: 20px;
-    border-radius: 5px;
-    margin-top: 20px;
-    border: 2px solid #5a79c0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-top: 2px solid #5a79c0;
+    margin-top: 15px;
+    padding-top: 10px;
   }
-  
-  .grand-totals-section h5 {
-    margin-bottom: 20px;
-    color: #5a79c0;
-    font-weight: bold;
-    font-size: 18px;
+
+  .grand-totals-bar .totals-grid {
+    display: flex;
+    justify-content: space-around;
     text-align: center;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #5a79c0;
+    font-size: 11px;
   }
-  
-  .total-card {
-    background-color: white;
-    padding: 15px;
-    border-radius: 5px;
-    border: 1px solid #dee2e6;
-    margin-bottom: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
+
+  .grand-totals-bar .total-block {
+    flex: 1;
+    border-right: 1px solid #dee2e6;
+    padding: 2px 10px;
   }
-  
-  .total-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+
+  .grand-totals-bar .total-block:last-child {
+    border-right: none;
   }
-  
-  .total-card-label {
-    font-size: 12px;
+
+  .grand-totals-bar .total-title {
     color: #6c757d;
-    font-weight: 600;
+    font-size: 9px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    font-weight: 600;
+    margin-bottom: 2px;
   }
-  
-  .total-card-value {
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-  }
-  
-  .total-card-value.ready {
-    color: #28a745;
-  }
-  
-  .total-card-value.spare {
-    color: #ffc107;
-  }
-  
-  .grand-total-card {
-    background: linear-gradient(135deg, #5a79c0 0%, #4a6ba8 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-    margin-top: 10px;
-  }
-  
-  .grand-total-card-label {
+
+  .grand-totals-bar .total-value {
     font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-    opacity: 0.9;
-  }
-  
-  .grand-total-card-value {
-    font-size: 28px;
     font-weight: bold;
-    line-height: 1.2;
+  }
+
+  .grand-totals-bar .total-value.ready {
+    color: #198754;
+  }
+
+  .grand-totals-bar .total-value.spare {
+    color: #b58100;
+  }
+
+  .grand-totals-bar .total-value.grand {
+    color: #5a79c0;
+    font-size: 14px;
   }
 </style>
 
 <div class="row">
   <div class="col-12">
     <!-- PO Header Information -->
-    <div class="po-header-section">
-      <h5>Purchase Order Information</h5>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Batch No:</span> <?php echo $po_data['voucher_no']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Date:</span> <?php echo date('d M, Y', strtotime($po_data['date'])); ?>
-        </div>
+    <div class="po-meta-container">
+      <div class="d-flex flex-wrap">
+        <div class="po-meta-item"><strong>Batch No:</strong> <?php echo $po_data['voucher_no']; ?></div>
+        <div class="po-meta-item"><strong>Date:</strong> <?php echo date('d M, Y', strtotime($po_data['date'])); ?></div>
+        <div class="po-meta-item"><strong>Loading Date:</strong> <?php echo date('d M, Y', strtotime($po_data['delivery_date'])); ?></div>
+        <div class="po-meta-item"><strong>Warehouse:</strong> <?php echo $warehouse['name'] ?? 'N/A'; ?></div>
+        <?php if (!empty($po_data['mode_of_payment'])) { ?>
+          <div class="po-meta-item"><strong>Payment Mode/Terms:</strong> <?php echo $po_data['mode_of_payment']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['dispatch'])) { ?>
+          <div class="po-meta-item"><strong>Dispatch Through:</strong> <?php echo $po_data['dispatch']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['destination'])) { ?>
+          <div class="po-meta-item"><strong>Destination:</strong> <?php echo $po_data['destination']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['other_refrence'])) { ?>
+          <div class="po-meta-item"><strong>Other Ref:</strong> <?php echo $po_data['other_refrence']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['terms_of_delivery'])) { ?>
+          <div class="po-meta-item"><strong>Delivery Terms:</strong> <?php echo $po_data['terms_of_delivery']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['narration'])) { ?>
+          <div class="po-meta-item"><strong>Narration:</strong> <?php echo $po_data['narration']; ?></div>
+        <?php } ?>
+        <div class="po-meta-item w-100 mt-1"><strong>Delivery Address:</strong> <?php echo $po_data['delivery_address'] ?? 'N/A'; ?></div>
       </div>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Loading Date:</span> <?php echo date('d M, Y', strtotime($po_data['delivery_date'])); ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Warehouse:</span> <?php echo $warehouse['name'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Delivery Address:</span> <?php echo $po_data['delivery_address'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php if (!empty($po_data['mode_of_payment'])) { ?>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Mode / Terms of Payment:</span> <?php echo $po_data['mode_of_payment']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Dispatch Through:</span> <?php echo $po_data['dispatch'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php } ?>
-      <?php if (!empty($po_data['destination'])) { ?>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Destination:</span> <?php echo $po_data['destination']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Other Reference:</span> <?php echo $po_data['other_refrence'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php } ?>
-      <?php if (!empty($po_data['terms_of_delivery'])) { ?>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Terms of Delivery:</span> <?php echo $po_data['terms_of_delivery']; ?>
-        </div>
-      </div>
-      <?php } ?>
-      <?php if (!empty($po_data['narration'])) { ?>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Narration:</span> <?php echo $po_data['narration']; ?>
-        </div>
-      </div>
-      <?php } ?>
     </div>
 
     <!-- Products by Supplier -->
@@ -309,172 +240,120 @@
     $supplier_count = 0;
     foreach ($grouped_products as $supplier_id => $supplier_data) { 
       $supplier_count++;
-      $has_ready = !empty($supplier_data['ready']);
-      $has_spare = !empty($supplier_data['spare']);
+      $supplier_all_products = array_merge($supplier_data['ready'], $supplier_data['spare']);
     ?>
-    <div class="supplier-section">
+    <div>
       <div class="supplier-header">
         Supplier <?php echo $supplier_count; ?>: <?php echo $supplier_data['supplier_name']; ?>
       </div>
       
-      <!-- Ready Goods Section -->
-      <?php if ($has_ready) { ?>
-      <div class="product-type-section">
-        <div class="product-type-header ready">
-          <i class="fa fa-check-circle"></i> Ready Stock
-        </div>
-        <table class="products-table">
-          <thead>
-            <tr>
-              <th style="width: 50px;">Sr No.</th>
-              <th>Product Name</th>
-              <th style="width: 120px;">Model No.</th>
-              <th style="width: 80px;" class="text-center">Qty</th>
-              <th style="width: 80px;" class="text-right">CBM</th>
-              <th style="width: 100px;" class="text-right">Total CBM</th>
-              <th style="width: 100px;" class="text-center">Pending PO Qty</th>
-              <th style="width: 100px;" class="text-center">Loading List Qty</th>
-              <th style="width: 100px;" class="text-center">In Stock Qty</th>
-              <th style="width: 120px;" class="text-center">Company Stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php 
-            $sr_no = 1;
-            $ready_subtotal_qty = 0;
-            $ready_subtotal_cbm = 0;
-            foreach ($supplier_data['ready'] as $product) {
+      <table class="compact-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;" class="text-center">Sr No.</th>
+            <th>Product Name</th>
+            <th style="width: 120px;">Model No.</th>
+            <th style="width: 80px;" class="text-center">Type</th>
+            <th style="width: 70px;" class="text-center">Qty</th>
+            <th style="width: 70px;" class="text-right">CBM</th>
+            <th style="width: 90px;" class="text-right">Total CBM</th>
+            <th style="width: 90px;" class="text-center">Pending PO</th>
+            <th style="width: 90px;" class="text-center">Loading PO</th>
+            <th style="width: 90px;" class="text-center">In Stock</th>
+            <th style="width: 100px;" class="text-center">Company Stock</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php 
+          $sr_no = 1;
+          $ready_subtotal_qty = 0;
+          $ready_subtotal_cbm = 0;
+          $spare_subtotal_qty = 0;
+          $spare_subtotal_cbm = 0;
+          
+          foreach ($supplier_all_products as $product) {
+            $is_ready = ($product['product_type'] == 'ready');
+            if ($is_ready) {
               $ready_subtotal_qty += intval($product['quantity']);
               $ready_subtotal_cbm += floatval($product['total_cbm']);
-            ?>
-            <tr>
-              <td class="text-center"><?php echo $sr_no++; ?></td>
-              <td><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
-              <td><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
-              <td class="text-center"><?php echo number_format($product['quantity'], 0); ?></td>
-              <td class="text-right"><?php echo number_format($product['cbm'], 5); ?></td>
-              <td class="text-right"><?php echo number_format($product['total_cbm'], 5); ?></td>
-              <td class="text-center"><?php echo number_format($product['pending_po_qty'] ?? 0, 0); ?></td>
-              <td class="text-center"><?php echo number_format($product['loading_list_qty'] ?? 0, 0); ?></td>
-              <td class="text-center"><?php echo number_format($product['in_stock_qty'] ?? 0, 0); ?></td>
-              <td class="text-center"><?php echo number_format($product['current_company_qty'] ?? 0, 0); ?></td>
-            </tr>
-            <?php } ?>
-            <tr class="totals-row">
-              <td colspan="3" class="text-right"><strong>Subtotal (Ready):</strong></td>
-              <td class="text-center"><strong><?php echo number_format($ready_subtotal_qty, 0); ?></strong></td>
-              <td colspan="1"></td>
-              <td class="text-right"><strong><?php echo number_format($ready_subtotal_cbm, 5); ?></strong></td>
-              <td colspan="4"></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <?php } ?>
-      
-      <!-- Spare Parts Section -->
-      <?php if ($has_spare) { ?>
-      <div class="product-type-section">
-        <div class="product-type-header spare">
-          <i class="fa fa-tool"></i> Spare Part
-        </div>
-        <table class="products-table">
-          <thead>
-            <tr>
-              <th style="width: 50px;">Sr No.</th>
-              <th>Product Name</th>
-              <th style="width: 120px;">Model No.</th>
-              <th style="width: 80px;" class="text-center">Qty</th>
-              <th style="width: 80px;" class="text-right">CBM</th>
-              <th style="width: 100px;" class="text-right">Total CBM</th>
-              <th style="width: 100px;" class="text-center">Pending PO Qty</th>
-              <th style="width: 100px;" class="text-center">Loading List Qty</th>
-              <th style="width: 100px;" class="text-center">In Stock Qty</th>
-              <th style="width: 120px;" class="text-center">Company Stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php 
-            $sr_no = 1;
-            $spare_subtotal_qty = 0;
-            $spare_subtotal_cbm = 0;
-            foreach ($supplier_data['spare'] as $product) {
+            } else {
               $spare_subtotal_qty += intval($product['quantity']);
               $spare_subtotal_cbm += floatval($product['total_cbm']);
-            ?>
-            <tr>
-              <td class="text-center"><?php echo $sr_no++; ?></td>
-              <td><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
-              <td><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
-              <td class="text-center"><?php echo number_format($product['quantity'], 0); ?></td>
-              <td class="text-right"><?php echo number_format($product['cbm'], 5); ?></td>
-              <td class="text-right"><?php echo number_format($product['total_cbm'], 5); ?></td>
-              <td class="text-center"><?php echo number_format($product['pending_po_qty'] ?? 0, 0); ?></td>
-              <td class="text-center"><?php echo number_format($product['loading_list_qty'] ?? 0, 0); ?></td>
-              <td class="text-center"><?php echo number_format($product['in_stock_qty'] ?? 0, 0); ?></td>
-              <td class="text-center"><?php echo number_format($product['current_company_qty'] ?? 0, 0); ?></td>
-            </tr>
-            <?php } ?>
-            <tr class="totals-row">
-              <td colspan="3" class="text-right"><strong>Subtotal (Spare):</strong></td>
-              <td class="text-center"><strong><?php echo number_format($spare_subtotal_qty, 0); ?></strong></td>
-              <td colspan="1"></td>
-              <td class="text-right"><strong><?php echo number_format($spare_subtotal_cbm, 5); ?></strong></td>
-              <td colspan="4"></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <?php } ?>
+            }
+          ?>
+          <tr>
+            <td class="text-center"><?php echo $sr_no++; ?></td>
+            <td><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
+            <td><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
+            <td class="text-center">
+              <?php if ($is_ready) { ?>
+                <span class="badge-ready">Ready</span>
+              <?php } else { ?>
+                <span class="badge-spare">Spare</span>
+              <?php } ?>
+            </td>
+            <td class="text-center"><?php echo number_format($product['quantity'], 0); ?></td>
+            <td class="text-right"><?php echo number_format($product['cbm'], 5); ?></td>
+            <td class="text-right"><?php echo number_format($product['total_cbm'], 5); ?></td>
+            <td class="text-center"><?php echo number_format($product['pending_po_qty'] ?? 0, 0); ?></td>
+            <td class="text-center"><?php echo number_format($product['loading_list_qty'] ?? 0, 0); ?></td>
+            <td class="text-center"><?php echo number_format($product['in_stock_qty'] ?? 0, 0); ?></td>
+            <td class="text-center"><?php echo number_format($product['current_company_qty'] ?? 0, 0); ?></td>
+          </tr>
+          <?php } ?>
+          
+          <?php if ($ready_subtotal_qty > 0) { ?>
+          <tr class="totals-row-bg">
+            <td colspan="4" class="text-right">Subtotal (Ready):</td>
+            <td class="text-center"><?php echo number_format($ready_subtotal_qty, 0); ?></td>
+            <td></td>
+            <td class="text-right"><?php echo number_format($ready_subtotal_cbm, 5); ?></td>
+            <td colspan="4"></td>
+          </tr>
+          <?php } ?>
+          
+          <?php if ($spare_subtotal_qty > 0) { ?>
+          <tr class="totals-row-bg">
+            <td colspan="4" class="text-right">Subtotal (Spare):</td>
+            <td class="text-center"><?php echo number_format($spare_subtotal_qty, 0); ?></td>
+            <td></td>
+            <td class="text-right"><?php echo number_format($spare_subtotal_cbm, 5); ?></td>
+            <td colspan="4"></td>
+          </tr>
+          <?php } ?>
+        </tbody>
+      </table>
     </div>
     <?php } ?>
 
-    <!-- Grand Totals -->
-    <div class="grand-totals-section">
-      <h5><i class="fa fa-calculator"></i> Grand Totals</h5>
-      
-      <div class="row">
-        <div class="col-md-3">
-          <div class="total-card">
-            <div class="total-card-label">Ready Goods Qty</div>
-            <div class="total-card-value ready"><?php echo number_format($total_ready_qty, 0); ?></div>
-          </div>
+    <!-- Grand Totals Bar -->
+    <div class="grand-totals-bar">
+      <div class="totals-grid">
+        <div class="total-block">
+          <div class="total-title">Ready Qty</div>
+          <div class="total-value ready"><?php echo number_format($total_ready_qty, 0); ?></div>
         </div>
-        <div class="col-md-3">
-          <div class="total-card">
-            <div class="total-card-label">Spare Parts Qty</div>
-            <div class="total-card-value spare"><?php echo number_format($total_spare_qty, 0); ?></div>
-          </div>
+        <div class="total-block">
+          <div class="total-title">Ready CBM</div>
+          <div class="total-value ready"><?php echo number_format($total_ready_cbm, 5); ?></div>
         </div>
-        <div class="col-md-3">
-          <div class="total-card">
-            <div class="total-card-label">Ready Goods CBM</div>
-            <div class="total-card-value ready"><?php echo number_format($total_ready_cbm, 5); ?></div>
-          </div>
+        <div class="total-block">
+          <div class="total-title">Spare Qty</div>
+          <div class="total-value spare"><?php echo number_format($total_spare_qty, 0); ?></div>
         </div>
-        <div class="col-md-3">
-          <div class="total-card">
-            <div class="total-card-label">Spare Parts CBM</div>
-            <div class="total-card-value spare"><?php echo number_format($total_spare_cbm, 5); ?></div>
-          </div>
+        <div class="total-block">
+          <div class="total-title">Spare CBM</div>
+          <div class="total-value spare"><?php echo number_format($total_spare_cbm, 5); ?></div>
         </div>
-      </div>
-      
-      <div class="row">
-        <div class="col-md-6">
-          <div class="grand-total-card">
-            <div class="grand-total-card-label">Total Quantity</div>
-            <div class="grand-total-card-value"><?php echo number_format($total_ready_qty + $total_spare_qty, 0); ?></div>
-          </div>
+        <div class="total-block">
+          <div class="total-title">Grand Total Qty</div>
+          <div class="total-value grand"><?php echo number_format($total_ready_qty + $total_spare_qty, 0); ?></div>
         </div>
-        <div class="col-md-6">
-          <div class="grand-total-card">
-            <div class="grand-total-card-label">Total CBM</div>
-            <div class="grand-total-card-value"><?php echo number_format($po_data['total_cbm'] ?? ($total_ready_cbm + $total_spare_cbm), 5); ?></div>
-          </div>
+        <div class="total-block">
+          <div class="total-title">Grand Total CBM</div>
+          <div class="total-value grand"><?php echo number_format($po_data['total_cbm'] ?? ($total_ready_cbm + $total_spare_cbm), 5); ?></div>
         </div>
       </div>
     </div>
   </div>
 </div>
-

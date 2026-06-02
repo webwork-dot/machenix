@@ -61,80 +61,112 @@
     max-width: 1400px !important;
   }
   
-  .po-header-section {
+  .po-meta-container {
     background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    border: 1px solid #dee2e6;
   }
   
-  .po-header-section h5 {
-    margin-bottom: 15px;
-    color: #333;
+  .po-meta-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 20px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #495057;
+  }
+  
+  .po-meta-item strong {
+    color: #212529;
+    margin-right: 4px;
+  }
+  
+  .section-header {
     font-weight: bold;
-  }
-  
-  .po-header-section .row {
-    margin-bottom: 8px;
-  }
-  
-  .po-header-section .label {
-    font-weight: 600;
-    color: #555;
-    min-width: 150px;
-    display: inline-block;
-  }
-  
-  .priority-list-section {
-    margin-bottom: 30px;
-  }
-  
-  .section-title {
-    background-color: #5a79c0;
-    color: white;
-    padding: 12px 15px;
-    font-weight: bold;
-    font-size: 16px;
-    margin-bottom: 0;
-    border-radius: 5px 5px 0 0;
+    font-size: 13px;
+    color: #5a79c0;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 2px;
   }
   
   .table-responsive {
-    max-height: 500px;
+    max-height: 400px;
     overflow-y: auto;
   }
   
-  .priority-table th {
+  .compact-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  
+  .compact-table th {
     position: sticky;
     top: 0;
-    background-color: #fff;
     z-index: 10;
-    background-color: #f8f9fa;
+    background-color: #f1f3f5;
+    color: #495057;
+    padding: 4px 6px;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    text-align: left;
+  }
+  
+  .compact-table td {
+    padding: 4px 6px;
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
+  }
+  
+  .compact-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  
+  .compact-table .text-right {
+    text-align: right;
+  }
+  
+  .compact-table .text-center {
+    text-align: center;
+  }
+  
+  .badge-ready {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  
+  .badge-spare {
+    background-color: #fff3cd;
+    color: #664d03;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  
+  .totals-row-bg {
+    background-color: #f1f3f5 !important;
     font-weight: bold;
   }
-  
-  .totals-row {
-    background-color: #f8f9fa;
-    font-weight: bold;
-  }
-  
-  .remarks-section {
-    margin-top: 30px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-  }
-  
-  .remarks-section h5 {
-    margin-bottom: 10px;
-    color: #333;
-    font-weight: bold;
-  }
-  
-  .remarks-content {
-    color: #555;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+
+  .notes-box {
+    background-color: #fff8e1;
+    border-left: 4px solid #ffb300;
+    padding: 6px 10px;
+    margin-top: 10px;
+    font-size: 11px;
+    border-radius: 0 4px 4px 0;
   }
 </style>
 
@@ -142,87 +174,56 @@
   <div class="col-12">
     
     <!-- PO Header Information -->
-    <div class="po-header-section">
-      <h5>Purchase Order Information</h5>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Batch No:</span> <?php echo $po_data['voucher_no']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Date:</span> <?php echo date('d M, Y', strtotime($po_data['date'])); ?>
-        </div>
+    <div class="po-meta-container">
+      <div class="d-flex flex-wrap">
+        <div class="po-meta-item"><strong>Batch No:</strong> <?php echo $po_data['voucher_no']; ?></div>
+        <div class="po-meta-item"><strong>Date:</strong> <?php echo date('d M, Y', strtotime($po_data['date'])); ?></div>
+        <div class="po-meta-item"><strong>Loading Date:</strong> <?php echo date('d M, Y', strtotime($po_data['delivery_date'])); ?></div>
+        <div class="po-meta-item"><strong>Warehouse:</strong> <?php echo $warehouse['name'] ?? 'N/A'; ?></div>
+        <?php if (!empty($po_data['mode_of_payment'])) { ?>
+          <div class="po-meta-item"><strong>Payment Mode/Terms:</strong> <?php echo $po_data['mode_of_payment']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['dispatch'])) { ?>
+          <div class="po-meta-item"><strong>Dispatch Through:</strong> <?php echo $po_data['dispatch']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['destination'])) { ?>
+          <div class="po-meta-item"><strong>Destination:</strong> <?php echo $po_data['destination']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['other_refrence'])) { ?>
+          <div class="po-meta-item"><strong>Other Ref:</strong> <?php echo $po_data['other_refrence']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['terms_of_delivery'])) { ?>
+          <div class="po-meta-item"><strong>Delivery Terms:</strong> <?php echo $po_data['terms_of_delivery']; ?></div>
+        <?php } ?>
+        <?php if (!empty($po_data['narration'])) { ?>
+          <div class="po-meta-item"><strong>Narration:</strong> <?php echo $po_data['narration']; ?></div>
+        <?php } ?>
+        <div class="po-meta-item w-100 mt-1"><strong>Delivery Address:</strong> <?php echo $po_data['delivery_address'] ?? 'N/A'; ?></div>
       </div>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Loading Date:</span> <?php echo date('d M, Y', strtotime($po_data['delivery_date'])); ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Warehouse:</span> <?php echo $warehouse['name'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Delivery Address:</span> <?php echo $po_data['delivery_address'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php if (!empty($po_data['mode_of_payment'])) { ?>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Mode / Terms of Payment:</span> <?php echo $po_data['mode_of_payment']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Dispatch Through:</span> <?php echo $po_data['dispatch'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php } ?>
-      <?php if (!empty($po_data['destination'])) { ?>
-      <div class="row">
-        <div class="col-md-6">
-          <span class="label">Destination:</span> <?php echo $po_data['destination']; ?>
-        </div>
-        <div class="col-md-6">
-          <span class="label">Other Reference:</span> <?php echo $po_data['other_refrence'] ?? 'N/A'; ?>
-        </div>
-      </div>
-      <?php } ?>
-      <?php if (!empty($po_data['terms_of_delivery'])) { ?>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Terms of Delivery:</span> <?php echo $po_data['terms_of_delivery']; ?>
-        </div>
-      </div>
-      <?php } ?>
-      <?php if (!empty($po_data['narration'])) { ?>
-      <div class="row">
-        <div class="col-md-12">
-          <span class="label">Narration:</span> <?php echo $po_data['narration']; ?>
-        </div>
-      </div>
-      <?php } ?>
     </div>
     
     <!-- Priority List Section -->
-    <div class="priority-list-section">
-      <h4 class="section-title">
+    <div>
+      <div class="section-header">
         <i class="fa fa-list-ul"></i> Priority List
-      </h4>
+      </div>
       <div class="table-responsive">
-        <table class="table table-bordered table-striped priority-table">
+        <table class="compact-table">
           <thead>
             <tr>
-              <th style="width: 50px;">Sr No</th>
+              <th style="width: 50px;" class="text-center">Sr No</th>
               <th style="width: 120px;">Supplier</th>
-              <th style="width: 100px;">Type</th>
-              <th style="width: 150px;">Category</th>
-              <th style="width: 200px;">Product Name</th>
+              <th style="width: 80px;" class="text-center">Type</th>
+              <th style="width: 130px;">Category</th>
+              <th>Product Name</th>
               <th style="width: 100px;">Model No</th>
-              <th style="width: 80px;">Quantity</th>
-              <th style="width: 80px;">CBM</th>
-              <th style="width: 100px;">Total CBM</th>
-              <th style="width: 100px;">Pending PO Qty</th>
-              <th style="width: 100px;">Loading List Qty</th>
-              <th style="width: 100px;">In Stock Qty</th>
-              <th style="width: 120px;">Company Stock</th>
+              <th style="width: 70px;" class="text-center">Qty</th>
+              <th style="width: 70px;" class="text-right">CBM</th>
+              <th style="width: 90px;" class="text-right">Total CBM</th>
+              <th style="width: 90px;" class="text-center">Pending PO</th>
+              <th style="width: 90px;" class="text-center">Loading List</th>
+              <th style="width: 90px;" class="text-center">In Stock</th>
+              <th style="width: 100px;" class="text-center">Company Stock</th>
             </tr>
           </thead>
           <tbody>
@@ -230,12 +231,18 @@
             $sr_no = 1;
             if (!empty($priority_products)) {
               foreach ($priority_products as $product): 
-                $type_label = ($product['product_type'] == 'ready') ? 'Ready Goods' : (($product['product_type'] == 'spare') ? 'Spare Parts' : '');
+                $is_ready = ($product['product_type'] == 'ready');
             ?>
             <tr>
               <td class="text-center"><?php echo $sr_no++; ?></td>
               <td><?php echo htmlspecialchars($product['supplier_name'] ?? 'N/A'); ?></td>
-              <td><?php echo $type_label; ?></td>
+              <td class="text-center">
+                <?php if ($is_ready) { ?>
+                  <span class="badge-ready">Ready</span>
+                <?php } else { ?>
+                  <span class="badge-spare">Spare</span>
+                <?php } ?>
+              </td>
               <td><?php echo htmlspecialchars($product['category_names'] ?? '-'); ?></td>
               <td><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
               <td><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
@@ -255,11 +262,11 @@
               <td colspan="13" class="text-center text-muted">No products in Priority List</td>
             </tr>
             <?php } ?>
-            <tr class="totals-row">
-              <td colspan="6" class="text-right"><strong>Total:</strong></td>
-              <td class="text-center"><strong><?php echo number_format($priority_total_qty, 0); ?></strong></td>
+            <tr class="totals-row-bg">
+              <td colspan="6" class="text-right">Total:</td>
+              <td class="text-center"><?php echo number_format($priority_total_qty, 0); ?></td>
               <td></td>
-              <td class="text-right"><strong><?php echo number_format($priority_total_cbm, 5); ?></strong></td>
+              <td class="text-right"><?php echo number_format($priority_total_cbm, 5); ?></td>
               <td colspan="5"></td>
             </tr>
           </tbody>
@@ -268,40 +275,46 @@
     </div>
 
     <!-- Loading List Section -->
-    <div class="priority-list-section">
-      <h4 class="section-title">
+    <?php if (!empty($loading_products)) { ?>
+    <div style="margin-top: 15px;">
+      <div class="section-header">
         <i class="fa fa-truck"></i> Loading List (2nd Load List, If Space Left)
-      </h4>
+      </div>
       <div class="table-responsive">
-        <table class="table table-bordered table-striped priority-table">
+        <table class="compact-table">
           <thead>
             <tr>
-              <th style="width: 50px;">Sr No</th>
+              <th style="width: 50px;" class="text-center">Sr No</th>
               <th style="width: 120px;">Supplier</th>
-              <th style="width: 100px;">Type</th>
-              <th style="width: 150px;">Category</th>
-              <th style="width: 200px;">Product Name</th>
+              <th style="width: 80px;" class="text-center">Type</th>
+              <th style="width: 130px;">Category</th>
+              <th>Product Name</th>
               <th style="width: 100px;">Model No</th>
-              <th style="width: 80px;">Quantity</th>
-              <th style="width: 80px;">CBM</th>
-              <th style="width: 100px;">Total CBM</th>
-              <th style="width: 100px;">Pending PO Qty</th>
-              <th style="width: 100px;">Loading List Qty</th>
-              <th style="width: 100px;">In Stock Qty</th>
-              <th style="width: 120px;">Company Stock</th>
+              <th style="width: 70px;" class="text-center">Qty</th>
+              <th style="width: 70px;" class="text-right">CBM</th>
+              <th style="width: 90px;" class="text-right">Total CBM</th>
+              <th style="width: 90px;" class="text-center">Pending PO</th>
+              <th style="width: 90px;" class="text-center">Loading List</th>
+              <th style="width: 90px;" class="text-center">In Stock</th>
+              <th style="width: 100px;" class="text-center">Company Stock</th>
             </tr>
           </thead>
           <tbody>
             <?php 
             $sr_no = 1;
-            if (!empty($loading_products)) {
-              foreach ($loading_products as $product): 
-                $type_label = ($product['product_type'] == 'ready') ? 'Ready Goods' : (($product['product_type'] == 'spare') ? 'Spare Parts' : '');
+            foreach ($loading_products as $product): 
+              $is_ready = ($product['product_type'] == 'ready');
             ?>
             <tr>
               <td class="text-center"><?php echo $sr_no++; ?></td>
               <td><?php echo htmlspecialchars($product['supplier_name'] ?? 'N/A'); ?></td>
-              <td><?php echo $type_label; ?></td>
+              <td class="text-center">
+                <?php if ($is_ready) { ?>
+                  <span class="badge-ready">Ready</span>
+                <?php } else { ?>
+                  <span class="badge-spare">Spare</span>
+                <?php } ?>
+              </td>
               <td><?php echo htmlspecialchars($product['category_names'] ?? '-'); ?></td>
               <td><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
               <td><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
@@ -315,32 +328,27 @@
             </tr>
             <?php 
               endforeach;
-            } else {
             ?>
-            <tr>
-              <td colspan="13" class="text-center text-muted">No products in Loading List</td>
-            </tr>
-            <?php } ?>
-            <tr class="totals-row">
-              <td colspan="6" class="text-right"><strong>Total:</strong></td>
-              <td class="text-center"><strong><?php echo number_format($loading_total_qty, 0); ?></strong></td>
+            <tr class="totals-row-bg">
+              <td colspan="6" class="text-right">Total:</td>
+              <td class="text-center"><?php echo number_format($loading_total_qty, 0); ?></td>
               <td></td>
-              <td class="text-right"><strong><?php echo number_format($loading_total_cbm, 5); ?></strong></td>
+              <td class="text-right"><?php echo number_format($loading_total_cbm, 5); ?></td>
               <td colspan="5"></td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+    <?php } ?>
 
     <!-- Remarks Section -->
     <?php if (!empty($po_data['notes'])): ?>
-    <div class="remarks-section">
-      <h5><i class="fa fa-comment"></i> Notes / Remarks</h5>
-      <div class="remarks-content"><?php echo ($po_data['notes']); ?></div>
+    <div class="notes-box">
+      <strong><i class="fa fa-comment"></i> Notes / Remarks:</strong> 
+      <span><?php echo htmlspecialchars($po_data['notes']); ?></span>
     </div>
     <?php endif; ?>
 
   </div>
 </div>
-
