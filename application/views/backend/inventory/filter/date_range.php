@@ -23,6 +23,17 @@
 												</div>
 										</div>
 
+										<?php if ($page_name == 'po_expense') {?>
+											<div class="col-md-3 col-12">
+												<div class="form-group mb-0">   
+													<label>Keywords</label>
+													<div class="form-group">
+														<input name="keywords" class="form-control" placeholder="Keywords" type="keywords" value="<?php if(isset($_GET['keywords'])) { echo $_GET['keywords']; }?>">
+													</div>
+												</div>
+											</div>
+										<?php }?>
+
 										<?php if ($page_name == 'purchase_reports') {?>
 												<div class="col-md-3 col-12">
 												<div class="form-group mb-0">   

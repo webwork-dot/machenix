@@ -8,6 +8,7 @@
     position: relative;
     background: #fff;
   }
+  
   .form-fieldset legend{
     float: none;
     width: auto;
@@ -176,12 +177,9 @@
               <div class="form-group">
                 <label>
                   Owner Email 
-                  <?php if($navigation != 'leads'){ ?>
-                    <span class="required">*</span>
-                  <?php } ?>
                 </label>
                 <input type="email" class="form-control" placeholder="Enter Owner Email" name="owner_email"
-                  value="<?php echo $data['owner_email'] ?? ''; ?>" <?php if($navigation != 'leads'){ echo 'required'; }?> >
+                  value="<?php echo $data['owner_email'] ?? ''; ?>" >
               </div>
             </div>
 
@@ -346,35 +344,35 @@
           res.data.forEach(item => {
             html += `<option value="${item.id}">${item.name}</option>`;
           });
-          $('#staff_id').html(html);
 
+          $('#staff_id').html(html);
         }
       }
     });
   }
 
   $(document).ready(function () {
-      $(document).on('focus', '#staff_id + .select2 .select2-selection', function () {
-         $('#staff_id').select2('open');
-      });
-      $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
-         $('.state_id').select2('open');
-      });
-      $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
-         $('.city_id').select2('open');
-      });
-      
-      $(document).on('keydown', function(e) {
-         if (e.key === 'Tab') {
-            setTimeout(function () {
-               let el = document.activeElement;
-               let container = $(el).closest('.select2-container');
+    $(document).on('focus', '#staff_id + .select2 .select2-selection', function () {
+      $('#staff_id').select2('open');
+    });
+    $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
+      $('.state_id').select2('open');
+    });
+    $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
+      $('.city_id').select2('open');
+    });
+    
+    $(document).on('keydown', function(e) {
+      if (e.key === 'Tab') {
+        setTimeout(function () {
+          let el = document.activeElement;
+          let container = $(el).closest('.select2-container');
 
-               if (container.length && container.prev('select').hasClass('company_id')) {
-                  container.prev('select').select2('open');
-               }
-            }, 0);
-         }
-      });
-   });
+          if (container.length && container.prev('select').hasClass('company_id')) {
+            container.prev('select').select2('open');
+          }
+        }, 0);
+      }
+    });
+  });
 </script>

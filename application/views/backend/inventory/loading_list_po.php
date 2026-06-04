@@ -130,10 +130,10 @@ $(document).ready(function($) {
         "data": "lo_suppliers"
       },
       {
-        "data": "ll_spare_parts_count"
+        "data": "ll_ready_goods_count"
       },
       {
-        "data": "ll_ready_goods_count"
+        "data": "ll_spare_parts_count"
       },
       {
         "data": "loading_qty"

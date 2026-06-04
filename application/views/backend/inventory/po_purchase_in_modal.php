@@ -274,7 +274,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                             $duty_surcharge = round($duty_amt * 0.10, 1);
                                             $taxable_value = $official_total_rs + $duty_amt + $duty_surcharge;
                                             $gst_amt = round($taxable_value * 0.18, 1);
-                                            $total_amt = $taxable_value + $gst_amt;
+                                            $total_amt = $duty_amt + $duty_surcharge + $gst_amt;
                                         }
 
                                         // Derived Totals
@@ -845,7 +845,7 @@ function recalcOfficialAndTotals($row) {
     dutySurcharge = customRound(dutyAmt * 0.10);
     taxableValue = officialTotal + dutyAmt + dutySurcharge;
     gstAmt = customRound(taxableValue * 0.18);
-    totalAmt = taxableValue + gstAmt;
+    totalAmt = dutyAmt + dutySurcharge + gstAmt;
   }
 
   setNum($row.find('.official-rate'), unitInr, 2);
@@ -904,7 +904,7 @@ function calculateDutyChrg(el) {
   var dutySurcharge = customRound(dutyAmt * 0.10);
   var taxableValue = officialTotal + dutyAmt + dutySurcharge;
   var gstAmt = customRound(taxableValue * 0.18);
-  var totalAmt = taxableValue + gstAmt;
+  var totalAmt = dutyAmt + dutySurcharge + gstAmt;
 
   setNum($row.find('.duty-surcharge'), dutySurcharge, 1);
   setNum($row.find('.taxable-value'), taxableValue, 2);
@@ -923,7 +923,7 @@ function calculateDutySur(el) {
 
   var taxableValue = officialTotal + dutyAmt + dutySurcharge;
   var gstAmt = customRound(taxableValue * 0.18);
-  var totalAmt = taxableValue + gstAmt;
+  var totalAmt = dutyAmt + dutySurcharge + gstAmt;
 
   setNum($row.find('.taxable-value'), taxableValue, 2);
   setNum($row.find('.gst-amt'), gstAmt, 1);
@@ -935,9 +935,10 @@ function calculateDutySur(el) {
 function calculateGST(el) {
   var $row = getRow(el);
 
-  var taxableValue = toNum($row.find('.taxable-value').val());
+  var dutyAmt = toNum($row.find('.duty-amt').val());
+  var dutySurcharge = toNum($row.find('.duty-surcharge').val());
   var gstAmt = toNum($row.find('.gst-amt').val());
-  var totalAmt = taxableValue + gstAmt;
+  var totalAmt = dutyAmt + dutySurcharge + gstAmt;
 
   setNum($row.find('.total-amt'), totalAmt, 2);
   updateTableTotals($row.closest('table'));

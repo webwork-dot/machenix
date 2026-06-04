@@ -85,17 +85,21 @@
   </div>
 </div>
 
+<?php 
+$hide_paging = (isset($_GET['keywords']) && $_GET['keywords'] !== '') || (isset($_GET['date_range']) && $_GET['date_range'] !== '');
+?>
 <script type="text/javascript">
 $(document).ready(function($) {
   var dataTable = $('#report-datatable').DataTable({
-    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6">>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
     "sDom": 'rt<"dtPagination"lp><"clear">',
     "pagingType": "simple_numbers",
+    "paging": <?php echo $hide_paging ? 'false' : 'true'; ?>,
     "processing": true,
     'scrollX': true,
     "serverSide": true,
-    "lengthChange": true,
+    "lengthChange": <?php echo $hide_paging ? 'false' : 'true'; ?>,
     "language": {
       sLengthMenu: "_MENU_",
       'processing': $('.loader').show()
@@ -110,6 +114,7 @@ $(document).ready(function($) {
       "type": "POST",
       "data": function(data) {
         data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+        data.keywords = '<?php echo (isset($_GET['keywords'])) ? $_GET['keywords']:'' ?>';
       },
       "beforeSend": function() {
         $('.loader').show();
@@ -147,8 +152,10 @@ $(document).ready(function($) {
 
     "infoCallback": function(settings, start, end, max, total, pre) {
       $(".loader").fadeOut("slow");
-      $('#total_count').html('(' + total + ')');
-      return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
+      var actualTotal = total > 0 ? total - 1 : 0;
+      var actualEnd = end > 0 ? end - 1 : 0;
+      $('#total_count').html('(' + actualTotal + ')');
+      return 'Showing ' + start + ' to ' + actualEnd + ' of ' + actualTotal + ' entries';
     },
 
     'columnDefs': [{

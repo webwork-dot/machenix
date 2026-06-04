@@ -704,7 +704,6 @@ class Inventory extends CI_Controller
             $page_data['lists'] = ($data != '') ? $data : [];
             $page_data['id'] = $param2;
 
-
             $page_data['navigation']  = 'import_purchase_order';
             $page_data['type']      = 'import';
 

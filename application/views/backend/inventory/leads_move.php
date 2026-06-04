@@ -173,10 +173,10 @@
             <div class="col-12 col-sm-3 mb-1">
               <div class="form-group">
                 <label>
-                  Owner Email <span class="required">*</span>
+                  Owner Email 
                 </label>
                 <input type="email" class="form-control" placeholder="Enter Owner Email" name="owner_email"
-                  value="<?php echo $data['owner_email'] ?? ''; ?>" required>
+                  value="<?php echo $data['owner_email'] ?? ''; ?>" >
               </div>
             </div>
 

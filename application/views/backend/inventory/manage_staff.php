@@ -9,13 +9,12 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
 
 <style>
-.table-error td{
-	background: #febdb9;
-    color: #3c3a3a;
-    font-weight: 600 !important;
-}
-</style>
-<style>
+    .table-error td{
+        background: #febdb9;
+        color: #3c3a3a;
+        font-weight: 600 !important;
+    }
+
 	.fixedElement{
 		background : white;
 		border-radius: .428rem;
@@ -45,28 +44,26 @@
 
 <div class="row" id="table-bordered">
 
-	
-	
    <div class="col-12">
       <div class="card">
-         <div class="card-body">
+        <div class="card-body">
             <div class="row">
                <div class="col-md-12 mt-10">
                   <h5 class="mb-0"><b>Total Staff Management<span id="total_count"> (0)</span></b>
 				  </h5>
                </div>
             </div>
-         </div>
+        </div>
         <div class="card-datatable d-report mb-2">
 		       
 		   <a href="<?php echo site_url('inventory/staff/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_staff');?></span></a>          
      
-          <table class="table leads-table" id="report-datatable">
+            <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
                     <th>#</th>
                     <th>Name</th>
-                    <th>Designation</th>
+                    <th>Staff Type</th>
                     <th>Email</th>
                     <th>Mobile No.</th>
                     <th>Action</th>
@@ -115,7 +112,7 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "name" },
-                { "data": "designation" },
+                { "data": "staff_type" },
                 { "data": "email" },
                 { "data": "phone" },
                 { "data": "action" },
@@ -137,7 +134,7 @@
                        "columns": [0,1,2,3,4,5,6]
                     }
                 }
-            ], 
+            ],
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
                 $(".loader").fadeOut("slow"); 
@@ -145,9 +142,9 @@
                 return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
             }, 
 			createdRow: function (row, data, index) {
-                   if(data['error']=='1'){
+                if(data['error']=='1'){
                     $(row).addClass('table-error');
-                   }
+                }
             },
            
             'columnDefs': [
@@ -155,7 +152,7 @@
                     "targets": 0, // your case first column
                     "className": "text-center",
                 },
-            ] 
+            ]
             
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 

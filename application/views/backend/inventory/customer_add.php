@@ -149,11 +149,8 @@
               <div class="form-group">
                 <label>
                   Owner Email 
-                  <?php if($navigation != 'leads'){ ?>
-                    <span class="required">*</span>
-                  <?php } ?>
                 </label>
-                <input type="email" class="form-control" placeholder="Enter Owner Email" name="owner_email" <?php if($navigation != 'leads'){ echo 'required'; }?> >
+                <input type="email" class="form-control" placeholder="Enter Owner Email" name="owner_email" >
               </div>
             </div>
 
@@ -362,27 +359,27 @@
   }
 
   $(document).ready(function () {
-      $(document).on('focus', '#staff_id + .select2 .select2-selection', function () {
-         $('#staff_id').select2('open');
-      });
-      $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
-         $('.state_id').select2('open');
-      });
-      $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
-         $('.city_id').select2('open');
-      });
-      
-      $(document).on('keydown', function(e) {
-         if (e.key === 'Tab') {
-            setTimeout(function () {
-               let el = document.activeElement;
-               let container = $(el).closest('.select2-container');
+    $(document).on('focus', '#staff_id + .select2 .select2-selection', function () {
+      $('#staff_id').select2('open');
+    });
+    $(document).on('focus', '.state_id + .select2 .select2-selection', function () {
+      $('.state_id').select2('open');
+    });
+    $(document).on('focus', '.city_id + .select2 .select2-selection', function () {
+      $('.city_id').select2('open');
+    });
+    
+    $(document).on('keydown', function(e) {
+      if (e.key === 'Tab') {
+        setTimeout(function () {
+          let el = document.activeElement;
+          let container = $(el).closest('.select2-container');
 
-               if (container.length && container.prev('select').hasClass('company_id')) {
-                  container.prev('select').select2('open');
-               }
-            }, 0);
-         }
-      });
-   });
+          if (container.length && container.prev('select').hasClass('company_id')) {
+            container.prev('select').select2('open');
+          }
+        }, 0);
+      }
+    });
+  });
 </script>

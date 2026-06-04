@@ -7790,7 +7790,7 @@ class Inventory_model extends CI_Model
 		$resultpost = array(
 			"status"  => 200,
 			"message" => get_phrase($type . '_updated_successfully'),
-			"url"     => $this->agent->referrer(),
+			"url"     => base_url('inventory/customer'),
 		);
 
 		return simple_json_output($resultpost);
@@ -13530,15 +13530,20 @@ class Inventory_model extends CI_Model
 	public function get_po_expense()
 	{
 		$params['draw'] = $_REQUEST['draw'];
-		$start = $_REQUEST['start'];
-		$length = $_REQUEST['length'];
+		$start = isset($_REQUEST['start']) ? intval($_REQUEST['start']) : 0;
+		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
 
-		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
-			$keyword = $filter_data['keywords'];
+		// if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+		// 	$keyword = $filter_data['keywords'];
+		// 	$keyword_filter = " AND (batch_no LIKE '%" . $keyword . "%')";
+		// }
+
+		if (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") {
+			$keyword = $_REQUEST['keywords'];
 			$keyword_filter = " AND (batch_no LIKE '%" . $keyword . "%')";
 		}
 
@@ -13553,13 +13558,26 @@ class Inventory_model extends CI_Model
 		$company_id = $this->session->userdata('company_id');
 
 		$total_count = $this->db->query("SELECT id FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter)->num_rows();
-		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		
+		$is_filtered = (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") || (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "");
+		$limit_clause = $is_filtered ? "" : " LIMIT $start, $length";
+
+		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC" . $limit_clause);
 
 		if (!empty($query)) {
 			$sr_no = $start;
+			$total_expense = 0;
+			$total_sub_total = 0;
+			$total_gst_total = 0;
+			$has_rows = false;
 			foreach ($query->result_array() as $item) {
+				$has_rows = true;
 				$company_name = $this->common_model->selectByidsParam(['id' => $item['vendor_id']], 'my_companies', 'name');
 				$expense_type = $this->common_model->selectByidsParam(['id' => $item['expense_type']], 'expense_type', 'name');
+
+				$total_expense += (float)$item['grand_total'];
+				$total_sub_total += (float)$item['sub_total'];
+				$total_gst_total += (float)$item['gst_total'];
 
 				$actions = '';
 				$actions .= '<a href="' . base_url() . 'inventory/po-expense/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
@@ -13576,6 +13594,21 @@ class Inventory_model extends CI_Model
 					"expense_type"		=> ($expense_type) ? $expense_type : '-',
 					"date"          	=> $item['expense_date'] ? date('d M, Y', strtotime($item['expense_date'])) : '-',
 					"action"					=> $actions,
+				);
+			}
+
+			if ($has_rows) {
+				$data[] = array(
+					"sr_no"         	=> "<b>Total</b>",
+					"batch_no"      	=> "",
+					"company_name"  	=> "",
+					"sub_total"       => "<b>" . number_format($total_sub_total, 2) . "</b>",
+					"gst_total"       => "<b>" . number_format($total_gst_total, 2) . "</b>",
+					"amount"        	=> "<b>" . number_format($total_expense, 2) . "</b>",
+					"type"						=> "",
+					"expense_type"		=> "",
+					"date"          	=> "",
+					"action"					=> "",
 				);
 			}
 		}
@@ -14085,7 +14118,7 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 		$keyword_filter .= " AND id!= 4 ";
 
 		$total_count = $this->db->query("Select id,is_deleted FROM sys_users WHERE (id<>'') and is_deleted ='0' $keyword_filter ORDER BY id desc")->num_rows();
-		$query = $this->db->query("SELECT id, first_name, last_name, email, phone, designation, status FROM sys_users WHERE (id<>'') and is_deleted='0' $keyword_filter ORDER BY id desc LIMIT $start,$length");
+		$query = $this->db->query("SELECT id, first_name, last_name, email, phone, staff_access, status FROM sys_users WHERE (id<>'') and is_deleted='0' $keyword_filter ORDER BY id desc LIMIT $start,$length");
 		//echo $this->db->last_query();
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -14094,11 +14127,20 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 				$edit_url = base_url() . 'inventory/staff/edit/' . $id;
 				$delete_url = "confirm_modal('" . base_url() . "inventory/manage_staff/delete/" . $id . "','Are you sure want to delete!')";
 				$pass_url = base_url() . 'inventory/staff_form/change_password/' . $id;
+				$view_url = "showAjaxModal('" . base_url() . "modal/popup/modal_view_staff/" . $id . "', 'Staff Details')";
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+				$action .= '<a href="#" onclick="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
+				<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
 				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
 				<a href="' . $pass_url . '" data-toggle="tooltip" data-bs-placement="top" title="Change Password"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
 				';
+
+				$staff_access_id = $item['staff_access'];
+				$staff_type_name = '-';
+				if (!empty($staff_access_id)) {
+					$access = $this->db->get_where('access', ['id' => $staff_access_id])->row_array();
+					$staff_type_name = $access['name'] ?? '-';
+				}
 
 				$data[] = array(
 					"sr_no" => (++$start),
@@ -14106,7 +14148,7 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 					"name"    => $item['first_name'] . ' ' . $item['last_name'],
 					"phone"  => $item['phone'],
 					"email"   => $item['email'],
-					"designation"   => ($item['designation'] != '' || $item['designation'] != null) ? $item['designation'] : '-',
+					"staff_type"   => $staff_type_name,
 					"status"   => $item['status'],
 					"action"        => $action,
 				);
