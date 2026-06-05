@@ -4,22 +4,16 @@
       <div class="card-body py-1 my-0">
         <?php echo form_open('inventory/other_charges/edit_post/'.$id, ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>  
           <div class="row">
-            <div class="col-12 col-sm-4 mb-1">
+            <div class="col-12 col-sm-6 mb-1">
               <div class="form-group">
                 <label>Charge Name <span class="required">*</span></label>
                 <input type="text" class="form-control" placeholder="Enter Charge Name" name="name" required="" value="<?php echo isset($data['name']) ? $data['name'] : ''; ?>">
               </div>
             </div>
-            <div class="col-12 col-sm-4 mb-1">
+            <div class="col-12 col-sm-6 mb-1">
               <div class="form-group">
                 <label>GST (%) <span class="required">*</span></label>
                 <input type="number" step="0.01" class="form-control" placeholder="Enter GST %" name="gst" required="" value="<?php echo isset($data['gst']) ? $data['gst'] : ''; ?>">
-              </div>
-            </div>
-            <div class="col-12 col-sm-4 mb-1">
-              <div class="form-group">
-                <label>Amount <span class="required">*</span></label>
-                <input type="number" step="0.01" class="form-control" placeholder="Enter Amount" name="price" required="" value="<?php echo isset($data['price']) ? $data['price'] : ''; ?>">
               </div>
             </div>
             <div class="col-12">

@@ -167,7 +167,7 @@
 							<option value="">Select Customer </option>
 							<?php foreach ($customer_list as $item) { ?>
 								<option value="<?php echo $item['id']; ?>" <?php echo $data['customer_id'] == $item['id'] ? 'selected' : ''; ?>>
-									<?php echo $item['owner_name']; ?>
+									<?php echo $item['company_name']; ?>
 								</option>
 							<?php } ?>
 						</select>
@@ -200,8 +200,8 @@
 						<div class="row">
 							<h6 class="mb-1">Shipping Address</h6>
 							<div class="col-4 mb-1">
-								<label class="form-label" for="shipping_state_id">Select State <span class="required">*</span></label>
-								<select class="form-select select2 shipping_state_id" name="shipping_state_id" id="shipping_state_id" onchange="get_shipping_city(this.value);" required>
+								<label class="form-label" for="shipping_state_id">Select State</label>
+								<select class="form-select select2 shipping_state_id" name="shipping_state_id" id="shipping_state_id" onchange="get_shipping_city(this.value);">
 									<option value="">Select State</option>
 									<?php foreach($states as $state){?>
 									<option value="<?php echo $state['id'];?>" <?php if($data['shipping_state_id'] == $state['id']) echo 'selected'; ?>><?php echo $state['name'];?></option>
@@ -209,21 +209,33 @@
 								</select>
 							</div>
 							<div class="col-4 mb-1">
-								<label class="form-label" for="shipping_city_id">Select City <span class="required">*</span></label>
-								<select class="form-select select2 shipping_city_id" name="shipping_city_id" id="shipping_city_id" required>
+								<label class="form-label" for="shipping_city_id">Select City</label>
+								<select class="form-select select2 shipping_city_id" name="shipping_city_id" id="shipping_city_id">
 									<option value="">Select City</option>
 								</select>
 							</div>
 							<div class="col-4 mb-1">
 								<div class="form-group">
-									<label>Pincode <span class="required">*</span></label>
-									<input type="text" class="form-control" placeholder="Pincode" name="shipping_pincode" id="shipping_pincode" value="<?php echo $data['shipping_pincode'];?>" required>
+									<label>Pincode</label>
+									<input type="text" class="form-control" placeholder="Pincode" name="shipping_pincode" id="shipping_pincode" value="<?php echo $data['shipping_pincode'];?>">
+								</div>
+							</div>
+							<div class="col-6 mb-1">
+								<div class="form-group">
+									<label>GST Name</label>
+									<input type="text" class="form-control" placeholder="GST Name" name="shipping_gst" id="shipping_gst" value="<?php echo isset($data['shipping_gst']) ? htmlspecialchars($data['shipping_gst']) : ''; ?>">
+								</div>
+							</div>
+							<div class="col-6 mb-1">
+								<div class="form-group">
+									<label>GST No</label>
+									<input type="text" class="form-control" placeholder="GST No" name="shipping_gst_no" id="shipping_gst_no" value="<?php echo isset($data['shipping_gst_no']) ? htmlspecialchars($data['shipping_gst_no']) : ''; ?>">
 								</div>
 							</div>
 							<div class="col-12 mb-1">
 								<div class="form-group">
-									<label>Address <span class="required">*</span></label>
-									<textarea class="form-control" placeholder="Shipping Address" rows="2" name="shipping_address" id="shipping_address" required><?php echo $data['shipping_address'];?></textarea>
+									<label>Address</label>
+									<textarea class="form-control" placeholder="Shipping Address" rows="2" name="shipping_address" id="shipping_address"><?php echo $data['shipping_address'];?></textarea>
 								</div>
 							</div>
 						</div>
@@ -233,8 +245,8 @@
 						<div class="row">
 							<h6 class="mb-1">Billing Address</h6>
 							<div class="col-4 mb-1">
-								<label class="form-label" for="billing_state_id">Select State <span class="required">*</span></label>
-								<select class="form-select select2 billing_state_id" name="billing_state_id" id="billing_state_id" onchange="get_billing_city(this.value);" required>
+								<label class="form-label" for="billing_state_id">Select State</label>
+								<select class="form-select select2 billing_state_id" name="billing_state_id" id="billing_state_id" onchange="get_billing_city(this.value);">
 									<option value="">Select State</option>
 									<?php foreach($states as $state){?>
 									<option value="<?php echo $state['id'];?>" <?php if($data['billing_state_id'] == $state['id']) echo 'selected'; ?>><?php echo $state['name'];?></option>
@@ -242,21 +254,33 @@
 								</select>
 							</div>
 							<div class="col-4 mb-1">
-								<label class="form-label" for="billing_city_id">Select City <span class="required">*</span></label>
-								<select class="form-select select2 billing_city_id" name="billing_city_id" id="billing_city_id" required>
+								<label class="form-label" for="billing_city_id">Select City</label>
+								<select class="form-select select2 billing_city_id" name="billing_city_id" id="billing_city_id">
 									<option value="">Select City</option>
 								</select>
 							</div>
 							<div class="col-4 mb-1">
 								<div class="form-group">
-									<label>Pincode <span class="required">*</span></label>
-									<input type="text" class="form-control" placeholder="Pincode" name="billing_pincode" id="billing_pincode" value="<?php echo $data['billing_pincode'];?>" required>
+									<label>Pincode</label>
+									<input type="text" class="form-control" placeholder="Pincode" name="billing_pincode" id="billing_pincode" value="<?php echo $data['billing_pincode'];?>">
+								</div>
+							</div>
+							<div class="col-6 mb-1">
+								<div class="form-group">
+									<label>GST Name</label>
+									<input type="text" class="form-control" placeholder="GST Name" name="billing_gst" id="billing_gst" value="<?php echo isset($data['billing_gst']) ? htmlspecialchars($data['billing_gst']) : ''; ?>">
+								</div>
+							</div>
+							<div class="col-6 mb-1">
+								<div class="form-group">
+									<label>GST No</label>
+									<input type="text" class="form-control" placeholder="GST No" name="billing_gst_no" id="billing_gst_no" value="<?php echo isset($data['billing_gst_no']) ? htmlspecialchars($data['billing_gst_no']) : ''; ?>">
 								</div>
 							</div>
 							<div class="col-12 mb-1">
 								<div class="form-group">
-									<label>Address <span class="required">*</span></label>
-									<textarea class="form-control" placeholder="Billing Address" rows="2" name="billing_address" id="billing_address" required><?php echo $data['billing_address'];?></textarea>
+									<label>Address</label>
+									<textarea class="form-control" placeholder="Billing Address" rows="2" name="billing_address" id="billing_address"><?php echo $data['billing_address'];?></textarea>
 								</div>
 							</div>
 						</div>
@@ -839,7 +863,7 @@ function clearAllBatches() {
 	recalculate();
 }
 
-function showPriceHistory(index) {
+function showPriceHistory(index, batch_index) {
 	var customer_id = $('[name="customer_id"]').val();
 	var product_id = $('[name="product_id[]"]').eq(index - 1).val();
 
@@ -856,11 +880,48 @@ function showPriceHistory(index) {
 			product_id: product_id
 		},
 		success: function(res) {
+			$('#priceHistoryModal').data('row-index', index);
+			$('#priceHistoryModal').data('batch-index', batch_index);
 			$('#priceHistoryModalContent').html(res);
 			$('#priceHistoryModal').modal('show');
 		}
 	});
 }
+
+$(document).on('click', '#priceHistoryModal .apply-price-btn', function() {
+	var price = $(this).data('price');
+	var index = $('#priceHistoryModal').data('row-index');
+	var batch_index = $('#priceHistoryModal').data('batch-index');
+	if (index && batch_index) {
+		var rate_el = $('#batch_rate_' + index + '_' + batch_index);
+		rate_el.val(price);
+		calculate_batch_amt(rate_el, index);
+		$('#priceHistoryModal').modal('hide');
+	}
+});
+
+// History button: open modal on Enter key
+$(document).on('keydown', '.price-history-btn', function(e) {
+	if (e.key === 'Enter') {
+		e.preventDefault();
+		var idx = $(this).data('row-index');
+		var bidx = $(this).data('batch-index');
+		showPriceHistory(idx, bidx);
+	}
+});
+
+// Modal opened: focus first Apply button
+$('#priceHistoryModal').on('shown.bs.modal', function() {
+	var firstBtn = $(this).find('.apply-price-btn').first();
+	if (firstBtn.length) { firstBtn.focus(); }
+});
+
+// Modal closed: return focus to Per Qty Bill (batch bill amount) input
+$('#priceHistoryModal').on('hidden.bs.modal', function() {
+	var index = $(this).data('row-index');
+	var batch_index = $(this).data('batch-index');
+	if (index && batch_index) { $('#batch_bill_amount_' + index + '_' + batch_index).focus(); }
+});
 
 function addBatch(index) {
 	var warehouse_id = $('#warehouse_id').val();
@@ -913,7 +974,7 @@ function addBatch(index) {
 			<td>
 				<div class="input-group">
 					<input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
-					<span class="input-group-text p-0" style="cursor:pointer" onclick="showPriceHistory('${index}')"><i class="fa fa-history px-1"></i></span>
+					<span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="${index}" data-batch-index="${batch_index}" onclick="showPriceHistory('${index}', '${batch_index}')"><i class="fa fa-history px-1"></i></span>
 				</div>
 			</td>
 			<td>

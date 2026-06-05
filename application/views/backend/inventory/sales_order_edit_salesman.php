@@ -702,17 +702,19 @@
 
     function get_details_by_product(product_id, index, skipPriceUpdate = false) {
         var company_id = $('[name="company_id"]').val();
+        var customer_id = $('#customer_id').val();
         if(!product_id) return;
 
         $.ajax({
             type: "POST",
             url: "<?php echo base_url()?>inventory/get_qty_by_product_company",
-            data: { company_id: company_id, product_id: product_id },
+            data: { company_id: company_id, product_id: product_id, customer_id: customer_id },
+            dataType: "json",
             success: function(res) {
                 if(res.status == 200) {
                     $('#available_' + index).val(res.quantity);
                     if (!skipPriceUpdate) {
-                        $('#gst_' + index).val(res.tax);
+                        $('#gst_' + index).val(res.tax ? parseFloat(res.tax) : 0);
                         $('#master_amount_' + index).val(res.rate);
                         calculate_amt(index);
                     }

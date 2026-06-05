@@ -981,9 +981,9 @@ class Inventory_model extends CI_Model
 
 		$name   = clean_and_escape($this->input->post('name'));
 		$gst    = clean_and_escape($this->input->post('gst'));
-		$price  = clean_and_escape($this->input->post('price'));
+		$price  = 0;
 
-		if ($name == '' || $gst == '' || $price == '') {
+		if ($name == '' || $gst == '') {
 			$this->session->set_flashdata('error_message', 'All fields are required');
 			$resultpost = array(
 				"status"  => 400,
@@ -1032,10 +1032,10 @@ class Inventory_model extends CI_Model
 
 		$name   = clean_and_escape($this->input->post('name'));
 		$gst    = clean_and_escape($this->input->post('gst'));
-		$price  = clean_and_escape($this->input->post('price'));
+		$price  = 0;
 		$id     = (int) $id;
 
-		if ($name == '' || $gst == '' || $price == '') {
+		if ($name == '' || $gst == '') {
 			$this->session->set_flashdata('error_message', 'All fields are required');
 			$resultpost = array(
 				"status"  => 400,
@@ -5742,7 +5742,7 @@ class Inventory_model extends CI_Model
 		}
 	}
 
-	public function get_qty_by_product_company($product_id)
+	public function get_qty_by_product_company($product_id, $customer_id = '')
 	{
 		$product = $this->common_model->getRowById('raw_products', '*', ['id' => $product_id]);
 		if (empty($product)) {
@@ -5755,21 +5755,28 @@ class Inventory_model extends CI_Model
 		$query = $this->db->query("SELECT IFNULL(SUM(quantity), 0) as total_qty FROM inventory WHERE product_id='$product_id'");
 		
 		$item = $query->row_array();
-		$rate = $product['rate'] ?? 0;
 		$gst = $product['gst'] ?? 0;
+
+		$latest_price = 0;
+		if ($customer_id != '') {
+			$price_query = $this->db->query("SELECT amount FROM sales_order_product sop JOIN sales_order so ON so.id = sop.order_id WHERE so.customer_id = '$customer_id' AND sop.product_id = '$product_id' ORDER BY sop.id DESC LIMIT 1");
+			if ($price_query->num_rows() > 0) {
+				$latest_price = $price_query->row()->amount;
+			}
+		}
 
 		return array(
 			'status' => 200,
 			'message' => 'success',
 			"quantity" => $item['total_qty'] ?? 0,
 			"tax" => $gst,
-			"rate" => $rate,
+			"rate" => $latest_price,
 		);
 	}
 
 	public function get_last_price_history($customer_id, $product_id)
 	{
-		$query = $this->db->query("SELECT (white_amount / qty) as last_price, order_id, qty, (SELECT date FROM sales_order WHERE id = order_id) as order_date FROM sales_order_product sop JOIN sales_order so ON so.id = sop.order_id WHERE so.customer_id = '$customer_id' AND sop.product_id = '$product_id' ORDER BY sop.id DESC LIMIT 5");
+		$query = $this->db->query("SELECT amount as last_price, order_id, qty, (SELECT date FROM sales_order WHERE id = order_id) as order_date FROM sales_order_product sop JOIN sales_order so ON so.id = sop.order_id WHERE so.customer_id = '$customer_id' AND sop.product_id = '$product_id' ORDER BY sop.id DESC LIMIT 5");
 		return $query->result_array();
 	}
 
@@ -7536,6 +7543,7 @@ class Inventory_model extends CI_Model
 			"pincode"        => $pincode_digits,
 			"gst_name"       => $gst_name,
 			"gst_no"         => $gst_no,
+			"outstanding"    => ($this->input->post('outstanding') != '') ? clean_and_escape($this->input->post('outstanding')) : 0.00,
 
 			"owner_name"     => $owner_name,
 			"owner_email"		 => $owner_email,
@@ -7733,6 +7741,7 @@ class Inventory_model extends CI_Model
 			"pincode"        => $pincode_digits,
 			"gst_name"       => $gst_name,
 			"gst_no"         => $gst_no,
+			"outstanding"    => ($this->input->post('outstanding') != '') ? clean_and_escape($this->input->post('outstanding')) : 0.00,
 
 			"owner_name"     => $owner_name,
 			"owner_email"    => $owner_email,
@@ -8546,11 +8555,15 @@ class Inventory_model extends CI_Model
 			$shipping_state_id = $this->input->post('shipping_state_id');
 			$shipping_city_id  = $this->input->post('shipping_city_id');
 			$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+			$shipping_gst      = clean_and_escape($this->input->post('shipping_gst'));
+			$shipping_gst_no   = clean_and_escape($this->input->post('shipping_gst_no'));
 			$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
 
 			$billing_state_id  = $this->input->post('billing_state_id');
 			$billing_city_id   = $this->input->post('billing_city_id');
 			$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+			$billing_gst       = clean_and_escape($this->input->post('billing_gst'));
+			$billing_gst_no    = clean_and_escape($this->input->post('billing_gst_no'));
 			$billing_address   = clean_and_escape($this->input->post('billing_address'));
 
 			$data['shipping_state_id']   = $shipping_state_id;
@@ -8558,6 +8571,8 @@ class Inventory_model extends CI_Model
 			$data['shipping_city_id']    = $shipping_city_id;
 			$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
 			$data['shipping_pincode']    = $shipping_pincode;
+			$data['shipping_gst']        = $shipping_gst;
+			$data['shipping_gst_no']     = $shipping_gst_no;
 			$data['shipping_address']    = $shipping_address;
 
 			$data['billing_state_id']    = $billing_state_id;
@@ -8565,6 +8580,8 @@ class Inventory_model extends CI_Model
 			$data['billing_city_id']     = $billing_city_id;
 			$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
 			$data['billing_pincode']     = $billing_pincode;
+			$data['billing_gst']         = $billing_gst;
+			$data['billing_gst_no']      = $billing_gst_no;
 			$data['billing_address']     = $billing_address;
 
 			$this->db->where('id', $id)->update('sales_order', $data);
@@ -8804,7 +8821,7 @@ class Inventory_model extends CI_Model
 
 			$customer_id = $this->input->post('customer_id');
 			if ($customer_id != '') {
-				$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'owner_name');
+				$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
 			} else {
 				$customer_name = '';
 			}
@@ -8859,11 +8876,15 @@ class Inventory_model extends CI_Model
 			$shipping_state_id = $this->input->post('shipping_state_id');
 			$shipping_city_id  = $this->input->post('shipping_city_id');
 			$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+			$shipping_gst      = clean_and_escape($this->input->post('shipping_gst'));
+			$shipping_gst_no   = clean_and_escape($this->input->post('shipping_gst_no'));
 			$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
 
 			$billing_state_id  = $this->input->post('billing_state_id');
 			$billing_city_id   = $this->input->post('billing_city_id');
 			$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+			$billing_gst       = clean_and_escape($this->input->post('billing_gst'));
+			$billing_gst_no    = clean_and_escape($this->input->post('billing_gst_no'));
 			$billing_address   = clean_and_escape($this->input->post('billing_address'));
 
 			$data['shipping_state_id']   = $shipping_state_id;
@@ -8871,6 +8892,8 @@ class Inventory_model extends CI_Model
 			$data['shipping_city_id']    = $shipping_city_id;
 			$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
 			$data['shipping_pincode']    = $shipping_pincode;
+			$data['shipping_gst']        = $shipping_gst;
+			$data['shipping_gst_no']     = $shipping_gst_no;
 			$data['shipping_address']    = $shipping_address;
 
 			$data['billing_state_id']    = $billing_state_id;
@@ -8878,6 +8901,8 @@ class Inventory_model extends CI_Model
 			$data['billing_city_id']     = $billing_city_id;
 			$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
 			$data['billing_pincode']     = $billing_pincode;
+			$data['billing_gst']         = $billing_gst;
+			$data['billing_gst_no']      = $billing_gst_no;
 			$data['billing_address']     = $billing_address;
 
 			$this->db->where('id', $id)->update('sales_order', $data);
@@ -9050,7 +9075,7 @@ class Inventory_model extends CI_Model
 			} else {
 				$customer_id = $this->input->post('customer_id');
 				if ($customer_id != '') {
-					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'owner_name');
+					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
 				} else {
 					$customer_name = '';
 				}
@@ -9113,11 +9138,15 @@ class Inventory_model extends CI_Model
 				$shipping_state_id = $this->input->post('shipping_state_id');
 				$shipping_city_id  = $this->input->post('shipping_city_id');
 				$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+				$shipping_gst      = clean_and_escape($this->input->post('shipping_gst'));
+				$shipping_gst_no   = clean_and_escape($this->input->post('shipping_gst_no'));
 				$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
 
 				$billing_state_id  = $this->input->post('billing_state_id');
 				$billing_city_id   = $this->input->post('billing_city_id');
 				$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+				$billing_gst       = clean_and_escape($this->input->post('billing_gst'));
+				$billing_gst_no    = clean_and_escape($this->input->post('billing_gst_no'));
 				$billing_address   = clean_and_escape($this->input->post('billing_address'));
 
 				$data['shipping_state_id']   = $shipping_state_id;
@@ -9125,6 +9154,8 @@ class Inventory_model extends CI_Model
 				$data['shipping_city_id']    = $shipping_city_id;
 				$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
 				$data['shipping_pincode']    = $shipping_pincode;
+				$data['shipping_gst']        = $shipping_gst;
+				$data['shipping_gst_no']     = $shipping_gst_no;
 				$data['shipping_address']    = $shipping_address;
 
 				$data['billing_state_id']    = $billing_state_id;
@@ -9132,6 +9163,8 @@ class Inventory_model extends CI_Model
 				$data['billing_city_id']     = $billing_city_id;
 				$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
 				$data['billing_pincode']     = $billing_pincode;
+				$data['billing_gst']         = $billing_gst;
+				$data['billing_gst_no']      = $billing_gst_no;
 				$data['billing_address']     = $billing_address;
 
 				$data['added_by_id']          = $this->session->userdata('super_user_id');
@@ -12534,6 +12567,8 @@ class Inventory_model extends CI_Model
 			$data['gst_no']        = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']      = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']    = clean_and_escape($this->input->post('state_code'));
+			$outstanding           = trim($this->input->post('outstanding'));
+			$data['outstanding']   = ($outstanding != '') ? clean_and_escape($outstanding) : 0.00;
 
 			$user_id               = $this->session->userdata('super_user_id');
 			$user_name             = $this->session->userdata('super_name');
@@ -12624,6 +12659,8 @@ class Inventory_model extends CI_Model
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']     = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']   = clean_and_escape($this->input->post('state_code'));
+			$outstanding          = trim($this->input->post('outstanding'));
+			$data['outstanding']  = ($outstanding != '') ? clean_and_escape($outstanding) : 0.00;
 			$data['country_id']   = $country_id;
 			$data['country_name'] = $country_name;
 			$data['state_id']     = $state_id;

@@ -111,6 +111,13 @@
                 </div>
             </div> 
               
+            <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                    <label>Opening Amount </label>
+                    <input type="number" step="0.01" class="form-control" placeholder="Enter Opening Amount" name="outstanding" value="<?php echo isset($data['outstanding']) ? number_format($data['outstanding'], 2, '.', '') : '0.00'; ?>">
+                </div>
+            </div>
+              
             <div class="col-12">
                 <button type="submit" class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify" name= "btn_verify"><?php echo get_phrase('submit'); ?></button>
             </div>

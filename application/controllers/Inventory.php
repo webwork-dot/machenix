@@ -2487,7 +2487,8 @@ class Inventory extends CI_Controller
     public function get_qty_by_product_company()
     {
         $product_id = $this->input->post('product_id', true);
-        $results = $this->inventory_model->get_qty_by_product_company($product_id);
+        $customer_id = $this->input->post('customer_id', true);
+        $results = $this->inventory_model->get_qty_by_product_company($product_id, $customer_id);
         header('Content-Type: application/json');
         echo json_encode($results);
     }
@@ -2498,12 +2499,12 @@ class Inventory extends CI_Controller
         $product_id = $this->input->post('product_id', true);
         $results = $this->inventory_model->get_last_price_history($customer_id, $product_id);
         
-        $html = '<table class="table table-sm table-bordered"><thead><tr><th>Date</th><th>Qty</th><th>Price</th></tr></thead><tbody>';
+        $html = '<table class="table table-sm table-bordered"><thead><tr><th>Date</th><th>Qty</th><th>Price</th><th>Action</th></tr></thead><tbody>';
         if(empty($results)){
-            $html .= '<tr><td colspan="3" class="text-center">No history found</td></tr>';
+            $html .= '<tr><td colspan="4" class="text-center">No history found</td></tr>';
         } else {
             foreach($results as $row){
-                $html .= '<tr><td>'.$row['order_date'].'</td><td>'.$row['qty'].'</td><td>'.number_format($row['last_price'], 2).'</td></tr>';
+                $html .= '<tr><td>'.$row['order_date'].'</td><td>'.$row['qty'].'</td><td>'.number_format($row['last_price'], 2).'</td><td class="text-center"><button type="button" class="btn btn-sm btn-primary apply-price-btn" data-price="'.floatval($row['last_price']).'">Apply</button></td></tr>';
             }
         }
         $html .= '</tbody></table>';
@@ -3830,7 +3831,9 @@ class Inventory extends CI_Controller
 						"state_id" => $customer['state_id'],
 						"city_id"  => $customer['city_id'],
 						"pincode"  => $customer['pincode'],
-						"address"  => $customer['address']
+						"address"  => $customer['address'],
+						"gst_name" => $customer['gst_name'],
+						"gst_no"   => $customer['gst_no']
 					],
 					"city_html" => $city_html
 				]);

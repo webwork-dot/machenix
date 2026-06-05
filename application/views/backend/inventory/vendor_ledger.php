@@ -174,6 +174,8 @@ usort($ledger, function ($a, $b) {
   return strtotime($a['date']) - strtotime($b['date']);
 });
 
+$opening_balance = (float)($vendor['outstanding'] ?? 0.00);
+
 $totals = [
   'expenses' => 0,
   'payment' => 0
@@ -184,20 +186,48 @@ foreach ($ledger as $item) {
   $totals[$tKey] += $item['amount'];
 }
 
-$balance = $totals['expenses'] - $totals['payment'];
+$balance = $opening_balance + $totals['expenses'] - $totals['payment'];
 
 $balanceIsDue = $balance > 0;
 $balancePillClass = $balanceIsDue ? 'balance-pill-due' : 'balance-pill-credit';
 $balanceRowClass = $balanceIsDue ? 'balance-row-due' : 'balance-row-credit';
 $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
+
+// Build display rows with opening balance prepended and calculate running balance
+$display_rows = [];
+$display_rows[] = [
+  'date' => !empty($vendor['added_date']) ? $vendor['added_date'] : '',
+  'ref' => 'Opening Balance',
+  'type' => 'OPENING',
+  'amount' => $opening_balance,
+  'added_by' => $vendor['added_by_name'] ?? '—',
+  'is_payment' => false,
+  'is_opening' => true,
+  'running_balance' => $opening_balance
+];
+
+$running = $opening_balance;
+foreach ($ledger as $item) {
+  if ($item['is_payment']) {
+    $running -= $item['amount'];
+  } else {
+    $running += $item['amount'];
+  }
+  $item['running_balance'] = $running;
+  $item['is_opening'] = false;
+  $display_rows[] = $item;
+}
 ?>
 
 <style>
+  .ledger-row-opening { background: #fafbfc; }
+  .ledger-row-opening:hover { background: #f3f4f6; }
   .ledger-row-payment { background: #f0fdf4; }
   .ledger-row-payment:hover { background: #dcfce7; }
   .ledger-row-expenses { background: #ffffff; }
   .ledger-row-expenses:hover { background: #f9fafb; }
 
+  .type-badge-opening { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
   .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
   .type-badge-expenses { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
 
@@ -221,6 +251,9 @@ $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
       <!-- Balance Summary Pills -->
       <div class="d-flex align-items-center flex-wrap gap-2">
         <div class="summary-pill">
+          Opening Balance &nbsp;<strong class="customer-soft-text">₹ <?= number_format($opening_balance, 2) ?></strong>
+        </div>
+        <div class="summary-pill">
           Expenses &nbsp;<strong class="customer-soft-text">₹ <?= number_format($totals['expenses'], 2) ?></strong>
         </div>
         <div class="summary-pill">
@@ -241,21 +274,30 @@ $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
             <th class="text-start px-2 py-2 fw-semibold">Type</th>
             <th class="text-start px-2 py-2 fw-semibold">Reference</th>
             <th class="text-end px-2 py-2 fw-semibold">Amount</th>
+            <th class="text-end px-2 py-2 fw-semibold">Balance</th>
             <th class="text-start px-3 py-2 fw-semibold">Added By</th>
           </tr>
         </thead>
         <tbody>
-          <?php if (!empty($ledger)): ?>
-            <?php foreach ($ledger as $item): ?>
+          <?php if (!empty($display_rows)): ?>
+            <?php foreach ($display_rows as $item): ?>
               <?php
-              $rowClass = $item['is_payment'] ? 'ledger-row-payment' : 'ledger-row-expenses';
-              $amtClass = $item['is_payment'] ? 'amount-negative' : 'amount-positive';
-              $sign = $item['is_payment'] ? '−' : '+';
+              if ($item['is_opening']) {
+                $rowClass = 'ledger-row-opening';
+                $amtClass = 'customer-soft-text';
+                $sign = '';
+              } else {
+                $rowClass = $item['is_payment'] ? 'ledger-row-payment' : 'ledger-row-expenses';
+                $amtClass = $item['is_payment'] ? 'amount-negative' : 'amount-positive';
+                $sign = $item['is_payment'] ? '−' : '+';
+              }
               ?>
               <tr class="ledger-row <?= $rowClass ?>">
-                <td class="px-3 py-2 text-secondary fs-11 text-nowrap"><?= date('d M y', strtotime($item['date'])) ?></td>
+                <td class="px-3 py-2 text-secondary fs-11 text-nowrap"><?= ($item['is_opening'] || empty($item['date'])) ? '' : date('d M y', strtotime($item['date'])) ?></td>
                 <td class="px-2 py-2">
-                  <?php if ($item['is_payment']): ?>
+                  <?php if ($item['is_opening']): ?>
+                    <span class="type-badge type-badge-opening">Opening</span>
+                  <?php elseif ($item['is_payment']): ?>
                     <span class="type-badge type-badge-payment">Payment</span>
                   <?php else: ?>
                     <span class="type-badge type-badge-expenses">Expense</span>
@@ -265,16 +307,19 @@ $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
                 <td class="px-2 py-2 text-end <?= $amtClass ?>">
                   <?= $sign ?> ₹ <?= number_format($item['amount'], 2) ?>
                 </td>
+                <td class="px-2 py-2 text-end fw-semibold customer-main-text">
+                  ₹ <?= number_format($item['running_balance'], 2) ?>
+                </td>
                 <td class="px-3 py-2 fs-10 text-nowrap"><?= html_escape($item['added_by'] ?: '—') ?></td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
-            <tr><td colspan="5" class="py-5 text-center fs-13">No transactions found for this vendor.</td></tr>
+            <tr><td colspan="6" class="py-5 text-center fs-13">No transactions found for this vendor.</td></tr>
           <?php endif; ?>
         </tbody>
         <tfoot>
           <tr class="<?= $balanceRowClass ?> tfoot-border-top">
-            <td colspan="3" class="px-3 py-2 text-end fs-11 fw-bold customer-main-text">Total Outstanding</td>
+            <td colspan="4" class="px-3 py-2 text-end fs-11 fw-bold customer-main-text">Total Outstanding</td>
             <td class="px-2 py-2 text-end fw-bold <?= $balanceTextClass ?> fs-12">₹ <?= number_format($balance, 2) ?></td>
             <td></td>
           </tr>

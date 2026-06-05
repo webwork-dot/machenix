@@ -39,7 +39,6 @@
               <th>#</th>
               <th>Name</th>
               <th>GST (%)</th>
-              <th>Amount</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -91,9 +90,6 @@ $(document).ready(function($) {
       },
       {
         data: 'gst'
-      },
-      {
-        data: 'price'
       },
       {
         data: 'action'

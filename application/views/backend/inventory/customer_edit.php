@@ -144,6 +144,14 @@
               </div>
             </div>
 
+            <div class="col-12 col-sm-3 mb-1">
+              <div class="form-group">
+                <label>Opening Amount</label>
+                <input type="number" step="0.01" class="form-control" placeholder="Enter Opening Amount" name="outstanding"
+                  value="<?php echo isset($data['outstanding']) ? number_format($data['outstanding'], 2, '.', '') : '0.00'; ?>">
+              </div>
+            </div>
+
             <div class="col-12 col-sm-6 mb-1">
               <div class="form-group">
                 <label>Address Line 1 <span class="required">*</span></label>
