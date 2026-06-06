@@ -169,6 +169,27 @@
                 </div>
             </div>
 
+            <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                    <label>Opening Balance (RMB) </label>
+                    <input type="number" step="0.01" class="form-control" placeholder="0.00" name="outstanding_rmb" value="<?php echo isset($data['outstanding_rmb']) ? number_format($data['outstanding_rmb'], 2, '.', '') : '0.00'; ?>">
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                    <label>Opening Balance (INR) </label>
+                    <input type="number" step="0.01" class="form-control" placeholder="0.00" name="outstanding_inr" value="<?php echo isset($data['outstanding_inr']) ? number_format($data['outstanding_inr'], 2, '.', '') : '0.00'; ?>">
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                    <label>Opening Balance (USD) </label>
+                    <input type="number" step="0.01" class="form-control" placeholder="0.00" name="outstanding_usd" value="<?php echo isset($data['outstanding_usd']) ? number_format($data['outstanding_usd'], 2, '.', '') : '0.00'; ?>">
+                </div>
+            </div>
+
             <div class="col-12 col-sm-3 mb-1 pr_img_div" id="pr_img_div">
             <div class="form-group">
               <label>Signature Image </label>

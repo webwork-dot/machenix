@@ -504,6 +504,9 @@ class Inventory_model extends CI_Model
 			$data['advising_bank']       = clean_and_escape($this->input->post('advising_bank'));
 			$data['bank_address']       = clean_and_escape($this->input->post('bank_address'));
 			$data['swift_code']       = clean_and_escape($this->input->post('swift_code'));
+			$data['outstanding_rmb']   = clean_and_escape($this->input->post('outstanding_rmb'));
+			$data['outstanding_inr']   = clean_and_escape($this->input->post('outstanding_inr'));
+			$data['outstanding_usd']   = clean_and_escape($this->input->post('outstanding_usd'));
 			$user_id                = $this->session->userdata('super_user_id');
 			$user_name              = $this->session->userdata('super_name');
 			$data['country_id']    = $country_id;
@@ -601,6 +604,9 @@ class Inventory_model extends CI_Model
 			$data['advising_bank']       = clean_and_escape($this->input->post('advising_bank'));
 			$data['bank_address']       = clean_and_escape($this->input->post('bank_address'));
 			$data['swift_code']       = clean_and_escape($this->input->post('swift_code'));
+			$data['outstanding_rmb']   = clean_and_escape($this->input->post('outstanding_rmb'));
+			$data['outstanding_inr']   = clean_and_escape($this->input->post('outstanding_inr'));
+			$data['outstanding_usd']   = clean_and_escape($this->input->post('outstanding_usd'));
 			$data['company_id']    = $this->session->userdata('company_id');
 			$data['country_id']    = $country_id;
 			$data['country_name']    = $country_name;
@@ -718,6 +724,9 @@ class Inventory_model extends CI_Model
 		$data['advising_bank'] = $original_supplier['advising_bank'];
 		$data['bank_address'] = $original_supplier['bank_address'];
 		$data['swift_code'] = $original_supplier['swift_code'];
+		$data['outstanding_rmb'] = $original_supplier['outstanding_rmb'];
+		$data['outstanding_inr'] = $original_supplier['outstanding_inr'];
+		$data['outstanding_usd'] = $original_supplier['outstanding_usd'];
 		
 		$user_id = $this->session->userdata('super_user_id');
 		$user_name = $this->session->userdata('super_name');

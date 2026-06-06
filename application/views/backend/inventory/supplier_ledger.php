@@ -216,6 +216,20 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
   .balance-text-credit {
     color: #16a34a;
   }
+
+  .ledger-row-opening {
+    background: #fafbfc;
+  }
+
+  .ledger-row-opening:hover {
+    background: #f3f4f6;
+  }
+
+  .type-badge-opening {
+    color: #4b5563;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+  }
 </style>
 
 <!-- ───── Supplier Info Card ───── -->
@@ -342,8 +356,12 @@ if (!empty($payments)) {
   }
 }
 
+$opening_rmb = (float)($supplier['outstanding_rmb'] ?? 0.00);
+$opening_usd = (float)($supplier['outstanding_usd'] ?? 0.00);
+$opening_inr = (float)($supplier['outstanding_inr'] ?? 0.00);
+
 usort($ledger, function ($a, $b) {
-  return strtotime($b['date']) - strtotime($a['date']);
+  return strtotime($a['date']) - strtotime($b['date']);
 });
 
 $totals = [
@@ -359,15 +377,34 @@ foreach ($ledger as $item) {
 }
 
 $balance = [
-  'rmb' => $totals['purchase']['rmb'] - $totals['payment']['rmb'],
-  'usd' => $totals['purchase']['usd'] - $totals['payment']['usd'],
-  'inr' => $totals['purchase']['inr'] - $totals['payment']['inr']
+  'rmb' => $opening_rmb + $totals['purchase']['rmb'] - $totals['payment']['rmb'],
+  'usd' => $opening_usd + $totals['purchase']['usd'] - $totals['payment']['usd'],
+  'inr' => $opening_inr + $totals['purchase']['inr'] - $totals['payment']['inr']
 ];
 
 $balanceIsDue = $balance['inr'] > 0;
 $balancePillClass = $balanceIsDue ? 'balance-pill-due' : 'balance-pill-credit';
 $balanceRowClass = $balanceIsDue ? 'balance-row-due' : 'balance-row-credit';
 $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
+
+$display_rows = [];
+$display_rows[] = [
+  'date' => !empty($supplier['added_date']) ? $supplier['added_date'] : '',
+  'ref' => 'Opening Balance',
+  'batch' => 'Opening Balance',
+  'type' => 'OPENING',
+  'rmb' => $opening_rmb,
+  'usd' => $opening_usd,
+  'inr' => $opening_inr,
+  'added_by' => $supplier['added_by_name'] ?? '—',
+  'is_payment' => false,
+  'is_opening' => true
+];
+
+foreach ($ledger as $item) {
+  $item['is_opening'] = false;
+  $display_rows[] = $item;
+}
 ?>
 
 
@@ -383,6 +420,11 @@ $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
 
       <!-- Balance Summary Pills -->
       <div class="d-flex align-items-center flex-wrap gap-2">
+        <div class="summary-pill">
+          Opening Balance &nbsp;<strong class="supplier-soft-text mono-amount">
+            ₹ <?= number_format($opening_inr, 2) ?>
+          </strong>
+        </div>
         <div class="summary-pill">
           Purchases &nbsp;<strong class="supplier-soft-text mono-amount">
             ₹ <?= number_format($totals['purchase']['inr'], 2) ?>
@@ -421,23 +463,31 @@ $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
           </tr>
         </thead>
         <tbody>
-          <?php if (!empty($ledger)): ?>
-            <?php foreach ($ledger as $i => $item): ?>
+          <?php if (!empty($display_rows)): ?>
+            <?php foreach ($display_rows as $i => $item): ?>
               <?php
-              $rowClass = $item['is_payment'] ? 'ledger-row-payment' : 'ledger-row-purchase';
-              $amtClass = $item['is_payment'] ? 'amount-negative' : 'amount-positive';
-              $sign = $item['is_payment'] ? '−' : '+';
+              if ($item['is_opening']) {
+                $rowClass = 'ledger-row-opening';
+                $amtClass = 'supplier-soft-text';
+                $sign = '';
+              } else {
+                $rowClass = $item['is_payment'] ? 'ledger-row-payment' : 'ledger-row-purchase';
+                $amtClass = $item['is_payment'] ? 'amount-negative' : 'amount-positive';
+                $sign = $item['is_payment'] ? '−' : '+';
+              }
               ?>
               <tr class="ledger-row <?= $rowClass ?>">
 
                 <!-- Date -->
                 <td class="px-3 py-2 text-secondary fs-11 text-nowrap">
-                  <?= date('d M y', strtotime($item['date'])) ?>
+                  <?= ($item['is_opening'] || empty($item['date'])) ? '' : date('d M y', strtotime($item['date'])) ?>
                 </td>
 
                 <!-- Type Badge -->
                 <td class="px-2 py-2">
-                  <?php if ($item['is_payment']): ?>
+                  <?php if ($item['is_opening']): ?>
+                    <span class="type-badge type-badge-opening">Opening</span>
+                  <?php elseif ($item['is_payment']): ?>
                     <span class="type-badge type-badge-payment">Payment</span>
                   <?php else: ?>
                     <span class="type-badge type-badge-po">Purchase Order</span>
