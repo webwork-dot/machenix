@@ -1929,8 +1929,8 @@ class Inventory_model extends CI_Model
 		            "sample_qty" => null,
 		            "ar_no" => null,
 		            "added_date" => date("Y-m-d H:i:s"),
-                    "added_by_id" => $this->session->userdata('super_user_id'),
-			        "added_by_name" => $this->session->userdata('super_name'),
+                "added_by_id" => $this->session->userdata('super_user_id'),
+			        	"added_by_name" => $this->session->userdata('super_name'),
 		        ];
 		        
 		        $this->db->insert('inventory_history', $history);
@@ -5226,14 +5226,13 @@ class Inventory_model extends CI_Model
 		$params['draw'] = $_REQUEST['draw'];
 		$start = $_REQUEST['start'];
 		$length = $_REQUEST['length'];
-
+		
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
-
+		
 		$company_id        = $this->session->userdata('company_id');
 		$keyword_filter .= " AND (company_id='" . $company_id . "')";
-
 
 		if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != ""):
 			$warehouse_id        = $_REQUEST['warehouse_id'];
@@ -5248,8 +5247,8 @@ class Inventory_model extends CI_Model
 		endif;
 
 		$total_count = $this->db->query("SELECT id FROM inventory WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,warehouse_name,product_name,item_code,product_id,SUM(quantity) as quantity,categories FROM inventory WHERE (id!='') $keyword_filter group by product_id ORDER BY id DESC LIMIT $start, $length");
-
+		$query = $this->db->query("SELECT id, warehouse_name, product_name, item_code, product_id, SUM(quantity) as quantity, SUM(official_qty) as white_qty, SUM(black_qty) as black_qty, categories FROM inventory WHERE (id!='') $keyword_filter group by product_id ORDER BY id DESC LIMIT $start, $length");
+		
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
@@ -5258,21 +5257,21 @@ class Inventory_model extends CI_Model
 				$size_label = '';
 				$category = $this->common_model->getRowById('categories', 'name', ['id' => $item['categories']]);
         $size_label = $category['name'] ?? '-';
-           
-
-				$edit_url = base_url() . 'inventory/my-stock-batch/' . $id  . '/' . $warehouse_id;
+				
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
-				 
+				$view_url = base_url() . 'inventory/my-stock-batch/' . $id  . '/' . $warehouse_id;
+				$action .= '<a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+				
 				// $modal_url = base_url() . 'modal/popup_inventory/inventory_update_modal/' . $id;
 				// $action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . $modal_url . '\',\'Update Stock\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Update Stock"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-stumbleupon" aria-hidden="true"></i></button></a>';
 				
-
 				$data[] = array(
 					"sr_no"             => ++$start,
 					"category"        => $size_label,
 					"product_name"      => $item['product_name'],
 					"quantity"          => $item['quantity'],
+					"black_qty"         => $item['black_qty'],
+					"white_qty"         => $item['white_qty'],
 					"action"            => $action,
 				);
 			}
@@ -5299,9 +5298,9 @@ class Inventory_model extends CI_Model
 	    $curr_qty = $this->input->post('curr_qty');
 	    
 	    if($manual == "manual_in") {
-	        $qty = intval($curr_qty) + intval($update_qty);
+	      $qty = intval($curr_qty) + intval($update_qty);
 	    } else {
-	        $qty = intval($curr_qty) - intval($update_qty);
+	      $qty = intval($curr_qty) - intval($update_qty);
 	    }
 	    
 	    $this->db->where('id', $stock_id)->update('inventory', ['quantity' => $qty]);
@@ -5360,9 +5359,9 @@ class Inventory_model extends CI_Model
 		if (isset($_REQUEST['product_id']) && $_REQUEST['product_id'] != ""):
 			if ($_REQUEST['product_id'] != 'All') {
 				$product_id        = $_REQUEST['product_id'];
-				//$product_id = base64_decode($product_id);
+				// $product_id = base64_decode($product_id);
 				$result = $this->common_model->get_batch_product_1($product_id, $warehouse_id);
-				//echo $this->db->last_query();exit();
+				// echo $this->db->last_query(); exit();
 				$product_id = $result['product_id'];
 				$keyword_filter .= " AND (product_id='" . $product_id . "')";
 			}
@@ -5375,7 +5374,7 @@ class Inventory_model extends CI_Model
 
 		$total_count = $this->db->query("SELECT id FROM inventory WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
 		//echo $this->db->last_query();
-		$query = $this->db->query("SELECT id,warehouse_name,item_code,categories,black_qty,product_name,product_id,quantity,batch_no FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,warehouse_name,item_code,categories,black_qty,official_qty,product_name,product_id,quantity,batch_no,official_total_rs,total_amt FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -5397,8 +5396,11 @@ class Inventory_model extends CI_Model
 					"category"				=> $size_label,
 					"item_code"				=> $item['item_code'],
 					"product_name"		=> $item['product_name'],
+					"without_exp"			=> $item['official_total_rs'],
+					"with_exp"				=> $item['total_amt'],
 					"quantity"        => $item['quantity'],
 					"black_qty"				=> $item['black_qty'],
+					"official_qty"			=> $item['official_qty'],
 					"batch_no"        => ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
 					"action"        	=> $action,
 				);
@@ -5448,12 +5450,20 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,warehouse_name,product_name,quantity,order_id,status,received_date,added_by_name,added_date FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY received_date DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,warehouse_name,product_name,quantity,official_qty,black_qty,order_id,status,received_date,added_by_name,added_date FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY id ASC LIMIT $start, $length");
+		// $query = $this->db->query("SELECT id,warehouse_name,product_name,quantity,official_qty,black_qty,order_id,status,received_date,added_by_name,added_date FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY received_date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
+			$total_qty = 0;
+			$total_white = 0;
+			$total_black = 0;
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 				$order_id = $item['order_id'];
+
+				$total_qty += intval($item['quantity'] ?? 0);
+				$total_white += intval($item['official_qty'] ?? 0);
+				$total_black += intval($item['black_qty'] ?? 0);
 
 				$voucher_no = '-';
 				$supplier_name = '-';
@@ -5551,11 +5561,29 @@ class Inventory_model extends CI_Model
 					"product_name"        => $item['product_name'],
 					"status"        => $status,
 					"quantity"        => $item['quantity'],
+					"white_qty"       => $item['official_qty'],
+					"black_qty"       => $item['black_qty'],
 					"added_by_name"        => $item['added_by_name'],
 					"supplier_name"        => $supplier_name,
 					"to"        => $to,
 				);
 			}
+
+			// Append Total Row
+			$data[] = array(
+				"sr_no"       => "",
+				"id"          => "",
+				"date"        => "<b>Total</b>",
+				"voucher_no"        => "",
+				"product_name"        => "",
+				"status"        => "",
+				"quantity"        => "<b>" . $total_qty . "</b>",
+				"white_qty"       => "<b>" . $total_white . "</b>",
+				"black_qty"       => "<b>" . $total_black . "</b>",
+				"added_by_name"        => "",
+				"supplier_name"        => "",
+				"to"        => "",
+			);
 		}
 
 		$json_data = array(
@@ -9471,22 +9499,22 @@ class Inventory_model extends CI_Model
 				}
 
 				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
-
 				$customer_name = $item['customer_name'];
+
 				$data[] = array(
-					"sr_no"       => ++$start,
-					"id"          => $item['id'],
-					"order_no"        => $item['order_no'],
-					"refrence_no"        => $item['refrence_no'],
-					"customer_name"        => $customer_name,
-					"warehouse_name"        => ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
-					"company_name"        => ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
-					"grand_total"        => $item['grand_total'],
-					"date"        => date('d M, Y', strtotime($item['date'])),
-					"total_pro"      => $total_pro,
-					"qty"      => $qty,
-					"remark"      => $item['remark'],
-					"action"      => $action,
+					"sr_no"						=> ++$start,
+					"id"          		=> $item['id'],
+					"order_no"      	=> $item['order_no'],
+					"refrence_no"			=> $item['refrence_no'],
+					"customer_name"		=> $customer_name,
+					"warehouse_name"	=> ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
+					"company_name"		=> ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
+					"grand_total"   	=> $item['grand_total'],
+					"date"          	=> date('d M, Y', strtotime($item['date'])),
+					"total_pro"     	=> $total_pro,
+					"qty"           	=> $qty,
+					"remark"        	=> $item['remark'],
+					"action"          => $action,
 				);
 			}
 		}
@@ -15684,7 +15712,9 @@ public function get_sales_return_reports()
 		$data_query = "SELECT 
 							  p.id as product_id,
 							  p.name as product_name,
-							  SUM(inv.quantity) as current_qty
+							  SUM(inv.quantity) as current_qty,
+							  SUM(inv.official_qty) as white_qty,
+							  SUM(inv.black_qty) as black_qty
 					   FROM raw_products p
 					   JOIN inventory inv ON inv.product_id = p.id
 					   WHERE 1=1 $keyword_filter
@@ -15704,6 +15734,8 @@ public function get_sales_return_reports()
 					"sr_no"       => ++$start,
 					"product_name"=> $item['product_name'] ?? 'Unknown Product (ID: '.$pid.')',
 					"quantity"    => $item['current_qty'],
+					"white_qty"   => $item['white_qty'] ?? 0,
+					"black_qty"   => $item['black_qty'] ?? 0,
 					"action"      => $action
 				);
 			}
@@ -15730,7 +15762,7 @@ public function get_sales_return_reports()
 		$keyword_filter = "";
 
 		if ($product_id) {
-			$keyword_filter .= " AND base.product_id = " . $product_id;
+			$keyword_filter .= " AND inv.product_id = " . $product_id;
 		}
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
@@ -15738,103 +15770,29 @@ public function get_sales_return_reports()
 			$keyword_filter .= " AND (p.name like '%" . $keyword . "%' OR w.name like '%" . $keyword . "%' OR c.name like '%" . $keyword . "%')";
 		endif;
 
-		$base_ids_query = "
-			SELECT product_id, warehouse_id, company_id FROM inventory
-		";
-
-		$total_count_query = "SELECT base.product_id
-							  FROM ($base_ids_query) base
-							  LEFT JOIN raw_products p ON p.id = base.product_id
-							  LEFT JOIN warehouse w ON w.id = base.warehouse_id
-							  LEFT JOIN company c ON c.id = base.company_id
+		$total_count_query = "SELECT inv.product_id
+							  FROM inventory inv
+							  LEFT JOIN raw_products p ON p.id = inv.product_id
+							  LEFT JOIN warehouse w ON w.id = inv.warehouse_id
+							  LEFT JOIN company c ON c.id = inv.company_id
 							  WHERE 1=1 $keyword_filter
-							  GROUP BY base.company_id, base.warehouse_id, base.product_id
-							  HAVING (SELECT COALESCE(SUM(inv.quantity),0) FROM inventory inv WHERE inv.product_id = base.product_id AND inv.company_id = base.company_id AND inv.warehouse_id = base.warehouse_id) > 0";
+							  GROUP BY inv.company_id, inv.warehouse_id, inv.product_id
+							  HAVING SUM(inv.quantity) > 0";
 		$total_count = $this->db->query($total_count_query)->num_rows();
 
 		$data_query = "SELECT 
-							  base.company_id, base.warehouse_id, base.product_id,
-							  (SELECT id FROM inventory i2 WHERE i2.product_id = base.product_id AND i2.company_id = base.company_id AND i2.warehouse_id = base.warehouse_id LIMIT 1) as inventory_id,
-							  (SELECT COALESCE(SUM(inv.quantity),0) FROM inventory inv WHERE inv.product_id = base.product_id AND inv.company_id = base.company_id AND inv.warehouse_id = base.warehouse_id) AS current_qty,
-							  (SELECT COALESCE(SUM(pop.quantity),0) FROM purchase_order_product pop JOIN purchase_order po ON po.id = pop.parent_id WHERE pop.product_id = base.product_id AND po.company_id = base.company_id AND po.warehouse_id = base.warehouse_id AND po.delivery_status != 'purchase_in' AND po.is_deleted = 0) AS po_qty,
-							  (
-								  SELECT COALESCE(SUM(t.priority_qty), 0)
-								  FROM (
-									  SELECT pp.parent_id, pp.product_id, SUM(pp.quantity) as priority_qty
-									  FROM po_products pp
-									  WHERE pp.is_priority = 1
-									  GROUP BY pp.parent_id, pp.product_id
-								  ) t
-								  JOIN purchase_order po ON po.id = t.parent_id
-								  WHERE t.product_id = base.product_id
-								  AND po.company_id = base.company_id
-								  AND po.warehouse_id = base.warehouse_id
-								  AND po.delivery_status != 'purchase_in'
-								  AND po.is_deleted = 0
-							  ) AS priority_qty,
-							  (
-								  SELECT COALESCE(SUM(t.loading_qty), 0)
-								  FROM (
-									  SELECT pp.parent_id, pp.product_id, SUM(pp.loading_qty) as loading_qty
-									  FROM po_products pp
-									  GROUP BY pp.parent_id, pp.product_id
-								  ) t
-								  JOIN purchase_order po ON po.id = t.parent_id
-								  WHERE t.product_id = base.product_id
-								  AND po.company_id = base.company_id
-								  AND po.warehouse_id = base.warehouse_id
-								  AND po.delivery_status != 'purchase_in'
-								  AND po.is_deleted = 0
-							  ) AS loading_qty,
-							  (
-								  SELECT COALESCE(SUM(t.with_exp_cost), 0)
-								  FROM (
-									  SELECT pp.parent_id, pp.product_id, SUM(pp.total_amt) as with_exp_cost
-									  FROM po_products pp
-									  GROUP BY pp.parent_id, pp.product_id
-								  ) t
-								  JOIN purchase_order po ON po.id = t.parent_id
-								  WHERE t.product_id = base.product_id
-								  AND po.company_id = base.company_id
-								  AND po.warehouse_id = base.warehouse_id
-								  AND po.delivery_status != 'purchase_in'
-								  AND po.is_deleted = 0
-							  ) AS with_exp_cost,
-							  (
-								  SELECT COALESCE(SUM(t.without_exp_cost), 0)
-								  FROM (
-									  SELECT pp.parent_id, pp.product_id, SUM(pp.total_val) as without_exp_cost
-									  FROM po_products pp
-									  GROUP BY pp.parent_id, pp.product_id
-								  ) t
-								  JOIN purchase_order po ON po.id = t.parent_id
-								  WHERE t.product_id = base.product_id
-								  AND po.company_id = base.company_id
-								  AND po.warehouse_id = base.warehouse_id
-								  AND po.delivery_status != 'purchase_in'
-								  AND po.is_deleted = 0
-							  ) AS without_exp_cost,
-							  (
-								  SELECT COALESCE(SUM(t.official_cost_inr), 0)
-								  FROM (
-									  SELECT pp.parent_id, pp.product_id, SUM(pp.official_total_rs) as official_cost_inr
-									  FROM po_products pp
-									  GROUP BY pp.parent_id, pp.product_id
-								  ) t
-								  JOIN purchase_order po ON po.id = t.parent_id
-								  WHERE t.product_id = base.product_id
-								  AND po.company_id = base.company_id
-								  AND po.warehouse_id = base.warehouse_id
-								  AND po.delivery_status != 'purchase_in'
-								  AND po.is_deleted = 0
-							  ) AS official_cost_inr,
+							  inv.company_id, inv.warehouse_id, inv.product_id,
+							  MIN(inv.id) as inventory_id,
+							  SUM(inv.quantity) AS current_qty,
+							  SUM(inv.official_qty) AS white_qty,
+							  SUM(inv.black_qty) AS black_qty,
 							  p.name as product_name, w.name as warehouse_name, c.name as company_name
-					   FROM ($base_ids_query) base
-					   LEFT JOIN raw_products p ON p.id = base.product_id
-					   LEFT JOIN warehouse w ON w.id = base.warehouse_id
-					   LEFT JOIN company c ON c.id = base.company_id
+					   FROM inventory inv
+					   LEFT JOIN raw_products p ON p.id = inv.product_id
+					   LEFT JOIN warehouse w ON w.id = inv.warehouse_id
+					   LEFT JOIN company c ON c.id = inv.company_id
 					   WHERE 1=1 $keyword_filter
-					   GROUP BY base.company_id, base.warehouse_id, base.product_id 
+					   GROUP BY inv.company_id, inv.warehouse_id, inv.product_id 
 					   HAVING current_qty > 0 
 					   ORDER BY p.name ASC LIMIT $start, $length";
 		$query = $this->db->query($data_query);
@@ -15846,19 +15804,20 @@ public function get_sales_return_reports()
 				$cid = $item['company_id'];
 				$inv_id = $item['inventory_id'];
 
-				$po_qty = (float)($item['po_qty'] ?? 0);
-				$priority_qty = (float)($item['priority_qty'] ?? 0);
-				$loading_qty = (float)($item['loading_qty'] ?? 0);
-				$with_exp_cost = (float)($item['with_exp_cost'] ?? 0);
-				$without_exp_cost = (float)($item['without_exp_cost'] ?? 0);
-				$official_cost_inr = (float)($item['official_cost_inr'] ?? 0);
-
-				$po_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'po\',' . $wid . ')">' . $po_qty . '</a>';
-				$priority_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'priority\',' . $wid . ')">' . $priority_qty . '</a>';
-				$loading_link = '<a href="javascript:;" onclick="showProductPOList(' . $pid . ',' . $cid . ',\'loading\',' . $wid . ')">' . $loading_qty . '</a>';
-
 				$batch_url = base_url() . 'inventory/my-stock-batch/' . $inv_id . '/' . $wid;
 				$action = '<a href="' . $batch_url . '" data-toggle="tooltip" data-bs-placement="top" title="View Batches"><button type="button" class="btn btn-sm btn-primary"><i class="fa fa-eye"></i></button></a>';
+				
+				$po_qty_arr = $this->get_product_po_list($pid, $cid, 'po', $wid);
+				$po_qty = array_sum(array_column($po_qty_arr, 'quantity'));
+				$po_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $pid. "," . $cid. ",\"po\")'>" . $po_qty . "</a>";
+				
+				$priority_qty_arr = $this->get_product_po_list($pid, $cid, 'priority', $wid);
+				$priority_qty = array_sum(array_column($priority_qty_arr, 'quantity'));
+				$priority_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $pid. "," . $cid. ",\"priority\")'>" . $priority_qty . "</a>";
+
+				$loading_qty_arr = $this->get_product_po_list($pid, $cid, 'loading', $wid);
+				$loading_qty = array_sum(array_column($loading_qty_arr, 'quantity'));
+				$loading_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $pid. "," . $cid. ",\"loading\")'>" . $loading_qty . "</a>";
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -15866,12 +15825,11 @@ public function get_sales_return_reports()
 					"warehouse"   => $item['warehouse_name'] ?? '-',
 					"product_name"=> $item['product_name'] ?? 'Unknown Product (ID: '.$pid.')',
 					"quantity"    => $item['current_qty'],
-					"po_qty"      => $po_link,
-					"priority_qty"=> $priority_link,
-					"loading_qty" => $loading_link,
-					"with_exp_cost" => number_format($with_exp_cost, 2),
-					"without_exp_cost" => number_format($without_exp_cost, 2),
-					"official_cost_inr" => number_format($official_cost_inr, 2),
+					"white_qty"   => $item['white_qty'] ?? 0,
+					"black_qty"   => $item['black_qty'] ?? 0,
+					"po_qty"      => $po_qty_btn,
+					"priority_qty"=> $priority_qty_btn,
+					"loading_qty" => $loading_qty_btn,
 					"action"      => $action
 				);
 			}
@@ -15915,7 +15873,7 @@ public function get_sales_return_reports()
 											po.supplier_name,
 											SUM(pp.loading_qty) as quantity
 										FROM purchase_order po
-										JOIN po_products pp ON po.id = pp.parent_id
+										JOIN loading_po_product pp ON po.id = pp.parent_id
 										WHERE pp.product_id = '$product_id'
 										AND po.company_id = '$company_id'
 										AND po.delivery_status != 'purchase_in'

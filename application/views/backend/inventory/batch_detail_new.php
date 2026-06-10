@@ -96,11 +96,7 @@
     }
 
     const totalExpense = getTotalExpense(expenses);
-    const grandActualCbmTotal = toNum(grandTotals?.actual_cbm_total);
-    const avgExpensePerActualCbm = grandActualCbmTotal > 0 ? (totalExpense / grandActualCbmTotal) : 0;
-    const grandOffCbmTotal = toNum(grandTotals?.off_cbm_total);
-    const avgExpensePerOffCbm = grandOffCbmTotal > 0 ? (totalExpense / grandOffCbmTotal) : 0;
-
+    
     suppliers.forEach((supplier, supplierIdx) => {
       const products = Array.isArray(supplier.products) ? supplier.products : [];
       const totals = supplier.totals || {};
@@ -465,6 +461,7 @@
     }
   }
 
+
   $(document).ready(function() {
     $('#view-batch-btn').on('click', function() {
       const batchNo = ($('#batch_no').val() || '').trim();
@@ -479,7 +476,7 @@
 
       $.ajax({
         type: 'POST',
-        url: "<?php echo base_url(); ?>inventory/get_batch_detail_data",
+        url: "<?php echo base_url(); ?>inventory/get_batch_detail_new_data",
         data: { batch_no: batchNo },
         dataType: 'json',
         success: function(res) {

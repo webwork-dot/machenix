@@ -68,7 +68,7 @@
 		</div>
 	</div>
 	
-   <div class="col-12">
+    <div class="col-12">
       <div class="card">
          <div class="card-body">
             <div class="row">
@@ -93,13 +93,15 @@
 					<th>Category</th>
 					<th>Product Name</th>
 					<th>Quantity</th>
+					<th>Black Qty</th>
+					<th>White Qty</th>
 					<th>Actions</th>
                   </tr>
                </thead>
             </table>
          </div>
       </div>
-   </div>
+    </div>
 </div>
 
 <script type="text/javascript">       
@@ -144,6 +146,8 @@
                 { "data": "category" },
                 { "data": "product_name" },
                 { "data": "quantity" },
+                { "data": "black_qty" },
+                { "data": "white_qty" },
                 { "data": "action" },
             ], 
            
@@ -152,7 +156,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8,9]
+                       "columns": [0,1,2,3,4,5]
                     }
                 },
                 {
@@ -160,7 +164,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8,9]
+                       "columns": [0,1,2,3,4,5]
                     }
                 }
             ], 

@@ -174,7 +174,7 @@
                 <?php // if ($staff_access !== 7) { ?>
                    { "data": "action" },
                 <?php // } ?>
-            ], 
+            ],
            
             "buttons": [
                 {

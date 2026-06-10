@@ -28,12 +28,12 @@
 <div class="row" id="table-bordered">
    <div class="col-12">
       <div class="card">
-         <div class="card-body">
-            <div class="row">
-               <div class="col-md-12 mt-10">
-               </div>
-            </div>
-         </div>
+        <div class="card-body">
+           <div class="row">
+              <div class="col-md-12 mt-10">
+              </div>
+           </div>
+        </div>
          
         <div class="card-datatable d-report mb-2">
           <table class="table leads-table" id="report-datatable">
@@ -44,12 +44,15 @@
 					<th>Product Name</th>
 					<th>Batch No</th>
 					<th>Quantity</th>
-					<th>Black Quantity</th>
+					<th>Black Qty</th>
+					<th>White Qty</th>
+                    <th>Cost Without Expense</th>
+                    <th>Cost With Expense</th>
 					<th>Actions</th>
                   </tr>
                </thead>
             </table>
-         </div>
+        </div>
       </div>
    </div>
 </div>
@@ -57,7 +60,7 @@
 <script type="text/javascript">       
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
-    	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+    	    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
             "sDom": 'rt<"dtPagination"lp><"clear">',
             "pagingType": "simple_numbers",
@@ -96,6 +99,9 @@
                 { "data": "batch_no" },
                 { "data": "quantity" },
                 { "data": "black_qty" },
+                { "data": "official_qty" },
+                { "data": "without_exp" },
+                { "data": "with_exp" },
                 { "data": "action" },
             ], 
            
@@ -104,7 +110,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7]
                     }
                 },
                 {
@@ -112,7 +118,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7]
                     }
                 }
             ], 
@@ -128,8 +134,7 @@
                     "targets": 0, // your case first column
                     "className": "text-center",
                 },
-            ] 
-            
+            ]
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 
         });

@@ -1700,10 +1700,399 @@ class Inventory extends CI_Controller
             $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['delivery_status' => 'purchase_in', 'is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id]);
             $page_data['po'] = ($pos != '') ? $pos : [];
 
-            $page_data['page_name']  = 'batch_detail';
+            $page_data['page_name']  = 'batch_detail_new';
+            // $page_data['page_name']  = 'batch_detail';
             $page_data['page_title'] = get_phrase('batch_detail');
             $this->load->view('backend/index', $page_data);
         }
+    }
+
+    public function get_batch_detail_new_data()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 401,
+                'message' => 'Unauthorized'
+            ));
+            return;
+        }
+
+        if (!$this->input->is_ajax_request()) {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 400,
+                'message' => 'Invalid request'
+            ));
+            return;
+        }
+
+        $batch_no = trim((string)$this->input->post('batch_no', true));
+        $company_id = (int)$this->session->userdata('company_id');
+
+        if ($batch_no === '') {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 400,
+                'message' => 'Batch No is required'
+            ));
+            return;
+        }
+
+        $po = $this->db->query("
+            SELECT
+                id,
+                voucher_no,
+                boe_no,
+                boe_date,
+                completed_date,
+                loading_date,
+                date
+            FROM purchase_order
+            WHERE voucher_no = ?
+              AND is_deleted = 0
+              AND method = 'import'
+              AND company_id = ?
+            LIMIT 1
+        ", array($batch_no, $company_id))->row_array();
+
+        if (empty($po)) {
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'status' => 404,
+                'message' => 'Batch not found'
+            ));
+            return;
+        }
+
+        $rows = $this->db->query("
+            SELECT
+                pp.id,
+                pp.parent_id,
+                pp.product_id,
+                pp.supplier_id,
+                COALESCE(s.name, 'Unknown Supplier') AS supplier_name,
+                pp.product_name,
+                pp.item_code,
+                pp.hsn_code,
+                pp.official_ci_qty,
+                pp.black_qty,
+                pp.actual_qty,
+                pp.cbm,
+                pp.unit_price_rmb,
+                pp.actual_usd,
+                pp.actual_inr,
+                pp.official_ci_unit_price_usd,
+                pp.official_rate_rs,
+                pp.official_total_rs,
+                pp.duty_percent,
+                pp.duty_amt,
+                pp.duty_surcharge,
+                pp.taxable_value,
+                pp.gst_amt,
+                pp.invoice,
+                pp.invoice_date,
+                pp.invoice_supplier_id,
+                pop.id AS purchase_order_product_id
+            FROM purchase_in_product pp
+            LEFT JOIN supplier s
+                ON s.id = pp.supplier_id
+            LEFT JOIN purchase_order_product pop
+                ON pop.parent_id = pp.parent_id
+               AND pop.product_id = pp.product_id
+               AND pop.supplier_id = pp.supplier_id
+            WHERE pp.parent_id = ?
+              AND pp.is_deleted = 0
+            ORDER BY pp.supplier_id ASC, pp.id ASC
+        ", array($po['id']))->result_array();
+
+        $sum_keys = array(
+            'official_qty',
+            'black_qty',
+            'act_qty',
+            'cbm_per_pc',
+            'off_cbm_total',
+            'actual_cbm_total',
+            'rmb_per_pc',
+            'rmb_total',
+            'total_off_rmb',
+            'usd_per_pc',
+            'usd_total',
+            'cost_without_expense_rs',
+            'total_rs_without_expense',
+            'off_usd_per_pc',
+            'total_off_usd',
+            'off_rs_per_pc',
+            'total_off_rs',
+            'off_duty_percent',
+            'off_duty_amt',
+            'off_surcharge',
+            'off_taxable_value',
+            'off_gst_percent',
+            'off_gst_amt',
+            'total_duty_gst'
+        );
+
+        $initTotals = function () use ($sum_keys) {
+            $totals = array();
+            foreach ($sum_keys as $k) {
+                $totals[$k] = 0;
+            }
+            return $totals;
+        };
+
+        $suppliers = array();
+        $grand_totals = $initTotals();
+
+        foreach ($rows as $r) {
+            $supplier_id = (int)($r['supplier_id'] ?? 0);
+            if (!isset($suppliers[$supplier_id])) {
+                $suppliers[$supplier_id] = array(
+                    'supplier_id' => $supplier_id,
+                    'supplier_name' => (string)($r['supplier_name'] ?? 'Unknown Supplier'),
+                    'invoice' => '',
+                    'invoice_date' => '',
+                    'products' => array(),
+                    'totals' => $initTotals()
+                );
+            }
+
+            if (!empty($r['invoice']) && isset($r['invoice_supplier_id']) && (int)$r['invoice_supplier_id'] === $supplier_id) {
+                $suppliers[$supplier_id]['invoice'] = (string)$r['invoice'];
+                $suppliers[$supplier_id]['invoice_date'] = !empty($r['invoice_date']) ? date('Y-m-d', strtotime($r['invoice_date'])) : '';
+            }
+
+            $official_qty = (float)($r['official_ci_qty'] ?? 0);
+            $black_qty = (float)($r['black_qty'] ?? 0);
+            $act_qty = (float)($r['actual_qty'] ?? 0);
+            $cbm_per_pc = (float)($r['cbm'] ?? 0);
+            $off_cbm_total = $official_qty * $cbm_per_pc;
+            $actual_cbm_total = $act_qty * $cbm_per_pc;
+
+            $rmb_per_pc = (float)($r['unit_price_rmb'] ?? 0);
+            $rmb_total = $act_qty * $rmb_per_pc;
+            $total_off_rmb = $official_qty * $rmb_per_pc;
+            $usd_per_pc = (float)($r['actual_usd'] ?? 0);
+            $usd_total = $act_qty * $usd_per_pc;
+            $cost_without_expense_rs = (float)($r['actual_inr'] ?? 0);
+            $total_rs_without_expense = $cost_without_expense_rs * $act_qty;
+            $off_usd_per_pc = (float)($r['official_ci_unit_price_usd'] ?? 0);
+            $total_off_usd = $official_qty * $off_usd_per_pc;
+            $off_rs_per_pc = (float)($r['official_rate_rs'] ?? 0);
+            $total_off_rs = (float)($r['official_total_rs'] ?? 0);
+            $off_duty_percent = (float)($r['duty_percent'] ?? 0);
+            $off_duty_amt = (float)($r['duty_amt'] ?? 0);
+            $off_surcharge = (float)($r['duty_surcharge'] ?? 0);
+            $off_taxable_value = (float)($r['taxable_value'] ?? 0);
+            $off_gst_amt = (float)($r['gst_amt'] ?? 0);
+            $off_gst_percent = ($off_taxable_value > 0) ? (($off_gst_amt * 100) / $off_taxable_value) : 0;
+            $total_duty_gst = $off_duty_amt + $off_gst_amt;
+
+            $line = array(
+                'id' => (int)($r['id'] ?? 0),
+                'purchase_order_product_id' => (int)($r['purchase_order_product_id'] ?? 0),
+                'product_id' => (int)($r['product_id'] ?? 0),
+                'product_name' => (string)($r['product_name'] ?? ''),
+                'model_no' => (string)($r['item_code'] ?? ''),
+                'hsn_code' => (string)($r['hsn_code'] ?? ''),
+                'official_qty' => $official_qty,
+                'black_qty' => $black_qty,
+                'act_qty' => $act_qty,
+                'cbm_per_pc' => $cbm_per_pc,
+                'off_cbm_total' => $off_cbm_total,
+                'actual_cbm_total' => $actual_cbm_total,
+                'rmb_per_pc' => $rmb_per_pc,
+                'rmb_total' => $rmb_total,
+                'total_off_rmb' => $total_off_rmb,
+                'usd_per_pc' => $usd_per_pc,
+                'usd_total' => $usd_total,
+                'cost_without_expense_rs' => $cost_without_expense_rs,
+                'total_rs_without_expense' => $total_rs_without_expense,
+                'off_usd_per_pc' => $off_usd_per_pc,
+                'total_off_usd' => $total_off_usd,
+                'off_rs_per_pc' => $off_rs_per_pc,
+                'total_off_rs' => $total_off_rs,
+                'off_duty_percent' => $off_duty_percent,
+                'off_duty_amt' => $off_duty_amt,
+                'off_surcharge' => $off_surcharge,
+                'off_taxable_value' => $off_taxable_value,
+                'off_gst_percent' => $off_gst_percent,
+                'off_gst_amt' => $off_gst_amt,
+                'total_duty_gst' => $total_duty_gst
+            );
+
+            $suppliers[$supplier_id]['products'][] = $line;
+            foreach ($sum_keys as $k) {
+                $suppliers[$supplier_id]['totals'][$k] += (float)$line[$k];
+                $grand_totals[$k] += (float)$line[$k];
+            }
+        }
+
+        $all_batch_expenses = $this->db->query("
+            SELECT supplier_id, sub_total 
+            FROM po_expense 
+            WHERE batch_no = ? AND is_delete = 0
+        ", array($batch_no))->result_array();
+
+        $expenses = [];
+        foreach ($suppliers as $s_id => $s_data) {
+            $supplier_total = 0;
+            foreach ($all_batch_expenses as $exp) {
+                $exp_supplier_ids = explode(',', (string)($exp['supplier_id'] ?? ''));
+                $exp_supplier_ids = array_filter(array_map('trim', $exp_supplier_ids));
+                
+                if (in_array((string)$s_id, $exp_supplier_ids)) {
+                    $count = count($exp_supplier_ids);
+                    if ($count > 0) {
+                        $supplier_total += (float)$exp['sub_total'] / $count;
+                    }
+                }
+            }
+            $expenses[] = array(
+                'supplier_id' => $s_id,
+                'sub_total' => $supplier_total
+            );
+
+            // $supplier_total = 0;
+            // foreach ($all_batch_expenses as $exp) {
+            //     $exp_supplier_ids = explode(',', (string)($exp['supplier_id'] ?? ''));
+            //     $exp_supplier_ids = array_filter(array_map('trim', $exp_supplier_ids));
+                
+            //     if (in_array((string)$s_id, $exp_supplier_ids)) {
+            //         $count = count($exp_supplier_ids);
+            //         if ($count > 0) {
+            //             $supplier_total += (float)$exp['sub_total'] / $count;
+            //         }
+            //     }
+            // }
+            // $expenses[] = array(
+            //     'supplier_id' => $s_id,
+            //     'sub_total' => $supplier_total
+            // );
+        }
+
+        $suppliers = array_values($suppliers);
+        $expense_items = $this->db->query("
+            SELECT 
+                ed.expense_name, 
+                ed.amount, 
+                ed.gst_amt, 
+                ed.total_amt
+            FROM po_expense e
+            JOIN po_expense_details ed ON e.id = ed.parent_id
+            WHERE e.batch_no = ? AND e.is_delete = 0
+            ORDER BY ed.id ASC
+        ", array($batch_no))->result_array();
+
+        $supplier_accounts = [];
+        $cutoff_date = !empty($po['completed_date']) ? $po['completed_date'] : $po['date'];
+
+        foreach ($suppliers as $s) {
+            $s_id = (int)$s['supplier_id'];
+            $s_name = (string)$s['supplier_name'];
+
+            $purchases = $this->db->query("
+                SELECT 
+                    SUM(pp.actual_qty * pp.unit_price_rmb) as rmb,
+                    SUM(pp.actual_qty * pp.actual_usd) as usd,
+                    SUM(pp.actual_qty * pp.actual_inr) as inr
+                FROM purchase_order po
+                JOIN purchase_in_product pp ON po.id = pp.parent_id
+                WHERE pp.supplier_id = ?
+                  AND po.delivery_status = 'purchase_in'
+                  AND po.is_deleted = 0
+                  AND po.date < ?
+            ", array($s_id, $cutoff_date))->row_array();
+
+            $old_payments = $this->db->query("
+                SELECT 
+                    SUM(amount_rmb) as rmb,
+                    SUM(amount_dollar) as usd,
+                    SUM(amount_rs) as inr
+                FROM payments
+                WHERE supplier_id = ?
+                  AND is_delete = 0
+                  AND payment_date < ?
+            ", array($s_id, $cutoff_date))->row_array();
+
+            $outstanding = [
+                'date' => $cutoff_date,
+                'rmb' => (float)($purchases['rmb'] ?? 0) - (float)($old_payments['rmb'] ?? 0),
+                'usd' => (float)($purchases['usd'] ?? 0) - (float)($old_payments['usd'] ?? 0),
+                'inr' => (float)($purchases['inr'] ?? 0) - (float)($old_payments['inr'] ?? 0)
+            ];
+
+            $batch_payments_raw = $this->db->query("
+                SELECT payment_date as date, amount_rmb as rmb, amount_dollar as usd, amount_rs as inr
+                FROM payments
+                WHERE supplier_id = ?
+                  AND batch_no = ?
+                  AND is_delete = 0
+                ORDER BY payment_date ASC
+            ", array($s_id, $batch_no))->result_array();
+
+            $batch_payments = [];
+            $pay_total_rmb = 0; $pay_total_usd = 0; $pay_total_inr = 0;
+            foreach ($batch_payments_raw as $p) {
+                $batch_payments[] = [
+                    'date' => $p['date'],
+                    'rmb' => (float)$p['rmb'],
+                    'usd' => (float)$p['usd'],
+                    'inr' => (float)$p['inr']
+                ];
+                $pay_total_rmb += (float)$p['rmb'];
+                $pay_total_usd += (float)$p['usd'];
+                $pay_total_inr += (float)$p['inr'];
+            }
+
+            $total_row = [
+                'rmb' => $outstanding['rmb'] + $pay_total_rmb,
+                'usd' => $outstanding['usd'] + $pay_total_usd,
+                'inr' => $outstanding['inr'] + $pay_total_inr
+            ];
+
+            $loaded_row = [
+                'rmb' => (float)$s['totals']['total_off_rmb'],
+                'usd' => (float)$s['totals']['total_off_usd'],
+                'inr' => (float)$s['totals']['total_off_rs']
+            ];
+
+            $balance_row = [
+                'rmb' => $total_row['rmb'] - $loaded_row['rmb'],
+                'usd' => $total_row['usd'] - $loaded_row['usd'],
+                'inr' => $total_row['inr'] - $loaded_row['inr']
+            ];
+
+            $supplier_accounts[] = [
+                'supplier_id' => $s_id,
+                'supplier_name' => $s_name,
+                'outstanding' => $outstanding,
+                'payments' => $batch_payments,
+                'total' => $total_row,
+                'loaded' => $loaded_row,
+                'balance' => $balance_row
+            ];
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(array(
+            'status' => 200,
+            'message' => 'success',
+            'batch_no' => $batch_no,
+            'header' => array(
+                'po_id' => (int)$po['id'],
+                'boe_no' => (string)($po['boe_no'] ?? ''),
+                'boe_date' => !empty($po['boe_date']) ? date('Y-m-d', strtotime($po['boe_date'])) : '',
+                'received_date' => !empty($po['completed_date']) ? date('Y-m-d', strtotime($po['completed_date'])) : '',
+                'loading_date' => !empty($po['loading_date']) ? date('Y-m-d', strtotime($po['loading_date'])) : '',
+                'po_date' => !empty($po['date']) ? date('Y-m-d', strtotime($po['date'])) : ''
+            ),
+            'suppliers' => $suppliers,
+            'grand_totals' => $grand_totals,
+            'expenses' => $expenses,
+            'expense_items' => $expense_items,
+            'supplier_accounts' => $supplier_accounts
+        ));
     }
 
     public function get_batch_detail_data()
@@ -1933,7 +2322,7 @@ class Inventory extends CI_Controller
             WHERE batch_no = ? AND is_delete = 0
         ", array($batch_no))->result_array();
 
-        $processed_expenses = [];
+        $expenses = [];
         foreach ($suppliers as $s_id => $s_data) {
             $supplier_total = 0;
             foreach ($all_batch_expenses as $exp) {
@@ -1947,15 +2336,30 @@ class Inventory extends CI_Controller
                     }
                 }
             }
-            $processed_expenses[] = array(
+            $expenses[] = array(
                 'supplier_id' => $s_id,
                 'sub_total' => $supplier_total
             );
+
+            // $supplier_total = 0;
+            // foreach ($all_batch_expenses as $exp) {
+            //     $exp_supplier_ids = explode(',', (string)($exp['supplier_id'] ?? ''));
+            //     $exp_supplier_ids = array_filter(array_map('trim', $exp_supplier_ids));
+                
+            //     if (in_array((string)$s_id, $exp_supplier_ids)) {
+            //         $count = count($exp_supplier_ids);
+            //         if ($count > 0) {
+            //             $supplier_total += (float)$exp['sub_total'] / $count;
+            //         }
+            //     }
+            // }
+            // $expenses[] = array(
+            //     'supplier_id' => $s_id,
+            //     'sub_total' => $supplier_total
+            // );
         }
 
         $suppliers = array_values($suppliers);
-        $expenses = $processed_expenses;
-
         $expense_items = $this->db->query("
             SELECT 
                 ed.expense_name, 
@@ -3218,7 +3622,7 @@ class Inventory extends CI_Controller
             $page_data['data']       = $data;
             $page_data['states']     = $this->crud_model->get_states_by_country($data['country_id']);
             $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
-            $page_data['navigation']  = 'my_company';
+            $page_data['navigation'] = 'my_company';
             $page_data['page_name']  = 'my_company_edit';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Vendor';

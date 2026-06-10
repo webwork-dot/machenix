@@ -39,9 +39,9 @@
 <div class="row" id="table-bordered">
     <div class="col-12">
         <div class="card">
-            <div class="card-header pb-0">
+            <!-- <div class="card-header pb-0">
                 <h4 class="card-title">Product Company Stock Breakdown</h4>
-            </div>
+            </div> -->
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
@@ -61,12 +61,11 @@
                             <th>Warehouse</th>
                             <th>Product Name</th>
                             <th>Quantity</th>
+                            <th>White Qty</th>
+                            <th>Black Qty</th>
                             <th>PO Qty</th>
                             <th>Priority Qty</th>
                             <th>Loading Qty</th>
-                            <th>With Exp Cost</th>
-                            <th>Without Exp Cost</th>
-                            <th>Official Cost in INR</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -100,7 +99,7 @@
 </div>
 
 <script type="text/javascript">
-    function showProductPOList(productId, companyId, status, warehouseId) {
+    function showProductPOList(productId, companyId, status, warehouseId = '') {
         $('#poListModal').modal('show');
         $('#poListContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
 
@@ -108,7 +107,7 @@
         $('#poListModalTitle').text(statusTitle + ' Purchase Orders');
 
         $.ajax({
-            url: "<?php echo base_url('inventory/get-product-po-list'); ?>",
+            url: "<?php echo base_url('inventory/get_product_po_list'); ?>",
             type: "POST",
             data: {
                 product_id: productId,
@@ -156,12 +155,11 @@
                 { "data": "warehouse" },
                 { "data": "product_name" },
                 { "data": "quantity" },
+                { "data": "white_qty" },
+                { "data": "black_qty" },
                 { "data": "po_qty" },
                 { "data": "priority_qty" },
                 { "data": "loading_qty" },
-                { "data": "with_exp_cost" },
-                { "data": "without_exp_cost" },
-                { "data": "official_cost_inr" },
                 { "data": "action" }
             ],
             "buttons": [
@@ -169,7 +167,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                        "columns": [0, 1, 2, 3, 4, 5, 6]
                     }
                 },
                 {
@@ -177,7 +175,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                        "columns": [0, 1, 2, 3, 4, 5, 6]
                     }
                 }
             ],

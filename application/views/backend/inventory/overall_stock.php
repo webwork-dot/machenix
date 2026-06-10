@@ -56,6 +56,8 @@
               <th>#</th>
               <th>Product Name</th>
               <th>Quantity</th>
+              <th>White Qty</th>
+              <th>Black Qty</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -151,6 +153,8 @@
                 { "data": "sr_no" },
                 { "data": "product_name" },
                 { "data": "quantity" },
+                { "data": "white_qty" },
+                { "data": "black_qty" },
                 { "data": "action" }
             ],
             "buttons": [
@@ -158,7 +162,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2]
+                        "columns": [0, 1, 2, 3, 4]
                     }
                 },
                 {
@@ -166,7 +170,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2]
+                        "columns": [0, 1, 2, 3, 4]
                     }
                 }
             ],

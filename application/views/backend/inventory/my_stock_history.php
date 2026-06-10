@@ -44,6 +44,8 @@
 					<th>#</th>
 					<th>Date</th>
 					<th>Quantity</th>
+					<th>White Qty</th>
+					<th>Black Qty</th>
 					<th>Status</th>
 					<th>Voucher No</th>
 					<!-- <th>From</th>
@@ -96,6 +98,8 @@
                 { "data": "sr_no" },
                 { "data": "date" },
                 { "data": "quantity" },
+                { "data": "white_qty" },
+                { "data": "black_qty" },
                 { "data": "status" },
                 { "data": "voucher_no" },
                 // { "data": "supplier_name" },
@@ -108,7 +112,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7]
                     }
                 },
                 {
@@ -116,7 +120,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7]
                     }
                 }
             ], 
