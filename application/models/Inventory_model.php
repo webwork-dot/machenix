@@ -2843,6 +2843,82 @@ class Inventory_model extends CI_Model
 		return $voucher_no;
 	}
 
+	public function update_order_no($order_no)
+	{
+		$order_no = explode('/', $order_no);
+		$pre = $order_no[0];
+		$year = $order_no[1];
+		$number = $order_no[2];
+		$query = $this->db->query("SELECT id FROM sales_order_no WHERE year='$year' ORDER BY id DESC LIMIT 1");
+		if ($query->num_rows() > 0) {
+			$row = $query->row_array();
+			$id = $row['id'];
+			$data = array();
+			$data['prefix'] = $pre;
+			$data['year'] = $year;
+			$data['number'] = $number;
+			$this->db->where('id', $id);
+			$this->db->update('sales_order_no', $data);
+		} else {
+			$data = array();
+			$data['prefix'] = $pre;
+			$data['year'] = $year;
+			$data['number'] = $number;
+			$this->db->insert('sales_order_no', $data);
+		}
+	}
+
+	public function get_invoice_no()
+	{
+		// date("Y-m-d H:i:s");
+		$year  = current_year();
+		$voucher_no = '';
+		$query = $this->db->query("SELECT number,year,prefix FROM sales_invoice_no WHERE year='$year' ORDER BY id DESC LIMIT 1");
+		if ($query->num_rows() > 0) {
+			$row = $query->row_array();
+			$number = $row['number'];
+			$voucher_no = $row['prefix'] . '/' . $row['year'] . '/' . $number;
+		} else {
+			$number = 1;
+			$voucher_no = 'SO' . '/' . $year . '/' . $number;
+			$this->db->insert('sales_invoice_no', array('number' => $number, 'year' => $year, 'prefix' => 'SO'));
+		}
+
+		$check_order = $this->db->where('invoice_no',$voucher_no)->get('sales_order');
+		if($check_order->num_rows() > 0){
+			$number = $number + 1;
+			$this->db->where('year', $year)->update('sales_invoice_no', array('number' => $number));
+			return $this->get_invoice_no();
+		} else {
+			return $voucher_no;
+		}
+	}
+
+	// public function update_invoice_no($order_no)
+	// {
+	// 	$order_no = explode('/', $order_no);
+	// 	$pre = $order_no[0];
+	// 	$year = $order_no[1];
+	// 	$number = $order_no[2];
+	// 	$query = $this->db->query("SELECT id FROM sales_order_no WHERE year='$year' ORDER BY id DESC LIMIT 1");
+	// 	if ($query->num_rows() > 0) {
+	// 		$row = $query->row_array();
+	// 		$id = $row['id'];
+	// 		$data = array();
+	// 		$data['prefix'] = $pre;
+	// 		$data['year'] = $year;
+	// 		$data['number'] = $number;
+	// 		$this->db->where('id', $id);
+	// 		$this->db->update('sales_order_no', $data);
+	// 	} else {
+	// 		$data = array();
+	// 		$data['prefix'] = $pre;
+	// 		$data['year'] = $year;
+	// 		$data['number'] = $number;
+	// 		$this->db->insert('sales_order_no', $data);
+	// 	}
+	// }
+
 	public function get_purchase_order($delivery_status = [])
 	{
 		$params['draw'] = $_REQUEST['draw'];
@@ -8480,31 +8556,6 @@ class Inventory_model extends CI_Model
 
 	/* Sales Order Start*/
 
-	public function update_order_no($order_no)
-	{
-		$order_no = explode('/', $order_no);
-		$pre = $order_no[0];
-		$year = $order_no[1];
-		$number = $order_no[2];
-		$query = $this->db->query("SELECT id FROM sales_order_no WHERE year='$year' ORDER BY id DESC LIMIT 1");
-		if ($query->num_rows() > 0) {
-			$row = $query->row_array();
-			$id = $row['id'];
-			$data = array();
-			$data['prefix'] = $pre;
-			$data['year'] = $year;
-			$data['number'] = $number;
-			$this->db->where('id', $id);
-			$this->db->update('sales_order_no', $data);
-		} else {
-			$data = array();
-			$data['prefix'] = $pre;
-			$data['year'] = $year;
-			$data['number'] = $number;
-			$this->db->insert('sales_order_no', $data);
-		}
-	}
-
 	public function get_sales_order_details($id)
 	{
 		$data = [];
@@ -9454,14 +9505,15 @@ class Inventory_model extends CI_Model
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 0) {
-					$gen_invoice_url = base_url() . 'inventory/sales_order/gen_invoice/' . $id;
+					$gen_invoice_modal_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_generate_invoice_modal/" . $customer_id . "/" . $id . "', 'Generate Invoice')";
+					$gen_invoice_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $gen_invoice_modal_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Generate Invoice</a>';
 
 					$action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							<a class="dropdown-item" href="javascript:void(0)" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')"><i class="fa fa-refresh" aria-hidden="true"></i> Generate Invoice</a>
+							' . $gen_invoice_html . '
 							' . $delete_html . '
 							' . $edit_order_html . '
 						</div>
@@ -9492,10 +9544,20 @@ class Inventory_model extends CI_Model
 				// }
 
 				$qty = 0;
-				$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
-				if ($query2->num_rows() > 0) {
-					$row2 = $query2->row_array();
-					$qty = $row2['qty'];
+				if($item['is_approved'] == 0 && $item['is_generated'] == 0) {
+					$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
+					if ($query2->num_rows() > 0) {
+						$row2 = $query2->row_array();
+						$qty = $row2['qty'];
+					}
+				} else {
+					$query2 = $this->db->query("SELECT avail_white_qty, avail_black_qty, white_qty, black_qty FROM sales_order_product_batch WHERE (order_id='$id')");
+					if ($query2->num_rows() > 0) {
+						foreach($query2->result_array() as $row2) {
+							$qty += $row2['white_qty'];
+							$qty += ($row2['avail_black_qty'] < $row2['black_qty']) ? $row2['avail_black_qty'] : $row2['black_qty'];
+						}
+					}
 				}
 
 				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
@@ -9598,8 +9660,9 @@ class Inventory_model extends CI_Model
 				}
 
 				if($item['is_generated'] == 0) {
+					$gen_invoice_modal_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_generate_invoice_modal/" . $customer_id . "/" . $id . "', 'Generate Invoice')";
 					$action .= '
-					<a href="#" onclick="confirm_modal(\'' . $gen_invoice_url . '\',\'Do you want to generate the invoice of this order!\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-pass"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
+					<a href="#" onclick="' . $gen_invoice_modal_url . '" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-pass"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
 				}
 
 				$qty = 0;
@@ -11051,6 +11114,86 @@ class Inventory_model extends CI_Model
 
 			// Soft update sales order
 			$this->db->where('id', $id)->update('sales_order', ['is_generated' => 1]);
+
+			$this->db->trans_commit(); // Commit transaction
+
+			$resultpost = [
+				"status" => 200,
+				"message" => get_phrase('invoice_generated_successfully'),
+				"url" => $this->session->userdata('previous_url'),
+			];
+		} catch (Exception $e) {
+			$this->db->trans_rollback(); // Rollback on error
+			$resultpost = [
+				"status" => 400,
+				"message" => $e->getMessage(),
+			];
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	function gen_invoice_sales_order_post()
+	{
+		$this->db->trans_start(); // Start transaction
+
+		try {
+			$sales_order_ids = $this->input->post('sales_order_id');
+			if (empty($sales_order_ids) || !is_array($sales_order_ids)) {
+				throw new Exception(get_phrase('please_select_at_least_one_sales_order'));
+			}
+
+			$invoice_no = clean_and_escape($this->input->post('invoice_no'));
+			$invoice_date = clean_and_escape($this->input->post('invoice_date'));
+
+			if (empty($invoice_no)) {
+				throw new Exception(get_phrase('invoice_number_cannot_be_empty'));
+			}
+			if (empty($invoice_date)) {
+				throw new Exception(get_phrase('invoice_date_cannot_be_empty'));
+			}
+
+			// Check if invoice_no already exists in non-deleted sales orders
+			$check_exists = $this->db->where('invoice_no', $invoice_no)
+									 ->where('is_deleted', '0')
+									 ->get('sales_order');
+			if ($check_exists->num_rows() > 0) {
+				throw new Exception(get_phrase('invoice_no_has_already_been_used'));
+			}
+
+			// Soft update selected sales orders
+			$this->db->where_in('id', $sales_order_ids)->update('sales_order', [
+				'is_generated' => 1,
+				'invoice_no' => $invoice_no,
+				'invoice_date' => $invoice_date
+			]);
+
+			foreach ($sales_order_ids as $order_id) {
+				$sales = $this->db->where('id', $order_id)->get('sales_order')->row_array();
+				if ($sales) {
+					$log_json = [
+						'sales_order' => $sales,
+						'invoice_no'  => $invoice_no,
+						'invoice_date'=> $invoice_date
+					];
+
+					$log_data = array(
+						'parent_id'      => $order_id,
+						'ref_id'         => NULL,
+						'module'         => 'sales',
+						'action'         => 'generate_invoice',
+						'message'        => 'Invoice generated by ' . $this->session->userdata('super_name'),
+						'json'           => json_encode($log_json),
+						'table_name'     => 'sales_order',
+						'added_by'       => $this->session->userdata('super_user_id'),
+						'added_by_email' => $this->session->userdata('super_email'),
+						'added_by_name'  => $this->session->userdata('super_name'),
+						'added_by_type'  => $this->session->userdata('super_type')
+					);
+					$this->db->insert('sys_logs', $log_data);
+				}
+			}
 
 			$this->db->trans_commit(); // Commit transaction
 

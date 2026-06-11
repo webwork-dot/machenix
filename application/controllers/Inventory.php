@@ -3166,6 +3166,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->delete_sales_order($param2);
         } elseif ($param1 == "gen_invoice") {
             $this->inventory_model->gen_invoice_sales_order($param2);
+        } elseif ($param1 == "gen_invoice_post") {
+            $this->inventory_model->gen_invoice_sales_order_post();
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
 
