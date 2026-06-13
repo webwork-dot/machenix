@@ -84,25 +84,33 @@
    <div class="col-12">
       <div class="card">
          <div class="card-body">
-            <div class="row">
-               <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total Sales Order <span id="total_count"> (0)</span></b>
+             <div class="row">
+                <div class="col-md-12 mt-10">
+                   <h5 class="mb-0"><b>Total Sales Order <span id="total_count"> (0)</span></b>
+                   <?php if ($status == 'complete' && $staff_access !== 7) { ?>
+                      &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
+                   <?php } ?>
 				  </h5>
-               </div>
-            </div>
+                </div>
+             </div>
          </div>
         <div class="card-datatable d-report mb-2">
             <!-- <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>    -->
             <?php if($this->session->userdata('super_type_id') == 7) { ?>
                 <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
+            <?php } elseif ($status == 'invoice' && $staff_access !== 7) { ?>
+                <a href="<?php echo site_url('inventory/sales-invoice/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
             <?php } ?>       
      
-		
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
 					<th>Date</th>
+                    <?php if ($status == 'complete') { ?>
+                    <th>Invoice No</th>
+                    <th>Invoice Date</th>
+                    <?php } ?>
 					<!-- <th>Company Name</th> -->
 					<!--<th>Reference Number</th>-->
 					<th>Customer Name</th>
@@ -112,6 +120,9 @@
 					<th>Total Products</th>
 					<th>Total Amount</th>
 				    <!--<th>Remark</th>-->
+                    <?php if ($staff_access !== 7) { ?>
+                        <th>Added By</th>
+                    <?php } ?>
                     <?php // if ($staff_access !== 7) { ?>
                     <th>Actions</th>
                     <?php // } ?>
@@ -124,6 +135,16 @@
 </div>
 
 <script type="text/javascript">
+<?php
+$num_cols = 8;
+if ($status == 'complete') {
+    $num_cols += 2;
+}
+if ($staff_access !== 7) {
+    $num_cols += 1;
+}
+$export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
+?>
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -162,6 +183,10 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "date" },
+                <?php if ($status == 'complete') { ?>
+                { "data": "invoice_no" },
+                { "data": "invoice_date" },
+                <?php } ?>
                 // { "data": "company_name" },
                 // { "data": "refrence_no" },
                 { "data": "customer_name" },
@@ -171,34 +196,43 @@
                 { "data": "total_pro" },
                 { "data": "grand_total" },
                 // { "data": "remark" },
-                <?php // if ($staff_access !== 7) { ?>
-                   { "data": "action" },
-                <?php // } ?>
-            ],
+                 <?php if ($staff_access !== 7) { ?>
+                 { "data": "added_by" },
+                 <?php } ?>
+                 <?php // if ($staff_access !== 7) { ?>
+                    { "data": "action" },
+                 <?php // } ?>
+             ],
+            
+             "buttons": [
+                 {
+                     "extend": 'excel',
+                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
+                     "exportOptions": {
+                        "columns": <?php echo $export_cols; ?>
+                     }
+                 },
+                 {
+                     "extend": 'pdfHtml5',
+                     "orientation": 'landscape',
+                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
+                     "exportOptions": {
+                        "columns": <?php echo $export_cols; ?>
+                     }
+                 }
+             ], 
            
-            "buttons": [
-                {
-                    "extend": 'excel',
-                    "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
-                },
-                {
-                    "extend": 'pdfHtml5',
-                    "orientation": 'landscape',
-                    "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
-                }
-            ], 
-           
-            "infoCallback": function( settings, start, end, max, total, pre ) {
-                $(".loader").fadeOut("slow"); 
-                $('#total_count').html('('+total+')');
-                return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
-            }, 
+             "infoCallback": function( settings, start, end, max, total, pre ) {
+                 $(".loader").fadeOut("slow"); 
+                 $('#total_count').html('('+total+')');
+                 var json = settings.json;
+                 if (json && json.total_amount !== undefined) {
+                     $('#total_sales_amount').html(json.total_amount);
+                 } else {
+                     $('#total_sales_amount').html('0.00');
+                 }
+                 return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
+             }, 
 			createdRow: function (row, data, index) {
                    if(data['error']=='1'){
                     $(row).addClass('table-error');

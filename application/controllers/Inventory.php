@@ -690,6 +690,9 @@ class Inventory extends CI_Controller
         $expenses = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);
         $page_data['expenses'] = ($expenses != '') ? $expenses : [];
 
+        $other_charges = $this->common_model->getResultById('other_charges', 'id, name, gst', ['is_delete' => '0']);
+        $page_data['other_charges'] = ($other_charges != '') ? $other_charges : [];
+
         if ($param1 == 'add') {
             $page_data['navigation']  = 'import_purchase_order';
             $page_data['type']      = 'import';

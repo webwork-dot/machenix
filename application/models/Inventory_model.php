@@ -5335,11 +5335,35 @@ class Inventory_model extends CI_Model
         $size_label = $category['name'] ?? '-';
 				
 				$action = '';
-				$view_url = base_url() . 'inventory/my-stock-batch/' . $id  . '/' . $warehouse_id;
+				$wid_for_po = (isset($warehouse_id) && $warehouse_id != '' && $warehouse_id != 'All') ? $warehouse_id : '';
+				$view_url = base_url() . 'inventory/my-stock-batch/' . $id  . '/' . (isset($warehouse_id) ? $warehouse_id : '');
 				$action .= '<a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+
+				$latest_batch = $this->db->select('batch_no')->where('product_id', $product_id)->where('batch_no!=', '')->where('batch_no!=', null)->order_by('id', 'DESC')->limit(1)->get('inventory')->row_array();
+				$batch_no_val = $latest_batch ? $latest_batch['batch_no'] : '';
+				if ($batch_no_val != '') {
+					$action .= '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($batch_no_val) . '\', \'Generate Barcode\')" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-barcode" aria-hidden="true"></i></button></a>';
+				}
 				
-				// $modal_url = base_url() . 'modal/popup_inventory/inventory_update_modal/' . $id;
-				// $action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . $modal_url . '\',\'Update Stock\')" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Update Stock"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-stumbleupon" aria-hidden="true"></i></button></a>';
+				$po_qty_arr = $this->get_product_po_list($product_id, $company_id, 'po', $wid_for_po);
+				$po_qty = array_sum(array_column($po_qty_arr, 'quantity'));
+				$po_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id. "," . $company_id. ",\"po\",\"" . $wid_for_po . "\")'>" . $po_qty . "</a>";
+				
+				$priority_qty_arr = $this->get_product_po_list($product_id, $company_id, 'priority', $wid_for_po);
+				$priority_qty = array_sum(array_column($priority_qty_arr, 'quantity'));
+				$priority_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id. "," . $company_id. ",\"priority\",\"" . $wid_for_po . "\")'>" . $priority_qty . "</a>";
+
+				$loading_qty_arr = $this->get_product_po_list($product_id, $company_id, 'loading', $wid_for_po);
+				$loading_qty = array_sum(array_column($loading_qty_arr, 'quantity'));
+				$loading_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id. "," . $company_id. ",\"loading\",\"" . $wid_for_po . "\")'>" . $loading_qty . "</a>";
+
+				$no_expense_amt_arr = $this->get_product_po_list($product_id, $company_id, 'no_expense', $wid_for_po);
+				$no_expense_amt = array_sum(array_column($no_expense_amt_arr, 'amount'));
+				$no_expense_amt_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id. "," . $company_id. ",\"no_expense\",\"" . $wid_for_po . "\")'>" . $no_expense_amt . "</a>";
+
+				$expense_amt_arr = $this->get_product_po_list($product_id, $company_id, 'expense', $wid_for_po);
+				$expense_amt = array_sum(array_column($expense_amt_arr, 'amount'));
+				$expense_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id. "," . $company_id. ",\"expense\",\"" . $wid_for_po . "\")'>" . $expense_amt . "</a>";
 				
 				$data[] = array(
 					"sr_no"             => ++$start,
@@ -5348,6 +5372,11 @@ class Inventory_model extends CI_Model
 					"quantity"          => $item['quantity'],
 					"black_qty"         => $item['black_qty'],
 					"white_qty"         => $item['white_qty'],
+					"po_qty"            => $po_qty_btn,
+					"priority_qty"      => $priority_qty_btn,
+					"loading_qty"       => $loading_qty_btn,
+					"no_expense_amt"    => $no_expense_amt_btn,
+					"expense_amt"       => $expense_qty_btn,
 					"action"            => $action,
 				);
 			}
@@ -5464,6 +5493,9 @@ class Inventory_model extends CI_Model
 				$edit_url = base_url() . 'inventory/my-stock-history/' . $id;
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+				if ($item['batch_no'] != '' && $item['batch_no'] != '-') {
+					$action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($item['batch_no']) . '\', \'Generate Barcode\')" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-barcode" aria-hidden="true"></i></button></a>';
+				}
 
 				$data[] = array(
 					"sr_no"       		=> ++$start,
@@ -9453,7 +9485,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id, order_type, order_no, refrence_no, is_generated, is_approved, date, customer_id, customer_name, warehouse_name, grand_total, company_name, remark FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, order_type, order_no, refrence_no, is_generated, is_approved, date, customer_id, customer_name, warehouse_name, grand_total, company_name, remark, invoice_no, invoice_date, added_by_name FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -9475,7 +9507,7 @@ class Inventory_model extends CI_Model
 				$delete_html = '';
 				if ($this->session->userdata('super_type_id') !== 7) {
 					$delete_url = "confirm_modal('" . base_url() . "inventory/sales_order/delete/" . $id . "','Are you sure want to delete!')";
-					$delete_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+					$delete_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>';
 				}
 
 				$edit_order_html = '';
@@ -9576,8 +9608,21 @@ class Inventory_model extends CI_Model
 					"total_pro"     	=> $total_pro,
 					"qty"           	=> $qty,
 					"remark"        	=> $item['remark'],
+					"invoice_no"		=> $item['invoice_no'],
+					"invoice_date"		=> ($item['invoice_date'] != '0000-00-00' && $item['invoice_date'] != null) ? date('d M, Y', strtotime($item['invoice_date'])) : '-',
+					"added_by"          => ($item['added_by_name'] != '' && $item['added_by_name'] != null) ? $item['added_by_name'] : '-',
 					"action"          => $action,
 				);
+			}
+		}
+
+		$total_amount_formatted = '0.00';
+		if (isset($_REQUEST['status']) && $_REQUEST['status'] == 'complete' && $this->session->userdata('super_type_id') != 7) {
+			$sum_query = $this->db->query("SELECT SUM(grand_total) as total_amount FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter");
+			if ($sum_query->num_rows() > 0) {
+				$row = $sum_query->row_array();
+				$total_val = $row['total_amount'];
+				$total_amount_formatted = number_format((float)($total_val ?? 0), 2, '.', ',');
 			}
 		}
 
@@ -9585,7 +9630,8 @@ class Inventory_model extends CI_Model
 			"draw" => intval($params['draw']),
 			"recordsTotal" => $total_count,
 			"recordsFiltered" => $total_count,
-			"data" => $data
+			"data" => $data,
+			"total_amount" => $total_amount_formatted
 		);
 		echo json_encode($json_data);
 	}
@@ -13525,6 +13571,9 @@ class Inventory_model extends CI_Model
 			$data['type']              = clean_and_escape($this->input->post('type')); // official/unofficial
 			$data['expense_type']      = (int) $this->input->post('expense_type');
 			$data['gst_type']          = clean_and_escape($this->input->post('gst_type')); // '', igst, cgst_sgst
+			$data['purchase_no']       = clean_and_escape($this->input->post('purchase_no'));
+			$data['purchase_date']     = $this->input->post('purchase_date') ? $this->input->post('purchase_date') : null;
+			$data['usd']               = (float) $this->input->post('usd');
 
 			$data['narration']   = clean_and_escape($this->input->post('narration'));
 
@@ -13542,6 +13591,7 @@ class Inventory_model extends CI_Model
 			$data['grand_total'] = number_format($grand_total, 5, '.', '');
 
 			// Detail arrays
+			$charges_ids   = (array) $this->input->post('charges_id');
 			$expense_names = (array) $this->input->post('expense_name');
 			$amounts       = (array) $this->input->post('amount');
 			$gsts          = (array) $this->input->post('gst');
@@ -13577,9 +13627,11 @@ class Inventory_model extends CI_Model
 					$amt    = isset($amounts[$i]) ? (float) $amounts[$i] : 0;
 					$gstP   = isset($gsts[$i]) ? (float) $gsts[$i] : 0;
 					$gstAmt = isset($gst_amts[$i]) ? (float) $gst_amts[$i] : 0;
+					$charges_id = isset($charges_ids[$i]) && $charges_ids[$i] !== '' ? (int) $charges_ids[$i] : null;
 
 					$details[] = array(
 							'parent_id'    => $parent_id,
+							'charges_id'   => $charges_id,
 							'expense_name' => clean_and_escape($name),
 							'amount'       => number_format($amt, 5, '.', ''),
 							'gst'          => number_format($gstP, 2, '.', ''),
@@ -13637,6 +13689,7 @@ class Inventory_model extends CI_Model
 		}
 
 		// ---- Build child rows FIRST (so we don't delete old rows if new is invalid) ----
+		$charges_ids   = (array) $this->input->post('charges_id');
 		$expense_names = (array) $this->input->post('expense_name');
 		$amounts       = (array) $this->input->post('amount');
 		$gsts          = (array) $this->input->post('gst');
@@ -13656,9 +13709,11 @@ class Inventory_model extends CI_Model
 				$amt    = isset($amounts[$i]) ? (float) $amounts[$i] : 0;
 				$gstP   = isset($gsts[$i]) ? (float) $gsts[$i] : 0;
 				$gstAmt = isset($gst_amts[$i]) ? (float) $gst_amts[$i] : 0;
+				$charges_id = isset($charges_ids[$i]) && $charges_ids[$i] !== '' ? (int) $charges_ids[$i] : null;
 
 				$details[] = array(
 						'parent_id'    => $id,
+						'charges_id'   => $charges_id,
 						'expense_name' => clean_and_escape($name),
 						'amount'       => number_format($amt, 5, '.', ''),
 						'gst'          => number_format($gstP, 2, '.', ''),
@@ -13683,6 +13738,9 @@ class Inventory_model extends CI_Model
 		$data['type']              = clean_and_escape($this->input->post('type'));          // official/unofficial
 		$data['expense_type']      = (int) $this->input->post('expense_type');
 		$data['gst_type']          = clean_and_escape($this->input->post('gst_type'));      // '', igst, cgst_sgst
+		$data['purchase_no']       = clean_and_escape($this->input->post('purchase_no'));
+		$data['purchase_date']     = $this->input->post('purchase_date') ? $this->input->post('purchase_date') : null;
+		$data['usd']               = (float) $this->input->post('usd');
 		$data['narration'] = clean_and_escape($this->input->post('narration'));
 
 		$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;
@@ -15962,6 +16020,14 @@ public function get_sales_return_reports()
 				$loading_qty = array_sum(array_column($loading_qty_arr, 'quantity'));
 				$loading_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $pid. "," . $cid. ",\"loading\")'>" . $loading_qty . "</a>";
 
+				$no_expense_amt_arr = $this->get_product_po_list($pid, $cid, 'no_expense', $wid);
+				$no_expense_amt = array_sum(array_column($no_expense_amt_arr, 'amount'));
+				$no_expense_amt_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $pid. "," . $cid. ",\"no_expense\",\"" . $wid . "\")'>" . $no_expense_amt . "</a>";
+
+				$expense_amt_arr = $this->get_product_po_list($pid, $cid, 'expense', $wid);
+				$expense_amt = array_sum(array_column($expense_amt_arr, 'amount'));
+				$expense_qty_btn = "<a href='javascript:void(0)' onclick='showProductPOList(" . $pid. "," . $cid. ",\"expense\",\"" . $wid . "\")'>" . $expense_amt . "</a>";
+
 				$data[] = array(
 					"sr_no"       => ++$start,
 					"company"     => $item['company_name'] ?? '-',
@@ -15973,6 +16039,8 @@ public function get_sales_return_reports()
 					"po_qty"      => $po_qty_btn,
 					"priority_qty"=> $priority_qty_btn,
 					"loading_qty" => $loading_qty_btn,
+					"no_expense_amt" => $no_expense_amt_btn,
+					"expense_amt"   => $expense_qty_btn,
 					"action"      => $action
 				);
 			}
@@ -16025,6 +16093,34 @@ public function get_sales_return_reports()
 										$where_wid
 										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
+		} elseif($status == 'no_expense') {
+			// No Expense list = all orders except purchase_in, using quantity from po_products
+			$query = $this->db->query("SELECT
+											po.batch_no as voucher_no,
+											pp.completed_date as date,
+											SUM(po.official_total_rs) as amount
+										FROM inventory po
+										JOIN purchase_order pp ON po.batch_no = pp.voucher_no
+										WHERE po.product_id = '$product_id'
+										AND po.company_id = '$company_id'
+										AND po.quantity > 0
+										$where_wid
+										GROUP BY po.product_id, po.batch_no
+										ORDER BY po.id DESC");
+		} elseif($status == 'expense') {
+			// Expense list = all orders except purchase_in, using quantity from po_products
+			$query = $this->db->query("SELECT
+											po.batch_no as voucher_no,
+											pp.completed_date as date,
+											SUM(po.total_amt) as amount
+										FROM inventory po
+										JOIN purchase_order pp ON po.batch_no = pp.voucher_no
+										WHERE po.product_id = '$product_id'
+										AND po.company_id = '$company_id'
+										AND po.quantity > 0
+										$where_wid
+										GROUP BY po.product_id, po.batch_no
+										ORDER BY po.id DESC");
 		} else {
 			// Priority list = all orders except purchase_in, using quantity from po_products
 			$query = $this->db->query("SELECT

@@ -2,10 +2,14 @@
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
             <tr>
-                <th>Voucher No</th>
+                <th>Batch No</th>
                 <th>Date</th>
                 <!-- <th>Supplier</th> -->
+                <?php if($status == "expense" || $status == "no_expense") {?>
+                <th>Amount</th>
+                <?php } else { ?>
                 <th>Quantity</th>
+                <?php } ?>
             </tr>
         </thead>
         <tbody>
@@ -22,7 +26,11 @@
                         </td>
                         <td><?= date('d-M-Y', strtotime($po['date'])) ?></td>
                         <!-- <td><?= $po['supplier_name'] ?></td> -->
+                        <?php if($status == "expense" || $status == "no_expense") {?>
+                        <td><?= $po['amount'] ?></td>
+                        <?php } else { ?>
                         <td><?= $po['quantity'] ?></td>
+                        <?php } ?>
                     </tr>
                 <?php endforeach; ?>
             <?php else : ?>

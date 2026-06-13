@@ -95,6 +95,11 @@
 					<th>Quantity</th>
 					<th>Black Qty</th>
 					<th>White Qty</th>
+					<th>PO Qty</th>
+					<th>Priority Qty</th>
+					<th>Loading Qty</th>
+					<th>Cost</th>
+					<th>Cost with Expense</th>
 					<th>Actions</th>
                   </tr>
                </thead>
@@ -104,7 +109,55 @@
     </div>
 </div>
 
+<!-- PO List Modal -->
+<div class="modal fade" id="poListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-transparent">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-sm-5 mx-50 pb-5">
+                <h1 class="text-center mb-1" id="poListModalTitle">PO List</h1>
+                <p class="text-center" id="poListModalSubTitle">Details of Purchase Orders</p>
+                <div id="poListContent" class="mt-2">
+                    <!-- Dynamic Content -->
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">       
+    function showProductPOList(productId, companyId, status, warehouseId = '') {
+        $('#poListModal').modal('show');
+        $('#poListContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+
+        let statusTitle = status.charAt(0).toUpperCase() + status.slice(1);
+        $('#poListModalTitle').text(statusTitle + ' Purchase Orders');
+
+        $.ajax({
+            url: "<?php echo base_url('inventory/get_product_po_list'); ?>",
+            type: "POST",
+            data: {
+                product_id: productId,
+                company_id: companyId,
+                status: status,
+                warehouse_id: warehouseId
+            },
+            success: function (response) {
+                $('#poListContent').html(response);
+            },
+            error: function () {
+                $('#poListContent').html('<div class="alert alert-danger">Failed to load data. Please try again.</div>');
+            }
+        });
+    }
+
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
     	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -148,6 +201,11 @@
                 { "data": "quantity" },
                 { "data": "black_qty" },
                 { "data": "white_qty" },
+                { "data": "po_qty" },
+                { "data": "priority_qty" },
+                { "data": "loading_qty" },
+                { "data": "no_expense_amt" },
+                { "data": "expense_amt" },
                 { "data": "action" },
             ], 
            
@@ -156,7 +214,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5]
+                       "columns": [0,1,2,3,4,5,6,7,8,9,10,11]
                     }
                 },
                 {
@@ -164,7 +222,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5]
+                       "columns": [0,1,2,3,4,5,6,7,8,9,10,11]
                     }
                 }
             ], 

@@ -1,5 +1,6 @@
 {
     "require": {
-        "nahid/jsonq": "^6.0"
+        "nahid/jsonq": "^6.0",
+        "picqer/php-barcode-generator": "^2.4"
     }
 }

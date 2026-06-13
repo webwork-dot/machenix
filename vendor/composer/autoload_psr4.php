@@ -6,6 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Picqer\\Barcode\\' => array($vendorDir . '/picqer/php-barcode-generator/src'),
     'Nahid\\QArray\\' => array($vendorDir . '/nahid/qarray/src'),
     'Nahid\\JsonQ\\' => array($vendorDir . '/nahid/jsonq/src'),
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),

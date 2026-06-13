@@ -5,6 +5,11 @@
 $po_exp = (isset($data) && is_array($data)) ? $data : [];
 $details = (isset($lists) && is_array($lists)) ? $lists : [];
 
+$other_charges_list = isset($other_charges) && is_array($other_charges) ? $other_charges : [];
+$charges_options = '<option value="">Select Charge</option>';
+foreach ($other_charges_list as $charge) {
+    $charges_options .= '<option value="' . $charge['id'] . '" data-gst="' . $charge['gst'] . '" data-name="' . html_escape($charge['name']) . '">' . html_escape($charge['name']) . '</option>';
+}
 $selected_batch   = $po_exp['batch_no']      ?? '';
 // some projects store vendor in vendor_id, some in company_id — keep your form name as company_id
 $selected_vendor  = $po_exp['vendor_id']     ?? ($po_exp['company_id'] ?? '');
@@ -72,6 +77,27 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                   </option>
                 <?php endforeach; ?>
               </select>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Purchase No</label>
+              <input type="text" class="form-control" name="purchase_no" id="purchase_no" placeholder="Purchase No" value="<?php echo html_escape($po_exp['purchase_no'] ?? ''); ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Purchase Date</label>
+              <input type="date" class="form-control" name="purchase_date" id="purchase_date" value="<?php echo html_escape($po_exp['purchase_date'] ?? ''); ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Dollar USD</label>
+              <input type="number" class="form-control" name="usd" id="usd" placeholder="0.00" step="0.01" min="0" value="<?php echo html_escape($po_exp['usd'] ?? ''); ?>">
             </div>
           </div>
 
@@ -154,8 +180,16 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                         <td class="sr-no text-center"><?php echo (int)($i + 1); ?></td>
 
                         <td>
-                          <input type="text" name="expense_name[]" class="form-control expense_name" required
-                                 value="<?php echo html_escape($row['expense_name'] ?? ''); ?>">
+                          <select name="charges_id[]" class="form-control charges_id" required>
+                            <option value="">Select Charge</option>
+                            <?php foreach ($other_charges_list as $charge): ?>
+                              <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-name="<?php echo html_escape($charge['name']); ?>"
+                                <?php echo (isset($row['charges_id']) && (string)$row['charges_id'] === (string)$charge['id']) ? 'selected' : ''; ?>>
+                                <?php echo html_escape($charge['name']); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                          <input type="hidden" name="expense_name[]" class="expense_name" value="<?php echo html_escape($row['expense_name'] ?? ''); ?>">
                         </td>
 
                         <td>
@@ -187,7 +221,12 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                   <?php else: ?>
                     <tr class="expense-row" data-mode="keep">
                       <td class="sr-no text-center">1</td>
-                      <td><input type="text" name="expense_name[]" class="form-control expense_name" required></td>
+                      <td>
+                        <select name="charges_id[]" class="form-control charges_id" required>
+                          <?php echo $charges_options; ?>
+                        </select>
+                        <input type="hidden" name="expense_name[]" class="expense_name">
+                      </td>
                       <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
                       <td class="gst-column"><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"></td>
                       <td class="gst-column"><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
@@ -414,6 +453,28 @@ $(function () {
     fetchSuppliers($(this).val());
   });
 
+  // Handle charges selection change
+  $(document).on('change', '#expenseTable .charges_id', function () {
+    const $row = $(this).closest('tr');
+    const $selectedOpt = $(this).find('option:selected');
+    const name = $selectedOpt.data('name') || '';
+    const gst = toNum($selectedOpt.data('gst'));
+
+    $row.find('.expense_name').val(name);
+    
+    // Set GST percentage if official PO type is selected
+    const isOfficial = ($('#po_type').val() === 'official');
+    if (isOfficial) {
+      $row.find('.gst').val(gst);
+    } else {
+      $row.find('.gst').val(0);
+    }
+    
+    // Set mode to amount and trigger totals update
+    setMode($row, 'amount');
+    updateTotals();
+  });
+
   // add row
   $('#addExpenseRow').on('click', function () {
     const isOfficial = ($('#po_type').val() === 'official');
@@ -421,7 +482,12 @@ $(function () {
     const newRow = `
       <tr class="expense-row" data-mode="amount">
         <td class="sr-no text-center"></td>
-        <td><input type="text" name="expense_name[]" class="form-control expense_name" required></td>
+        <td>
+          <select name="charges_id[]" class="form-control charges_id" required>
+            <?php echo $charges_options; ?>
+          </select>
+          <input type="hidden" name="expense_name[]" class="expense_name">
+        </td>
         <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
         <td class="gst-column" ${displayStyle}><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="0"></td>
         <td class="gst-column" ${displayStyle}><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>

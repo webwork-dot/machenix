@@ -4,6 +4,7 @@ $sales_order_id = $param3;
 
 $clicked_sales_order = $this->inventory_model->get_sales_order_by_id($sales_order_id)->row_array();
 $is_weird = $clicked_sales_order['is_weird'] ?? '0';
+$warehouse_id = $clicked_sales_order['warehouse_id'] ?? '0';
 
 // Fetch all ungenerated approved sales orders for this customer of the same type
 $orders = $this->db->where([
@@ -11,6 +12,7 @@ $orders = $this->db->where([
   'is_approved' => '1',
   'is_generated' => '0',
   'is_weird' => $is_weird,
+  'warehouse_id' => $warehouse_id,
   'is_deleted' => '0'
 ])->order_by('date', 'desc')->get('sales_order')->result_array();
 

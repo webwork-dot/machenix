@@ -98,7 +98,7 @@
 					<th>Total Amount</th>
 					<!--<th>Remark</th>-->
                     <?php if ($staff_access !== 7) { ?>
-                    <th>Actions</th>
+                    <!-- <th>Actions</th> -->
                     <?php } ?>
                   </tr>
                </thead>
@@ -157,7 +157,7 @@
                 { "data": "grand_total" },
                 // { "data": "remark" },
                 <?php if ($staff_access !== 7) { ?>
-                   { "data": "action" },
+                //    { "data": "action" },
                 <?php } ?>
             ], 
            

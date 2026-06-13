@@ -66,6 +66,8 @@
                             <th>PO Qty</th>
                             <th>Priority Qty</th>
                             <th>Loading Qty</th>
+                            <th>Cost</th>
+                            <th>Cost with Expense</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -160,6 +162,8 @@
                 { "data": "po_qty" },
                 { "data": "priority_qty" },
                 { "data": "loading_qty" },
+                { "data": "no_expense_amt" },
+                { "data": "expense_amt" },
                 { "data": "action" }
             ],
             "buttons": [
@@ -167,7 +171,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2, 3, 4, 5, 6]
+                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
                     }
                 },
                 {
@@ -175,7 +179,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
                     "exportOptions": {
-                        "columns": [0, 1, 2, 3, 4, 5, 6]
+                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
                     }
                 }
             ],

@@ -13,6 +13,10 @@ class ComposerStaticInit8f0ce1a658235ae455fbc65a1467867b
     );
 
     public static $prefixLengthsPsr4 = array (
+        'P' => 
+        array (
+            'Picqer\\Barcode\\' => 15,
+        ),
         'N' => 
         array (
             'Nahid\\QArray\\' => 13,
@@ -25,6 +29,10 @@ class ComposerStaticInit8f0ce1a658235ae455fbc65a1467867b
     );
 
     public static $prefixDirsPsr4 = array (
+        'Picqer\\Barcode\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/picqer/php-barcode-generator/src',
+        ),
         'Nahid\\QArray\\' => 
         array (
             0 => __DIR__ . '/..' . '/nahid/qarray/src',
