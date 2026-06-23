@@ -93,7 +93,7 @@
 </div>
 
 <script type="text/javascript">
-    function showProductPOList(productId, companyId, status, warehouseId) {
+    function showProductPOList(productId, companyId, status, warehouseId = '') {
         $('#poListModal').modal('show');
         $('#poListContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
 
@@ -116,6 +116,14 @@
                 $('#poListContent').html('<div class="alert alert-danger">Failed to load data. Please try again.</div>');
             }
         });
+    }
+
+    function showProductBatches(productId, warehouseId, productName) {
+        $('#scrollable-modal').modal('hide');
+        setTimeout(function () {
+            var url = "<?php echo base_url('modal/popup_inventory/modal_batch_details'); ?>/" + productId + "/" + warehouseId;
+            showAjaxModal(url, productName + ' - Batches');
+        }, 400);
     }
 
     $(document).ready(function ($) {

@@ -15931,9 +15931,12 @@ public function get_sales_return_reports()
 				$batch_url = base_url() . 'inventory/my-stock-company/' . $pid;
 				$action = '<a href="' . $batch_url . '" data-toggle="tooltip" data-bs-placement="top" title="View Company Stock"><button type="button" class="btn btn-sm btn-primary"><i class="fa fa-eye"></i></button></a>';
 
+				$url = base_url() . 'modal/popup_inventory/modal_company_stock/' . $pid;
+				$product_name_link = '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . $url . '\', \'' . htmlspecialchars($item['product_name'] ?? '', ENT_QUOTES) . '\')" class="text-primary fw-bold">' . htmlspecialchars($item['product_name'] ?? 'Unknown Product (ID: '.$pid.')') . '</a>';
+
 				$data[] = array(
 					"sr_no"       => ++$start,
-					"product_name"=> $item['product_name'] ?? 'Unknown Product (ID: '.$pid.')',
+					"product_name"=> $product_name_link,
 					"quantity"    => $item['current_qty'],
 					"white_qty"   => $item['white_qty'] ?? 0,
 					"black_qty"   => $item['black_qty'] ?? 0,
@@ -16053,6 +16056,38 @@ public function get_sales_return_reports()
 			"data" => $data
 		);
 		echo json_encode($json_data);
+	}
+
+	public function get_company_wise_product_stock($product_id)
+	{
+		$data_query = "SELECT 
+							  inv.company_id, inv.warehouse_id, inv.product_id,
+							  MIN(inv.id) as inventory_id,
+							  SUM(inv.quantity) AS current_qty,
+							  SUM(inv.official_qty) AS white_qty,
+							  SUM(inv.black_qty) AS black_qty,
+							  p.name as product_name, w.name as warehouse_name, c.name as company_name
+					   FROM inventory inv
+					   LEFT JOIN raw_products p ON p.id = inv.product_id
+					   LEFT JOIN warehouse w ON w.id = inv.warehouse_id
+					   LEFT JOIN company c ON c.id = inv.company_id
+					   WHERE inv.product_id = ?
+					   GROUP BY inv.company_id, inv.warehouse_id, inv.product_id 
+					   HAVING current_qty > 0 
+					   ORDER BY p.name ASC";
+		return $this->db->query($data_query, array($product_id))->result_array();
+	}
+
+	public function get_batches_by_product_warehouse($product_id, $warehouse_id)
+	{
+		$data_query = "SELECT 
+							  inv.id, inv.warehouse_name, inv.item_code, inv.categories, 
+							  inv.black_qty, inv.official_qty, inv.product_name, inv.product_id, 
+							  inv.quantity, inv.batch_no, inv.official_total_rs, inv.total_amt
+					   FROM inventory inv
+					   WHERE inv.product_id = ? AND inv.warehouse_id = ? AND inv.quantity > 0
+					   ORDER BY inv.id DESC";
+		return $this->db->query($data_query, array($product_id, $warehouse_id))->result_array();
 	}
 
 	public function get_product_po_list($product_id, $company_id, $status, $warehouse_id = '')
