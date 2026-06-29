@@ -88,14 +88,14 @@ $total_cbm = 0;
   <!-- <link rel="stylesheet" href="<?= base_url(); ?>assets/pdf/custom.css"> -->
   <style>
     @font-face {
-        font-family: 'OpenSans-Bold';
-        src: url("<?= base_url('assets/fonts/OpenSans-Bold.ttf') ?>") format('truetype');
-        font-weight: bold;
+      font-family: 'OpenSans-Bold';
+      src: url("<?= base_url('assets/fonts/OpenSans-Bold.ttf') ?>") format('truetype');
+      font-weight: bold;
     }
 
     .bold-text {
-        font-family: 'OpenSans-Bold', Arial, sans-serif;
-        font-weight: bold;
+      font-family: 'OpenSans-Bold', Arial, sans-serif;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -115,9 +115,9 @@ $total_cbm = 0;
               Add: <?php echo html_entity_decode($supplier_address); ?>
             </span><br>
             <?php endif; ?>
-            <?php if (!empty($supplier['contact_no'])): ?>
+            <?php if (!empty($supplier['tel_no'])): ?>
             <span class="bold-text" style="color: #000; font-size: 9px;">
-              Tel: <?php echo html_entity_decode($supplier['contact_no']); ?>
+              Tel: <?php echo (($supplier['t_code']) ? '+' . $supplier['t_code'] : '') . ' ' . html_entity_decode($supplier['tel_no']); ?>
               <?php if (!empty($supplier['gst_no'])): ?>
               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
               Fax: <?php echo html_entity_decode($supplier['gst_no']); ?>
@@ -256,21 +256,21 @@ $total_cbm = 0;
                 $total_cbm_val = isset($first_variation['total_cbm_value']) ? floatval($first_variation['total_cbm_value']) : 0;
         ?>
         <tr>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $sr_no++; ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo html_entity_decode($product['item_code'] ?? '-'); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $sr_no++; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo html_entity_decode($product['item_code'] ?? '-'); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>>
             <?php echo html_entity_decode(explode('(', $product['product_name'])[0] ?? '-'); ?>
           </td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $official_ci_qty; ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($total_nw, 0, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($gw_kg, 1, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($total_gw, 0, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($length, 0, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($width, 0, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($height, 0, '.', ''); ?></td>
-          <td class="bold-text" style="text-align: center;padding: 2px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($total_cbm_val, 2, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;" <?php echo $rowspan > 1 ? 'rowspan="' . $rowspan . '"' : ''; ?>><?php echo $official_ci_qty; ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($pkg_ctn, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($nw_kg, 1, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($total_nw, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($gw_kg, 1, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($total_gw, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($length, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($width, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($height, 0, '.', ''); ?></td>
+          <td class="bold-text" style="text-align: center;padding: 3px 1px 0px 1px; line-height: 0.6; height: auto;border:1px solid; font-size: 9px; color: #000;"><?php echo number_format($total_cbm_val, 2, '.', ''); ?></td>
         </tr>
         <?php 
                 // Display remaining variations (if any)
@@ -368,16 +368,16 @@ $total_cbm = 0;
     <table style="width: 100%; margin-top: 30px;">
       <tbody>
         <tr>
-          <td style="width:40%;text-align: left; padding: 10px 3px; line-height: 1.0; vertical-align: top;">
+          <td style="width:37%;text-align: left; padding: 10px 3px; line-height: 1.0; vertical-align: top;">
             <?php if (!empty($stamp_image) && $stamp_image != '-'): ?>
-            <img src="<?= $stamp_image; ?>" style="max-width: 250px; height: auto; margin-top: 10px;" >
+            <img src="<?= $stamp_image; ?>" style="max-width: 250px; height: auto; " >
             <?php endif; ?>
           </td>
-          <td style="width:60%;text-align: left; padding: 10px 3px; line-height: 1.0; vertical-align: top;">
-            <span style="color: #000; font-size: 12px;">
+          <td style="width:63%;text-align: left; padding: 10px 3px; line-height: 1.0; vertical-align: top;">
+            <span style="color: #000; font-size: 11px;">
               SELLER:
             </span><br>
-            <span class="bold-text" style="color: #000; font-size: 12px;">
+            <span class="bold-text" style="color: #000; font-size: 11px;">
               <?php echo !empty($supplier['name']) ? html_entity_decode($supplier['name']) : '-'; ?>
             </span>
           </td>
@@ -386,5 +386,4 @@ $total_cbm = 0;
     </table>
   </div>
 </body>
-
 </html>

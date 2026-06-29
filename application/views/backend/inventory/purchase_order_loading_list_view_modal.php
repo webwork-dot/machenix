@@ -324,7 +324,7 @@
         <?php foreach ($supplier_products as $supplier_id => $supplier_data): ?>
             <div>
                 <div class="supplier-header">
-                    Supplier: <?php echo htmlspecialchars($supplier_data['supplier_name']); ?>
+                    Supplier: <?php echo html_entity_decode($supplier_data['supplier_name']); ?>
                 </div>
                 <div class="table-responsive">
                     <table class="compact-table">
@@ -374,14 +374,14 @@
                                 <!-- <td rowspan="<?php echo $rowspan; ?>" class="text-center">
                                     <?php if (!empty($product['invoice_no'])): ?>
                                         <?php if (!empty($product['invoice_supplier_name'])): ?>
-                                            <div style="font-size: 9px; color: #495057; line-height: 1.2;"><?php echo htmlspecialchars($product['invoice_supplier_name']); ?></div>
+                                            <div style="font-size: 9px; color: #495057; line-height: 1.2;"><?php echo html_entity_decode($product['invoice_supplier_name']); ?></div>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <span class="text-muted">-</span>
                                     <?php endif; ?>
                                 </td> -->
-                                <td rowspan="<?php echo $rowspan; ?>"><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
-                                <td rowspan="<?php echo $rowspan; ?>"><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
+                                <td rowspan="<?php echo $rowspan; ?>"><?php echo html_entity_decode($product['item_code'] ?? 'N/A'); ?></td>
+                                <td rowspan="<?php echo $rowspan; ?>"><?php echo html_entity_decode($product['product_name'] ?? 'N/A'); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-center"><?php echo number_format($product['quantity'] ?? 0, 0); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-center"><?php echo number_format($product['loading_qty'] ?? 0, 0); ?></td>
                                 <td rowspan="<?php echo $rowspan; ?>" class="text-center"><?php echo number_format($product['official_ci_qty'] ?? 0, 0); ?></td>
@@ -508,7 +508,7 @@
                     <div class="invoice-card-grid">
                         <div class="invoice-card-item">
                             <div class="invoice-card-label">Supplier</div>
-                            <div class="invoice-card-value"><?php echo htmlspecialchars($inv['supplier_name']); ?></div>
+                            <div class="invoice-card-value"><?php echo html_entity_decode($inv['supplier_name']); ?></div>
                         </div>
                         
                         <div class="invoice-card-item">
@@ -521,21 +521,21 @@
                         <?php if (!empty($inv['invoice_price_terms'])): ?>
                         <div class="invoice-card-item">
                             <div class="invoice-card-label">Terms of Price</div>
-                            <div class="invoice-card-value"><?php echo htmlspecialchars($inv['invoice_price_terms']); ?></div>
+                            <div class="invoice-card-value"><?php echo html_entity_decode($inv['invoice_price_terms']); ?></div>
                         </div>
                         <?php endif; ?>
                         
                         <?php if (!empty($inv['invoice_info'])): ?>
                         <div class="invoice-card-item">
                             <div class="invoice-card-label">Invoice Info</div>
-                            <div class="invoice-card-value"><?php echo htmlspecialchars($inv['invoice_info']); ?></div>
+                            <div class="invoice-card-value"><?php echo html_entity_decode($inv['invoice_info']); ?></div>
                         </div>
                         <?php endif; ?>
                         
                         <?php if (!empty($inv['invoice_terms'])): ?>
                         <div class="invoice-card-item invoice-card-full">
                             <div class="invoice-card-label">Terms of Payment</div>
-                            <div class="invoice-card-value" style="white-space: pre-wrap; font-size: 10px; line-height: 1.3; color: #475569;"><?php echo htmlspecialchars($inv['invoice_terms']); ?></div>
+                            <div class="invoice-card-value" style="white-space: pre-wrap; font-size: 10px; line-height: 1.3; color: #475569;"><?php echo html_entity_decode($inv['invoice_terms']); ?></div>
                         </div>
                         <?php endif; ?>
                     </div>

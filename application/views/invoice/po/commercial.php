@@ -128,7 +128,7 @@ if (empty($invoice_date_formatted)) {
       <tbody>
         <tr>
           <td style="text-align: center; padding: 0px 3px; line-height: 1;">
-            <span class="bold-text" style="color: #000; font-size: 16px;">
+            <span class="bold-text" style="color: #000; font-size: 16px; line-height: 1.5;">
               <?php echo !empty($supplier['name']) ? html_entity_decode($supplier['name']) : ''; ?>
             </span><br>
             <?php if (!empty($supplier_address)): ?>
@@ -141,10 +141,13 @@ if (empty($invoice_date_formatted)) {
               <?php 
               $contact_display = [];
               if (!empty($supplier['email'])) {
-                  $contact_display[] = html_entity_decode($supplier['email']);
+                  $contact_display[] = 'Email: ' . html_entity_decode($supplier['email']);
+              }
+              if (!empty($supplier['tel_no'])) {
+                  $contact_display[] = 'Tel: ' . (($supplier['t_code']) ? '+' . $supplier['t_code'] : '') . ' ' . html_entity_decode($supplier['tel_no']);
               }
               if (!empty($supplier['contact_no'])) {
-                  $contact_display[] = 'Tel: ' . html_entity_decode($supplier['contact_no']);
+                  $contact_display[] = 'Mobile: ' . (($supplier['c_code']) ? '+' . $supplier['c_code'] : '') . ' ' . html_entity_decode($supplier['contact_no']);
               }
               if (!empty($supplier['contact_name'])) {
                   $contact_display[] = 'Contact: ' . html_entity_decode($supplier['contact_name']);
@@ -162,7 +165,7 @@ if (empty($invoice_date_formatted)) {
     <table style="width: 100%;">
       <tbody>
         <tr>
-          <td style="width:100%;text-align: center;padding: 3px 0px; line-height: 0.6; height: auto;" colspan="6">
+          <td style="width:100%;text-align: center;padding: 8px 0px 5px 0px; line-height: 0.6; height: auto;" colspan="6">
             <span class="bold-text" style="font-size: 14px;color: #000;">COMMERCIAL INVOICE</span>
           </td>
         </tr>

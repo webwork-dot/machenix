@@ -3129,6 +3129,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_sales_order($param2);
+        } elseif ($param1 == "add_salesman_post") {
+            $this->inventory_model->add_sales_order_salesman();
         } elseif ($param1 == "approve_post") {
             $this->inventory_model->approve_sales_order($param2);
         } elseif ($param1 == "edit_post") {
@@ -3219,6 +3221,21 @@ class Inventory extends CI_Controller
             $page_data['page_name']  = 'sales_order_add';
             $page_data['navigation']  = 'sales_order';
             $page_data['page_title'] = 'Add Sales';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'invoice_add') {
+            $page_data['order_no']  = $this->inventory_model->get_sales_order_no();
+            
+            // Robust check for salesman role (staff_access == 7)
+            $staff_access = (int)$this->session->userdata('super_type_id');
+            if ($staff_access === 0) {
+                $user_id = $this->session->userdata('super_user_id');
+                $usr_det = $this->db->get_where('sys_users', array('id' => $user_id))->row();
+                $staff_access = (int)($usr_det->staff_access ?? 0);
+            }
+
+            $page_data['page_name']  = 'sales_order_add_salesman';
+            $page_data['navigation']  = 'sales_order';
+            $page_data['page_title'] = 'Add Sale Order';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'view') {
             $data                    = $this->inventory_model->get_sales_order_by_id($param2)->row_array();

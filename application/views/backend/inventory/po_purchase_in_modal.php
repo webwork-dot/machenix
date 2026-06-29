@@ -178,7 +178,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                         <th style="width: 100px;">Duty Surcharge 10%</th>
                                         <th style="width: 100px;">Taxable Value</th>
                                         <th style="width: 100px;">GST Amt</th>
-                                        <th style="width: 100px;">Total Amt</th>
+                                        <th style="width: 100px;">Total Duty/GST</th>
                                         <th style="width: 100px;">Action</th>
                                     </tr>
                                 </thead>
@@ -223,7 +223,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
 
                                         // Prices - handles different field names between tables
                                         if ($delivery_status != 'purchase_in') {
-                                            $actual_rmb = (float)($product['rp_rate'] ?? 0);
+                                            $actual_rmb = (float)($product['unit_price_rmb'] ?? 0);
                                             $actual_usd = (float)($product['rp_actual_usd_rate'] ?? 0);
                                             $actual_inr = (float)($actual_usd * $inr_rate);
                                         } else {
@@ -511,7 +511,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                          <td class="text-right"><span class="js-sum-total-inr"><?php echo $t_total_inr; ?></span></td>
                                         <td class="text-right"><span class="js-sum-official-qty"><?php echo number_format($t_official_qty, 0); ?></span></td>
                                         <td class="text-right"><span class="js-sum-official-rate-usd"><?php // echo number_format($t_official_rate_usd, 2, '.', ''); ?>-</span></td>
-                                        <td class="text-right"><span class="js-sum-official-rate-rs"><?php echo number_format($t_official_rate_rs, 2, '.', ''); ?></span></td>
+                                        <td class="text-right"><span class="js-sum-official-rate-rs"><?php // echo number_format($t_official_rate_rs, 2, '.', ''); ?>-</span></td>
                                         <td class="text-right"><span class="js-sum-official-total"><?php echo number_format($t_official_total_rs, 2, '.', ''); ?></span></td>
                                         <td class="text-right">-</td>
                                         <td class="text-right"><span class="js-sum-duty-amt"><?php echo number_format($t_duty_amt, 2, '.', ''); ?></span></td>
@@ -763,7 +763,7 @@ function updateTableTotals($table) {
   $table.find('.js-sum-total-inr').text(toNum(sum.total_inr));
   $table.find('.js-sum-official-qty').text(fmtQty(sum.official_qty));
 //   $table.find('.js-sum-official-rate-usd').text(fmtAmt(sum.official_rate_usd));
-  $table.find('.js-sum-official-rate-rs').text(fmtAmt(sum.official_rate_rs));
+//   $table.find('.js-sum-official-rate-rs').text(fmtAmt(sum.official_rate_rs));
   $table.find('.js-sum-official-total').text(fmtAmt(sum.official_total));
   $table.find('.js-sum-duty-amt').text(fmtAmt(sum.duty_amt));
   $table.find('.js-sum-duty-surcharge').text(fmtAmt(sum.duty_surcharge));
@@ -1067,7 +1067,7 @@ function createSupplierSection(supplierId, supplierName) {
                         <td class="text-right"><span class="js-sum-total-inr">0</span></td>
                         <td class="text-right"><span class="js-sum-official-qty">0</span></td>
                         <td class="text-right"><span class="js-sum-official-rate-usd">-</span></td>
-                        <td class="text-right"><span class="js-sum-official-rate-rs">0.00</span></td>
+                        <td class="text-right"><span class="js-sum-official-rate-rs">-</span></td>
                         <td class="text-right"><span class="js-sum-official-total">0.00</span></td>
                         <td class="text-right">-</td>
                         <td class="text-right"><span class="js-sum-duty-amt">0.00</span></td>
