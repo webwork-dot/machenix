@@ -11,7 +11,6 @@ $orders = $this->db->where([
   'customer_id' => $customer_id,
   'is_approved' => '1',
   'is_generated' => '0',
-  'is_weird' => $is_weird,
   'warehouse_id' => $warehouse_id,
   'is_deleted' => '0'
 ])->order_by('date', 'desc')->get('sales_order')->result_array();

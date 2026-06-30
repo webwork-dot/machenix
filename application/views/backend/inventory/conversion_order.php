@@ -14,22 +14,6 @@
         color: #3c3a3a;
         font-weight: 600 !important;
     }
-
-	.fixedElement{
-		background : white;
-		border-radius: .428rem;
-	}
-	.nav-pills.nav-justified .nav-item {
-		display: flex;
-		align-items: center;
-	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
-		color: #1e652e;
-		border: 1px solid #1e652e !important;
-		background: white;
-		box-shadow: initial;
-		font-weight: 600;
-	}
 	.small-img{
 		max-height: 50px;
 		min-height: 50px;
@@ -39,64 +23,35 @@
 		height: 50px;
 		max-width: 60px;
 	}
-	
 </style>
 
 <?php
-    // echo json_encode($this->session->userdata());
     include('filter/date_range.php');
     $staff_access = (int)$this->session->userdata('super_type_id');
 ?>
 	
 <div class="row" id="table-bordered">
-
-    <div class="col-md-12 mb-1">
-		<div class="fixedElement" id="fixedElement">
-			<ul class="nav nav-pills bg-nav-pills nav-justified ">
-				
-                <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/black-order" class="nav-link <?php echo ($_GET['status']!= 'completed') ? 'active' : ''; ?>">
-                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                        <span class="d-none d-md-block">Pending</span>
-                    </a>
-                </li>
-				
-                <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/black-order?status=completed" class="nav-link <?php echo (isset($_GET['status']) && $_GET['status'] == 'completed') ? 'active' : ''; ?>">
-                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                        <span class="d-none d-md-block">Completed</span>
-                    </a>
-                </li>
-                
-			</ul>
-		</div>
-	</div>
-
    <div class="col-12">
       <div class="card">
          <div class="card-body">
             <div class="row">
                <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total Black Order <span id="total_count"> (0)</span></b>
-				  </h5>
+                  <h5 class="mb-0"><b>Total Sales Conversion <span id="total_count"> (0)</span></b></h5>
                </div>
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
+            <a href="<?php echo site_url('inventory/conversion-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> Add Sales Conversion</span></a>   
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
 					<th>Date</th>
-					<!-- <th>Company Name</th> -->
-					<!--<th>Reference Number</th>-->
 					<th>Customer Name</th>
 					<th>Order NO</th>
 					<th>Warehouse</th>
 					<th>Total Qty</th>
 					<th>Total Products</th>
-					<!-- <th>Total Amount</th> -->
-					<!--<th>Remark</th>-->
                     <?php if ($staff_access !== 7) { ?>
                     <th>Actions</th>
                     <?php } ?>
@@ -128,13 +83,12 @@
             },
       
             "ajax":{
-                "url": "<?php echo base_url('inventory/get_black_order'); ?>",
+                "url": "<?php echo base_url('inventory/get_conversion_order'); ?>",
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']:'pending'; ?>';	
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -147,15 +101,11 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "date" },
-                // { "data": "company_name" },
-                // { "data": "refrence_no" },
                 { "data": "customer_name" },
                 { "data": "order_no" },
                 { "data": "warehouse_name" },
                 { "data": "qty" },
                 { "data": "total_pro" },
-                // { "data": "grand_total" },
-                // { "data": "remark" },
                 <?php if ($staff_access !== 7) { ?>
                    { "data": "action" },
                 <?php } ?>
@@ -192,7 +142,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0, // serial number column
                     "className": "text-center",
                 },
             ] 

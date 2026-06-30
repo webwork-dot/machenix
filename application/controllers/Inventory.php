@@ -3173,6 +3173,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->gen_invoice_sales_order($param2);
         } elseif ($param1 == "gen_invoice_post") {
             $this->inventory_model->gen_invoice_sales_order_post();
+        } elseif ($param1 == "generate_bill_post") {
+            $this->inventory_model->generate_bill_sales_order_post();
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
 
@@ -3191,6 +3193,41 @@ class Inventory extends CI_Controller
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['page_name']  = 'black_order';
             $page_data['page_title'] = get_phrase('black_order');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function conversion_order($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_conversion_order_post();
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['page_name']  = 'conversion_order';
+            $page_data['page_title'] = get_phrase('sales_conversion');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function conversion_order_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $where = array('is_deleted' => '0');
+        $page_data['warehouse_list']     = $this->common_model->selectWhere('warehouse', $where, 'ASC', 'name');
+        $page_data['customer_list']     = $this->common_model->getSessionCustomers();
+        $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
+
+        $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
+        $page_data['states'] = $this->crud_model->get_states_by_country(101);
+        if ($param1 == 'add') {
+            $page_data['order_no']  = $this->inventory_model->get_sales_order_no();
+            $page_data['page_name']  = 'conversion_order_add';
+            $page_data['navigation']  = 'conversion_order';
+            $page_data['page_title'] = 'Add Sales Conversion';
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -3387,6 +3424,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_black_order();
+        }
+    }
+
+    public function get_conversion_order()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_conversion_order();
         }
     }
 

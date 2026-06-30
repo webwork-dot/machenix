@@ -9929,7 +9929,7 @@ class Inventory_model extends CI_Model
 		$query = $this->db->query("
 			SELECT 
 				so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name 
-			FROM sales_order 
+			FROM sales_order AS so
 			WHERE 
 				NOT EXISTS (
 					SELECT 1
@@ -10077,7 +10077,7 @@ class Inventory_model extends CI_Model
 
 		$total_amount_formatted = '0.00';
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] == 'complete' && $this->session->userdata('super_type_id') != 7) {
-			$sum_query = $this->db->query("SELECT SUM(grand_total) as total_amount FROM sales_order WHERE (is_deleted='0') AND is_weird='0' $keyword_filter");
+			$sum_query = $this->db->query("SELECT SUM(so.grand_total) as total_amount FROM sales_order AS so WHERE (so.is_deleted='0') $keyword_filter");
 			if ($sum_query->num_rows() > 0) {
 				$row = $sum_query->row_array();
 				$total_val = $row['total_amount'];
@@ -10091,6 +10091,499 @@ class Inventory_model extends CI_Model
 			"recordsFiltered" => $total_count,
 			"data" => $data,
 			"total_amount" => $total_amount_formatted
+		);
+		echo json_encode($json_data);
+	}
+
+	public function add_conversion_order_post()
+	{
+		$this->db->trans_start(); // Start transaction
+
+		try {
+			$resultpost = array(
+				"status" => 200,
+				"message" => get_phrase('sales_conversion_added_successfully'),
+				"url" => $this->session->userdata('previous_url'),
+			);
+
+			$order_no = clean_and_escape($this->input->post('order_no'));
+			if ($order_no != '') {
+				$check_order_no = $this->check_duplication('on_create', 'order_no', $order_no, 'sales_order');
+			} else {
+				$check_order_no  = true;
+			}
+
+			if ($check_order_no == false) {
+				$this->session->set_flashdata('error_message', get_phrase('order_no_duplication'));
+				$resultpost = array(
+					"status" => 400,
+					"message" => 'Order No Duplication'
+				);
+			} else {
+				$customer_id = $this->input->post('customer_id');
+				if ($customer_id != '') {
+					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
+				} else {
+					$customer_name = '';
+				}
+				
+				$warehouse_id = $this->input->post('warehouse_id');
+				if ($warehouse_id != '') {
+					$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+				} else {
+					$warehouse_name = '';
+				}
+
+				$company_id = $this->session->userdata('company_id');
+				$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
+
+				$round_of       	= ($this->input->post('round_of') != '') ? $this->input->post('round_of') : 0;
+				$gst_type       	= clean_and_escape($this->input->post('gst_type'));
+
+				$other_charges_name   = clean_and_escape($this->input->post('other_charges_name'));
+				$other_charges_amount = ($this->input->post('other_charges_amount') != '') ? $this->input->post('other_charges_amount') : 0;
+				$basic_value          = price_format_decimal($this->input->post('basic_value'));
+				$net_sales_value_1    = price_format_decimal($this->input->post('net_sales_value_1'));
+				$total_black_amt      = 0.00;
+				$net_sales_value_2    = $net_sales_value_1;
+				$grand_total          = price_format_decimal($this->input->post('grand_total'));
+				$central_gst          = price_format_decimal($this->input->post('central_gst'));
+				$state_gst            = price_format_decimal($this->input->post('state_gst'));
+				$igst                 = price_format_decimal($this->input->post('igst'));
+				$gst_total            = ($gst_type == 'IGST') ? $igst : ($central_gst + $state_gst);
+
+				$data = array();
+				$data['order_no']          		= $order_no;
+				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
+				$data['date']     		   	 		= ($this->input->post('date'));
+				$data['customer_id']       		= $customer_id;
+				$data['customer_name']     		= $customer_name;
+				$data['warehouse_id']      		= $warehouse_id;
+				$data['warehouse_name']    		= $warehouse_name;
+				$data['company_id']        		= $company_id;
+				$data['company_name']      		= $company_name;
+				$data['remark'] 		   		 		= ($this->input->post('remark'));
+				$data['narration']         		= ($this->input->post('narration'));
+				$data['gst_type']     	   		= $gst_type;
+				$data['is_approved']					= 1;
+				$data['igst_per']     	   		= 0;
+				$data['cgst_per']     	   		= 0;
+				$data['sgst_per']     	   		= 0;
+				$data['basic_value']          = $basic_value;
+				$data['net_sales_value_1']    = $net_sales_value_1;
+				$data['total_black_amt']      = $total_black_amt;
+				$data['central_gst']          = $central_gst;
+				$data['state_gst']            = $state_gst;
+				$data['igst']                 = $igst;
+				$data['gst_total']            = $gst_total;
+				$data['net_sales_value_2']    = $net_sales_value_2;
+				$data['round_of']             = $round_of;
+				$data['grand_total']          = $grand_total;
+				$data['other_charges_name']   = $other_charges_name;
+				$data['other_charges_amount'] = $other_charges_amount;
+				$data['type']                 = 'conversion';
+
+				$shipping_state_id = $this->input->post('shipping_state_id');
+				$shipping_city_id  = $this->input->post('shipping_city_id');
+				$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+				$shipping_gst      = clean_and_escape($this->input->post('shipping_gst'));
+				$shipping_gst_no   = clean_and_escape($this->input->post('shipping_gst_no'));
+				$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
+
+				$billing_state_id  = $this->input->post('billing_state_id');
+				$billing_city_id   = $this->input->post('billing_city_id');
+				$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+				$billing_gst       = clean_and_escape($this->input->post('billing_gst'));
+				$billing_gst_no    = clean_and_escape($this->input->post('billing_gst_no'));
+				$billing_address   = clean_and_escape($this->input->post('billing_address'));
+
+				$data['shipping_state_id']   = $shipping_state_id;
+				$data['shipping_state_name'] = ($shipping_state_id > 0) ? (string) $this->common_model->get_state_name($shipping_state_id) : '';
+				$data['shipping_city_id']    = $shipping_city_id;
+				$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
+				$data['shipping_pincode']    = $shipping_pincode;
+				$data['shipping_gst']        = $shipping_gst;
+				$data['shipping_gst_no']     = $shipping_gst_no;
+				$data['shipping_address']    = $shipping_address;
+
+				$data['billing_state_id']    = $billing_state_id;
+				$data['billing_state_name']  = ($billing_state_id > 0) ? (string) $this->common_model->get_state_name($billing_state_id) : '';
+				$data['billing_city_id']     = $billing_city_id;
+				$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
+				$data['billing_pincode']     = $billing_pincode;
+				$data['billing_gst']         = $billing_gst;
+				$data['billing_gst_no']      = $billing_gst_no;
+				$data['billing_address']     = $billing_address;
+
+				$data['added_by_id']          = $this->session->userdata('super_user_id');
+				$data['added_by_name']        = $this->session->userdata('super_name');
+				$data['added_date']   	      = date("Y-m-d H:i:s");
+
+				$log_json = array(
+					'sale_order'    => $data,
+					'products'      => array(),
+					'other_charges' => array()
+				);
+
+				if ($this->db->insert('sales_order', $data)) {
+					$order_id = $this->db->insert_id();
+					$this->update_order_no($order_no);
+
+					$product_id_arr     = ($this->input->post('product_id'));
+					$quantity_arr       = ($this->input->post('quantity'));
+					$master_amount_arr  = ($this->input->post('master_amount'));
+					$total_amount_arr   = ($this->input->post('total_amount'));
+					$bill_amount_arr    = ($this->input->post('bill_amount'));
+					$gst_arr       			= ($this->input->post('gst'));
+					$gst_amount_arr     = ($this->input->post('gst_amount'));
+					$bill_total_arr     = ($this->input->post('bill_total'));
+					$total_bill_gst_amount_arr = ($this->input->post('total_bill_gst_amount'));
+					$final_total_arr    = ($this->input->post('final_total'));
+					$available_arr			= ($this->input->post('available'));
+					$x_value_arr        = ($this->input->post('x_value'));
+
+					// Batch fields
+					$batch_id                 = $this->input->post('batch_id');
+					$batch_white_qty          = $this->input->post('batch_white_qty');
+					$batch_rate               = $this->input->post('batch_rate');
+					$batch_bill_amount        = $this->input->post('batch_bill_amount');
+					$batch_bill_total         = $this->input->post('batch_bill_total');
+					$batch_gst_per            = $this->input->post('batch_gst_per');
+					$batch_gst_amt            = $this->input->post('batch_gst_amt');
+					$batch_total_bill_gst     = $this->input->post('batch_total_bill_gst_amount');
+					$batch_final_total        = $this->input->post('batch_final_total');
+
+					$total_white_qty_sum = 0;
+					for ($i = 0; $i < count($product_id_arr); $i++) {
+						if ($quantity_arr[$i] > 0) {
+							$xpro 			=  explode('|', $product_id_arr[$i]);
+							$product_id 	= $xpro[0];
+
+							$product    	= $this->crud_model->get_raw_products_by_id($product_id)->row_array();
+							if (empty($product)) {
+								throw new Exception('No Product Found');
+							}
+
+							$item_code = $product['item_code'] ?? '';
+							if ($item_code == '') {
+								$inv_prod = $this->db->where('product_id', $product_id)->get('inventory')->row_array();
+								$item_code = $inv_prod['item_code'] ?? '';
+							}
+
+							$data_product = array(
+								'order_id'                => $order_id,
+								'product_id'              => $product_id,
+								'item_code'               => $item_code,
+								'product_name'            => $product['name'],
+								'qty'                     => (float) ($quantity_arr[$i] ?? 0),
+								'amount'                  => (float) ($master_amount_arr[$i] ?? 0),
+								'total_amount'            => (float) ($total_amount_arr[$i] ?? 0),
+								'bill_amount'             => (float) ($bill_amount_arr[$i] ?? 0),
+								'bill_total'              => (float) ($bill_total_arr[$i] ?? 0),
+								'available'               => (float) ($available_arr[$i] ?? 0),
+								'gst'                     => (float) ($gst_arr[$i] ?? 0),
+								'gst_amount'              => (float) ($gst_amount_arr[$i] ?? 0),
+								'total_bill_gst_amount'   => (float) ($total_bill_gst_amount_arr[$i] ?? 0),
+								'black_amount'            => 0.00,
+								'black_total'             => 0.00,
+								'final_total'             => (float) ($final_total_arr[$i] ?? 0),
+							);
+
+							$this->db->insert('sales_order_product', $data_product);
+							$order_product_id = $this->db->insert_id();
+
+							$product_log_data = $data_product;
+							$product_log_data['id'] = $order_product_id;
+							$product_log_data['batches'] = array();
+
+							$row_index = $x_value_arr[$i];
+
+							if (!empty($batch_id[$row_index])) {
+								foreach ($batch_id[$row_index] as $index => $bid) {
+									if (empty($bid)) continue;
+
+									$batch_detail = $this->db->where('id', $bid)->get('inventory')->row_array();
+									if (empty($batch_detail)) {
+										throw new Exception('Batch details not found for batch ID: ' . $bid);
+									}
+
+									$allocated_qty = (float)($batch_white_qty[$row_index][$index] ?? 0);
+
+									$data_product_bat = array(
+										'order_id'          => $order_id,
+										'order_product_id'  => $order_product_id,
+										'batch_no'      		=> $batch_detail['batch_no'],
+										'batch_qty'       	=> $batch_detail['quantity'],
+
+										'avail_white_qty'		=> $batch_detail['official_qty'],
+										'avail_black_qty'		=> $batch_detail['black_qty'],
+										'qty'								=> $allocated_qty,
+										'white_qty'					=> $allocated_qty,
+										'black_qty'					=> 0.00,
+
+										'amount'						=> (float) $batch_rate[$row_index][$index],
+										'bill_amount'				=> (float) $batch_bill_amount[$row_index][$index],
+										'bill_total'				=> (float) $batch_bill_total[$row_index][$index],
+										'gst'								=> (float) $batch_gst_per[$row_index][$index],
+										'gst_amount'				=> (float) $batch_gst_amt[$row_index][$index],
+										'total_bill_gst_amount'	=> (float) $batch_total_bill_gst[$row_index][$index],
+										'black_amount'			=> 0.00,
+										'black_total'				=> 0.00,
+										'final_total'				=> (float) $batch_final_total[$row_index][$index],
+										'added_date'        => date('Y-m-d H:i:s'),
+									);
+
+									$this->db->insert('sales_order_product_batch', $data_product_bat);
+									$product_log_data['batches'][] = $data_product_bat;
+									$total_white_qty_sum += $allocated_qty;
+
+									if ($batch_detail['official_qty'] < $allocated_qty || $batch_detail['official_qty'] == 0) {
+										throw new Exception('Insufficient white stock for ' . $product['name'] . ' in batch ' . $batch_detail['batch_no'] . '. Available White Qty: ' . $batch_detail['official_qty'] . '.');
+									} else {
+										// Update batch quantities: convert white (official) quantity to black
+										$new_qty = $batch_detail['quantity']; // Total quantity remains unchanged
+										$new_black_qty = $batch_detail['black_qty'] + $allocated_qty;
+										$new_official_qty = $batch_detail['official_qty'] - $allocated_qty;
+										if ($new_official_qty < 0) $new_official_qty = 0;
+
+										$pending_qty = 0;
+
+										$this->db->where('id', $bid)->update('inventory', array(
+											'quantity' => $new_qty,
+											'black_qty' => $new_black_qty,
+											'official_qty' => $new_official_qty,
+											'pending_qty' => $batch_detail['pending_qty'] + $pending_qty
+										));
+
+										// Insert into inventory history: Outflow of White (Official) quantity
+										$inv_his_out = [
+											'supplier_id' 			=> $batch_detail["supplier_id"],
+											'parent_id' 				=> $bid,
+											'company_id' 				=> $company_id,
+											'warehouse_id' 			=> $batch_detail["warehouse_id"],
+											'warehouse_name' 		=> $batch_detail["warehouse_name"],
+											'product_id' 				=> $batch_detail["product_id"],
+											'categories' 				=> $batch_detail["categories"],
+											'batch_no' 					=> $batch_detail["voucher_no"],
+											'product_name'			=> $batch_detail['product_name'] ?? '',
+											'item_code'					=> $batch_detail['item_code'] ?? '',
+											'sku'         			=> $batch_detail['sku'] ?? '',
+											'order_id'        	=> $order_id,
+											'status'        		=> 'out',
+											'quantity'        	=> $allocated_qty,
+
+											'actual_rmb'        => 0,
+											'total_rmb'         => 0,
+											'actual_usd'        => 0,
+											'actual_inr'        => 0,
+											'official_qty'      => $allocated_qty,
+											'official_rate_rs'  => $batch_bill_amount[$row_index][$index],
+											'official_total_rs' => $batch_bill_total[$row_index][$index],
+											'black_qty'         => 0.00,
+											'pending_qty'       => 0.00,
+											'black_rate_rs'  		=> 0.00,
+											'black_total_rs' 		=> 0.00,
+											'duty_percent'      => 0,
+											'duty_amt'          => 0,
+											'duty_surcharge'    => 0,
+											'taxable_value'     => $batch_bill_total[$row_index][$index],
+											'gst_amt'           => $batch_gst_amt[$row_index][$index],
+											'total_amt'         => $batch_final_total[$row_index][$index],	
+											
+											'received_date'     => date('Y-m-d'),
+											'invoice_no'        => 1,	
+											'added_date'        => date('Y-m-d H:i:s'),
+											"added_by_id"       => $this->session->userdata('super_user_id'),
+											"added_by_name"     => $this->session->userdata('super_name'),
+										];
+										$this->db->insert('inventory_history', $inv_his_out);
+
+										// Insert into inventory history: Inflow of Black quantity
+										$inv_his_in = [
+											'supplier_id' 			=> $batch_detail["supplier_id"],
+											'parent_id' 				=> $bid,
+											'company_id' 				=> $company_id,
+											'warehouse_id' 			=> $batch_detail["warehouse_id"],
+											'warehouse_name' 		=> $batch_detail["warehouse_name"],
+											'product_id' 				=> $batch_detail["product_id"],
+											'categories' 				=> $batch_detail["categories"],
+											'batch_no' 					=> $batch_detail["voucher_no"],
+											'product_name'			=> $batch_detail['product_name'] ?? '',
+											'item_code'					=> $batch_detail['item_code'] ?? '',
+											'sku'         			=> $batch_detail['sku'] ?? '',
+											'order_id'        	=> $order_id,
+											'status'        		=> 'in',
+											'quantity'        	=> $allocated_qty,
+
+											'actual_rmb'        => 0,
+											'total_rmb'         => 0,
+											'actual_usd'        => 0,
+											'actual_inr'        => 0,
+											'official_qty'      => 0.00,
+											'official_rate_rs'  => 0.00,
+											'official_total_rs' => 0.00,
+											'black_qty'         => $allocated_qty,
+											'pending_qty'       => 0.00,
+											'black_rate_rs'  		=> $batch_bill_amount[$row_index][$index],
+											'black_total_rs' 		=> $batch_bill_total[$row_index][$index],
+											'duty_percent'      => 0,
+											'duty_amt'          => 0,
+											'duty_surcharge'    => 0,
+											'taxable_value'     => 0.00,
+											'gst_amt'           => 0.00,
+											'total_amt'         => 0.00,	
+											
+											'received_date'     => date('Y-m-d'),
+											'invoice_no'        => 1,	
+											'added_date'        => date('Y-m-d H:i:s'),
+											"added_by_id"       => $this->session->userdata('super_user_id'),
+											"added_by_name"     => $this->session->userdata('super_name'),
+										];
+										$this->db->insert('inventory_history', $inv_his_in);
+									}
+								}
+							}
+							$log_json['products'][] = $product_log_data;
+						}
+					}
+
+					// Insert other charges
+					$other_charge_name_arr 	= $this->input->post('other_charge_name');
+					$other_charge_gst_arr 	= $this->input->post('other_charge_gst');
+					$other_charge_price_arr = $this->input->post('other_charge_price');
+					$other_charge_total_arr = $this->input->post('other_charge_total');
+
+					if(!empty($other_charge_name_arr)){
+						for($c = 0; $c < count($other_charge_name_arr); $c++){
+							if($other_charge_name_arr[$c] != ''){
+								$data_charge = [
+									'order_id' 		=> $order_id,
+									'charge_name' 	=> $other_charge_name_arr[$c],
+									'gst' 			=> (float)$other_charge_gst_arr[$c],
+									'price' 		=> (float)$other_charge_price_arr[$c],
+									'total_amount' 	=> (float)$other_charge_total_arr[$c],
+									'added_date' 	=> date('Y-m-d H:i:s'),
+								];
+								$this->db->insert('sales_order_charges', $data_charge);
+								$log_json['other_charges'][] = $data_charge;
+							}
+						}
+					}
+
+					// Log action
+					$log_data = array(
+						'parent_id'      => $order_id,
+						'ref_id'         => NULL,
+						'module'         => 'sales',
+						'action'         => 'add_conversion',
+						'message'        => 'Conversion Order added by ' . $this->session->userdata('super_name'),
+						'json'           => json_encode($log_json),
+						'table_name'     => 'sales_order',
+						'added_by'       => $this->session->userdata('super_user_id'),
+						'added_by_email' => $this->session->userdata('super_email'),
+						'added_by_name'  => $this->session->userdata('super_name'),
+						'added_by_type'  => $this->session->userdata('super_type')
+					);
+					$this->db->insert('sys_logs', $log_data);
+				}
+			}
+
+			$this->db->trans_commit(); // Commit transaction
+		} catch (Exception $e) {
+			$this->db->trans_rollback(); // Rollback transaction
+			$resultpost = array(
+				"status" => 400,
+				"message" => $e->getMessage(),
+			);
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	public function get_conversion_order()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = " AND type='conversion'";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (company_name like '%" . $keyword . "%' 
+            OR refrence_no like '%" . $keyword . "%'
+            OR order_no like '%" . $keyword . "%')";
+		endif;
+		
+		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
+			$keyword        = $_REQUEST['customer_id'];
+			$keyword_filter .= " AND (customer_id = '" . $keyword . "')";
+		endif;
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$keyword_filter .= " AND (company_id='" . $company_id . "')";
+			if($this->session->userdata('super_type_id') == 7) {
+				$keyword_filter .= " AND (added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			}
+		}
+
+		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC")->num_rows();
+		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$customer_id = $item['customer_id'];
+				$customer_name = $item['customer_name'];
+
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
+				$action = '<a href="javascript:void(0)" onclick="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 btn-outline-dark" style="height: 30px !important; padding: 4px 8px;"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+
+				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
+				$qty = 0;
+				$query2 = $this->db->query("SELECT SUM(qty) as total_qty FROM sales_order_product WHERE (order_id='$id') GROUP BY order_id");
+				if ($query2->num_rows() > 0) {
+					$qty = (float)$query2->row_array()['total_qty'];
+				}
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"id"          => $item['id'],
+					"order_no"        => $item['order_no'],
+					"refrence_no"        => $item['refrence_no'],
+					"customer_name"        => $customer_name,
+					"warehouse_name"        => ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
+					"company_name"        => ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
+					"grand_total"        => $item['grand_total'],
+					"date"        => date('d M, Y', strtotime($item['date'])),
+					"total_pro"      => $total_pro,
+					"qty"      => $qty,
+					"remark"      => $item['remark'],
+					"action"      => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
 		);
 		echo json_encode($json_data);
 	}
@@ -10117,9 +10610,14 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (customer_id = '" . $keyword . "')";
 		endif;
 		
+		$status = 'pending';
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
-			$keyword        = $_REQUEST['status'];
-			$keyword_filter .= " AND (is_generated = '" . (($keyword == 'completed') ? '1' : '0') . "')";
+			$status        = $_REQUEST['status'];
+			if($status == 'completed') {
+				$keyword_filter .= " AND type='bill'";
+			} else {
+				$keyword_filter .= " AND is_weird='1'";
+			}
 		endif;
 
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
@@ -10141,8 +10639,8 @@ class Inventory_model extends CI_Model
 			}
 		}
 
-		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') AND is_weird='1' $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') AND is_weird='1' $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC")->num_rows();
+		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -10164,20 +10662,44 @@ class Inventory_model extends CI_Model
 					// ';
 				}
 
-				if($item['is_generated'] == 0) {
-					$gen_invoice_modal_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_generate_invoice_modal/" . $customer_id . "/" . $id . "', 'Generate Invoice')";
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
+				if($status == 'pending') {
+					$gen_bill_modal_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_generate_bill_modal/" . $customer_id . "/" . $id . "', 'Generate Bill')";
 					$action .= '
-					<a href="#" onclick="' . $gen_invoice_modal_url . '" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Invoice"><button type="button" class="btn mr-1 mb-1 icon-btn-pass"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
+					<a href="#" onclick="' . $gen_bill_modal_url . '" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Bill"><button type="button" class="btn mr-1 mb-1 btn-outline-primary"><i class="fa fa-file-text-o" aria-hidden="true"></i></button></a>';
+
+					$black_prods = $this->db->query("SELECT avail_black_qty, black_qty FROM sales_order_product_batch WHERE (order_id='$id') AND black_qty > avail_black_qty");
+
+					$total_pro = 0;
+					$qty = 0;
+					if($black_prods->num_rows() > 0){
+						$total_pro = $black_prods->num_rows();
+						foreach($black_prods->result_array() as $black_prod){
+							$qty += ($black_prod['black_qty'] - $black_prod['avail_black_qty']);
+						}
+					}
+				} else {
+					$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $id;
+					
+					$action ='<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+							<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
+						</div>
+					</div>';
+
+					$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
+					$qty = 0;
+					$query2 = $this->db->query("SELECT avail_white_qty, avail_black_qty, white_qty, black_qty FROM sales_order_product_batch WHERE (order_id='$id')");
+					if ($query2->num_rows() > 0) {
+						foreach($query2->result_array() as $row2) {
+							$qty += $row2['white_qty'];
+						}
+					}
 				}
 
-				$qty = 0;
-				$query2 = $this->db->query("SELECT SUM(qty) as qty FROM sales_order_product WHERE (order_id='$id') group by order_id limit 1");
-				if ($query2->num_rows() > 0) {
-					$row2 = $query2->row_array();
-					$qty = $row2['qty'];
-				}
-
-				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
 				$data[] = array(
 					"sr_no"       => ++$start,
 					"id"          => $item['id'],
@@ -11705,6 +12227,318 @@ class Inventory_model extends CI_Model
 			$resultpost = [
 				"status" => 200,
 				"message" => get_phrase('invoice_generated_successfully'),
+				"url" => $this->session->userdata('previous_url'),
+			];
+		} catch (Exception $e) {
+			$this->db->trans_rollback(); // Rollback on error
+			$resultpost = [
+				"status" => 400,
+				"message" => $e->getMessage(),
+			];
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	function generate_bill_sales_order_post()
+	{
+		$this->db->trans_start(); // Start transaction
+
+		try {
+			$checked_batches = $this->input->post('checked_batches');
+			if (empty($checked_batches)) {
+				throw new Exception(get_phrase('please_select_at_least_one_item'));
+			}
+
+			$customer_id = $this->input->post('customer_id');
+			$warehouse_id = $this->input->post('warehouse_id');
+
+			if (empty($customer_id) || empty($warehouse_id)) {
+				throw new Exception(get_phrase('invalid_customer_or_warehouse'));
+			}
+
+			$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
+			$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+
+			$order_no = clean_and_escape($this->input->post('order_no'));
+			if ($order_no != '') {
+				$check_order_no = $this->check_duplication('on_create', 'order_no', $order_no, 'sales_order');
+			} else {
+				$check_order_no = true;
+			}
+
+			if ($check_order_no == false) {
+				throw new Exception(get_phrase('order_no_duplication'));
+			}
+
+			$invoice_no = clean_and_escape($this->input->post('invoice_no'));
+			$invoice_date = clean_and_escape($this->input->post('invoice_date'));
+
+			if (empty($invoice_no)) {
+				throw new Exception(get_phrase('invoice_number_cannot_be_empty'));
+			}
+			if (empty($invoice_date)) {
+				throw new Exception(get_phrase('invoice_date_cannot_be_empty'));
+			}
+
+			// Check if invoice_no already exists in non-deleted sales orders
+			$check_exists = $this->db->where('invoice_no', $invoice_no)
+									 ->where('is_deleted', '0')
+									 ->get('sales_order');
+			if ($check_exists->num_rows() > 0) {
+				throw new Exception(get_phrase('invoice_no_has_already_been_used'));
+			}
+
+			$company_id = $this->session->userdata('company_id');
+			$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
+
+			$round_of = ($this->input->post('round_of') != '') ? $this->input->post('round_of') : 0;
+			$gst_type = clean_and_escape($this->input->post('gst_type'));
+
+			$basic_value = price_format_decimal($this->input->post('basic_value'));
+			$net_sales_value_1 = price_format_decimal($this->input->post('net_sales_value_1'));
+			$net_sales_value_2 = $net_sales_value_1; // no black amount in the generated fake sale order itself
+			$grand_total = price_format_decimal($this->input->post('grand_total'));
+			$central_gst = price_format_decimal($this->input->post('central_gst'));
+			$state_gst = price_format_decimal($this->input->post('state_gst'));
+			$igst = price_format_decimal($this->input->post('igst'));
+			$gst_total = ($gst_type == 'IGST') ? $igst : ($central_gst + $state_gst);
+
+			$shipping_state_id = $this->input->post('shipping_state_id');
+			$shipping_city_id  = $this->input->post('shipping_city_id');
+			$shipping_pincode  = clean_and_escape($this->input->post('shipping_pincode'));
+			$shipping_gst      = clean_and_escape($this->input->post('shipping_gst'));
+			$shipping_gst_no   = clean_and_escape($this->input->post('shipping_gst_no'));
+			$shipping_address  = clean_and_escape($this->input->post('shipping_address'));
+
+			$billing_state_id  = $this->input->post('billing_state_id');
+			$billing_city_id   = $this->input->post('billing_city_id');
+			$billing_pincode   = clean_and_escape($this->input->post('billing_pincode'));
+			$billing_gst       = clean_and_escape($this->input->post('billing_gst'));
+			$billing_gst_no    = clean_and_escape($this->input->post('billing_gst_no'));
+			$billing_address   = clean_and_escape($this->input->post('billing_address'));
+
+			$data = array();
+			$data['order_no'] = $order_no;
+			$data['type'] = "bill";
+			$data['refrence_no'] = clean_and_escape($this->input->post('refrence_no'));
+			$data['date'] = ($this->input->post('date'));
+			$data['customer_id'] = $customer_id;
+			$data['customer_name'] = $customer_name;
+			$data['warehouse_id'] = $warehouse_id;
+			$data['warehouse_name'] = $warehouse_name;
+			$data['company_id'] = $company_id;
+			$data['company_name'] = $company_name;
+			$data['remark'] = ($this->input->post('remark'));
+			$data['narration'] = ($this->input->post('narration'));
+			$data['gst_type'] = $gst_type;
+			$data['igst_per'] = 0;
+			$data['cgst_per'] = 0;
+			$data['sgst_per'] = 0;
+			$data['basic_value'] = $basic_value;
+			$data['net_sales_value_1'] = $net_sales_value_1;
+			$data['total_black_amt'] = 0.00;
+			$data['central_gst'] = $central_gst;
+			$data['state_gst'] = $state_gst;
+			$data['igst'] = $igst;
+			$data['gst_total'] = $gst_total;
+			$data['net_sales_value_2'] = $net_sales_value_2;
+			$data['round_of'] = $round_of;
+			$data['grand_total'] = $grand_total;
+			$data['is_approved'] = 1;
+			$data['is_weird'] = 0;
+			$data['is_generated'] = 1;
+			$data['invoice_no'] = $invoice_no;
+			$data['invoice_date'] = $invoice_date;
+
+			$data['shipping_state_id']   = $shipping_state_id;
+			$data['shipping_state_name'] = ($shipping_state_id > 0) ? (string) $this->common_model->get_state_name($shipping_state_id) : '';
+			$data['shipping_city_id']    = $shipping_city_id;
+			$data['shipping_city_name']  = ($shipping_city_id > 0) ? (string) $this->common_model->get_city_name($shipping_city_id) : '';
+			$data['shipping_pincode']    = $shipping_pincode;
+			$data['shipping_gst']        = $shipping_gst;
+			$data['shipping_gst_no']     = $shipping_gst_no;
+			$data['shipping_address']    = $shipping_address;
+
+			$data['billing_state_id']    = $billing_state_id;
+			$data['billing_state_name']  = ($billing_state_id > 0) ? (string) $this->common_model->get_state_name($billing_state_id) : '';
+			$data['billing_city_id']     = $billing_city_id;
+			$data['billing_city_name']   = ($billing_city_id > 0) ? (string) $this->common_model->get_city_name($billing_city_id) : '';
+			$data['billing_pincode']     = $billing_pincode;
+			$data['billing_gst']         = $billing_gst;
+			$data['billing_gst_no']      = $billing_gst_no;
+			$data['billing_address']     = $billing_address;
+
+			$data['added_by_id']          = $this->session->userdata('super_user_id');
+			$data['added_by_name']        = $this->session->userdata('super_name');
+			$data['added_date']   	      = date("Y-m-d H:i:s");
+
+			if ($this->db->insert('sales_order', $data)) {
+				$new_order_id = $this->db->insert_id();
+				$this->update_order_no($order_no);
+
+				// Group checked batches by product
+				$grouped_batches = [];
+				foreach ($checked_batches as $orig_batch_id) {
+					$prod_id = $this->input->post("batch_product_id")[$orig_batch_id];
+					$grouped_batches[$prod_id][] = $orig_batch_id;
+				}
+
+				$original_order_ids_affected = [];
+
+				foreach ($grouped_batches as $prod_id => $orig_batch_ids) {
+					$prod_qty = 0;
+					$prod_total_amount = 0;
+					$prod_gst_amount = 0;
+					$prod_name = '';
+					$item_code = '';
+
+					// Fetch product details from the first batch's original record
+					$first_orig_id = $orig_batch_ids[0];
+					$first_orig_batch = $this->db->get_where('sales_order_product_batch', ['id' => $first_orig_id])->row_array();
+					if ($first_orig_batch) {
+						$orig_prod = $this->db->get_where('sales_order_product', ['id' => $first_orig_batch['order_product_id']])->row_array();
+						if ($orig_prod) {
+							$prod_name = $orig_prod['product_name'];
+							$item_code = $orig_prod['item_code'];
+						}
+					}
+
+					if (empty($prod_name)) {
+						$product_details = $this->db->get_where('products', ['id' => $prod_id])->row_array();
+						$prod_name = $product_details['name'] ?? '';
+						$item_code = $product_details['item_code'] ?? '';
+					}
+
+					// Calculate product totals
+					foreach ($orig_batch_ids as $orig_batch_id) {
+						$qty = (float) $this->input->post("batch_qty")[$orig_batch_id];
+						$rate = (float) $this->input->post("batch_rate")[$orig_batch_id];
+						$gst_per = (float) $this->input->post("batch_gst")[$orig_batch_id];
+
+						$total_amt = $qty * $rate;
+						$gst_amt = ($total_amt * $gst_per) / 100;
+
+						$prod_qty += $qty;
+						$prod_total_amount += $total_amt;
+						$prod_gst_amount += $gst_amt;
+					}
+
+					// Insert into sales_order_product
+					$data_product = [
+						'order_id' => $new_order_id,
+						'product_id' => $prod_id,
+						'product_name' => $prod_name,
+						'item_code' => $item_code,
+						'qty' => $prod_qty,
+						'amount' => count($orig_batch_ids) == 1 ? $this->input->post("batch_rate")[$first_orig_id] : 0,
+						'total_amount' => $prod_total_amount,
+						'bill_amount' => count($orig_batch_ids) == 1 ? $this->input->post("batch_rate")[$first_orig_id] : 0,
+						'bill_total' => $prod_total_amount,
+						'gst' => count($orig_batch_ids) == 1 ? $this->input->post("batch_gst")[$first_orig_id] : 0,
+						'gst_amount' => $prod_gst_amount,
+						'total_bill_gst_amount' => $prod_total_amount + $prod_gst_amount,
+						'black_amount' => 0,
+						'black_total' => 0,
+						'final_total' => $prod_total_amount + $prod_gst_amount,
+					];
+					$this->db->insert('sales_order_product', $data_product);
+					$order_product_id = $this->db->insert_id();
+
+					// Insert batch records & update original batches/inventory
+					foreach ($orig_batch_ids as $orig_batch_id) {
+						$qty = (float) $this->input->post("batch_qty")[$orig_batch_id];
+						$rate = (float) $this->input->post("batch_rate")[$orig_batch_id];
+						$gst_per = (float) $this->input->post("batch_gst")[$orig_batch_id];
+						$batch_no = $this->input->post("batch_no")[$orig_batch_id];
+						$orig_order_id = $this->input->post("batch_order_id")[$orig_batch_id];
+
+						$original_order_ids_affected[] = $orig_order_id;
+
+						$total_amt = $qty * $rate;
+						$gst_amt = ($total_amt * $gst_per) / 100;
+
+						// Insert new batch record
+						$data_batch = [
+							'order_id' => $new_order_id,
+							'order_product_id' => $order_product_id,
+							'batch_no' => $batch_no,
+							'batch_qty' => $qty,
+							'qty' => $qty,
+							'white_qty' => $qty,
+							'black_qty' => 0,
+							'amount' => $rate,
+							'bill_amount' => $rate,
+							'bill_total' => $total_amt,
+							'gst' => $gst_per,
+							'gst_amount' => $gst_amt,
+							'total_bill_gst_amount' => $total_amt + $gst_amt,
+							'black_amount' => 0,
+							'black_total' => 0,
+							'final_total' => $total_amt + $gst_amt,
+							'added_date' => date('Y-m-d H:i:s'),
+						];
+						$this->db->insert('sales_order_product_batch', $data_batch);
+
+						// Update original batch: set avail_black_qty = black_qty (fully resolved)
+						$orig_batch_record = $this->db->get_where('sales_order_product_batch', ['id' => $orig_batch_id])->row_array();
+						if ($orig_batch_record) {
+							$new_avail_black_qty = $orig_batch_record['black_qty'];
+							$this->db->where('id', $orig_batch_id)->update('sales_order_product_batch', [
+								'avail_black_qty' => $new_avail_black_qty
+							]);
+						}
+
+						// Decrement pending_qty of batch in inventory table
+						$inv_batch = $this->db->get_where('inventory', [
+							'product_id' => $prod_id,
+							'warehouse_id' => $warehouse_id,
+							'batch_no' => $batch_no
+						])->row_array();
+						if ($inv_batch) {
+							$new_pending_qty = max(0, $inv_batch['pending_qty'] - $qty);
+							$this->db->where('id', $inv_batch['id'])->update('inventory', [
+								'pending_qty' => $new_pending_qty
+							]);
+
+							// Decrement pending_qty of batch in inventory_history table as well
+							$hist_record = $this->db->get_where('inventory_history', [
+								'order_id' => $orig_order_id,
+								'parent_id' => $inv_batch['id'],
+								'status' => 'out'
+							])->row_array();
+							if ($hist_record) {
+								$new_hist_pending = max(0, $hist_record['pending_qty'] - $qty);
+								$this->db->where('id', $hist_record['id'])->update('inventory_history', [
+									'pending_qty' => $new_hist_pending
+								]);
+							}
+						}
+					}
+				}
+
+				// Check affected original sales orders
+				$original_order_ids_affected = array_unique($original_order_ids_affected);
+				foreach ($original_order_ids_affected as $orig_order_id) {
+					$pending_count = $this->db->query("
+						SELECT id 
+						FROM sales_order_product_batch 
+						WHERE order_id = '$orig_order_id' 
+						  AND black_qty > avail_black_qty
+					")->num_rows();
+
+					if ($pending_count == 0) {
+						$this->db->where('id', $orig_order_id)->update('sales_order', ['is_weird' => 2]);
+					}
+				}
+			}
+
+			$this->db->trans_commit(); // Commit transaction
+
+			$resultpost = [
+				"status" => 200,
+				"message" => get_phrase('bill_generated_successfully'),
 				"url" => $this->session->userdata('previous_url'),
 			];
 		} catch (Exception $e) {

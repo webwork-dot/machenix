@@ -96,9 +96,9 @@
          </div>
         <div class="card-datatable d-report mb-2">
             <!-- <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>    -->
-            <?php if($this->session->userdata('super_type_id') == 7) { ?>
+            <?php if($status == 'pending' && $this->session->userdata('super_type_id') == 7) { ?>
                 <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
-            <?php } elseif ($status == 'invoice' && $staff_access !== 7) { ?>
+            <?php } elseif ($status == 'pending' && $staff_access !== 7) { ?>
                 <a href="<?php echo site_url('inventory/sales-invoice/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
             <?php } ?>       
      

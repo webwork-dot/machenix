@@ -82,6 +82,27 @@
                     <span class="menu-title text-truncate">Product</span>
                 </a>
             </li>
+
+            <!-- <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'raw_products_add' || $page_name == 'raw_products_edit' || $page_name == 'raw_products_import') echo 'active'; ?>">   
+                <a class="d-flex align-items-center" href="#">
+                    <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate" data-i18n="Orders">Product Master</span>
+                </a>
+                <ul class="menu-content">
+                    <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'raw_products_add' || $page_name == 'raw_products_edit' || $page_name == 'raw_products_import') echo 'active'; ?>">
+                        <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/raw-products">
+                            <i class="feather icon-circle"></i>
+                            <span class="menu-title text-truncate">Import Products</span>
+                        </a>
+                    </li>
+                    <li class="nav-item <?php if($navigation == 'purchase_order') echo 'active'; ?>">
+                        <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/purchase-order">
+                            <i class="feather icon-circle"></i>
+                            <span class="menu-title text-truncate">Local Products</span>
+                        </a>
+                    </li>
+                </ul>
+            </li> -->
         <?php } ?>
         
         <?php if($user_id == 4 || in_array('24',$access_array) || in_array('25',$access_array)) { ?>
@@ -134,6 +155,12 @@
            <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-order'); ?>">
                <i data-feather="align-left"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Booking</span>
+           </a>
+        </li>
+        <li class="nav-item <?php if($page_name == 'conversion_order') echo 'active'; ?>">
+           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/conversion-order'); ?>">
+               <i data-feather="align-left"></i>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Conversion</span>
            </a>
         </li>
         <li class="nav-item <?php if($page_name == 'black_order') echo 'active'; ?>">
