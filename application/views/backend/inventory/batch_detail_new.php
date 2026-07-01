@@ -73,11 +73,6 @@
     return toNum(v).toFixed(d);
   }
 
-  function getTotalExpense(expenses) {
-    if (!Array.isArray(expenses) || expenses.length === 0) return 0;
-    return expenses.reduce((sum, e) => sum + toNum(e?.sub_total), 0);
-  }
-
   function setHeaderFields(header) {
     $('#view-boe-no').val(header?.boe_no || '');
     $('#view-boe-date').val(header?.boe_date || '');
@@ -86,7 +81,7 @@
     $('#view-po-date').val(header?.po_date || '');
   }
 
-  function renderSupplierTables(suppliers, grandTotals, expenses, expenseItems, supplierAccounts) {
+  function renderSupplierTables(suppliers, grandTotals, expenseItems, supplierAccounts) {
     const $wrap = $('#supplier-table-wrap');
     $wrap.empty();
 
@@ -95,15 +90,9 @@
       return;
     }
 
-    const totalExpense = getTotalExpense(expenses);
-    
     suppliers.forEach((supplier, supplierIdx) => {
       const products = Array.isArray(supplier.products) ? supplier.products : [];
       const totals = supplier.totals || {};
-
-      const supplierExpense = expenses.find(e => e.supplier_id == supplier.supplier_id)?.sub_total || 0;
-      const sAvgExpPerActCbm = toNum(totals.actual_cbm_total) > 0 ? (toNum(supplierExpense) / toNum(totals.actual_cbm_total)) : 0;
-      const sAvgExpPerOffCbm = toNum(totals.off_cbm_total) > 0 ? (toNum(supplierExpense) / toNum(totals.off_cbm_total)) : 0;
 
       let rowsHtml = '';
       products.forEach((p, i) => {
@@ -117,9 +106,9 @@
             <td class="text-end">${fmt(p.black_qty, 0)}</td>
             <td class="text-end">${fmt(p.act_qty, 0)}</td>
             <td class="text-end">${fmt(p.cbm_per_pc, 5)}</td>
-            <td class="text-end">${fmt(p.off_cbm_total, 5)}</td>
-            <td class="text-end">${fmt(p.actual_cbm_total, 5)}</td>
-            <td class="text-end">${fmt(toNum(p.act_qty) > 0 ? (toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerActCbm * toNum(p.actual_cbm_total))) / toNum(p.act_qty) : 0, 2)}</td>
+            <td class="text-end">${fmt(p.off_cbm_total, 2)}</td>
+            <td class="text-end">${fmt(p.actual_cbm_total, 2)}</td>
+            <td class="text-end">${fmt(p.actual_cost_with_exp, 5)}</td>
             <td class="text-end">${fmt(p.rmb_per_pc, 2)}</td>
             <td class="text-end">${fmt(p.rmb_total, 2)}</td>
             <td class="text-end">${fmt(p.usd_per_pc, 2)}</td>
@@ -137,17 +126,17 @@
             <td class="text-end">${fmt(p.off_gst_percent, 2)}</td>
             <td class="text-end">${fmt(p.off_gst_amt, 2)}</td>
             <td class="text-end">${fmt(p.total_duty_gst, 2)}</td>
-            <td class="text-end">${fmt(sAvgExpPerActCbm * toNum(p.actual_cbm_total), 2)}</td>
-            <td class="text-end">${fmt(toNum(p.total_rs_without_expense) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerActCbm * toNum(p.actual_cbm_total)), 2)}</td>
-            <td class="text-end">${fmt(sAvgExpPerOffCbm * toNum(p.off_cbm_total), 2)}</td>
-            <td class="text-end">${fmt(toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerOffCbm * toNum(p.off_cbm_total)), 2)}</td>
-            <td class="text-end">${fmt(toNum(p.official_qty) > 0 ? (toNum(p.total_off_rs) + toNum(p.off_duty_amt) + toNum(p.off_surcharge) + (sAvgExpPerOffCbm * toNum(p.off_cbm_total))) / toNum(p.official_qty) : 0, 2)}</td>
+            <td class="text-end">${fmt(p.expense, 2)}</td>
+            <td class="text-end">${fmt(p.total_expense, 2)}</td>
+            <td class="text-end">${fmt(p.official_expense, 2)}</td>
+            <td class="text-end">${fmt(p.total_official_expense, 2)}</td>
+            <td class="text-end">${fmt(p.official_exp_per_pc, 2)}</td>
           </tr>
         `;
       });
 
       if (rowsHtml === '') {
-        rowsHtml = '<tr><td colspan="33" class="text-center">No records</td></tr>';
+        rowsHtml = '<tr><td colspan="32" class="text-center">No records</td></tr>';
       }
 
       function formatDate(dateStr) {
@@ -163,8 +152,8 @@
           <h6 class="mb-1">
             Supplier: ${escapeHtml(supplier.supplier_name || ('Supplier ' + (supplierIdx + 1)))}
             ${supplier.invoice ? `
-              <span class="badge badge-soft-primary ms-2" style="font-size: 0.8rem; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
-                <i class="fa fa-file-invoice me-1"></i> Inv: ${escapeHtml(supplier.invoice)}
+              <span class="badge badge-soft-primary ms-1" style="font-size: 0.8rem; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                <i class="fa fa-file me-1"></i> Inv: ${escapeHtml(supplier.invoice)}
               </span>
               <span class="badge badge-soft-secondary ms-1" style="font-size: 0.8rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">
                 <i class="fa fa-calendar-alt me-1"></i> ${formatDate(supplier.invoice_date)}
@@ -204,10 +193,10 @@
                   <th>OFF GST Amt</th>
                   <th>Total Duty + GST</th>
                   <th>Expense</th>
-                  <th>Total Exp</th>
-                  <th>Off Exp</th>
-                  <th>Off Tot Exp</th>
-                  <th>Off Per Pc</th>
+                  <th>Total Expense</th>
+                  <th>Off Expense</th>
+                  <th>Off Total Expense</th>
+                  <th>Off per pc</th>
                 </tr>
               </thead>
               <tbody>${rowsHtml}</tbody>
@@ -217,32 +206,42 @@
                   <td class="text-end">${fmt(totals.official_qty, 0)}</td>
                   <td class="text-end">${fmt(totals.black_qty, 0)}</td>
                   <td class="text-end">${fmt(totals.act_qty, 0)}</td>
-                  <td class="text-end">${fmt(totals.cbm_per_pc, 5)}</td>
-                  <td class="text-end">${fmt(totals.off_cbm_total, 5)}</td>
-                  <td class="text-end">${fmt(totals.actual_cbm_total, 5)}</td>
-                  <td class="text-end">${fmt(toNum(totals.act_qty) > 0 ? (toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerActCbm * toNum(totals.actual_cbm_total))) / toNum(totals.act_qty) : 0, 2)}</td>
-                  <td class="text-end">${fmt(totals.rmb_per_pc, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.cbm_per_pc, 5)}</td> -->
+                  <td class="text-end">-</td>
+                  <td class="text-end">${fmt(totals.off_cbm_total, 2)}</td>
+                  <td class="text-end">${fmt(totals.actual_cbm_total, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.actual_cost_with_exp, 5)}</td> -->
+                  <td class="text-end">-</td>
+                  <!-- <td class="text-end">${fmt(totals.rmb_per_pc, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.rmb_total, 2)}</td>
-                  <td class="text-end">${fmt(totals.usd_per_pc, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.usd_per_pc, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.usd_total, 2)}</td>
-                  <td class="text-end">${fmt(totals.cost_without_expense_rs, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.cost_without_expense_rs, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.total_rs_without_expense, 2)}</td>
-                  <td class="text-end">${fmt(totals.off_usd_per_pc, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.off_usd_per_pc, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.total_off_usd, 2)}</td>
-                  <td class="text-end">${fmt(totals.off_rs_per_pc, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.off_rs_per_pc, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.total_off_rs, 2)}</td>
-                  <td class="text-end">${fmt(totals.off_duty_percent, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.off_duty_percent, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.off_duty_amt, 2)}</td>
                   <td class="text-end">${fmt(totals.off_surcharge, 2)}</td>
                   <td class="text-end">${fmt(totals.off_taxable_value, 2)}</td>
-                  <td class="text-end">${fmt(totals.off_gst_percent, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.off_gst_percent, 2)}</td> -->
+                  <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.off_gst_amt, 2)}</td>
                   <td class="text-end">${fmt(totals.total_duty_gst, 2)}</td>
-                  <td class="text-end">${fmt(sAvgExpPerActCbm * toNum(totals.actual_cbm_total), 2)}</td>
-                  <td class="text-end">${fmt(toNum(totals.total_rs_without_expense) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerActCbm * toNum(totals.actual_cbm_total)), 2)}</td>
-                  <td class="text-end">${fmt(sAvgExpPerOffCbm * toNum(totals.off_cbm_total), 2)}</td>
-                  <td class="text-end">${fmt(toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerOffCbm * toNum(totals.off_cbm_total)), 2)}</td>
-                  <td class="text-end">${fmt(toNum(totals.official_qty) > 0 ? (toNum(totals.total_off_rs) + toNum(totals.off_duty_amt) + toNum(totals.off_surcharge) + (sAvgExpPerOffCbm * toNum(totals.off_cbm_total))) / toNum(totals.official_qty) : 0, 2)}</td>
+                  <td class="text-end">${fmt(totals.expense, 2)}</td>
+                  <td class="text-end">${fmt(totals.total_expense, 2)}</td>
+                  <td class="text-end">${fmt(totals.official_expense, 2)}</td>
+                  <td class="text-end">${fmt(totals.total_official_expense, 2)}</td>
+                  <!-- <td class="text-end">${fmt(totals.official_exp_per_pc, 2)}</td> -->
+                  <td class="text-end">-</td>
                 </tr>
               </tfoot>
             </table>
@@ -287,10 +286,10 @@
                 <th>OFF GST Amt</th>
                 <th>Total Duty + GST</th>
                 <th>Expense</th>
-                <th>Total Exp</th>
-                <th>Off Exp</th>
-                <th>Off Tot Exp</th>
-                <th>Off Per Pc</th>
+                <th>Total Expense</th>
+                <th>Off Expense</th>
+                <th>Off Total Expense</th>
+                <th>Off per pc</th>
               </tr>
             </thead>
             <tfoot>
@@ -299,32 +298,42 @@
                 <td class="text-end">${fmt(g.official_qty, 0)}</td>
                 <td class="text-end">${fmt(g.black_qty, 0)}</td>
                 <td class="text-end">${fmt(g.act_qty, 0)}</td>
-                <td class="text-end">${fmt(g.cbm_per_pc, 5)}</td>
-                <td class="text-end">${fmt(g.off_cbm_total, 5)}</td>
-                <td class="text-end">${fmt(g.actual_cbm_total, 5)}</td>
-                <td class="text-end">${fmt(toNum(g.act_qty) > 0 ? (toNum(g.total_rs_without_expense) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense)) / toNum(g.act_qty) : 0, 2)}</td>
-                <td class="text-end">${fmt(g.rmb_per_pc, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.cbm_per_pc, 5)}</td> -->
+                <td class="text-end">-</td>
+                <td class="text-end">${fmt(g.off_cbm_total, 2)}</td>
+                <td class="text-end">${fmt(g.actual_cbm_total, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.actual_cost_with_exp, 5)}</td> -->
+                <td class="text-end">-</td>
+                <!-- <td class="text-end">${fmt(g.rmb_per_pc, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.rmb_total, 2)}</td>
-                <td class="text-end">${fmt(g.usd_per_pc, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.usd_per_pc, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.usd_total, 2)}</td>
-                <td class="text-end">${fmt(g.cost_without_expense_rs, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.cost_without_expense_rs, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.total_rs_without_expense, 2)}</td>
-                <td class="text-end">${fmt(g.off_usd_per_pc, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.off_usd_per_pc, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.total_off_usd, 2)}</td>
-                <td class="text-end">${fmt(g.off_rs_per_pc, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.off_rs_per_pc, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.total_off_rs, 2)}</td>
-                <td class="text-end">${fmt(g.off_duty_percent, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.off_duty_percent, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.off_duty_amt, 2)}</td>
                 <td class="text-end">${fmt(g.off_surcharge, 2)}</td>
                 <td class="text-end">${fmt(g.off_taxable_value, 2)}</td>
-                <td class="text-end">${fmt(g.off_gst_percent, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.off_gst_percent, 2)}</td> -->
+                <td class="text-end">-</td>
                 <td class="text-end">${fmt(g.off_gst_amt, 2)}</td>
                 <td class="text-end">${fmt(g.total_duty_gst, 2)}</td>
-                <td class="text-end">${fmt(totalExpense, 2)}</td>
-                <td class="text-end">${fmt(toNum(g.total_rs_without_expense) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense), 2)}</td>
-                <td class="text-end">${fmt(totalExpense, 2)}</td>
-                <td class="text-end">${fmt(toNum(g.total_off_rs) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense), 2)}</td>
-                <td class="text-end">${fmt(toNum(g.official_qty) > 0 ? (toNum(g.total_off_rs) + toNum(g.off_duty_amt) + toNum(g.off_surcharge) + toNum(totalExpense)) / toNum(g.official_qty) : 0, 2)}</td>
+                <td class="text-end">${fmt(g.expense, 2)}</td>
+                <td class="text-end">${fmt(g.total_expense, 2)}</td>
+                <td class="text-end">${fmt(g.official_expense, 2)}</td>
+                <td class="text-end">${fmt(g.total_official_expense, 2)}</td>
+                <!-- <td class="text-end">${fmt(g.official_exp_per_pc, 2)}</td> -->
+                <td class="text-end">-</td>
               </tr>
             </tfoot>
           </table>
@@ -482,7 +491,7 @@
         success: function(res) {
           if (res && Number(res.status) === 200) {
             setHeaderFields(res.header || {});
-            renderSupplierTables(res.suppliers || [], res.grand_totals || {}, res.expenses || [], res.expense_items || [], res.supplier_accounts || []);
+            renderSupplierTables(res.suppliers || [], res.grand_totals || {}, res.expense_items || [], res.supplier_accounts || []);
             $('#batch-detail-wrap').removeClass('d-none');
           } else {
             $('#batch-detail-wrap').addClass('d-none');

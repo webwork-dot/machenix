@@ -397,6 +397,10 @@ $(function () {
 
   $('#po_type').on('change', toggleGstFields);
 
+  $('#purchase_date').on('change input', function() {
+    $('#expense_date').val($(this).val());
+  });
+
   // Handle charges selection change
   $(document).on('change', '#expenseTable .charges_id', function () {
     const $row = $(this).closest('tr');

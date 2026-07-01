@@ -449,6 +449,10 @@ $(function () {
 
   $('#po_type').on('change', toggleGstFields);
 
+  $('#purchase_date').on('change input', function() {
+    $('#expense_date').val($(this).val());
+  });
+
   $('#batch_no').on('change', function() {
     fetchSuppliers($(this).val());
   });

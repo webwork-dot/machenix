@@ -42,6 +42,15 @@ $route[$r_inventory . '/supplier/add']    = 'inventory/supplier_form/supplier_ad
 $route[$r_inventory . '/supplier/edit/(:num)'] = 'inventory/supplier_form/supplier_edit/$1';
 $route[$r_inventory . '/supplier/ledger/(:num)'] = 'inventory/supplier_form/supplier_ledger/$1';
 
+$route[$r_inventory . '/local-supplier']                      = 'local_supplier/index';
+$route[$r_inventory . '/local-supplier/add']                  = 'local_supplier/add';
+$route[$r_inventory . '/local-supplier/edit/(:num)']          = 'local_supplier/edit/$1';
+$route[$r_inventory . '/local-supplier/ledger/(:num)']        = 'local_supplier/ledger/$1';
+$route[$r_inventory . '/local-supplier/add_post']             = 'local_supplier/index/add_post';
+$route[$r_inventory . '/local-supplier/edit_post/(:num)']     = 'local_supplier/index/edit_post/$1';
+$route[$r_inventory . '/local-supplier/delete/(:num)']        = 'local_supplier/index/delete/$1';
+$route[$r_inventory . '/get_local_supplier']                  = 'local_supplier/get_local_supplier';
+
 $route[$r_inventory . '/company'] = 'inventory/company';
 $route[$r_inventory . '/company/add']    = 'inventory/company_form/company_add';
 $route[$r_inventory . '/company/edit/(:num)'] = 'inventory/company_form/company_edit/$1';
@@ -91,7 +100,23 @@ $route[$r_inventory . '/import-products']           = 'inventory/raw_products_fo
 $route[$r_inventory . '/raw-products/add']          = 'inventory/raw_products_form/add';
 $route[$r_inventory . '/raw-products/edit/(:num)']  = 'inventory/raw_products_form/edit/$1';
 
+$route[$r_inventory . '/local-products']                      = 'local_products/index';
+$route[$r_inventory . '/local-products/add']                  = 'local_products/add';
+$route[$r_inventory . '/local-products/edit/(:num)']          = 'local_products/edit/$1';
+$route[$r_inventory . '/local-products/add_post']             = 'local_products/index/add_post';
+$route[$r_inventory . '/local-products/edit_post/(:num)']     = 'local_products/index/edit_post/$1';
+$route[$r_inventory . '/local-products/delete/(:num)']        = 'local_products/index/delete/$1';
+$route[$r_inventory . '/local-products/delete_variation']     = 'local_products/local_products_delete_variation';
+$route[$r_inventory . '/local-products/delete_sku']           = 'local_products/local_products_delete_sku';
+$route[$r_inventory . '/get_local_products']                  = 'local_products/get_local_products';
+
+$route[$r_inventory . '/purchase-order'] = 'inventory/purchase_order/local';
+$route[$r_inventory . '/get_purchase_order_local'] = 'inventory/get_purchase_order_local';
+// $route[$r_inventory . '/purchase-order/add-local']    = 'inventory/purchase_order_form/add_local';
+
 $route[$r_inventory . '/imp-purchase-order']  = 'inventory/purchase_order/import';
+$route[$r_inventory . '/purchase-order/add-import']    = 'inventory/purchase_order_form/add_import';
+$route[$r_inventory . '/purchase-order/edit-import/(:num)'] = 'inventory/purchase_order_form/edit_import/$1';
 $route[$r_inventory . '/priority-po']         = 'inventory/priority_po';
 $route[$r_inventory . '/loading-list-po']     = 'inventory/loading_list_po';
 $route[$r_inventory . '/loading-list-po/add']     = 'inventory/loading_list_po_form/add';
@@ -113,12 +138,6 @@ $route[$r_inventory . '/vendor-ledger/(:num)']          = 'inventory/vendor_ledg
 $route[$r_inventory . '/payment-receipt']             = 'inventory/payment_receipt';
 $route[$r_inventory . '/payment-receipt/add']         = 'inventory/payment_receipt_form/add';
 $route[$r_inventory . '/payment-receipt/edit/(:num)'] = 'inventory/payment_receipt_form/edit/$1';
-
-$route[$r_inventory . '/purchase-order'] = 'inventory/purchase_order/local';
-$route[$r_inventory . '/purchase-order/add-import']    = 'inventory/purchase_order_form/add_import';
-$route[$r_inventory . '/purchase-order/edit-import/(:num)'] = 'inventory/purchase_order_form/edit_import/$1';
-
-$route[$r_inventory . '/purchase-order/add-local']    = 'inventory/purchase_order_form/add_local';
 
 $route[$r_inventory . '/purchase-order-entry'] = 'inventory/purchase_order_entry';
 $route[$r_inventory . '/purchase-order/edit/(:num)'] = 'inventory/purchase_order_form/edit/$1';

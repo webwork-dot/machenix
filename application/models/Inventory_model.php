@@ -535,6 +535,7 @@ class Inventory_model extends CI_Model
 				$this->upload_model->delete_temp_image($temp_path);
 			}
 
+			$data['type']   = 'import';
 			$this->db->insert('supplier', $data);
 			$user_id = $this->db->insert_id();
 			$this->session->set_flashdata('flash_message', get_phrase('supplier_added_successfully'));
@@ -630,6 +631,7 @@ class Inventory_model extends CI_Model
 				$this->upload_model->delete_temp_image($temp_path);
 			}
 
+			$data['type'] = 'import';
 			$this->db->where('id', $id);
 			$this->db->update('supplier', $data);
 			$this->session->set_flashdata('flash_message', get_phrase('supplier_updated_successfully'));
@@ -794,8 +796,8 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (company_id = '" . $company_id . "')";
 		}
 
-		$total_count = $this->db->query("SELECT id FROM supplier WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, name,gst_no,contact_name,contact_no FROM supplier WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$total_count = $this->db->query("SELECT id FROM supplier WHERE (is_deleted='0' AND type='import') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, name,gst_no,contact_name,contact_no FROM supplier WHERE (is_deleted='0' AND type='import') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -1527,6 +1529,7 @@ class Inventory_model extends CI_Model
 				$data['listed_6']       = 1;
 				$data['listed_7']       = 1;
 				$data['is_other_sku']   = 0;
+				$data['product_type']   = 'import';
 				$data['added_date']     = date("Y-m-d H:i:s");
 
 				$this->db->insert('raw_products', $data);
@@ -1806,6 +1809,7 @@ class Inventory_model extends CI_Model
 			// 	}
 			// }
 
+			$data['product_type'] = 'import';
 			$this->db->where('id', $id);
 			$this->db->update('raw_products', $data);
 
@@ -2038,10 +2042,10 @@ class Inventory_model extends CI_Model
 
 		$total_count = $this->db->query("SELECT  p.id FROM raw_products as p
 		LEFT JOIN product_variation as pv ON p.id = pv.product_id
-		WHERE (p.is_deleted='0') $keyword_filter group by p.id ORDER BY p.id ASC")->num_rows();
+		WHERE (p.is_deleted='0' AND p.product_type='import') $keyword_filter group by p.id ORDER BY p.id ASC")->num_rows();
 		$query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty FROM raw_products as p
 		LEFT JOIN product_variation as pv ON p.id = pv.product_id
-		WHERE (p.is_deleted='0') $keyword_filter group by p.id ORDER BY p.id DESC LIMIT $start, $length");
+		WHERE (p.is_deleted='0' AND p.product_type='import') $keyword_filter group by p.id ORDER BY p.id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -2918,6 +2922,112 @@ class Inventory_model extends CI_Model
 	// 		$this->db->insert('sales_order_no', $data);
 	// 	}
 	// }
+
+	public function get_purchase_order_local($delivery_status = [])
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+		$company_id = $this->session->userdata('company_id');
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
+		endif;
+
+		if (count($delivery_status) > 0) {
+			$keyword_filter .= " AND (delivery_status NOT IN ('" . implode("','", $delivery_status) . "'))";
+		}
+
+		$keyword_filter .= " AND (company_id = '$company_id')";
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = 'local' $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') AND method = 'local' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delivery_status = $item['delivery_status'];
+
+				// Get totals and supplier list
+				$sql = "
+					SELECT
+						pop.supplier_id,
+						COALESCE(s.name, '') AS supplier_name,
+						COUNT(DISTINCT pop.product_id) AS total_products,
+						SUM(pop.quantity) AS total_qty
+					FROM purchase_order_product pop
+					LEFT JOIN supplier s ON s.id = pop.supplier_id
+					WHERE pop.parent_id = '$id'
+					GROUP BY pop.supplier_id, s.name
+					ORDER BY pop.id
+				";
+
+				$rows = $this->db->query($sql)->result_array();
+				$suppliers = array();
+				$total_products = 0;
+				$total_qty = 0;
+
+				foreach ($rows as $r) {
+					if (!empty($r['supplier_name'])) {
+						$suppliers[] = $r['supplier_name'];
+					}
+					$total_products += (int)$r['total_products'];
+					$total_qty += (int)$r['total_qty'];
+				}
+
+				// Actions
+				$action ='-';
+				$export_excel_url = "generate_excel('".$id."')";
+				$view_po_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_order_details/" . $id . "','PO Details - " . $item['voucher_no'] . "')";
+				$delete_po_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete/" . $id . "','Are you sure want to delete!')";
+				
+				// $action = '<div class="btn-group">
+				// 	<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+				// 		<i class="mdi mdi-dots-vertical"></i></button>
+				// 	<div class="dropdown-menu">
+				// 		<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
+				// 		<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
+				// 		<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_po_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete PO</a>
+				// 	</div>
+				// </div>';
+
+				$data[] = array(
+					"sr_no"             => ++$start,
+					"id"                => $item['id'],
+					"date"              => date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
+					"suppliers"         => !empty($suppliers) ? array_to_list($suppliers) : '-',
+					"total_products"    => $total_products,
+					"total_quantity"    => $total_qty,
+					"po_date"           => date('d M, Y', strtotime($item['date'])),
+					"action"            => $action
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
 
 	public function get_purchase_order($delivery_status = [])
 	{

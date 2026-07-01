@@ -603,7 +603,7 @@ class Inventory extends CI_Controller
         $page_data['category_tree'] = $category_tree;
 
         $page_data['units_list']     = $this->common_model->select('units');
-        $page_data['suppliers']     = $this->common_model->getResultById('supplier', 'id, name', ['company_id' => $company_id]);
+        $page_data['suppliers']     = $this->common_model->getResultById('supplier', 'id, name', ['company_id' => $company_id, 'type' => 'import', 'is_deleted' => '0']);
         // $page_data['form_list']     = $this->common_model->select('product_form');
         // $page_data['colors']     = $this->common_model->select('colors');
         // $page_data['sizes']     = $this->common_model->select('oc_attribute_values');
@@ -1118,6 +1118,13 @@ class Inventory extends CI_Controller
             $this->inventory_model->delete_loading_list($param2);
         } elseif ($param1 == "move_to_purchase_in") {
             $this->inventory_model->move_to_purchase_in($param2);
+        } elseif ($param1 == "local") {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'purchase_order';
+            $page_data['type']      = 'local';
+            $page_data['page_name']  = 'purchase_order_local';
+            $page_data['page_title'] = 'Local Purchase Order';
+            $this->load->view('backend/index', $page_data);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'import_purchase_order';
@@ -1224,6 +1231,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_purchase_order();
+        }
+    }
+
+    public function get_purchase_order_local()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_purchase_order_local();
         }
     }
 
@@ -1932,47 +1949,137 @@ class Inventory extends CI_Controller
         }
 
         $all_batch_expenses = $this->db->query("
-            SELECT supplier_id, sub_total 
+            SELECT supplier_id, sub_total, type 
             FROM po_expense 
             WHERE batch_no = ? AND is_delete = 0
-        ", array($batch_no))->result_array();
+        ", array($batch_no));
 
-        $expenses = [];
-        foreach ($suppliers as $s_id => $s_data) {
-            $supplier_total = 0;
-            foreach ($all_batch_expenses as $exp) {
-                $exp_supplier_ids = explode(',', (string)($exp['supplier_id'] ?? ''));
-                $exp_supplier_ids = array_filter(array_map('trim', $exp_supplier_ids));
+        $expenses = ($all_batch_expenses->num_rows() > 0) ? $all_batch_expenses->result_array() : [];
+        // echo json_encode($suppliers); exit();
+        // echo $this->db->last_query(); exit();
+
+        $g_expense = 0;
+        $g_total_expense = 0;
+        $g_off_expense = 0;
+        $g_off_total_expense = 0;
+        $g_off_per_pc = 0;
+        $g_cost_without_exp = 0;
+        foreach ($suppliers as &$supplier) {
+            // Actual Expense
+            $act_exp = [];
+            foreach ($expenses as $exp) {
+                $exp_suppliers = explode(',', $exp["supplier_id"]);
                 
-                if (in_array((string)$s_id, $exp_supplier_ids)) {
-                    $count = count($exp_supplier_ids);
-                    if ($count > 0) {
-                        $supplier_total += (float)$exp['sub_total'] / $count;
+                // Supplier Total
+                $total_act_cbm = 0;
+                // foreach ($suppliers as &$supp) {
+                //     if(in_array($supp['supplier_id'], $exp_suppliers)) {
+                //         $total_act_cbm += $supp['totals']['actual_cbm_total'];
+                //     }
+                // }
+
+                if(in_array($supplier['supplier_id'], $exp_suppliers)) {
+                    foreach($exp_suppliers as $exp_sup) {
+                        if($suppliers[$exp_sup]['totals']['actual_cbm_total']) {
+                            $total_act_cbm += $suppliers[$exp_sup]['totals']['actual_cbm_total'];
+                        }
+                    }
+                }
+
+                // avg expense
+                if($total_act_cbm > 0) {
+                    $act_exp[] = $exp['sub_total'] / $total_act_cbm;
+                }
+            }
+           
+            // Official Expense
+            $off_exp = [];
+            foreach ($expenses as $exp) {
+                if($exp['type'] == 'official') {
+                    $exp_suppliers = explode(',', $exp["supplier_id"]);
+    
+                    // Supplier Total
+                    $total_off_cbm = 0;
+                    // foreach ($suppliers as &$supp) {
+                    //     if(in_array($supp['supplier_id'], $exp_suppliers)) {
+                    //         $total_off_cbm += $supp['totals']['off_cbm_total'];
+                    //     }
+                    // }
+
+                    if(in_array($supplier['supplier_id'], $exp_suppliers)) {
+                        foreach($exp_suppliers as $exp_sup) {
+                            if($suppliers[$exp_sup]['totals']['off_cbm_total']) {
+                                $total_off_cbm += $suppliers[$exp_sup]['totals']['off_cbm_total'];
+                            }
+                        }
+                    }
+    
+                    // avg expense
+                    if($total_off_cbm > 0) {
+                        $off_exp[] = $exp['sub_total'] / $total_off_cbm;
                     }
                 }
             }
-            $expenses[] = array(
-                'supplier_id' => $s_id,
-                'sub_total' => $supplier_total
-            );
 
-            // $supplier_total = 0;
-            // foreach ($all_batch_expenses as $exp) {
-            //     $exp_supplier_ids = explode(',', (string)($exp['supplier_id'] ?? ''));
-            //     $exp_supplier_ids = array_filter(array_map('trim', $exp_supplier_ids));
+            $t_expense = 0;
+            $t_total_expense = 0;
+            $t_off_expense = 0;
+            $t_off_total_expense = 0;
+            $t_off_per_pc = 0;
+            $t_cost_without_exp = 0;
+            foreach ($supplier['products'] as &$product) {
+                $p_expense = (count($act_exp) > 0) ? (array_sum($act_exp) * $product['actual_cbm_total']) : 0;
+                $p_total_expense = $p_expense + $product['total_rs_without_expense'] + $product['off_duty_amt'] + $product['off_surcharge'];
+                $p_off_expense = (count($off_exp) > 0) ? (array_sum($off_exp) * $product['off_cbm_total']) : 0;
+                $p_off_total_expense = $p_off_expense + $product['total_off_rs'] + $product['off_duty_amt'] + $product['off_surcharge'];
+                $p_off_per_pc = $p_off_total_expense / $product['official_qty'];
+                $p_cost_without_exp = $p_total_expense / $product['act_qty'];
                 
-            //     if (in_array((string)$s_id, $exp_supplier_ids)) {
-            //         $count = count($exp_supplier_ids);
-            //         if ($count > 0) {
-            //             $supplier_total += (float)$exp['sub_total'] / $count;
-            //         }
-            //     }
-            // }
-            // $expenses[] = array(
-            //     'supplier_id' => $s_id,
-            //     'sub_total' => $supplier_total
-            // );
+                // Updating Product Row
+                $product['expense'] = $p_expense;
+                $product['total_expense'] = $p_total_expense;
+                $product['official_expense'] = $p_off_expense;
+                $product['total_official_expense'] = $p_off_total_expense;
+                $product['official_exp_per_pc'] = $p_off_per_pc;
+                $product['actual_cost_with_exp'] = $p_cost_without_exp;
+
+                // Updating supplier total
+                $t_expense += $p_expense;
+                $t_total_expense += $p_total_expense;
+                $t_off_expense += $p_off_expense;
+                $t_off_total_expense += $p_off_total_expense;
+                $t_off_per_pc += $p_off_per_pc;
+                $t_cost_without_exp += $p_cost_without_exp;
+            }
+
+            // Updating Supplier wise total
+            $supplier['totals']['expense'] = $t_expense;
+            $supplier['totals']['total_expense'] = $t_total_expense;
+            $supplier['totals']['official_expense'] = $t_off_expense;
+            $supplier['totals']['total_official_expense'] = $t_off_total_expense;
+            $supplier['totals']['official_exp_per_pc'] = $t_off_per_pc;
+            $supplier['totals']['actual_cost_with_exp'] = $t_cost_without_exp;
+
+            // Updating grand total
+            $g_expense += $t_expense;
+            $g_total_expense += $t_total_expense;
+            $g_off_expense += $t_off_expense;
+            $g_off_total_expense += $t_off_total_expense;
+            $g_off_per_pc += $t_off_per_pc;
+            $g_cost_without_exp += $t_cost_without_exp;
+
+            unset($product); 
         }
+
+        // Updating Grand total
+        $grand_totals['expense'] = $g_expense;
+        $grand_totals['total_expense'] = $g_total_expense;
+        $grand_totals['official_expense'] = $g_off_expense;
+        $grand_totals['total_official_expense'] = $g_off_total_expense;
+        $grand_totals['official_exp_per_pc'] = $g_off_per_pc;
+        $grand_totals['actual_cost_with_exp'] = $g_cost_without_exp;
+
+        unset($supplier);
 
         $suppliers = array_values($suppliers);
         $expense_items = $this->db->query("
@@ -2092,7 +2199,6 @@ class Inventory extends CI_Controller
             ),
             'suppliers' => $suppliers,
             'grand_totals' => $grand_totals,
-            'expenses' => $expenses,
             'expense_items' => $expense_items,
             'supplier_accounts' => $supplier_accounts
         ));
