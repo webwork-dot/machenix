@@ -107,6 +107,18 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
+              <label>Unit <span class="required req-cont">*</span></label>
+              <select class="form-select select2" name="unit" required>
+                <option value="">Select Unit</option>
+                <?php foreach ($product_units as $unit): ?>
+                  <option value="<?php echo $unit['name']; ?>"><?php echo $unit['name']; ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
               <label>Selling Price <span class="required">*</span></label>
               <input type="number" class="form-control" placeholder="Enter Selling Price" name="costing_price" required value="0">
             </div>

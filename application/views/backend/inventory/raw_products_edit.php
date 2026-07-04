@@ -256,6 +256,20 @@ function formatNumber($value)
             </div>
           </div>
 
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Unit <span class="required req-cont">*</span></label>
+              <select class="form-select select2" name="unit" required>
+                <option value="">Select Unit</option>
+                <?php foreach ($product_units as $unit): ?>
+                  <option value="<?php echo $unit['name']; ?>" <?php echo (isset($data['unit']) && $data['unit'] == $unit['name']) ? 'selected' : ''; ?>>
+                    <?php echo $unit['name']; ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
           <?php
           // echo "<pre>";
           // print_r($variations);

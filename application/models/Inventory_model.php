@@ -982,6 +982,147 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function add_product_unit()
+	{
+			$resultpost = array(
+					"status"  => 200,
+					"message" => "Product Unit added successfully",
+					"url"     => $this->session->userdata('previous_url'),
+			);
+
+			$name       = clean_and_escape($this->input->post('name'));
+
+			$check = $this->db->query(
+					"SELECT id FROM product_unit 
+					WHERE name = ? AND is_delete = '0' 
+					LIMIT 1",
+					array($name)
+			);
+
+			if ($name == '' || $check->num_rows() > 0) {
+					$this->session->set_flashdata('error_message', 'Duplicate or invalid name');
+					$resultpost = array(
+							"status"  => 400,
+							"message" => "Duplicate or invalid name",
+					);
+					return simple_json_output($resultpost);
+			}
+
+			$data = array(
+					'name'       => $name,
+					'added_by'   => (int) $this->session->userdata('super_user_id'),
+					'created_at' => date("Y-m-d H:i:s"),
+			);
+
+			$this->db->insert('product_unit', $data);
+			$this->session->set_flashdata('flash_message', 'Product Unit added successfully');
+
+			return simple_json_output($resultpost);
+	}
+
+	public function edit_product_unit($id = "")
+	{
+			$resultpost = array(
+					"status"  => 200,
+					"message" => "Product Unit updated successfully",
+					"url"     => $this->session->userdata('previous_url'),
+			);
+
+			$name       = clean_and_escape($this->input->post('name'));
+			$id         = (int) $id;
+
+			$check = $this->db->query(
+					"SELECT id FROM product_unit
+					WHERE name = ? AND is_delete = '0' AND id != ?
+					LIMIT 1",
+					array($name, $id)
+			);
+
+			if ($name == '' || $check->num_rows() > 0) {
+					$this->session->set_flashdata('error_message', 'Duplicate or invalid name');
+					$resultpost = array(
+							"status"  => 400,
+							"message" => "Duplicate or invalid name",
+					);
+					return simple_json_output($resultpost);
+			}
+
+			$data = array('name' => $name);
+
+			$this->db->where('id', $id);
+			$this->db->update('product_unit', $data);
+
+			$this->session->set_flashdata('flash_message', 'Product Unit updated successfully');
+			return simple_json_output($resultpost);
+	}
+
+	public function delete_product_unit($id)
+	{
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Product Unit deleted successfully",
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		$data['is_delete'] = '1';
+		$this->db->where('id', $id);
+		$this->db->update('product_unit', $data);
+
+		return simple_json_output($resultpost);
+	}
+
+	public function get_product_unit_by_id($id)
+	{
+		$this->db->where('id', $id);
+		return $this->db->get('product_unit');
+	}
+
+	public function get_product_unit()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (name like '%" . $keyword . "%')";
+		endif;
+
+		$total_count = $this->db->query("SELECT id FROM product_unit WHERE is_delete='0' $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, name FROM product_unit WHERE is_delete='0' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delete_url = "confirm_modal('" . base_url() . "inventory/product_unit/delete/" . $id . "','Are you sure want to delete!')";
+				$edit_url = base_url() . 'inventory/product-unit/edit/' . $id;
+				$action = '';
+				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
+				';
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"id"          => $item['id'],
+					"name"        => $item['name'],
+					"action"      => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
 	public function add_other_charges()
 	{
 		$resultpost = array(
@@ -1448,7 +1589,7 @@ class Inventory_model extends CI_Model
 				$data['color_id']       = '';
 				$data['color_name']     = '';
 				$data['sizes']          = '';
-				$data['unit']           = '';
+				$data['unit']           = clean_and_escape($this->input->post('unit'));
 				$data['type']           = $product_type;
 				$data['name']           = $name;
 				$data['alias']          = clean_and_escape($this->input->post('alias'));
@@ -1717,6 +1858,7 @@ class Inventory_model extends CI_Model
 			$data['product_mrp']    	= clean_and_escape($this->input->post('product_mrp'));
 			$data['costing_price']  	= clean_and_escape($this->input->post('costing_price'));
 			$data['gst']            	= ($gst) ? $gst : 0;
+			$data['unit']           	= clean_and_escape($this->input->post('unit'));
 
 			$duty_charge = clean_and_escape($this->input->post('duty_charge') ?? 0);
 			$data['duty_charge']    = $duty_charge;

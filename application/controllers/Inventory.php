@@ -603,6 +603,7 @@ class Inventory extends CI_Controller
         $page_data['category_tree'] = $category_tree;
 
         $page_data['units_list']     = $this->common_model->select('units');
+        $page_data['product_units']  = $this->common_model->getResultById('product_unit', 'id, name', ['is_delete' => '0']);
         $page_data['suppliers']     = $this->common_model->getResultById('supplier', 'id, name', ['company_id' => $company_id, 'type' => 'import', 'is_deleted' => '0']);
         // $page_data['form_list']     = $this->common_model->select('product_form');
         // $page_data['colors']     = $this->common_model->select('colors');
@@ -2032,8 +2033,8 @@ class Inventory extends CI_Controller
                 $p_total_expense = $p_expense + $product['total_rs_without_expense'] + $product['off_duty_amt'] + $product['off_surcharge'];
                 $p_off_expense = (count($off_exp) > 0) ? (array_sum($off_exp) * $product['off_cbm_total']) : 0;
                 $p_off_total_expense = $p_off_expense + $product['total_off_rs'] + $product['off_duty_amt'] + $product['off_surcharge'];
-                $p_off_per_pc = $p_off_total_expense / $product['official_qty'];
-                $p_cost_without_exp = $p_total_expense / $product['act_qty'];
+                $p_off_per_pc = ($product['official_qty'] > 0) ? $p_off_total_expense / $product['official_qty'] : 0;
+                $p_cost_without_exp = ($product['act_qty'] > 0) ? $p_total_expense / $product['act_qty'] : 0;
                 
                 // Updating Product Row
                 $product['expense'] = $p_expense;
@@ -3863,6 +3864,56 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_expense_type();
+        }
+    }
+
+    public function product_unit($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_product_unit($param2);
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_product_unit($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_product_unit($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'product_unit';
+            $page_data['page_name']  = 'product_unit';
+            $page_data['page_title'] = 'Product Unit';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function product_unit_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['navigation']  = 'product_unit';
+        if ($param1 == 'product_unit_add') {
+            $page_data['page_name']  = 'product_unit_add';
+            $page_data['page_title'] = 'Add Product Unit';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'product_unit_edit') {
+            $data                    = $this->inventory_model->get_product_unit_by_id($param2)->row_array();
+            $page_data['data']       = $data;
+            $page_data['page_name']  = 'product_unit_edit';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Product Unit';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_product_unit()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_product_unit();
         }
     }
 

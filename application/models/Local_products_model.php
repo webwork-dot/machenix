@@ -227,7 +227,7 @@ class Local_products_model extends CI_Model
                 $data['color_id']       = '';
                 $data['color_name']     = '';
                 $data['sizes']          = '';
-                $data['unit']           = '';
+                $data['unit']           = clean_and_escape($this->input->post('unit'));
                 $data['type']           = $product_type;
                 $data['name']           = $name;
                 $data['alias']          = clean_and_escape($this->input->post('alias'));
@@ -417,6 +417,7 @@ class Local_products_model extends CI_Model
             $data['product_mrp']    = 0;
             $data['costing_price']  = clean_and_escape($this->input->post('costing_price'));
             $data['gst']            = ($gst) ? $gst : 0;
+            $data['unit']           = clean_and_escape($this->input->post('unit'));
 
             $data['duty_charge']    = 0;
             $data['net_weight']     = 0;

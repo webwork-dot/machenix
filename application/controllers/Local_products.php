@@ -50,6 +50,7 @@ class Local_products extends CI_Controller
         $page_data['category_tree'] = $category_tree;
 
         $page_data['units_list']     = $this->common_model->select('units');
+        $page_data['product_units']  = $this->common_model->getResultById('product_unit', 'id, name', ['is_delete' => '0']);
         $page_data['suppliers']     = $this->common_model->getResultById('supplier', 'id, name', ['company_id' => $company_id]);
 
         $page_data['modesy_images'] = $this->file_model->get_sess_product_images_array();
@@ -70,6 +71,7 @@ class Local_products extends CI_Controller
         $page_data['category_tree'] = $category_tree;
 
         $page_data['units_list']     = $this->common_model->select('units');
+        $page_data['product_units']  = $this->common_model->getResultById('product_unit', 'id, name', ['is_delete' => '0']);
         $page_data['suppliers']     = $this->common_model->getResultById('supplier', 'id, name', ['company_id' => $company_id]);
 
         $data                    = $this->local_products_model->get_raw_products_by_id($id)->row_array();

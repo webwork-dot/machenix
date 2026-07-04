@@ -63,6 +63,10 @@ $route[$r_inventory . '/expense-type'] = 'inventory/expense_type';
 $route[$r_inventory . '/expense-type/add']    = 'inventory/expense_type_form/expense_type_add';
 $route[$r_inventory . '/expense-type/edit/(:num)'] = 'inventory/expense_type_form/expense_type_edit/$1';
 
+$route[$r_inventory . '/product-unit'] = 'inventory/product_unit';
+$route[$r_inventory . '/product-unit/add']    = 'inventory/product_unit_form/product_unit_add';
+$route[$r_inventory . '/product-unit/edit/(:num)'] = 'inventory/product_unit_form/product_unit_edit/$1';
+
 $route[$r_inventory . '/charges'] = 'inventory/other_charges';
 $route[$r_inventory . '/charges/add'] = 'inventory/other_charges_form/other_charges_add';
 $route[$r_inventory . '/charges/edit/(:num)'] = 'inventory/other_charges_form/other_charges_edit/$1';
