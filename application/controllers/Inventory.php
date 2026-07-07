@@ -682,8 +682,11 @@ class Inventory extends CI_Controller
         }
 
         $company_id = $this->session->userdata('company_id');
-        $company_list = $this->common_model->getResultById('my_companies', 'id, name', ['is_deleted' => '0', 'company_id' => $company_id]);
+        $company_list = $this->common_model->getResultById('my_companies', 'id, name, state_id', ['is_deleted' => '0', 'company_id' => $company_id]);
         $page_data['company_list'] = ($company_list != '') ? $company_list : [];
+
+        $company_info = $this->common_model->getRowById('company', 'state_id', ['id' => $company_id]);
+        $page_data['company_state_id'] = $company_info ? (int)$company_info['state_id'] : 0;
 
         $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id, 'delivery_status' => 'purchase_in']);
         $page_data['po'] = ($pos != '') ? $pos : [];
@@ -1107,6 +1110,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_purchase_order($param2);
+        } elseif ($param1 == "add_local_post") {
+            $this->inventory_model->add_local_purchase_order($param2);
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_purchase_order($param2);
         } elseif ($param1 == "delete") {
@@ -1124,7 +1129,7 @@ class Inventory extends CI_Controller
             $page_data['navigation']  = 'purchase_order';
             $page_data['type']      = 'local';
             $page_data['page_name']  = 'purchase_order_local';
-            $page_data['page_title'] = 'Local Purchase Order';
+            $page_data['page_title'] = 'Local Purchase In';
             $this->load->view('backend/index', $page_data);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
@@ -1172,7 +1177,18 @@ class Inventory extends CI_Controller
         // $page_data['products_list']     = [];
 
         // echo json_encode($page_data['products_list']); exit();
-        if ($param1 == 'add_import') {
+        if ($param1 == 'add_local') {
+            $page_data['voucher_no']  = $this->inventory_model->get_po_voucher_no();
+
+            $page_data['navigation']  = 'purchase_order';
+            $page_data['type']      = 'local';
+            $page_data['products_list'] = $this->common_model->selectWhere('raw_products', array('is_deleted' => '0', 'product_type' => 'local'), 'ASC', 'name');
+            $page_data['supplier_list'] = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id, 'type' => 'local'), 'ASC', 'name');
+
+            $page_data['page_name']  = 'purchase_order_local_add';
+            $page_data['page_title'] = 'Add Local Purchase In';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'add_import') {
             $page_data['voucher_no']  = $this->inventory_model->get_po_voucher_no();
 
             $page_data['navigation']  = 'import_purchase_order';
@@ -4471,5 +4487,158 @@ class Inventory extends CI_Controller
 				echo json_encode(["status" => 404]);
 			}
 		}
+	}
+
+	public function product_formula($param1 = "", $param2 = "")
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			redirect(site_url('login'), 'refresh');
+		} elseif ($param1 == "add_post") {
+			$this->inventory_model->add_product_formula();
+		} elseif ($param1 == "edit_post") {
+			$this->inventory_model->edit_product_formula($param2);
+		} elseif ($param1 == "delete") {
+			$this->inventory_model->delete_product_formula($param2);
+		} else {
+			$this->session->set_userdata('previous_url', currentUrl());
+			$page_data['page_name']  = 'product_formula';
+			$page_data['page_title'] = 'Product Formula';
+			$this->load->view('backend/index', $page_data);
+		}
+	}
+
+	public function product_formula_form($param1 = "", $param2 = "")
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			redirect(site_url('login'), 'refresh');
+		}
+
+		if ($param1 == 'product_formula_add') {
+			// For parent product dropdown: only local products that do NOT have a formula yet and are not deleted
+			$page_data['parent_products'] = $this->db->where(array('product_type' => 'local', 'has_formula' => 0, 'is_deleted' => 0))
+													->order_by('name', 'ASC')
+													->get('raw_products')
+													->result_array();
+
+			// For ingredients list: local products that are not deleted
+			$page_data['ingredient_products'] = $this->db->where(array('product_type' => 'local', 'is_deleted' => 0))
+														->order_by('name', 'ASC')
+														->get('raw_products')
+														->result_array();
+
+			$page_data['page_name']  = 'product_formula_add';
+			$page_data['page_title'] = 'Add Product Formula';
+			$this->load->view('backend/index', $page_data);
+		} elseif ($param1 == 'product_formula_edit') {
+			$parent_id = (int)$param2;
+			$parent_product = $this->db->where(array('id' => $parent_id, 'is_deleted' => '0'))->get('raw_products')->row_array();
+			
+			if (empty($parent_product)) {
+				$this->session->set_flashdata('error_message', 'Parent product not found.');
+				redirect(base_url('inventory/product-formula'), 'refresh');
+			}
+
+			// Get existing formula items
+			$page_data['formula_items'] = $this->db->where('parent_id', $parent_id)->order_by('id', 'ASC')->get('product_formula')->result_array();
+
+			// For ingredients: local products that are not deleted (and exclude this parent product)
+			$page_data['ingredient_products'] = $this->db->where(array('product_type' => 'local', 'is_deleted' => 0, 'id !=' => $parent_id))
+														->order_by('name', 'ASC')
+														->get('raw_products')
+														->result_array();
+
+			$page_data['parent_product'] = $parent_product;
+			$page_data['id']             = $parent_id;
+			$page_data['page_name']      = 'product_formula_edit';
+			$page_data['page_title']     = 'Edit Product Formula';
+			$this->load->view('backend/index', $page_data);
+		}
+	}
+
+	public function get_product_formula()
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			redirect(site_url('login'), 'refresh');
+		}
+		if ($this->input->is_ajax_request()) {
+			$this->inventory_model->get_product_formulas();
+		}
+	}
+
+	public function get_formula_ingredients_status()
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			echo json_encode(array('status' => 'error', 'message' => 'Unauthorized'));
+			return;
+		}
+
+		$parent_id = (int)$this->input->post('parent_id');
+		$qty = (int)$this->input->post('quantity');
+		$type = $this->input->post('type'); // 'black' or 'white'
+		$warehouse_id = (int)$this->input->post('warehouse_id');
+		$company_id = (int)$this->session->userdata('company_id');
+
+		if ($qty <= 0) {
+			$qty = 1;
+		}
+
+		// Fetch ingredients for parent product
+		$formula_items = $this->db->query("SELECT pf.product_id, pf.quantity as req_qty, rp.name, rp.item_code 
+			FROM product_formula pf
+			JOIN raw_products rp ON pf.product_id = rp.id
+			WHERE pf.parent_id = ? 
+			ORDER BY pf.id ASC", array($parent_id))->result_array();
+
+		$ingredients = array();
+		$all_sufficient = true;
+
+		foreach ($formula_items as $item) {
+			$ing_id = $item['product_id'];
+			$req_qty_1 = (int)$item['req_qty'];
+			$total_req = $req_qty_1 * $qty;
+
+			// Get available qty from inventory
+			if ($type == 'black') {
+				$inv_qty_row = $this->db->query("SELECT SUM(black_qty) as av_qty 
+					FROM inventory 
+					WHERE product_id = ? AND warehouse_id = ? AND company_id = ?", 
+					array($ing_id, $warehouse_id, $company_id))->row_array();
+			} else {
+				$inv_qty_row = $this->db->query("SELECT SUM(official_qty) as av_qty 
+					FROM inventory 
+					WHERE product_id = ? AND warehouse_id = ? AND company_id = ?", 
+					array($ing_id, $warehouse_id, $company_id))->row_array();
+			}
+
+			$available = $inv_qty_row ? (int)$inv_qty_row['av_qty'] : 0;
+			$sufficient = ($available >= $total_req);
+			if (!$sufficient) {
+				$all_sufficient = false;
+			}
+
+			$ingredients[] = array(
+				'product_id' => $ing_id,
+				'name' => $item['name'],
+				'item_code' => $item['item_code'],
+				'req_qty_1' => $req_qty_1,
+				'total_req' => $total_req,
+				'available' => $available,
+				'sufficient' => $sufficient
+			);
+		}
+
+		echo json_encode(array(
+			'status' => 200,
+			'ingredients' => $ingredients,
+			'all_sufficient' => $all_sufficient
+		));
+	}
+
+	public function add_product_stock_post()
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			redirect(site_url('login'), 'refresh');
+		}
+		$this->inventory_model->add_product_stock();
 	}
 }

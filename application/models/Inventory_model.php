@@ -2522,6 +2522,348 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
+	public function add_local_purchase_order()
+	{
+		$this->db->trans_begin();
+		
+		$resultpost = array(
+			"status" => 200,
+			"message" => get_phrase('purchase_order_added_successfully'),
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		$voucher_no = clean_and_escape($this->input->post('voucher_no'));
+		if ($voucher_no != '') {
+			$check_voucher_no = $this->check_duplication('on_create', 'voucher_no', $voucher_no, 'purchase_order');
+		} else {
+			$check_voucher_no  = true;
+		}
+
+		if ($check_voucher_no == false) {
+			$this->db->trans_rollback();
+			$this->session->set_flashdata('error_message', get_phrase('voucher_no_duplication'));
+			$resultpost = array(
+				"status" => 400,
+				"message" => 'Voucher No Duplication'
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Get basic form data
+		$method = clean_and_escape($this->input->post('input_method')) ?: 'local';
+		$warehouse_id = $this->input->post('warehouse_id');
+		$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+		$company_id = $this->input->post('company_id');
+		$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
+		$supplier_id = $this->input->post('supplier_id');
+		$supplier_name = $this->common_model->selectByidParam($supplier_id, 'supplier', 'name');
+
+		$product_ids = $this->input->post('product_id');
+		$white_qtys = $this->input->post('white_qty');
+		$black_qtys = $this->input->post('black_qty');
+
+		// Validate products exist
+		$has_valid_product = false;
+		if (is_array($product_ids)) {
+			for ($i = 0; $i < count($product_ids); $i++) {
+				$product_id = intval($product_ids[$i]);
+				$white_qty = floatval($white_qtys[$i] ?? 0);
+				$black_qty = floatval($black_qtys[$i] ?? 0);
+				$quantity = $white_qty + $black_qty;
+				if ($product_id > 0 && $quantity > 0) {
+					$has_valid_product = true;
+				}
+			}
+		}
+
+		if (!$has_valid_product) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Please add at least one product with quantity greater than 0."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Pre-compute CBM totals
+		$total_cbm = 0.00;
+		for ($i = 0; $i < count($product_ids); $i++) {
+			$product_id = intval($product_ids[$i]);
+			$white_qty = floatval($white_qtys[$i] ?? 0);
+			$black_qty = floatval($black_qtys[$i] ?? 0);
+			$quantity = $white_qty + $black_qty;
+			if ($product_id > 0 && $quantity > 0) {
+				$product_details = $this->get_raw_products_by_id($product_id)->row_array();
+				if ($product_details) {
+					$cbm = floatval($product_details['cbm'] ?? 0);
+					$total_cbm += $cbm * $quantity;
+				}
+			}
+		}
+
+		// Prepare purchase_order data
+		$delivery_address = $this->input->post('delivery_address');
+		$data = array(
+			'method' => $method,
+			'voucher_no' => $voucher_no,
+			'refrence_no' => $this->input->post('refrence_no'),
+			'date' => $this->input->post('date'),
+			'delivery_date' => $this->input->post('delivery_date'),
+			'company_id' => $company_id,
+			'company_name' => $company_name,
+			'supplier_id' => $supplier_id,
+			'supplier_name' => $supplier_name,
+			'warehouse_id' => $warehouse_id,
+			'warehouse_name' => $warehouse_name,
+			'billing_address' => $delivery_address,
+			'delivery_address' => $delivery_address,
+			'mode_of_payment' => $this->input->post('mode_of_payment'),
+			'dispatch' => $this->input->post('dispatch'),
+			'destination' => $this->input->post('destination'),
+			'other_refrence' => $this->input->post('other_refrence'),
+			'terms_of_delivery' => $this->input->post('terms_of_delivery'),
+			'narration' => $this->input->post('narration'),
+			'total_cbm' => $total_cbm,
+			'net_sales_value_1' => floatval($this->input->post('net_sales_value_1')),
+			'discount_type' => 'product',
+			'discount' => 0,
+			'discount_amount' => 0.00000,
+			'gst_type' => $this->input->post('gst_type'),
+			'cgst_amount' => floatval($this->input->post('central_gst')),
+			'sgst_amount' => floatval($this->input->post('state_gst')),
+			'igst_amount' => floatval($this->input->post('igst')),
+			'net_sales_value_2' => floatval($this->input->post('net_sales_value_2')),
+			'other_charges_amount' => floatval($this->input->post('other_charges_amount')),
+			'round_of' => floatval($this->input->post('round_of')),
+			'grand_total' => floatval($this->input->post('grand_total')),
+			'inr_rate' => 1.00000,
+			'delivery_status' => 'purchase_in',
+			'is_deleted' => 0,
+			'added_date' => date("Y-m-d H:i:s"),
+			'completed_date' => date("Y-m-d H:i:s"),
+			'added_by_id' => $this->session->userdata('super_user_id'),
+			'added_by_name' => $this->session->userdata('super_name'),
+			'basic_value' => floatval($this->input->post('basic_value')),
+			'total_black_amount_summary' => floatval($this->input->post('total_black_amount_summary')),
+		);
+
+		// Insert purchase_order
+		if (!$this->db->insert('purchase_order', $data)) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('something_went_wrong')
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$insert_id = $this->db->insert_id();
+
+		// Insert items into purchase_order_product, inventory, and inventory_history
+		$rates = $this->input->post('rate');
+		$per_qty_bill_amts = $this->input->post('per_qty_bill_amt');
+		$total_bill_amts = $this->input->post('total_bill_amt');
+		$gst_rates = $this->input->post('gst_rate');
+		$gst_amts = $this->input->post('gst_amt');
+		$total_bill_gst_amts = $this->input->post('total_bill_gst_amt');
+		$per_qty_black_amts = $this->input->post('per_qty_black_amt');
+		$total_black_amts = $this->input->post('total_black_amt');
+		$final_amts = $this->input->post('final_amt');
+
+		for ($i = 0; $i < count($product_ids); $i++) {
+			$product_id = intval($product_ids[$i]);
+			$white_qty = floatval($white_qtys[$i] ?? 0);
+			$black_qty = floatval($black_qtys[$i] ?? 0);
+			$quantity = $white_qty + $black_qty;
+
+			if ($product_id > 0 && $quantity > 0) {
+				$product_details = $this->get_raw_products_by_id($product_id)->row_array();
+				if (!$product_details) {
+					$this->db->trans_rollback();
+					$resultpost = array(
+						"status" => 400,
+						"message" => "Product not found: ID " . $product_id
+					);
+					return simple_json_output($resultpost);
+				}
+
+				$rate = floatval($rates[$i] ?? 0);
+				$per_qty_bill_amt = floatval($per_qty_bill_amts[$i] ?? 0);
+				$total_bill_amt = floatval($total_bill_amts[$i] ?? 0);
+				$gst_rate = floatval($gst_rates[$i] ?? 0);
+				$gst_amt = floatval($gst_amts[$i] ?? 0);
+				$total_bill_gst_amt = floatval($total_bill_gst_amts[$i] ?? 0);
+				$per_qty_black_amt = floatval($per_qty_black_amts[$i] ?? 0);
+				$total_black_amt = floatval($total_black_amts[$i] ?? 0);
+				$final_amt = floatval($final_amts[$i] ?? 0);
+
+				$cbm = floatval($product_details['cbm'] ?? 0);
+				$total_cbm_item = $cbm * $quantity;
+
+				// 1. Insert into purchase_order_product
+				$data_p = array(
+					'parent_id' => $insert_id,
+					'supplier_id' => $supplier_id,
+					'product_type' => $product_details['type'] ?: 'ready',
+					'product_id' => $product_id,
+					'categories' => $product_details['categories'] ?? NULL,
+					'sizes' => $product_details['sizes'] ?? NULL,
+					'group_id' => $product_details['group_id'] ?? NULL,
+					'color_id' => $product_details['color_id'] ?? NULL,
+					'color_name' => $product_details['color_name'] ?? NULL,
+					'product_name' => $product_details['name'] ?? '',
+					'hsn_code' => $product_details['hsn_code'] ?? NULL,
+					'item_code' => $product_details['item_code'] ?? NULL,
+					'unit' => $product_details['unit'] ?? NULL,
+					'quantity' => $quantity,
+					'white_qty' => $white_qty,
+					'black_qty' => $black_qty,
+					'cbm' => $cbm,
+					'total_cbm' => $total_cbm_item,
+					'pending_po_qty' => 0,
+					'loading_list_qty' => 0,
+					'in_stock_qty' => $quantity,
+					'current_company_qty' => 0,
+					'cartoon' => intval($product_details['cartoon_qty'] ?? 0),
+					'rate' => $rate,
+					'basic_amount' => $per_qty_bill_amt,
+					'discount' => 0,
+					'discount_amount' => 0.00000,
+					'gst' => $gst_rate,
+					'gst_amount' => $gst_amt,
+					'total_val' => $total_bill_gst_amt,
+					'black_amt' => $per_qty_black_amt,
+					'black_amt_total' => $total_black_amt,
+					'grand_total' => $final_amt,
+					'pending' => 0,
+					'received' => $quantity,
+					'received_date' => $data['date'],
+					'invoice_no' => $voucher_no,
+					'is_complete' => 1,
+				);
+
+				if (!$this->db->insert('purchase_order_product', $data_p)) {
+					$this->db->trans_rollback();
+					$resultpost = array(
+						"status" => 400,
+						"message" => get_phrase('something_went_wrong')
+					);
+					return simple_json_output($resultpost);
+				}
+
+				$po_prod_id = $this->db->insert_id();
+
+				// 2. Insert into inventory
+				$inv = array(
+					'supplier_id' => $supplier_id,
+					'company_id' => $company_id,
+					'warehouse_id' => $warehouse_id,
+					'warehouse_name' => $warehouse_name,
+					'product_id' => $product_id,
+					'product_name' => $product_details['name'] ?? '',
+					'categories' => $product_details['categories'] ?? '',
+					'sku' => $product_details['item_code'] ?? '',
+					'item_code' => $product_details['item_code'] ?? '',
+					'quantity' => $quantity,
+					'actual_rmb' => 0.00,
+					'total_rmb' => 0.00,
+					'actual_usd' => 0.00,
+					'official_qty' => $white_qty,
+					'official_rate_rs' => $per_qty_bill_amt,
+					'official_total_rs' => $total_bill_amt,
+					'actual_inr' => $rate,
+					'black_qty' => $black_qty,
+					'pending_qty' => 0,
+					'duty_percent' => 0.00,
+					'duty_amt' => 0.00,
+					'duty_surcharge' => 0.00,
+					'taxable_value' => $total_bill_amt,
+					'gst_amt' => $gst_amt,
+					'total_amt' => $final_amt,
+					'batch_no' => $voucher_no,
+					'po_row_id' => $po_prod_id,
+					'expiry_date' => NULL,
+				);
+
+				if (!$this->db->insert('inventory', $inv)) {
+					$this->db->trans_rollback();
+					$resultpost = array(
+						"status" => 400,
+						"message" => get_phrase('something_went_wrong')
+					);
+					return simple_json_output($resultpost);
+				}
+
+				$inventory_id = $this->db->insert_id();
+
+				// 3. Insert into inventory_history
+				$history = array(
+					'supplier_id' => $supplier_id,
+					'company_id' => $company_id,
+					'parent_id' => $inventory_id,
+					'warehouse_id' => $warehouse_id,
+					'warehouse_name' => $warehouse_name,
+					'product_id' => $product_id,
+					'product_name' => $product_details['name'] ?? '',
+					'categories' => $product_details['categories'] ?? '',
+					'sku' => $product_details['item_code'] ?? '',
+					'item_code' => $product_details['item_code'] ?? '',
+					'order_id' => $insert_id,
+					'status' => 'in',
+					'quantity' => $quantity,
+					'actual_rmb' => 0.00,
+					'total_rmb' => 0.00,
+					'actual_usd' => 0.00,
+					'official_qty' => $white_qty,
+					'official_rate_rs' => $per_qty_bill_amt,
+					'official_total_rs' => $total_bill_amt,
+					'actual_inr' => $rate,
+					'black_qty' => $black_qty,
+					'pending_qty' => 0,
+					'black_rate_rs' => $per_qty_black_amt,
+					'black_total_rs' => $total_black_amt,
+					'duty_percent' => 0.00,
+					'duty_amt' => 0.00,
+					'duty_surcharge' => 0.00,
+					'taxable_value' => $total_bill_amt,
+					'gst_amt' => $gst_amt,
+					'total_amt' => $final_amt,
+					'received_date' => $data['date'],
+					'batch_no' => $voucher_no,
+					'expiry_date' => NULL,
+					'invoice_no' => $voucher_no,
+					'is_deleted' => 0,
+					'added_date' => date("Y-m-d H:i:s"),
+					'added_by_id' => $this->session->userdata('super_user_id'),
+					'added_by_name' => $this->session->userdata('super_name'),
+				);
+
+				if (!$this->db->insert('inventory_history', $history)) {
+					$this->db->trans_rollback();
+					$resultpost = array(
+						"status" => 400,
+						"message" => get_phrase('something_went_wrong')
+					);
+					return simple_json_output($resultpost);
+				}
+			}
+		}
+
+		// Commit transaction
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('something_went_wrong')
+			);
+		} else {
+			$this->db->trans_commit();
+			$this->session->set_flashdata('flash_message', get_phrase('purchase_order_added_successfully'));
+		}
+
+		return simple_json_output($resultpost);
+	}
+
 	public function get_purchase_order_products_for_edit($po_id)
 	{
 		// Get all products grouped by supplier and product_type
@@ -17993,6 +18335,687 @@ public function get_sales_return_reports()
 									WHERE p.customer_id = '$customer_id'
 									ORDER BY p.date DESC, p.id DESC");
 		return $query->result_array();
+	}
+
+	public function get_product_formulas()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter = " AND (p.name like '%" . $keyword . "%' OR p.item_code like '%" . $keyword . "%')";
+		endif;
+
+		$total_count = $this->db->query("SELECT p.id FROM raw_products as p
+		WHERE p.is_deleted='0' AND p.product_type='local' AND p.has_formula='1' $keyword_filter ORDER BY p.id ASC")->num_rows();
+
+		$query = $this->db->query("SELECT p.id, p.name, p.item_code, p.categories FROM raw_products as p
+		WHERE p.is_deleted='0' AND p.product_type='local' AND p.has_formula='1' $keyword_filter ORDER BY p.id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+
+				$delete_url = "confirm_modal('" . base_url() . "inventory/product_formula/delete/" . $id . "','Are you sure want to delete this formula!')";
+				$edit_url = base_url() . 'inventory/product-formula/edit/' . $id;
+				$action = '';
+				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+
+				$action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
+
+				// Category
+				$category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
+				$category_name = $category['name'] ?? '-';
+
+				// Fetch formula ingredients for this parent product
+				$formula_query = $this->db->query("SELECT pf.quantity, rp.name 
+					FROM product_formula pf 
+					JOIN raw_products rp ON pf.product_id = rp.id 
+					WHERE pf.parent_id = ? 
+					ORDER BY pf.id ASC", array($id));
+
+				$formula_list = "<ul>";
+				if ($formula_query->num_rows() > 0) {
+					foreach ($formula_query->result_array() as $f_item) {
+						$formula_list .= "<li>" . htmlspecialchars($f_item['name']) . " (" . intval($f_item['quantity']) . ")</li>";
+					}
+				} else {
+					$formula_list .= "<li>No ingredients</li>";
+				}
+				$formula_list .= "</ul>";
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"name"        => $item['name'],
+					"item_code"   => $item['item_code'],
+					"category_name" => $category_name,
+					"formula"     => $formula_list,
+					"action"      => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function add_product_formula()
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Product Formula added successfully",
+			"url"     => base_url('inventory/product-formula'),
+		);
+
+		$parent_id = (int)$this->input->post('parent_id');
+		$ingredient_ids = $this->input->post('product_id');
+		$quantities = $this->input->post('quantity');
+
+		// 1. Check parent product
+		if (empty($parent_id)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Please select a product."
+			));
+		}
+
+		$parent_product = $this->db->where(array('id' => $parent_id, 'is_deleted' => '0'))->get('raw_products')->row_array();
+		if (empty($parent_product)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Selected parent product does not exist."
+			));
+		}
+
+		if ($parent_product['product_type'] !== 'local') {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Formula can only be created for local products."
+			));
+		}
+
+		if ($parent_product['has_formula'] == 1) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Selected product already has a formula."
+			));
+		}
+
+		// 2. Validate ingredients
+		if (empty($ingredient_ids) || !is_array($ingredient_ids) || count($ingredient_ids) < 2) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Please select at least 2 ingredients."
+			));
+		}
+
+		$seen_products = array();
+		$validated_ingredients = array();
+
+		for ($i = 0; $i < count($ingredient_ids); $i++) {
+			$ing_id = (int)$ingredient_ids[$i];
+			$qty = (int)$quantities[$i];
+
+			if (empty($ing_id)) {
+				continue; // Skip empty rows if any
+			}
+
+			if ($ing_id === $parent_id) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Parent product cannot be added as its own ingredient."
+				));
+			}
+
+			if (in_array($ing_id, $seen_products)) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Duplicate ingredients are not allowed."
+				));
+			}
+
+			if ($qty <= 0) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Quantity must be greater than 0."
+				));
+			}
+
+			// Validate child product type is local and exists
+			$child_product = $this->db->where(array('id' => $ing_id, 'is_deleted' => '0'))->get('raw_products')->row_array();
+			if (empty($child_product)) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Selected ingredient product does not exist."
+				));
+			}
+
+			if ($child_product['product_type'] !== 'local') {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "All ingredients must be local products."
+				));
+			}
+
+			$seen_products[] = $ing_id;
+			$validated_ingredients[] = array(
+				'parent_id' => $parent_id,
+				'product_id' => $ing_id,
+				'quantity' => $qty,
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_date' => date("Y-m-d H:i:s")
+			);
+		}
+
+		if (count($validated_ingredients) < 2) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Please select at least 2 valid ingredients."
+			));
+		}
+
+		$this->db->trans_begin();
+
+		// Insert ingredients into product_formula
+		foreach ($validated_ingredients as $row) {
+			$this->db->insert('product_formula', $row);
+		}
+
+		// Update parent has_formula flag and expense
+		$expense = floatval($this->input->post('expense'));
+		$this->db->where('id', $parent_id);
+		$this->db->update('raw_products', array('has_formula' => 1, 'expense' => $expense));
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Failed to save product formula. Please try again."
+			));
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', 'Product Formula added successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_product_formula($parent_id = "")
+	{
+		$parent_id = (int)$parent_id;
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Product Formula updated successfully",
+			"url"     => base_url('inventory/product-formula'),
+		);
+
+		$ingredient_ids = $this->input->post('product_id');
+		$quantities = $this->input->post('quantity');
+
+		if (empty($parent_id)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Invalid parent product ID."
+			));
+		}
+
+		$parent_product = $this->db->where(array('id' => $parent_id, 'is_deleted' => '0'))->get('raw_products')->row_array();
+		if (empty($parent_product)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Selected parent product does not exist."
+			));
+		}
+
+		if ($parent_product['product_type'] !== 'local') {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Formula can only be edited for local products."
+			));
+		}
+
+		// Validate ingredients
+		if (empty($ingredient_ids) || !is_array($ingredient_ids) || count($ingredient_ids) < 2) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Please select at least 2 ingredients."
+			));
+		}
+
+		$seen_products = array();
+		$validated_ingredients = array();
+
+		for ($i = 0; $i < count($ingredient_ids); $i++) {
+			$ing_id = (int)$ingredient_ids[$i];
+			$qty = (int)$quantities[$i];
+
+			if (empty($ing_id)) {
+				continue;
+			}
+
+			if ($ing_id === $parent_id) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Parent product cannot be added as its own ingredient."
+				));
+			}
+
+			if (in_array($ing_id, $seen_products)) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Duplicate ingredients are not allowed."
+				));
+			}
+
+			if ($qty <= 0) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Quantity must be greater than 0."
+				));
+			}
+
+			// Validate child product is local and exists
+			$child_product = $this->db->where(array('id' => $ing_id, 'is_deleted' => '0'))->get('raw_products')->row_array();
+			if (empty($child_product)) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Selected ingredient product does not exist."
+				));
+			}
+
+			if ($child_product['product_type'] !== 'local') {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "All ingredients must be local products."
+				));
+			}
+
+			$seen_products[] = $ing_id;
+			$validated_ingredients[] = array(
+				'parent_id' => $parent_id,
+				'product_id' => $ing_id,
+				'quantity' => $qty,
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_date' => date("Y-m-d H:i:s")
+			);
+		}
+
+		if (count($validated_ingredients) < 2) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Please select at least 2 valid ingredients."
+			));
+		}
+
+		$this->db->trans_begin();
+
+		// Delete old ingredients
+		$this->db->where('parent_id', $parent_id);
+		$this->db->delete('product_formula');
+
+		// Insert new ingredients
+		foreach ($validated_ingredients as $row) {
+			$this->db->insert('product_formula', $row);
+		}
+
+		// Ensure has_formula is set to 1 and update expense
+		$expense = floatval($this->input->post('expense'));
+		$this->db->where('id', $parent_id);
+		$this->db->update('raw_products', array('has_formula' => 1, 'expense' => $expense));
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Failed to update product formula. Please try again."
+			));
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', 'Product Formula updated successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function delete_product_formula($parent_id = "")
+	{
+		$parent_id = (int)$parent_id;
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Product Formula deleted successfully",
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		if (empty($parent_id)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Invalid parent product ID."
+			));
+		}
+
+		$this->db->trans_begin();
+
+		// Delete formula rows
+		$this->db->where('parent_id', $parent_id);
+		$this->db->delete('product_formula');
+
+		// Set has_formula to 0 and reset expense
+		$this->db->where('id', $parent_id);
+		$this->db->update('raw_products', array('has_formula' => 0, 'expense' => 0.00000));
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Failed to delete product formula. Please try again."
+			));
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', 'Product Formula deleted successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function add_product_stock()
+	{
+		$warehouse_id = (int)$this->input->post('warehouse_id');
+		$parent_id = (int)$this->input->post('product_id');
+		$qty = (int)$this->input->post('quantity');
+		$expense = floatval($this->input->post('expense'));
+		$type = $this->input->post('type'); // 'black' or 'white'
+		$batch_no = trim($this->input->post('batch_no'));
+		$company_id = (int)$this->session->userdata('company_id');
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Product Stock produced successfully",
+			"url"     => base_url('inventory/my-stock?warehouse=' . $warehouse_id),
+		);
+
+		if (empty($batch_no)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Please enter a batch number."
+			));
+		}
+
+		if (empty($parent_id) || $qty <= 0) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Invalid parent product or quantity."
+			));
+		}
+
+		if ($type !== 'black' && $type !== 'white') {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Invalid type selected."
+			));
+		}
+
+		// 1. Fetch parent product details
+		$parent_product = $this->db->where(array('id' => $parent_id, 'is_deleted' => 0))->get('raw_products')->row_array();
+		if (empty($parent_product)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Parent product does not exist."
+			));
+		}
+
+		if ($parent_product['has_formula'] != 1) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Parent product does not have a formula."
+			));
+		}
+
+		// 2. Fetch formula ingredients
+		$formula_items = $this->db->query("SELECT pf.product_id, pf.quantity as req_qty, rp.name
+			FROM product_formula pf
+			JOIN raw_products rp ON pf.product_id = rp.id
+			WHERE pf.parent_id = ? 
+			ORDER BY pf.id ASC", array($parent_id))->result_array();
+
+		if (empty($formula_items)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Formula has no ingredients."
+			));
+		}
+
+		// 3. Check ingredient sufficiency on the server side
+		foreach ($formula_items as $item) {
+			$ing_id = $item['product_id'];
+			$total_req = (int)$item['req_qty'] * $qty;
+
+			if ($type == 'black') {
+				$inv_qty_row = $this->db->query("SELECT SUM(black_qty) as av_qty 
+					FROM inventory 
+					WHERE product_id = ? AND warehouse_id = ? AND company_id = ?", 
+					array($ing_id, $warehouse_id, $company_id))->row_array();
+			} else {
+				$inv_qty_row = $this->db->query("SELECT SUM(official_qty) as av_qty 
+					FROM inventory 
+					WHERE product_id = ? AND warehouse_id = ? AND company_id = ?", 
+					array($ing_id, $warehouse_id, $company_id))->row_array();
+			}
+
+			$available = $inv_qty_row ? (int)$inv_qty_row['av_qty'] : 0;
+			if ($available < $total_req) {
+				return simple_json_output(array(
+					"status" => 400,
+					"message" => "Insufficient stock for ingredient: " . $item['name']
+				));
+			}
+		}
+
+		$this->db->trans_begin();
+
+		// 4. Update expense in master product
+		$this->db->where('id', $parent_id)->update('raw_products', array('expense' => $expense));
+
+		// 5. Deduct ingredients FIFO
+		foreach ($formula_items as $item) {
+			$ing_id = $item['product_id'];
+			$total_req = (int)$item['req_qty'] * $qty;
+
+			$ing_product = $this->db->where(array('id' => $ing_id, 'is_deleted' => 0))->get('raw_products')->row_array();
+			$ing_name = $ing_product ? $ing_product['name'] : '';
+			$ing_cats = $ing_product ? $ing_product['categories'] : '';
+			$ing_sku  = $ing_product ? $ing_product['item_code'] : '';
+
+			// Get all inventory batches with quantity > 0
+			if ($type == 'black') {
+				$batches = $this->db->query("SELECT * FROM inventory 
+					WHERE product_id = ? AND warehouse_id = ? AND company_id = ? AND black_qty > 0 
+					ORDER BY id ASC", array($ing_id, $warehouse_id, $company_id))->result_array();
+			} else {
+				$batches = $this->db->query("SELECT * FROM inventory 
+					WHERE product_id = ? AND warehouse_id = ? AND company_id = ? AND official_qty > 0 
+					ORDER BY id ASC", array($ing_id, $warehouse_id, $company_id))->result_array();
+			}
+
+			$remaining_req = $total_req;
+			foreach ($batches as $batch) {
+				if ($remaining_req <= 0) break;
+
+				$available_batch_qty = ($type == 'black') ? (int)$batch['black_qty'] : (int)$batch['official_qty'];
+				$deduct = min($remaining_req, $available_batch_qty);
+
+				$new_qty = (int)$batch['quantity'] - $deduct;
+				if ($type == 'black') {
+					$new_black = (int)$batch['black_qty'] - $deduct;
+					$new_official = (int)$batch['official_qty'];
+				} else {
+					$new_black = (int)$batch['black_qty'];
+					$new_official = (int)$batch['official_qty'] - $deduct;
+				}
+
+				// Update inventory row
+				$this->db->where('id', $batch['id'])->update('inventory', array(
+					'quantity' => $new_qty,
+					'black_qty' => $new_black,
+					'official_qty' => $new_official
+				));
+
+				// Insert deduction history (stock out)
+				$history = array(
+					'supplier_id' => $batch['supplier_id'],
+					'company_id' => $company_id,
+					'parent_id' => $batch['id'],
+					'warehouse_id' => $warehouse_id,
+					'warehouse_name' => $batch['warehouse_name'],
+					'product_id' => $ing_id,
+					'product_name' => $ing_name,
+					'categories' => $ing_cats,
+					'sku' => $ing_sku,
+					'item_code' => $ing_sku,
+					'order_id' => NULL,
+					'status' => 'out',
+					'quantity' => $deduct,
+					'actual_rmb' => 0.00,
+					'total_rmb' => 0.00,
+					'actual_usd' => 0.00,
+					'official_qty' => ($type == 'white') ? $deduct : 0,
+					'official_rate_rs' => 0.00,
+					'official_total_rs' => 0.00,
+					'actual_inr' => 0.00,
+					'black_qty' => ($type == 'black') ? $deduct : 0,
+					'pending_qty' => 0,
+					'black_rate_rs' => 0.00,
+					'black_total_rs' => 0.00,
+					'duty_percent' => 0.00,
+					'duty_amt' => 0.00,
+					'duty_surcharge' => 0.00,
+					'taxable_value' => 0.00,
+					'gst_amt' => 0.00,
+					'total_amt' => 0.00,
+					'received_date' => date("Y-m-d"),
+					'batch_no' => $batch['batch_no'],
+					'expiry_date' => NULL,
+					'invoice_no' => 'Formula Deduction',
+					'is_deleted' => 0,
+					'added_date' => date("Y-m-d H:i:s"),
+					'added_by_id' => $this->session->userdata('super_user_id'),
+					'added_by_name' => $this->session->userdata('super_name'),
+				);
+				$this->db->insert('inventory_history', $history);
+
+				$remaining_req -= $deduct;
+			}
+		}
+
+		// 6. Insert produced parent product into inventory
+		$warehouse = $this->db->where('id', $warehouse_id)->get('warehouse')->row_array();
+		$warehouse_name = $warehouse ? $warehouse['name'] : '';
+
+		$parent_name = $parent_product['name'];
+		$parent_cats = $parent_product['categories'];
+		$parent_sku  = $parent_product['item_code'];
+
+		$inv_parent = array(
+			'supplier_id' => NULL,
+			'company_id' => $company_id,
+			'warehouse_id' => $warehouse_id,
+			'warehouse_name' => $warehouse_name,
+			'product_id' => $parent_id,
+			'product_name' => $parent_name,
+			'categories' => $parent_cats,
+			'sku' => $parent_sku,
+			'item_code' => $parent_sku,
+			'quantity' => $qty,
+			'actual_rmb' => 0.00,
+			'total_rmb' => 0.00,
+			'actual_usd' => 0.00,
+			'official_qty' => ($type == 'white') ? $qty : 0,
+			'official_rate_rs' => 0.00,
+			'official_total_rs' => 0.00,
+			'actual_inr' => 0.00,
+			'black_qty' => ($type == 'black') ? $qty : 0,
+			'pending_qty' => 0,
+			'duty_percent' => 0.00,
+			'duty_amt' => 0.00,
+			'duty_surcharge' => 0.00,
+			'taxable_value' => 0.00,
+			'gst_amt' => 0.00,
+			'total_amt' => 0.00,
+			'batch_no' => $batch_no,
+			'po_row_id' => 0,
+			'expiry_date' => NULL,
+		);
+
+		if (!$this->db->insert('inventory', $inv_parent)) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Failed to insert product in inventory."
+			));
+		}
+		$new_parent_inv_id = $this->db->insert_id();
+
+		// 7. Insert production history (stock in)
+		$history_parent = array(
+			'supplier_id' => NULL,
+			'company_id' => $company_id,
+			'parent_id' => $new_parent_inv_id,
+			'warehouse_id' => $warehouse_id,
+			'warehouse_name' => $warehouse_name,
+			'product_id' => $parent_id,
+			'product_name' => $parent_name,
+			'categories' => $parent_cats,
+			'sku' => $parent_sku,
+			'item_code' => $parent_sku,
+			'order_id' => NULL,
+			'status' => 'in',
+			'quantity' => $qty,
+			'actual_rmb' => 0.00,
+			'total_rmb' => 0.00,
+			'actual_usd' => 0.00,
+			'official_qty' => ($type == 'white') ? $qty : 0,
+			'official_rate_rs' => 0.00,
+			'official_total_rs' => 0.00,
+			'actual_inr' => 0.00,
+			'black_qty' => ($type == 'black') ? $qty : 0,
+			'pending_qty' => 0,
+			'black_rate_rs' => 0.00,
+			'black_total_rs' => 0.00,
+			'duty_percent' => 0.00,
+			'duty_amt' => 0.00,
+			'duty_surcharge' => 0.00,
+			'taxable_value' => 0.00,
+			'gst_amt' => 0.00,
+			'total_amt' => 0.00,
+			'received_date' => date("Y-m-d"),
+			'batch_no' => $batch_no,
+			'expiry_date' => NULL,
+			'invoice_no' => 'Formula Production',
+			'is_deleted' => 0,
+			'added_date' => date("Y-m-d H:i:s"),
+			'added_by_id' => $this->session->userdata('super_user_id'),
+			'added_by_name' => $this->session->userdata('super_name'),
+		);
+		$this->db->insert('inventory_history', $history_parent);
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Transaction failed. Rolled back."
+			));
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', 'Product Stock production successfully completed.');
+		return simple_json_output($resultpost);
 	}
 }
 

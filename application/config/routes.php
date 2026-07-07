@@ -114,9 +114,13 @@ $route[$r_inventory . '/local-products/delete_variation']     = 'local_products/
 $route[$r_inventory . '/local-products/delete_sku']           = 'local_products/local_products_delete_sku';
 $route[$r_inventory . '/get_local_products']                  = 'local_products/get_local_products';
 
+$route[$r_inventory . '/product-formula']                     = 'inventory/product_formula';
+$route[$r_inventory . '/product-formula/add']                 = 'inventory/product_formula_form/product_formula_add';
+$route[$r_inventory . '/product-formula/edit/(:num)']         = 'inventory/product_formula_form/product_formula_edit/$1';
+
 $route[$r_inventory . '/purchase-order'] = 'inventory/purchase_order/local';
 $route[$r_inventory . '/get_purchase_order_local'] = 'inventory/get_purchase_order_local';
-// $route[$r_inventory . '/purchase-order/add-local']    = 'inventory/purchase_order_form/add_local';
+$route[$r_inventory . '/purchase-order/add-local']    = 'inventory/purchase_order_form/add_local';
 
 $route[$r_inventory . '/imp-purchase-order']  = 'inventory/purchase_order/import';
 $route[$r_inventory . '/purchase-order/add-import']    = 'inventory/purchase_order_form/add_import';

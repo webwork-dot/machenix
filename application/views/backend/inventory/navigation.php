@@ -104,6 +104,13 @@
                 </ul>
             </li>
         <?php } ?>
+
+        <li class="nav-item <?php if($page_name == 'product_formula' || $page_name == 'product_formula_add' || $page_name == 'product_formula_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/product-formula">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">Product Formula</span>
+            </a>
+        </li>
         
         <?php if($user_id == 4 || in_array('24',$access_array) || in_array('25',$access_array)) { ?>
 		<li class="nav-item <?php if($navigation == 'import_purchase_order' || $navigation == 'purchase_order') echo 'active'; ?>">   
@@ -121,7 +128,7 @@
                 <li class="nav-item <?php if($navigation == 'purchase_order') echo 'active'; ?>">
                     <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/purchase-order">
                          <i class="feather icon-circle"></i>
-                        <span class="menu-title text-truncate">Local PO</span>
+                        <span class="menu-title text-truncate">Local Purchase In</span>
                     </a>
                 </li>
             </ul>

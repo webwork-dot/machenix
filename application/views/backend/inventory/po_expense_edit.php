@@ -72,6 +72,7 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                 <option value="">Select</option>
                 <?php foreach ($company_list as $key => $value): ?>
                   <option value="<?php echo (int)$value['id']; ?>"
+                    data-state-id="<?php echo $value['state_id'];?>"
                     <?php echo ((string)$selected_vendor === (string)$value['id']) ? 'selected' : ''; ?>>
                     <?php echo html_escape($value['name']); ?>
                   </option>
@@ -447,7 +448,30 @@ $(function () {
     }
   }
 
-  $('#po_type').on('change', toggleGstFields);
+  function handleGstTypeAutoSelect() {
+    const type = $('#po_type').val();
+    if (type === 'official') {
+      const vendorStateId = $('#company_id').find('option:selected').data('state-id');
+      const currentCompanyStateId = <?php echo (int)($company_state_id ?? 0); ?>;
+      
+      if (vendorStateId && currentCompanyStateId) {
+        if (vendorStateId == currentCompanyStateId) {
+          $('#gst_type').val('cgst_sgst').trigger('change');
+        } else {
+          $('#gst_type').val('igst').trigger('change');
+        }
+      }
+    }
+  }
+
+  $('#po_type').on('change', function() {
+    toggleGstFields();
+    handleGstTypeAutoSelect();
+  });
+
+  $('#company_id').on('change', function() {
+    handleGstTypeAutoSelect();
+  });
 
   $('#purchase_date').on('change input', function() {
     $('#expense_date').val($(this).val());

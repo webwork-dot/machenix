@@ -51,12 +51,13 @@
          <div class="card-body">
             <div class="row">
                <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total Local Purchase Order<span id="total_count"> (0)</span></b>
+                  <h5 class="mb-0"><b>Total Local Purchase In<span id="total_count"> (0)</span></b>
 				  </h5>
                </div>
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
+		  <a href="<?php echo site_url('inventory/purchase-order/add-local'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_purchase_in');?></span></a>          
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>

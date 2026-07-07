@@ -43,7 +43,7 @@ foreach ($other_charges_list as $charge) {
               <select class="form-control select2" name="company_id" id="company_id" required>
                 <option value="">Select</option>
                 <?php foreach ($company_list as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>"><?php echo $value['name'];?></option>
+                  <option value="<?php echo $value['id'];?>" data-state-id="<?php echo $value['state_id'];?>"><?php echo $value['name'];?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -59,7 +59,7 @@ foreach ($other_charges_list as $charge) {
           <div class="col-12 col-sm-4 mb-1">
             <div class="form-group">
               <label>Purchase Date</label>
-              <input type="date" class="form-control" name="purchase_date" id="purchase_date">
+              <input type="date" class="form-control" name="purchase_date" id="purchase_date" value="<?php echo date('Y-m-d');?>">
             </div>
           </div>
 
@@ -395,7 +395,30 @@ $(function () {
     }
   }
 
-  $('#po_type').on('change', toggleGstFields);
+  function handleGstTypeAutoSelect() {
+    const type = $('#po_type').val();
+    if (type === 'official') {
+      const vendorStateId = $('#company_id').find('option:selected').data('state-id');
+      const currentCompanyStateId = <?php echo (int)($company_state_id ?? 0); ?>;
+      
+      if (vendorStateId && currentCompanyStateId) {
+        if (vendorStateId == currentCompanyStateId) {
+          $('#gst_type').val('cgst_sgst').trigger('change');
+        } else {
+          $('#gst_type').val('igst').trigger('change');
+        }
+      }
+    }
+  }
+
+  $('#po_type').on('change', function() {
+    toggleGstFields();
+    handleGstTypeAutoSelect();
+  });
+
+  $('#company_id').on('change', function() {
+    handleGstTypeAutoSelect();
+  });
 
   $('#purchase_date').on('change input', function() {
     $('#expense_date').val($(this).val());
