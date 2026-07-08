@@ -49,7 +49,7 @@
 
 
 <div class="row" id="table-bordered">
-  <?php include('filter/date_range.php'); ?>
+  <?php include('filter/ajax_commom_filter.php'); ?>
   <?php include('nav/nav_import_po.php'); ?>
 
   <div class="col-12">
@@ -91,8 +91,8 @@
 
 <script type="text/javascript">
 $(document).ready(function($) {
-  var dataTable = $('#report-datatable').DataTable({
-    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+  dataTable = $('#report-datatable').DataTable({
+    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6">>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
     "sDom": 'rt<"dtPagination"lp><"clear">',
     "pagingType": "simple_numbers",
@@ -113,7 +113,9 @@ $(document).ready(function($) {
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
-        data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+        data.date_range = $('#filter_date_range').val() || '';
+        data.search.value = $('#filter_keywords').val() || '';
+        data.status = $('#filter_status').val() || '';
       },
       "beforeSend": function() {
         $('.loader').show();

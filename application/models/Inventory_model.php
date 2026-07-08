@@ -3549,7 +3549,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date, arrival_date FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -3806,6 +3806,7 @@ class Inventory_model extends CI_Model
 					"date"       							=> date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
 					"boe_no"									=> $item['boe_no'],
 					"boe_date"								=> date('d M, Y', strtotime($item['boe_date'])),
+					"arrival_date"								=> date('d M, Y', strtotime($item['arrival_date'])),
 					"delivery_date"       		=> date('d M, Y', strtotime($delivery_date)),
 					"suppliers"        				=> array_to_list($po['supplier']),
 					"spare_parts_count"       => array_to_list($po['spare']),

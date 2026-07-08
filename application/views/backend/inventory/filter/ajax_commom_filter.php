@@ -25,7 +25,7 @@
 										</div>
 
                     <?php if($page_name == "purchase_order" || $page_name == "priority_po" || $page_name == "loading_list_po") {?>
-                      <!-- <div class="col-md-3 col-12">
+                      <div class="col-md-3 col-12">
                         <div class="form-group mb-0">   
                           <label>Status</label>
                           <div class="form-group">
@@ -47,7 +47,7 @@
                             </select>
                           </div>
                         </div>
-                      </div> -->
+                      </div>
                     <?php } ?>
 
 										<div class="col-md-3 col-12">
@@ -63,7 +63,8 @@
 										<div class="col-md-3">
 												<label style="display: block;">&nbsp; </label>
 												<div class="form-group mb-0">
-														<button type="button" id="btn_reset_filter" class="btn btn-outline-danger mr-1">Reset</button>
+														<!-- <button type="button" id="btn_reset_filter" class="btn btn-outline-danger mr-1">Reset</button> -->
+                            <a href="<?php echo currentUrl($_SERVER["REQUEST_URI"]); ?>"><button type="button" class="btn btn-outline-danger mr-1">Reset</button></a>
 												</div>
 										</div>
 								</div>
@@ -113,11 +114,11 @@
         }
     });
 
-    $(document).on('click', '#btn_reset_filter', function() {
-        $('#filter_date_range').val('');
-        $('#filter_keywords').val('');
-        if (typeof dataTable !== 'undefined') {
-            dataTable.draw();
-        }
-    });
+    // $(document).on('click', '#btn_reset_filter', function() {
+    //     $('#filter_date_range').val('');
+    //     $('#filter_keywords').val('');
+    //     if (typeof dataTable !== 'undefined') {
+    //         dataTable.draw();
+    //     }
+    // });
 </script>

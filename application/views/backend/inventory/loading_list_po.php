@@ -48,7 +48,7 @@
 </style>
 
 <div class="row" id="table-bordered">
-  <?php include('filter/date_range.php'); ?>
+  <?php include('filter/ajax_commom_filter.php'); ?>
   <?php include('nav/nav_import_po.php'); ?>
 
   <div class="col-12">
@@ -67,7 +67,7 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Date / Batch No.</th>
+              <th>PO Date / Batch No.</th>
               <th>Supplier Name</th>
               <th>No of Spare Parts</th>
               <th>No of Ready Goods</th>
@@ -76,6 +76,7 @@
               <th>Total RMB</th>
               <th>Total USD</th>
               <th>Loading Date</th>
+              <th>Expected Date</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -88,8 +89,8 @@
 
 <script type="text/javascript">
 $(document).ready(function($) {
-  var dataTable = $('#report-datatable').DataTable({
-    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+  dataTable = $('#report-datatable').DataTable({
+    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6">>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
     "sDom": 'rt<"dtPagination"lp><"clear">',
     "pagingType": "simple_numbers",
@@ -110,7 +111,9 @@ $(document).ready(function($) {
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
-        data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+        data.date_range = $('#filter_date_range').val() || '';
+        data.search.value = $('#filter_keywords').val() || '';
+        data.status = $('#filter_status').val() || '';
       },
       "beforeSend": function() {
         $('.loader').show();
@@ -149,6 +152,9 @@ $(document).ready(function($) {
       },
       {
         "data": "delivery_date"
+      },
+      {
+        "data": "arrival_date"
       },
       {
         "data": "status"
