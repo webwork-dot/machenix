@@ -29,7 +29,7 @@
                         <div class="form-group mb-0">   
                           <label>Status</label>
                           <div class="form-group">
-                            <select name="status" id="filter_status" onchange="dataTable.draw()">
+                            <select name="status" id="filter_status" class="form-control" onchange="dataTable.draw()">
                               <option value="">All</option>
                               <?php if($page_name == "purchase_order") {?>
                                 <option value="pending" selected>Pending</option>

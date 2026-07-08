@@ -3529,7 +3529,9 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
 		endif;
 
-		if (count($delivery_status) > 0) {
+		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""){
+			$keyword_filter .= " AND (delivery_status = '" . $_REQUEST['status'] . "')";
+		} elseif (count($delivery_status) > 0) {
 			$keyword_filter .= " AND (delivery_status NOT IN ('" . implode("','", $delivery_status) . "'))";
 		}
 
@@ -3608,7 +3610,7 @@ class Inventory_model extends CI_Model
 				foreach ($rows as $r) {
 					$priority_loading['pl_ready'][]    = $r['pl_ready_qty'];
 					$priority_loading['pl_spare'][]    = $r['pl_spare_qty'];
-					$priority_loading['supplier'][] = $r['supplier_name'];
+					$priority_loading['supplier'][]    = $r['supplier_name'];
 				}
 
 				// Loading List
@@ -10558,7 +10560,7 @@ class Inventory_model extends CI_Model
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
 
 				$delete_html = '';
-				if ($this->session->userdata('super_type_id') !== 7) {
+				if ($this->session->userdata('super_type_id') != 7) {
 					$delete_url = "confirm_modal('" . base_url() . "inventory/sales_order/delete/" . $id . "','Are you sure want to delete!')";
 					$delete_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>';
 				}
@@ -10574,7 +10576,7 @@ class Inventory_model extends CI_Model
 					$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
 					
 					$approve_html = '';
-					if ($this->session->userdata('super_type_id') !== 7) {
+					if ($this->session->userdata('super_type_id') != 7) {
 						$approve_url = base_url() . 'inventory/sales-order/approve/' . $id;
 						$approve_html = '<a class="dropdown-item" href="' . $approve_url . '"><i class="fa fa-check" aria-hidden="true"></i> Approve</a>';
 					}
