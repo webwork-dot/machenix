@@ -3,19 +3,19 @@ $customer_id = $param2;
 $sales_order_id = $param3;
 
 $clicked_sales_order = $this->inventory_model->get_sales_order_by_id($sales_order_id)->row_array();
-$is_weird = $clicked_sales_order['is_weird'] ?? '0';
 $warehouse_id = $clicked_sales_order['warehouse_id'] ?? '0';
 
-// Fetch all ungenerated approved sales orders for this customer of the same type
-$orders = $this->db->where([
-  'customer_id' => $customer_id,
-  'is_approved' => '1',
-  'is_generated' => '0',
-  'warehouse_id' => $warehouse_id,
-  'is_deleted' => '0'
-])->order_by('date', 'desc')->get('sales_order')->result_array();
+$product_query = $this->db->query("
+  SELECT 
+    sob.id, sob.order_id, sob.order_product_id, sob.batch_no, sob.white_qty, sob.recieved_qty, sob.bill_amount, sob.gst, sop.product_id, sop.product_name, sop.item_code, so.order_no 
+  FROM sales_order_product_batch AS sob
+    INNER JOIN sales_order_product AS sop ON sob.order_product_id = sop.id
+    INNER JOIN sales_order AS so ON so.id = sob.order_id
+  WHERE so.customer_id = $customer_id AND so.is_approved = '1' AND so.is_generated = '0' AND so.warehouse_id = $warehouse_id AND so.is_deleted = '0' AND (sob.white_qty > sob.recieved_qty) GROUP BY sob.id ORDER BY so.date DESC
+");
 
 $customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
+$products = !empty($product_query) ? $product_query->result_array() : [];
 ?>
 
 <div class="row">
@@ -53,34 +53,72 @@ $customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 
                   <input type="checkbox" class="form-check-input" id="select_all_orders">
               </div>
             </th>
-            <th>Order Date</th>
             <th>Order No</th>
-            <th>Ref No</th>
-            <th>Warehouse</th>
-            <th>Grand Total</th>
-            <th>Remark</th>
+            <th>Product Name</th>
+            <th>Item Code</th>
+            <th>Batch No</th>
+            <th>Qty </th>
+            <th>Received Qty</th>
+            <th>Bill Amount</th>
+            <th>Total Bill Amount</th>
+            <th>GST (%)</th>
+            <th>GST Amt</th>
+            <th>Total Bill GST Amt</th>
           </tr>
         </thead>
         <tbody>
-          <?php if (!empty($orders)): ?>
-            <?php foreach ($orders as $order): ?>
+          <?php if (!empty($products)): ?>
+            <?php foreach ($products as $product): 
+              $pending_qty = $product['white_qty'] - $product['recieved_qty'];
+              $total_bill_amount = $pending_qty * $product['bill_amount'];
+              $gst_amt = ($total_bill_amount * $product['gst']) / 100;
+              $total_bill_gst_amt = $total_bill_amount + $gst_amt;
+            ?>
               <tr>
                 <td class="text-center">
                   <div class="form-check justify-content-center">
-                    <input type="checkbox" name="sales_order_id[]" value="<?= $order['id']; ?>" class="form-check-input sales_order_checkbox" <?= ($order['id'] == $sales_order_id) ? 'checked' : ''; ?>>
+                    <input type="checkbox" name="sales_order_id[]" value="<?= $product['order_id']; ?>" class="form-check-input sales_order_checkbox" <?= ($product['order_id'] == $sales_order_id) ? 'checked' : ''; ?>>
                   </div>
+                  <input type="hidden" name="id[]" value="<?= $product['id']; ?>" class="row-order">
+                  <input type="hidden" name="batch_no[]" value="<?= $product['batch_no']; ?>" class="row-order">
+                  <input type="hidden" name="product_id[]" value="<?= $product['product_id']; ?>" class="row-order">
+                  <input type="hidden" name="product_name[]" value="<?= $product['product_name']; ?>" class="row-order">
+                  <input type="hidden" name="item_code[]" value="<?= $product['item_code']; ?>" class="row-order">
+                  <input type="hidden" name="order[]" value="<?= $product['order_id']; ?>" class="row-order">
+                  <input type="hidden" name="order_id[]" value="<?= $product['order_id']; ?>" class="row-order-id">
+                  <input type="hidden" name="order_product_id[]" value="<?= $product['order_product_id']; ?>" class="row-order-product-id">
+                  <input type="hidden" name="is_valid[]" value="<?= ($product['order_id'] == $sales_order_id) ? '1' : '0'; ?>" class="row-is-valid">
                 </td>
-                <td><?= date('d M, Y', strtotime($order['date'])); ?></td>
-                <td><?= htmlspecialchars($order['order_no']); ?></td>
-                <td><?= htmlspecialchars($order['refrence_no'] ?: '-'); ?></td>
-                <td><?= htmlspecialchars($order['warehouse_name'] ?: '-'); ?></td>
-                <td><?= htmlspecialchars($order['grand_total']); ?></td>
-                <td><?= htmlspecialchars($order['remark'] ?: '-'); ?></td>
+                <td><?= htmlspecialchars($product['order_no']); ?></td>
+                <td><?= htmlspecialchars($product['product_name']); ?></td>
+                <td><?= htmlspecialchars($product['item_code']); ?></td>
+                <td><?= htmlspecialchars($product['batch_no']); ?></td>
+                <td>
+                  <input type="number" name="pending_qty[]" class="form-control form-control-sm pending-qty" value="<?= $pending_qty; ?>" readonly style="width: 80px;">
+                </td>
+                <td>
+                  <input type="number" name="recieved_qty[]" class="form-control form-control-sm received-qty" value="<?= $pending_qty; ?>" min="0" max="<?= $pending_qty; ?>" step="any" required style="width: 90px;">
+                </td>
+                <td>
+                  <input type="number" name="bill_amount[]" class="form-control form-control-sm bill-amount" value="<?= $product['bill_amount']; ?>" readonly style="width: 100px;">
+                </td>
+                <td>
+                  <input type="number" name="total_bill_amount[]" class="form-control form-control-sm total-bill-amount" value="<?= number_format($total_bill_amount, 2, '.', ''); ?>" readonly style="width: 110px;">
+                </td>
+                <td>
+                  <input type="number" name="gst[]" class="form-control form-control-sm gst-rate" value="<?= $product['gst']; ?>" readonly style="width: 80px;">
+                </td>
+                <td>
+                  <input type="number" name="gst_amt[]" class="form-control form-control-sm gst-amount" value="<?= number_format($gst_amt, 2, '.', ''); ?>" readonly style="width: 100px;">
+                </td>
+                <td>
+                  <input type="number" name="total_bill_gst_amt[]" class="form-control form-control-sm total-bill-gst-amount" value="<?= number_format($total_bill_gst_amt, 2, '.', ''); ?>" readonly style="width: 110px;">
+                </td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="7" class="text-center">No orders found.</td>
+              <td colspan="12" class="text-center">No products found.</td>
             </tr>
           <?php endif; ?>
         </tbody>
@@ -89,7 +127,7 @@ $customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 
 
     <div class="row mt-2">
       <div class="col-12">
-        <button type="submit" id="generate_submit_btn" class="btn btn-primary waves-effect waves-float waves-light" <?= empty($orders) ? 'disabled' : ''; ?>>
+        <button type="submit" id="generate_submit_btn" class="btn btn-primary waves-effect waves-float waves-light" <?= empty($products) ? 'disabled' : ''; ?>>
           <i class="fa fa-refresh"></i> Generate Invoice
         </button>
         <button type="button" class="btn btn-secondary waves-effect waves-float waves-light" data-bs-dismiss="modal">
@@ -103,6 +141,32 @@ $customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 
 </div>
 
 <script>
+function updateRowCalculations($row) {
+  var pendingQty = parseFloat($row.find('.pending-qty').val()) || 0;
+  var receivedQty = parseFloat($row.find('.received-qty').val()) || 0;
+  
+  // Validate: received qty cannot be more than pending qty
+  if (receivedQty > pendingQty) {
+    receivedQty = pendingQty;
+    $row.find('.received-qty').val(receivedQty);
+  }
+  if (receivedQty < 0) {
+    receivedQty = 0;
+    $row.find('.received-qty').val(receivedQty);
+  }
+  
+  var billAmount = parseFloat($row.find('.bill-amount').val()) || 0;
+  var gstRate = parseFloat($row.find('.gst-rate').val()) || 0;
+  
+  var totalBillAmount = receivedQty * billAmount;
+  var gstAmt = (totalBillAmount * gstRate) / 100;
+  var totalBillGstAmt = totalBillAmount + gstAmt;
+  
+  $row.find('.total-bill-amount').val(totalBillAmount.toFixed(2));
+  $row.find('.gst-amount').val(gstAmt.toFixed(2));
+  $row.find('.total-bill-gst-amount').val(totalBillGstAmt.toFixed(2));
+}
+
 function submitGenerateInvoiceForm(event) {
   event.preventDefault();
   
@@ -133,7 +197,19 @@ function submitGenerateInvoiceForm(event) {
   }
   
   // Get form data
-  var formData = $('#sales_order_generate_invoice_form').serialize();
+  var formArray = $('#sales_order_generate_invoice_form').serializeArray();
+  // Filter/deduplicate sales_order_id values
+  var seenOrders = {};
+  var filteredArray = formArray.filter(function(item) {
+    if (item.name === 'sales_order_id[]') {
+      if (seenOrders[item.value]) {
+        return false; // Skip duplicate
+      }
+      seenOrders[item.value] = true;
+    }
+    return true;
+  });
+  var formData = $.param(filteredArray);
   var formUrl = $('#sales_order_generate_invoice_form').attr('action');
   
   // Submit via AJAX
@@ -219,11 +295,21 @@ function submitGenerateInvoiceForm(event) {
 }
 
 $(document).ready(function() {
+  function updateRowValidState($row, isChecked) {
+    $row.find('.row-is-valid').val(isChecked ? '1' : '0');
+  }
+
   $('#select_all_orders').on('change', function() {
-    $('.sales_order_checkbox').prop('checked', this.checked);
+    var isChecked = this.checked;
+    $('.sales_order_checkbox').prop('checked', isChecked);
+    $('.sales_order_checkbox').each(function() {
+      updateRowValidState($(this).closest('tr'), isChecked);
+    });
   });
   
   $('.sales_order_checkbox').on('change', function() {
+    updateRowValidState($(this).closest('tr'), this.checked);
+    
     if ($('.sales_order_checkbox:checked').length === $('.sales_order_checkbox').length) {
       $('#select_all_orders').prop('checked', true);
     } else {
@@ -231,7 +317,18 @@ $(document).ready(function() {
     }
   });
   
-  // Set initial state of select_all checkbox if all visible rows are checked
+  // Update calculations on input change
+  $(document).on('input change', '.received-qty', function() {
+    updateRowCalculations($(this).closest('tr'));
+  });
+  
+  // Set initial state of select_all checkbox and row validity
+  $('.sales_order_checkbox').each(function() {
+    var isChecked = this.checked;
+    updateRowValidState($(this).closest('tr'), isChecked);
+    updateRowCalculations($(this).closest('tr'));
+  });
+  
   if ($('.sales_order_checkbox').length > 0 && $('.sales_order_checkbox:checked').length === $('.sales_order_checkbox').length) {
     $('#select_all_orders').prop('checked', true);
   }

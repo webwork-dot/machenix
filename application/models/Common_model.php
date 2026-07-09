@@ -849,9 +849,17 @@ class Common_model extends CI_Model{
 
         return $warehouse;
     }
+
+    public function markInvoiceGenerated($id) {
+        $total_batch = $this->db->query("SELECT id FROM sales_order_product_batch WHERE order_id='$id'")->num_rows();
+        $completed_batch = $this->db->query("SELECT id FROM sales_order_product_batch WHERE order_id='$id' AND (white_qty = recieved_qty AND black_qty = recieved_black_qty)")->num_rows();
+
+        if($total_batch == $completed_batch){
+            $this->db->where('id', $id)->update('sales_order', array('is_generated' => '1'));
+        }
+    }
     
 }
-
 
 if (!function_exists('clean_and_escape')) {
   function clean_and_escape($str){

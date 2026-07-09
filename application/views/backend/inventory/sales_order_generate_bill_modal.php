@@ -1,40 +1,34 @@
 <?php
 $customer_id = $param2;
 $sales_order_id = $param3;
+$company_id = $this->session->userdata("company_id");
 
 $clicked_sales_order = $this->inventory_model->get_sales_order_by_id($sales_order_id)->row_array();
 $warehouse_id = $clicked_sales_order['warehouse_id'] ?? '0';
 
-// Fetch all ungenerated approved sales orders for this customer in this warehouse with is_weird = 1
-$orders = $this->db->where([
-  'customer_id' => $customer_id,
-  'is_approved' => '1',
-  'is_generated' => '0',
-  'warehouse_id' => $warehouse_id,
-  'is_weird' => '1',
-  'is_deleted' => '0'
-])->order_by('date', 'desc')->get('sales_order')->result_array();
-
-$order_ids = array_column($orders, 'id');
+// Parse selected batch IDs from query string
+$selected_batch_ids_str = $_GET['batch_ids'] ?? '';
+$selected_batch_ids = !empty($selected_batch_ids_str) ? explode(',', $selected_batch_ids_str) : [];
 
 $batches = [];
-if (!empty($order_ids)) {
+if (!empty($selected_batch_ids)) {
     $batches = $this->db->query("
         SELECT 
             sopb.*, 
             sop.product_name,
             sop.product_id,
+            sop.item_code,
             so.order_no,
             so.date as order_date
         FROM sales_order_product_batch AS sopb
         JOIN sales_order_product AS sop ON sop.id = sopb.order_product_id
         JOIN sales_order AS so ON so.id = sopb.order_id
-        WHERE sopb.order_id IN ('" . implode("','", $order_ids) . "')
-          AND sopb.black_qty > sopb.avail_black_qty
+        WHERE sopb.id IN (" . implode(",", array_map('intval', $selected_batch_ids)) . ")
     ")->result_array();
 }
 
-$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
+// Fetch all customers for the dropdown
+$customer_list = $this->common_model->getSessionCustomers();
 $states = $this->db->get_where('states', array('country_id' => 101))->result_array();
 ?>
 
@@ -74,7 +68,6 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
   <div class="col-12">
     <?php echo form_open('inventory/sales_order/generate_bill_post', ['id' => 'sales_order_generate_bill_form', 'onsubmit' => 'return submitGenerateBillForm(event);']); ?>
     
-    <input type="hidden" name="customer_id" value="<?= $customer_id; ?>">
     <input type="hidden" name="warehouse_id" value="<?= $warehouse_id; ?>">
 
     <!-- Order Header Info -->
@@ -100,8 +93,13 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
         <input type="date" name="invoice_date" id="invoice_date" class="form-control form-control-sm" value="<?= date('Y-m-d'); ?>" required>
       </div>
       <div class="col-md-2 mb-1">
-        <label class="form-label">Customer</label>
-        <input type="text" class="form-control form-control-sm" value="<?= htmlspecialchars($customer_name); ?>" readonly>
+        <label class="form-label">Customer <span class="text-danger">*</span></label>
+        <select class="form-select form-select-sm" name="customer_id" id="modal_customer_id" required>
+          <option value="">Select Customer</option>
+          <?php foreach($customer_list as $item){?>
+            <option value="<?php echo $item['id'];?>" <?php if($item['id'] == $customer_id) echo 'selected'; ?>><?php echo $item['company_name'];?></option>
+          <?php }?>
+        </select>
       </div>
       <div class="col-md-6 mb-1">
         <label class="form-label">Remark</label>
@@ -137,19 +135,19 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
             </div>
             <div class="col-6">
               <label class="form-label small mb-0">Pincode</label>
-              <input type="text" class="form-control form-control-sm" name="shipping_pincode" value="<?= htmlspecialchars($clicked_sales_order['shipping_pincode'] ?? ''); ?>">
+              <input type="text" class="form-control form-control-sm" name="shipping_pincode" id="modal_shipping_pincode" value="<?= htmlspecialchars($clicked_sales_order['shipping_pincode'] ?? ''); ?>">
             </div>
             <div class="col-6">
               <label class="form-label small mb-0">GST Name</label>
-              <input type="text" class="form-control form-control-sm" name="shipping_gst" value="<?= htmlspecialchars($clicked_sales_order['shipping_gst'] ?? ''); ?>">
+              <input type="text" class="form-control form-control-sm" name="shipping_gst" id="modal_shipping_gst" value="<?= htmlspecialchars($clicked_sales_order['shipping_gst'] ?? ''); ?>">
             </div>
             <div class="col-12">
               <label class="form-label small mb-0">GST No</label>
-              <input type="text" class="form-control form-control-sm" name="shipping_gst_no" value="<?= htmlspecialchars($clicked_sales_order['shipping_gst_no'] ?? ''); ?>">
+              <input type="text" class="form-control form-control-sm" name="shipping_gst_no" id="modal_shipping_gst_no" value="<?= htmlspecialchars($clicked_sales_order['shipping_gst_no'] ?? ''); ?>">
             </div>
             <div class="col-12">
               <label class="form-label small mb-0">Address</label>
-              <textarea class="form-control form-control-sm" name="shipping_address" rows="2"><?= htmlspecialchars($clicked_sales_order['shipping_address'] ?? ''); ?></textarea>
+              <textarea class="form-control form-control-sm" name="shipping_address" id="modal_shipping_address" rows="2"><?= htmlspecialchars($clicked_sales_order['shipping_address'] ?? ''); ?></textarea>
             </div>
           </div>
         </div>
@@ -177,64 +175,21 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
             </div>
             <div class="col-6">
               <label class="form-label small mb-0">Pincode</label>
-              <input type="text" class="form-control form-control-sm" name="billing_pincode" value="<?= htmlspecialchars($clicked_sales_order['billing_pincode'] ?? ''); ?>">
+              <input type="text" class="form-control form-control-sm" name="billing_pincode" id="modal_billing_pincode" value="<?= htmlspecialchars($clicked_sales_order['billing_pincode'] ?? ''); ?>">
             </div>
             <div class="col-6">
               <label class="form-label small mb-0">GST Name</label>
-              <input type="text" class="form-control form-control-sm" name="billing_gst" value="<?= htmlspecialchars($clicked_sales_order['billing_gst'] ?? ''); ?>">
+              <input type="text" class="form-control form-control-sm" name="billing_gst" id="modal_billing_gst" value="<?= htmlspecialchars($clicked_sales_order['billing_gst'] ?? ''); ?>">
             </div>
             <div class="col-12">
               <label class="form-label small mb-0">GST No</label>
-              <input type="text" class="form-control form-control-sm" name="billing_gst_no" value="<?= htmlspecialchars($clicked_sales_order['billing_gst_no'] ?? ''); ?>">
+              <input type="text" class="form-control form-control-sm" name="billing_gst_no" id="modal_billing_gst_no" value="<?= htmlspecialchars($clicked_sales_order['billing_gst_no'] ?? ''); ?>">
             </div>
             <div class="col-12">
               <label class="form-label small mb-0">Address</label>
-              <textarea class="form-control form-control-sm" name="billing_address" rows="2"><?= htmlspecialchars($clicked_sales_order['billing_address'] ?? ''); ?></textarea>
+              <textarea class="form-control form-control-sm" name="billing_address" id="modal_billing_address" rows="2"><?= htmlspecialchars($clicked_sales_order['billing_address'] ?? ''); ?></textarea>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sales Orders Checklist -->
-    <div class="row mb-2">
-      <div class="col-12">
-        <h6 class="fw-bold mb-2">Select Sales Orders to Include</h6>
-        <div class="table-responsive border rounded bg-white">
-          <table class="table table-bordered mb-0 compact-table">
-            <thead>
-              <tr>
-                <th class="text-center" style="width: 40px;">
-                  <input type="checkbox" class="form-check-input" id="modal_select_all_orders" checked>
-                </th>
-                <th>Order Date</th>
-                <th>Order No</th>
-                <th>Ref No</th>
-                <th>Grand Total</th>
-                <th>Remark</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (!empty($orders)): ?>
-                <?php foreach ($orders as $order): ?>
-                  <tr>
-                    <td class="text-center">
-                      <input type="checkbox" class="form-check-input modal_order_checkbox" data-order-id="<?= $order['id']; ?>" checked>
-                    </td>
-                    <td><?= date('d M, Y', strtotime($order['date'])); ?></td>
-                    <td><?= htmlspecialchars($order['order_no']); ?></td>
-                    <td><?= htmlspecialchars($order['refrence_no'] ?: '-'); ?></td>
-                    <td><?= htmlspecialchars($order['grand_total']); ?></td>
-                    <td><?= htmlspecialchars($order['remark'] ?: '-'); ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <tr>
-                  <td colspan="6" class="text-center text-muted">No pending weird orders found.</td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -247,44 +202,50 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
           <table class="table table-bordered mb-0 compact-table" id="modal_products_table">
             <thead>
               <tr>
-                <th style="width: 40px;" class="text-center">#</th>
+                <th style="width: 40px;" class="text-center">
+                  <input type="checkbox" class="form-check-input" id="modal_select_all_batches" checked>
+                </th>
                 <th>Original Order</th>
                 <th>Product Name</th>
                 <th>Batch No</th>
-                <th class="text-center" style="width: 100px;">Billed Qty</th>
-                <th class="text-center" style="width: 120px;">Price <span class="text-danger">*</span></th>
-                <th class="text-center" style="width: 100px;">GST % <span class="text-danger">*</span></th>
+                <th class="text-center" style="width: 100px;">Qty</th>
+                <th class="text-center" style="width: 120px;">Received Qty</th>
+                <th class="text-center" style="width: 120px;">Price</th>
+                <th class="text-center" style="width: 100px;">GST %</th>
                 <th class="text-center" style="width: 120px;">Total Exc GST</th>
                 <th class="text-center" style="width: 120px;">GST Amt</th>
                 <th class="text-center" style="width: 130px;">Total Incl GST</th>
               </tr>
             </thead>
             <tbody>
-              <?php if (!empty($batches)): $bi = 1; ?>
+              <?php if (!empty($batches)): ?>
                 <?php foreach ($batches as $batch): ?>
                   <?php 
-                    $qty = $batch['black_qty'] - $batch['avail_black_qty']; 
+                    $qty = $batch['black_qty'] - $batch['recieved_black_qty']; 
                   ?>
-                  <tr class="modal-batch-row order-row-<?= $batch['order_id']; ?>" data-batch-id="<?= $batch['id']; ?>">
+                  <tr class="modal-batch-row" data-batch-id="<?= $batch['id']; ?>">
                     <td class="text-center">
-                      <input type="checkbox" name="checked_batches[]" value="<?= $batch['id']; ?>" class="form-check-input modal_batch_checkbox d-none" checked>
-                      <?= $bi++; ?>
+                      <input type="checkbox" name="checked_batches[]" value="<?= $batch['id']; ?>" class="form-check-input modal_batch_checkbox" checked>
                       
                       <!-- Hidden inputs passed on check -->
                       <input type="hidden" name="batch_product_id[<?= $batch['id']; ?>]" value="<?= $batch['product_id']; ?>">
                       <input type="hidden" name="batch_no[<?= $batch['id']; ?>]" value="<?= htmlspecialchars($batch['batch_no']); ?>">
-                      <input type="hidden" name="batch_qty[<?= $batch['id']; ?>]" value="<?= $qty; ?>" class="row-qty-val">
                       <input type="hidden" name="batch_order_id[<?= $batch['id']; ?>]" value="<?= $batch['order_id']; ?>">
                     </td>
-                    <td class="small"><?= htmlspecialchars($batch['order_no']); ?></td>
-                    <td class="fw-bold small"><?= htmlspecialchars($batch['product_name']); ?></td>
-                    <td class="small"><?= htmlspecialchars($batch['batch_no']); ?></td>
-                    <td class="text-center fw-bold text-success"><?= $qty; ?></td>
+                    <td><?= htmlspecialchars($batch['order_no']); ?></td>
+                    <td><?= htmlspecialchars($batch['product_name']); ?></td>
+                    <td><?= htmlspecialchars($batch['batch_no']); ?></td>
                     <td>
-                      <input type="number" step="any" min="0" name="batch_rate[<?= $batch['id']; ?>]" value="<?= number_format($batch['amount'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-price-input" onkeyup="recalculateBill();" required>
+                      <input type="number" class="form-control form-control-sm pending-qty" value="<?= $qty; ?>" readonly style="width: 80px;">
                     </td>
                     <td>
-                      <input type="number" step="any" min="0" name="batch_gst[<?= $batch['id']; ?>]" value="<?= number_format($batch['gst'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-gst-input" onkeyup="recalculateBill();" required>
+                      <input type="number" step="any" min="0" max="<?= $qty; ?>" name="batch_qty[<?= $batch['id']; ?>]" value="<?= $qty; ?>" class="form-control form-control-sm text-center row-qty-input row-qty-val" onkeyup="recalculateBill();" onchange="recalculateBill();" required style="width: 90px;">
+                    </td>
+                    <td>
+                      <input type="number" step="any" min="0" name="batch_rate[<?= $batch['id']; ?>]" value="<?= number_format($batch['bill_amount'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-price-input" readonly required style="width: 100px;">
+                    </td>
+                    <td>
+                      <input type="number" step="any" min="0" name="batch_gst[<?= $batch['id']; ?>]" value="<?= number_format($batch['gst'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-gst-input" readonly required style="width: 80px;">
                     </td>
                     <td class="text-end fw-semibold row-basic-val-text">0.00</td>
                     <td class="text-end row-gst-val-text">0.00</td>
@@ -293,7 +254,7 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
                 <?php endforeach; ?>
               <?php else: ?>
                 <tr>
-                  <td colspan="10" class="text-center text-muted">No pending product batches to bill.</td>
+                  <td colspan="11" class="text-center text-muted">No pending product batches to bill.</td>
                 </tr>
               <?php endif; ?>
             </tbody>
@@ -405,8 +366,20 @@ function recalculateBill() {
 		var $row = $(this);
 		var isChecked = $row.find('.modal_batch_checkbox').is(':checked');
 		
+		$row.find('input:not(.modal_batch_checkbox)').prop('disabled', !isChecked);
+		
 		if (isChecked) {
+			var maxQty = parseFloat($row.find('.row-qty-input').attr('max')) || 0;
 			var qty = parseFloat($row.find('.row-qty-val').val()) || 0;
+			if (qty > maxQty) {
+				qty = maxQty;
+				$row.find('.row-qty-val').val(qty);
+			}
+			if (qty < 0) {
+				qty = 0;
+				$row.find('.row-qty-val').val(qty);
+			}
+
 			var price = parseFloat($row.find('.row-price-input').val()) || 0;
 			var gst_per = parseFloat($row.find('.row-gst-input').val()) || 0;
 			
@@ -488,7 +461,7 @@ function submitGenerateBillForm(event) {
         
         Swal.fire({
           title: "Success!",
-          text: res.message || "Fake sales order generated successfully",
+          text: res.message || "Invoice bill generated successfully",
           icon: "success",
           customClass: { confirmButton: "btn btn-primary" },
           buttonsStyling: !1
@@ -561,36 +534,66 @@ function get_modal_billing_city(stateId) {
 }
 
 $(document).ready(function() {
-  // Order Checklist toggling
-  $('#modal_select_all_orders').on('change', function() {
-    $('.modal_order_checkbox').prop('checked', this.checked).trigger('change');
-  });
-  
-  $('.modal_order_checkbox').on('change', function() {
-    var orderId = $(this).data('order-id');
-    var isChecked = this.checked;
-    
-    // Toggle corresponding batch rows in products table
-    var $rows = $('.order-row-' + orderId);
-    if (isChecked) {
-      $rows.show();
-      $rows.find('.modal_batch_checkbox').prop('checked', true);
-    } else {
-      $rows.hide();
-      $rows.find('.modal_batch_checkbox').prop('checked', false);
-    }
-    
-    // Select all status update
-    if ($('.modal_order_checkbox:checked').length === $('.modal_order_checkbox').length) {
-      $('#modal_select_all_orders').prop('checked', true);
-    } else {
-      $('#modal_select_all_orders').prop('checked', false);
-    }
+  $('#modal_select_all_batches').on('change', function() {
+    $('.modal_batch_checkbox').prop('checked', this.checked);
     recalculateBill();
   });
   
-  $('.modal_batch_checkbox').on('change', function() {
+  $(document).on('change', '.modal_batch_checkbox', function() {
+    if ($('.modal_batch_checkbox:checked').length === $('.modal_batch_checkbox').length) {
+      $('#modal_select_all_batches').prop('checked', true);
+    } else {
+      $('#modal_select_all_batches').prop('checked', false);
+    }
     recalculateBill();
+  });
+
+  // Customer dropdown change to dynamically fill address details
+  $('#modal_customer_id').on('change', function() {
+    var customer_id = $(this).val();
+    if(customer_id) {
+      $.ajax({
+        type: "POST",
+        url: "<?php echo base_url();?>inventory/get_customer_details_ajax",
+        data: { customer_id: customer_id },
+        dataType: "json",
+        success: function(res) {
+          if(res.status === 200) {
+            var data = res.data;
+            var cityHtml = res.city_html;
+
+            var shipOnchange = $('#modal_shipping_state_id').attr('onchange');
+            $('#modal_shipping_state_id').removeAttr('onchange');
+            $('#modal_shipping_state_id').val(data.state_id).trigger('change');
+            if (shipOnchange) {
+                $('#modal_shipping_state_id').attr('onchange', shipOnchange);
+            }
+            
+            $('#modal_shipping_city_id').html(cityHtml);
+            $('#modal_shipping_city_id').val(data.city_id).trigger('change');
+            $('#modal_shipping_pincode').val(data.pincode);
+            $('#modal_shipping_address').val(data.address);
+            $('#modal_shipping_gst').val(data.gst_name);
+            $('#modal_shipping_gst_no').val(data.gst_no);
+
+            // Update Billing fields
+            var billOnchange = $('#modal_billing_state_id').attr('onchange');
+            $('#modal_billing_state_id').removeAttr('onchange');
+            $('#modal_billing_state_id').val(data.state_id).trigger('change');
+            if (billOnchange) {
+                $('#modal_billing_state_id').attr('onchange', billOnchange);
+            }
+
+            $('#modal_billing_city_id').html(cityHtml);
+            $('#modal_billing_city_id').val(data.city_id).trigger('change');
+            $('#modal_billing_pincode').val(data.pincode);
+            $('#modal_billing_address').val(data.address);
+            $('#modal_billing_gst').val(data.gst_name);
+            $('#modal_billing_gst_no').val(data.gst_no);
+          }
+        }
+      });
+    }
   });
 
   // Cities initialization

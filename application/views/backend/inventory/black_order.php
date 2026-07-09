@@ -78,6 +78,7 @@
             <div class="row">
                <div class="col-md-12 mt-10">
                   <h5 class="mb-0"><b>Total Black Order <span id="total_count"> (0)</span></b>
+                      <button type="button" id="btn_generate_invoice" class="btn btn-primary float-end" style="margin-top: -5px;" disabled>Generate Invoice</button>
 				  </h5>
                </div>
             </div>
@@ -86,17 +87,15 @@
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-					<th>#</th>
+					<th style="width: 15px;">#</th>
 					<th>Date</th>
-					<!-- <th>Company Name</th> -->
-					<!--<th>Reference Number</th>-->
 					<th>Customer Name</th>
 					<th>Order NO</th>
+					<th>Product Name</th>
+					<th>Item Code</th>
+					<th>Batch No</th>
 					<th>Warehouse</th>
-					<th>Total Qty</th>
-					<th>Total Products</th>
-					<!-- <th>Total Amount</th> -->
-					<!--<th>Remark</th>-->
+					<th>Black Qty</th>
                     <?php if ($staff_access !== 7) { ?>
                     <th>Actions</th>
                     <?php } ?>
@@ -109,12 +108,55 @@
 </div>
 
 <script type="text/javascript">       
+    function applyCheckboxVisibility() {
+        var checkedCheckboxes = $('.batch-checkbox:checked');
+        if (checkedCheckboxes.length > 0) {
+            var activeWarehouseId = checkedCheckboxes.first().attr('data-warehouse-id');
+            $('.batch-checkbox').each(function() {
+                if ($(this).is(':checked')) {
+                    $(this).show();
+                } else {
+                    var whId = $(this).attr('data-warehouse-id');
+                    if (whId === activeWarehouseId) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                }
+            });
+        } else {
+            $('.batch-checkbox').show();
+        }
+        $('#btn_generate_invoice').prop('disabled', checkedCheckboxes.length === 0);
+    }
+
     $(document).ready(function($) {
+        $(document).on('change', '.batch-checkbox', function() {
+            applyCheckboxVisibility();
+        });
+
+        $('#btn_generate_invoice').on('click', function() {
+            var selectedBatchIds = [];
+            var firstCheckbox = $('.batch-checkbox:checked').first();
+            var customerId = firstCheckbox.attr('data-customer-id') || '0';
+            var orderId = firstCheckbox.attr('data-order-id') || '0';
+            
+            $('.batch-checkbox:checked').each(function() {
+                selectedBatchIds.push($(this).val());
+            });
+            
+            if (selectedBatchIds.length > 0) {
+                var url = "<?php echo base_url(); ?>modal/popup_inventory/sales_order_generate_bill_modal/" + customerId + "/" + orderId + "?batch_ids=" + selectedBatchIds.join(',');
+                showLargeModal(url, 'Generate Invoice');
+            }
+        });
+
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
             "sDom": 'rt<"dtPagination"lp><"clear">',
             "pagingType": "simple_numbers",
+            "pageLength": 25,
             "processing": true,
             'scrollX': true,
             "serverSide": true, 
@@ -125,6 +167,7 @@
             },	
             "drawCallback": function (settings, json) {
                 $('[data-toggle="tooltip"]').tooltip('update');
+                applyCheckboxVisibility();
             },
       
             "ajax":{
@@ -147,15 +190,13 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "date" },
-                // { "data": "company_name" },
-                // { "data": "refrence_no" },
                 { "data": "customer_name" },
                 { "data": "order_no" },
+                { "data": "product_name" },
+                { "data": "item_code" },
+                { "data": "batch_no" },
                 { "data": "warehouse_name" },
-                { "data": "qty" },
-                { "data": "total_pro" },
-                // { "data": "grand_total" },
-                // { "data": "remark" },
+                { "data": "black_qty" },
                 <?php if ($staff_access !== 7) { ?>
                    { "data": "action" },
                 <?php } ?>
@@ -166,7 +207,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7,8]
                     }
                 },
                 {
@@ -174,11 +215,14 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7,8]
                     }
                 }
             ], 
-           
+            "lengthMenu": [
+                [25, 50, 100, 250, 500, 1000],
+                [25, 50, 100, 250, 500, 1000]
+            ],
             "infoCallback": function( settings, start, end, max, total, pre ) {
                 $(".loader").fadeOut("slow"); 
                 $('#total_count').html('('+total+')');

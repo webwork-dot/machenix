@@ -805,11 +805,13 @@ function appendRequirement() {
 
       var bill_amt = Number(bill_amt_el.val()) || 0;
       var gst_per = Number($('#gst_' + index).val()) || 0;
-      var total_bill_amt = bill_amt * qty;
+      var white_qty = qty;
+      var black_qty = 0;
+      var total_bill_amt = bill_amt * white_qty;
       var gst_amt = (total_bill_amt * gst_per) / 100;
       var total_bill_gst_amt = total_bill_amt + gst_amt;
-      var black_amt = amount - bill_amt;
-      var total_black_amt = total_amount - total_bill_amt;
+      var total_black_amt = ((amount * black_qty) + ((amount - bill_amt) * white_qty));
+      var black_amt = black_qty > 0 ? (total_black_amt / black_qty) : (amount - bill_amt);
       var final_total = total_black_amt + total_bill_gst_amt;
 
       $('#total_amount_' + index).val(total_amount.toFixed(2));
