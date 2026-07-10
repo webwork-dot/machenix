@@ -2576,11 +2576,21 @@ class Inventory_model extends CI_Model
 			}
 		}
 
-		if (!$has_valid_product) {
+		$charge_ids = $this->input->post('charge_id');
+		$has_valid_charge = false;
+		if (is_array($charge_ids)) {
+			foreach ($charge_ids as $cid) {
+				if (intval($cid) > 0) {
+					$has_valid_charge = true;
+				}
+			}
+		}
+
+		if (!$has_valid_product && !$has_valid_charge) {
 			$this->db->trans_rollback();
 			$resultpost = array(
 				"status" => 400,
-				"message" => "Please add at least one product with quantity greater than 0."
+				"message" => "Please add at least one product or one expense."
 			);
 			return simple_json_output($resultpost);
 		}
@@ -2845,6 +2855,40 @@ class Inventory_model extends CI_Model
 						"message" => get_phrase('something_went_wrong')
 					);
 					return simple_json_output($resultpost);
+				}
+			}
+		}
+
+		// Insert charges into purchase_order_charges
+		$charge_id_arr = $this->input->post('charge_id');
+		$charge_gst_arr = $this->input->post('charge_gst');
+		$charge_price_arr = $this->input->post('charge_price');
+		$charge_total_arr = $this->input->post('charge_total');
+
+		if(!empty($charge_id_arr)) {
+			for ($i = 0; $i < count($charge_id_arr); $i++) {
+				if (!empty($charge_id_arr[$i])) {
+					$type_id = $charge_id_arr[$i];
+					
+					$other_charge = $this->db->get_where('other_charges', ['id' => $type_id])->row_array();
+					$type_name = $other_charge ? $other_charge['name'] : '';
+
+					$data_charge = array(
+						'order_id'   => $insert_id,
+						'type_id'    => $type_id,
+						'type'       => $type_name,
+						'gst'        => (float) ($charge_gst_arr[$i] ?? 0),
+						'amount'     => (float) ($charge_price_arr[$i] ?? 0),
+						'total_amt'  => (float) ($charge_total_arr[$i] ?? 0),
+					);
+					if (!$this->db->insert('purchase_order_charges', $data_charge)) {
+						$this->db->trans_rollback();
+						$resultpost = array(
+							"status" => 400,
+							"message" => get_phrase('something_went_wrong')
+						);
+						return simple_json_output($resultpost);
+					}
 				}
 			}
 		}
@@ -12034,265 +12078,6 @@ class Inventory_model extends CI_Model
 		return $returnData;
 	}
 
-	function import_sales_return_items_excel_insert($fetchData, $warehouse_id, $type)
-	{
-		$is_complete = 0;
-		$curr_data = date("Y-m-d H:i:s");
-		$count = 0;
-		$Images_arr = array();
-		$returnData = array();
-		$unique_id = generate_unique_id();
-
-		$total_leads = 0;
-		foreach ($fetchData as $item) {
-			$ord_id = $item['ord_id'];
-			$product = $item['product'];
-			$size = $item['size'];
-			$quantity = $item['quantity'];
-			$reason = $item['reason'];
-
-			$data = array();
-			$data = array(
-				'type' => $type,
-				'unique_id' => $unique_id,
-				'product' => $product,
-				'batch_no' => NUll,
-				'quantity' => $quantity,
-				'reason' => $reason,
-				'amount' => 0,
-				'size' => $size,
-				'ord_id' => $ord_id,
-				'created_at' => $curr_data
-			);
-
-			$data = $this->security->xss_clean($data);
-			$this->common_model->insert($data, 'excel_return_stock');
-		}
-
-		$final_data = array();
-		$return_data = array();
-		$query = $this->db->query("SELECT * FROM excel_return_stock WHERE (unique_id='$unique_id')");
-
-		$order_ids = [];
-		$skus = [];
-		$sizes = [];
-
-		foreach ($query->result_array() as $item) {
-			$item_code = $item['product'];
-			$quantity = $item['quantity'];
-			$size = explode(' | ', $item['size']);
-			$ord_id = $item['ord_id'];
-			$batch_no = NULL;
-			$amount = $item['amount'];
-			$reas = $item['reason'];
-
-			$sop_id = 0;
-			$customer = '';
-			$sale_qty = 0;
-
-			$sales = $this->db->where('product_order_id', $ord_id)->where('item_code', $item_code)->where('size_id', $size[0])->where('is_paid', 0)->get('sales_order_product');
-			$flag = 0;
-			$reason = "";
-			if ($sales->num_rows() > 0) {
-				$sales = $sales->row_array();
-
-				$sop_id = $sales['id'];
-				$customer = $sales['customer_name'];
-				$sale_qty = $sales['qty'] - $sales['return_qty'];
-				$amount = $sales['total_amount'];
-				if ($sale_qty >= $quantity) {
-					if (in_array($ord_id, $order_ids)  && in_array($item_code, $skus) && in_array($size[0], $sizes)) {
-						$flag = 1;
-						$reason = "Order Id and Product cannot be the same";
-					} else {
-						$order_ids[] = $ord_id;
-						$skus[] = $item_code;
-						$sizes[] = $size[0];
-					}
-				} else {
-					$flag = 1;
-					$reason = "Sale Qty is lower than return Qty";
-				}
-			} else {
-				$flag = 1;
-				$reason = "No Sales Record Found";
-			}
-
-			if ($flag == 0) {
-				$available_quantity = $row_c['quantity'];
-				$final_data[] = array(
-					"ord_id" => $ord_id,
-					"product_id" => $sop_id,
-					"product_name" => $item_code . ' - ' . $size[1],
-					"customer" => $customer,
-					"reas" => $reas,
-
-					"sale_quantity" => $sale_qty,
-					"quantity" => $quantity,
-					"amount" => $amount,
-					"reason" => $reason,
-				);
-			} else {
-				$return_data[] = array(
-					"ord_id" => $ord_id,
-					"product_id" => $sop_id,
-					"product_name" => $item_code . ' - ' . $size[1],
-					"customer" => $customer,
-					"reas" => $reas,
-
-					"sale_quantity" => $sale_qty,
-					"quantity" => $quantity,
-					"amount" => $amount,
-					"reason" => $reason,
-				);
-			}
-		}
-
-		$action = '';
-		// 		$products_list = $this->get_product_id_by_warehouse($warehouse_id);
-		// 		echo json_encode($final_data);exit();
-		if (count($final_data) > 0) {
-			$action .= '<div class="table-responsive">
-						<div class="col-lg-12 no-pad">						
-						<table class="table table-striped table-bordered mn-table" id="requirement_area">
-						<thead>
-						<tr>
-							<th>
-							    <p>Order ID </p>
-							</th>
-						    <th>
-							    <p>Product </p>
-						    </th>
-							<th style="width: 95px">
-							    <p>Customer</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Sale Quantity</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Quantity</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Amount</p>
-							</th>
-							<th style="width: 180px">
-							    <p>Reason</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Action</p>
-							</th>
-						 </tr>
-						</thead>
-						<tbody class="element-1 new-table" id="product_' . $key . '">';
-
-			foreach ($final_data as $key => $f_data) {
-				$key++;
-				$x_id = "'" . $key . "'";
-
-				$action .= '<tr>
-						<td style="width: 60px;text-align: center;">
-						    <input type="text" step="any" id="porder_id_' . $key . '" name="porder_id[]" onkeyup="getProductsById(this, ' . $key . ')" value="' . $f_data['ord_id'] . '" class="form-control" readonly>
-						</td>
-						<td>
-						    <input type="hidden" id="product_id_' . $key . '" name="product_id[]" value="' . $f_data['product_id'] . '">
-						    <input type="text" value="' . $f_data['product_name'] . '" class="form-control" readonly>
-						</td>
-						<td style="width: 80px !important;">
-    						<p class="td-blank">
-                                <input type="text" id="customer_' . $key . '"  name="customer[]" value="' . $f_data['customer'] . '" class="form-control" readonly>
-                            </p>
-                        </td>
-                        <td>
-    						 <p class="td-blank"><input type="number" step="any" id="sale_quantity_' . $key . '"  name="sale_quantity[]" value="' . $f_data['sale_quantity'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td>
-                            <p class="td-blank"><input type="number" step="any" id="quantity_' . $key . '"  name="quantity[]" onkeyup="check_available_qty(this.value,' . $key . ')" value="' . $f_data['quantity'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td>
-                            <p class="td-blank"><input type="number" step="any" id="amount_' . $key . '"  name="amount[]" value="' . $f_data['amount'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td>
-                            <p class="td-blank"><input type="text" id="reason_' . $key . '"  name="reason_id[]" value="' . $f_data['reas'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td> - </td>
-					</tr>';
-			}
-			$action .= '</tbody>
-						</table>';
-		}
-
-		if (count($return_data) > 0) {
-			$action .= '<div class="table-responsive">
-						<div class="col-lg-12 no-pad">		
-						<h2 style="color: red;text-align: center;margin-top: 25px;margin-bottom: 10px;border-top: 1px solid #ddd;padding-top: 10px;">Some Product Not Added. Check Below List</h2>		
-						<table class="table table-striped table-bordered mn-table">
-						<thead>
-						<tr>
-							<th>
-							    <p>Order ID </p>
-							</th>
-						    <th>
-							    <p>Product </p>
-						    </th>
-							<th style="width: 95px">
-							    <p>Customer</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Sale Quantity</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Quantity</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Amount</p>
-							</th>
-							<th style="width: 95px">
-							    <p>Reason</p>
-							</th>
-						 </tr>
-						</thead>
-						<tbody >';
-			foreach ($return_data as $key => $r_data) {
-				$key++;
-				$x_id = "'" . $key . "'";
-
-				$action .= '<tr>
-						<td style="width: 60px;text-align: center;">
-						    <input type="text" value="' . $r_data['ord_id'] . '" class="form-control" readonly>
-						</td>
-						<td>
-						    <input type="text" value="' . $r_data['product_name'] . '" class="form-control" readonly>
-						</td>
-						<td style="width: 80px !important;">
-    						<p class="td-blank">
-                                <input type="text" value="' . $r_data['customer'] . '" class="form-control" readonly>
-                            </p>
-                        </td>
-                        <td>
-    						 <p class="td-blank"><input type="number" step="any" value="' . $r_data['sale_quantity'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td>
-                            <p class="td-blank"><input type="number" step="any" value="' . $r_data['quantity'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td>
-                            <p class="td-blank"><input type="number" step="any" value="' . $r_data['amount'] . '" class="form-control" readonly></p>
-                        </td>
-                        <td>' . $r_data['reason'] . '</td>
-					</tr>';
-			}
-			$action .= '</tbody>
-						</table>';
-		}
-
-		$returnData = array(
-			'status' => '200',
-			'message' => 'Excel data inserted in database',
-			'unique_id' => $unique_id,
-			'action' => $action,
-		);
-
-		return $returnData;
-	}
 
 	function import_other_sku_items_excel_insert($fetchData)
 	{
@@ -18652,6 +18437,25 @@ public function get_sales_return_reports()
 		$this->db->where('id', $parent_id);
 		$this->db->update('raw_products', array('has_formula' => 1, 'expense' => $expense));
 
+		// Insert product charges / expenses
+		$charge_names = $this->input->post('charge_name');
+		$charge_amounts = $this->input->post('charge_amount');
+		if (is_array($charge_names)) {
+			for ($i = 0; $i < count($charge_names); $i++) {
+				$name = trim($charge_names[$i]);
+				$amount = floatval($charge_amounts[$i] ?? 0);
+				if ($name !== '' || $amount > 0) {
+					$charge_data = array(
+						'product_id' => $parent_id,
+						'name' => $name,
+						'amount' => $amount,
+						'created_at' => date("Y-m-d H:i:s")
+					);
+					$this->db->insert('product_charges', $charge_data);
+				}
+			}
+		}
+
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			return simple_json_output(array(
@@ -18788,6 +18592,28 @@ public function get_sales_return_reports()
 		$this->db->where('id', $parent_id);
 		$this->db->update('raw_products', array('has_formula' => 1, 'expense' => $expense));
 
+		// Delete old charges and insert new ones
+		$this->db->where('product_id', $parent_id);
+		$this->db->delete('product_charges');
+
+		$charge_names = $this->input->post('charge_name');
+		$charge_amounts = $this->input->post('charge_amount');
+		if (is_array($charge_names)) {
+			for ($i = 0; $i < count($charge_names); $i++) {
+				$name = trim($charge_names[$i]);
+				$amount = floatval($charge_amounts[$i] ?? 0);
+				if ($name !== '' || $amount > 0) {
+					$charge_data = array(
+						'product_id' => $parent_id,
+						'name' => $name,
+						'amount' => $amount,
+						'created_at' => date("Y-m-d H:i:s")
+					);
+					$this->db->insert('product_charges', $charge_data);
+				}
+			}
+		}
+
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			return simple_json_output(array(
@@ -18822,6 +18648,10 @@ public function get_sales_return_reports()
 		// Delete formula rows
 		$this->db->where('parent_id', $parent_id);
 		$this->db->delete('product_formula');
+
+		// Delete product charges
+		$this->db->where('product_id', $parent_id);
+		$this->db->delete('product_charges');
 
 		// Set has_formula to 0 and reset expense
 		$this->db->where('id', $parent_id);
@@ -19130,6 +18960,118 @@ public function get_sales_return_reports()
 
 		$this->db->trans_commit();
 		$this->session->set_flashdata('flash_message', 'Product Stock production successfully completed.');
+		return simple_json_output($resultpost);
+	}
+
+	public function get_formula_product_orders()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+		$company_id = $this->session->userdata('company_id');
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (batch_no like '%" . $keyword . "%' OR name like '%" . $keyword . "%')";
+		endif;
+
+		$keyword_filter .= " AND (company_id = '$company_id')";
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(added_date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(added_date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$total_count = $this->db->query("SELECT id FROM formula_product_in WHERE 1=1 $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT * FROM formula_product_in WHERE 1=1 $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+
+				// Actions
+				$action ='-';
+				$delete_url = "confirm_modal('" . base_url() . "inventory/formula-product-order/delete/" . $id . "','Are you sure want to delete!')";
+				
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+					</div>
+				</div>';
+
+				$data[] = array(
+					"sr_no"             => ++$start,
+					"id"                => $item['id'],
+					"date"              => date('d M, Y', strtotime($item['added_date'])),
+					"batch_no"          => $item['batch_no'],
+					"product_name"      => $item['name'],
+					"qty"               => $item['qty'],
+					"total_off_cost"    => floatval($item['total_off_cost']),
+					"total_actual_cost" => floatval($item['total_actual_cost']),
+					"total_expense"     => floatval($item['total_expense']),
+					"final_total"       => floatval($item['final_total']),
+					"action"            => $action
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function delete_formula_product_order($id = "")
+	{
+		$id = (int)$id;
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Formula Product In record deleted successfully",
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		if (empty($id)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Invalid ID."
+			));
+		}
+
+		$this->db->trans_begin();
+
+		// Delete formula_product_in record
+		$this->db->where('id', $id);
+		$this->db->delete('formula_product_in');
+
+		// Also delete any batch ingredients associated if any parent_id exists
+		$this->db->where('parent_id', $id);
+		$this->db->delete('formula_ingredients_batch_products');
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Failed to delete record. Please try again."
+			));
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', 'Formula Product In record deleted successfully');
 		return simple_json_output($resultpost);
 	}
 }

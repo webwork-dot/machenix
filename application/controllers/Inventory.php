@@ -1182,8 +1182,9 @@ class Inventory extends CI_Controller
 
             $page_data['navigation']  = 'purchase_order';
             $page_data['type']      = 'local';
-            $page_data['products_list'] = $this->common_model->selectWhere('raw_products', array('is_deleted' => '0', 'product_type' => 'local'), 'ASC', 'name');
+            $page_data['products_list'] = $this->common_model->selectWhere('raw_products', array('is_deleted' => '0'), 'ASC', 'name');
             $page_data['supplier_list'] = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id, 'type' => 'local'), 'ASC', 'name');
+            $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
 
             $page_data['page_name']  = 'purchase_order_local_add';
             $page_data['page_title'] = 'Add Local Purchase In';
@@ -1258,6 +1259,31 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_purchase_order_local();
+        }
+    }
+
+    public function formula_product_order($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_formula_product_order($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'formula_product_order';
+            $page_data['page_name']  = 'formula_product_in_list';
+            $page_data['page_title'] = 'Formula Product In';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_formula_product_orders()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_formula_product_orders();
         }
     }
 
@@ -1724,6 +1750,26 @@ class Inventory extends CI_Controller
                 'message' => 'error',
             ));
         }
+    }
+
+    public function check_gst_type()
+    {
+        $supplier_id = intval($this->input->post('supplier_id'));
+        $company_id = intval($this->session->userdata('company_id'));
+        
+        $supplier = $this->db->get_where('supplier', array('id' => $supplier_id))->row_array();
+        $company = $this->db->get_where('company', array('id' => $company_id))->row_array();
+        
+        $supplier_state = $supplier ? intval($supplier['state_id'] ?? 0) : 0;
+        $company_state = $company ? intval($company['state_id'] ?? 0) : 0;
+        
+        header('Content-Type: application/json');
+        echo json_encode(array(
+            'status' => 200,
+            'supplier_state_id' => $supplier_state,
+            'company_state_id' => $company_state,
+            'match' => ($supplier_state > 0 && $supplier_state === $company_state)
+        ));
     }
 
     public function batch_detail($param1 = "", $param2 = "")
@@ -3676,8 +3722,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
         $where = array('is_deleted' => '0');
-        $page_data['warehouse_list']     = $this->common_model->get_all_warehouse_list();
-        $page_data['customer_list']     = $this->common_model->selectWhere('customer', $where, 'ASC', 'name');
+        $page_data['warehouse_list']     = $this->common_model->getSessionWarehouse();
+        $page_data['customer_list']     = $this->common_model->getSessionCustomers();
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
 
         if ($param1 == 'add') {
@@ -4540,6 +4586,9 @@ class Inventory extends CI_Controller
 
 			// Get existing formula items
 			$page_data['formula_items'] = $this->db->where('parent_id', $parent_id)->order_by('id', 'ASC')->get('product_formula')->result_array();
+
+			// Get existing charges / expenses
+			$page_data['product_charges'] = $this->db->where('product_id', $parent_id)->order_by('id', 'ASC')->get('product_charges')->result_array();
 
 			// For ingredients: local products that are not deleted (and exclude this parent product)
 			$page_data['ingredient_products'] = $this->db->where(array('product_type' => 'local', 'is_deleted' => 0, 'id !=' => $parent_id))

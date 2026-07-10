@@ -43,19 +43,11 @@
               <select class=" form-select select2" name="customer_id" id="customer_id" required>
                 <option value="">Select Customer </option>
                 <?php foreach($customer_list as $item){?>
-					<option value="<?php echo $item->id;?>"><?php echo $item->name;?></option>
+					<option value="<?php echo $item['id'];?>"><?php echo $item['company_name'];?></option>
                 <?php }?>
               </select>
             </div>
-            <div class="col-12 col-sm-3 mb-1">
-              <label class="form-label" for="state">Company <span class="required">*</span></label>
-              <select class=" form-select select2" name="company_id" id="company_id" required>
-                <option value="">Select Company </option>
-                <?php foreach($company_list as $item){?>
-					<option value="<?php echo $item->id;?>"><?php echo $item->name;?></option>
-                <?php }?>
-              </select>
-            </div>
+            
 			<div class="col-12 col-sm-3 mb-1">
                 <div class="form-group">
                     <label>Refrence Order No </label>
@@ -77,50 +69,8 @@
                 </div>
             </div>			
 			
-			<div class="col-12 col-sm-12 mt-1">
-			  <div class="form-group">
-				 <label>Select Input Method</label>
-				 <div class="d-flex align-items-centermt-1">
-					<div class="form-check me-3">
-					   <input class="form-check-input" type="radio" id="manually" name="input_method" value="manually" checked onclick="toggleInputMethod('manually')">
-					   <label class="form-check-label" for="manually">Manually</label>
-					</div>
-					<div class="form-check me-3">
-					   <input class="form-check-input" type="radio" id="by_excel" name="input_method" value="by_excel" onclick="toggleInputMethod('by_excel')">
-					   <label class="form-check-label" for="by_excel">By Excel</label>
-					</div>
-				 </div>
-			  </div>
-			</div>
-            
 			<div id = "requirement_area_1">
-				<div class="col-12 col-sm-12 mb-1 fx-border mt-2 by_excel_div" style="display:none">
-					<div class="col-12 p-2">
-					  <div class="row">
-						 <div class="col-12 col-sm-4 mb-1">
-							<b>Upload Via Excel</b><br/>
-							<a style="padding:0px;" class='btn-primary1 btn-file-upload '>
-								<input type="file" class="form-control mt-1" name="fileURL" id="file_text" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="$('#upload-file-info3').html($(this).val().replace(/.*[\/\\]/, ''));" >
-							</a>
-						 </div>
-						 <div class="col-12 col-sm-2 mb-1 mt-2">
-							<label  for="bills_pending"></label><br>
-							<span style="margin-top: 0px;" class='btn btn-md btn-primary blue btn-exverify btn-file-upload float-left' onClick="uploadExcel()">Upload File</span>
-						 </div>
-						 <div class="col-12 col-sm-2 mb-1">
-						 </div>
-						 <div class="col-12 col-sm-4 mb-1 mt-2">
-							<div class="col-md-6 mt30" style="direction: rtl;">	
-							   <label  for="bills_pending"></label><br>
-							   <a class="btn btn-md btn-primary btn-file-upload downl-btn float-right" href="<?php echo base_url();?>phpspreadsheet/sample_product_return_excel" target="_blank"><i class="fa fa-download" aria-hidden="true"></i> Download Format</a>
-							   <!--<a class="btn btn-md btn-primary btn-file-upload downl-btn float-right" href="<?php echo base_url();?>uploads/x_return_stock_items.xlsx" target="_blank"><i class="fa fa-download" aria-hidden="true"></i> Download Format</a>-->
-							</div>
-						 </div>
-					  </div>
-					</div>
-				</div>
-				
-				<div class="col-12 col-sm-12 mb-1 manually_div">
+				<div class="col-12 col-sm-12 mb-1">
 					<div class="table-responsive">
 						<div class="col-lg-12 no-pad" style="min-height: 300px;">
 							<a class="btn btn-info text-white btn-sm" onclick="appendRequirement()" style="float:right;margin-bottom:5px;"><i class=" uil-plus-circle"></i>&nbsp;Add Row</a>
@@ -332,28 +282,20 @@
 	    document.querySelector('#customer_' + id).value = '';
 	}
 	
-	function toggleInputMethod(method) {
-        if (method == 'manually') {
-            $('.manually_div').show();
-            $('.by_excel_div').hide();
-        } else if (method == 'by_excel') {
-            $('.manually_div').hide();
-            $('.by_excel_div').show();
-        }
-	}
+
     
     function appendRequirement() {
         var from_warehouse_id = $('#from_warehouse_id').find(":selected").val();
         if(from_warehouse_id==''){
             Swal.fire({
-    			title: "Error!",
-    			text: "Please Select Warehouse !!" ,
-    			icon: "error",
-    			customClass: {
-    				confirmButton: "btn btn-primary"
-    			},
-    			buttonsStyling: !1
-    		});
+							title: "Error!",
+							text: "Please Select Warehouse !!" ,
+							icon: "error",
+							customClass: {
+								confirmButton: "btn btn-primary"
+							},
+							buttonsStyling: !1
+						});
         }else{
             var total_element = $(".element-1").length;  
             var lastid = $(".element-1:last").attr("id");
@@ -361,14 +303,14 @@
             var nextindex = Number(split_id[1]) + 1;
             if($('#product_id_'+split_id[1]).find(":selected").val() == ''){
                 Swal.fire({
-        			title: "Error!",
-        			text: "Please Select Previous Product !!" ,
-        			icon: "error",
-        			customClass: {
-        				confirmButton: "btn btn-primary"
-        			},
-        			buttonsStyling: !1
-        		});
+									title: "Error!",
+									text: "Please Select Previous Product !!" ,
+									icon: "error",
+									customClass: {
+										confirmButton: "btn btn-primary"
+									},
+									buttonsStyling: !1
+								});
             }else{
                 $(".loader").show(); 
                 // $('#requirement_area').append('<tbody class="element-1 new-table" id="product_'+ nextindex +'"><tr><td><span class="new-td"><select class="form-control select2 product_id"  name="product_id[]"  id="product_id_'+ nextindex +'" data-toggle="select2" onchange="get_batch_by_product(this.value,'+ nextindex +');"  required><option value="">Select Product</option><?php foreach($products_list as $item){?><option value="<?php echo $item->id; ?>"><?php echo $item->item_code.' - '.$item->name; ?></option><?php } ?></select></span></td><td style="width: 120px !important;"><input type="text" step="any" id="porder_id_'+ nextindex +'" name="porder_id[]" class="form-control" ></td><td style="width: 80px !important;"><p class="td-blank"><input type="number" step="any" id="quantity_'+ nextindex +'"  name="quantity[]" placeholder="Qty" onkeyup="check_available_qty(this.value,'+ nextindex +')" value="0" class="form-control" required></p></td><td><button type="button" class="btn btn-danger btn-sm" style="margin-top: 0px;" name="button" onclick="removeRequirement(this)"> <i class="dripicons-minus"></i> </button></td></tr></tbody>');
@@ -586,88 +528,6 @@
 	    
     }
 	
-	function uploadExcel() {
-		var warehouseId = $('#from_warehouse_id').val();
-		$(".loader").show(); 
-		if (!warehouseId) {
-			$(".loader").fadeOut("slow");
-			Swal.fire({
-				title: "Error!",
-				text: "Please Select Warehouse !!",
-				icon: "error",
-				customClass: {
-					confirmButton: "btn btn-primary"
-				},
-				buttonsStyling: false
-			});
-			return;
-		}
-
-		 var fileInput = document.getElementById('file_text');
-		 var file = fileInput.files[0];
-
-        if (!file) {
-			$(".loader").fadeOut("slow");
-            toastr.error('Please select a file to upload.');
-            $(".loader").fadeOut("slow");
-            $('.btn-exverify').html('Upload File');
-            return;
-        }
-
-		 var formData = new FormData();
-		 formData.append('fileURL', file);
-		 formData.append('warehouse_id', warehouseId);
-		 formData.append('type', 'sales');
-		 
-		 $.ajax({
-			type: "POST",
-			url: "<?php echo base_url(); ?>phpspreadsheet/upload_sales_return_stock_items",
-			data: formData,
-			processData: false,
-			contentType: false,
-			success: function(data) {
-				$(".returnData").css("display", "block");
-				$('.btn-exverify').html('Upload File');
-				$(".loader").fadeOut("slow");
-				if (data.status == '200') {
-					
-					resetFileInput(fileInput);
-					$('#requirement_area_1').append(data.action);
-					$('#excel_id').val(data.unique_id);
-					$(".select2").select2();
-					$('.by_excel_div').hide();
-					document.getElementById('manually').disabled = true;
-					document.getElementById('by_excel').disabled = true;
-					document.querySelector('.manually_div').remove();
-					$(".loader").fadeOut("slow");
-				} else if (data.status == 'false') {
-					$(".loader").fadeOut("slow");
-					toastr.error('Please import the correct file; it did not match the Excel sheet column!');
-				} else {
-					$(".loader").fadeOut("slow");
-					toastr.error('An error occurred while uploading the file.');
-				}
-			},
-			error: function(xhr, status, error) {
-				toastr.error('An error occurred: ' + error);
-				$(".loader").fadeOut("slow");
-				$('.btn-exverify').html('Upload File');
-			}
-		 });
-	}
-	   
-	function resetFileInput(input) {
-		// Create a new input element and replace the old one
-		var newInput = document.createElement('input');
-		newInput.type = 'file';
-		newInput.className = input.className;
-		newInput.id = input.id;
-		newInput.name = input.name;
-		newInput.accept = input.accept;
-		//newInput.required = input.required;
-
-		// Replace the old input with the new input
-		input.parentNode.replaceChild(newInput, input);
-	} 
+ 
     
 </script>

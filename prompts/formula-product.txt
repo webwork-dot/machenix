@@ -1,0 +1,33 @@
+
+I want you to create an insert functionality of formula products. The add form has following fields:
+
+1). Product - dropdown (A formula product dropdown should come from ... table with the condition of has_formula = 1 and is_deleted = 0)
+2). Batch No - text field
+3). Quantity - Input field (integer)
+4). Warehouse - Dropdown (Should come from here ...)
+5). Type - Dropdown (Official, Unofficial)
+
+After selecting the Product and Warehouse, all the ingredients of that particular product should appear below from this table ... . It should display these following fields:
+
+1). Product Name - Read only
+2). Available Qty - Show 2 input fields inside (read only) and show available quantity of black and white stock in current company warehouse.. Fetch the stock info from this table ... with warehouse and company_id (session) and show the sum of available quantity here.
+3). Quantity Per Pc - Input Read only field (Show the qty required to create 1 piece of formula product ...)
+4). Required Qty - Read only input field (Quantity Per Pc * Quantity)
+5). Add Batch Button - Button (Create Batch Button)
+
+
+On click of 'Add Batch' button it should append 1 batch row for that particular ingredient required to create formula product inside that ingredient.. User can select multiple batches. Display these following field inside that batch row:
+
+1). Batch Number - Select dropdown (Should come from this table ... based on company_id (session), warehouse_id and product_id)
+2). White Quantity - input field (After selecting batch fetch the batch detail from inventory and show the available official(white) qty above this input, the input quantity should not be more than the available official(white) qty and it should be in integer only)
+3). Black Quantity - input field (After selecting batch fetch the batch detail from inventory and show the available black qty above this input, the input quantity should not be more than the available black qty and it should be in integer only)
+4). Official Cost - Read Only Input (Should come from ...)
+5). Total Official Cost -  Read Only Input (White Quantity * Official Cost)
+6). Black Cost - Read Only Input (Should come from ...)
+7). Total Black Cost -  Read Only Input (Black Quantity * Black Cost)
+8). Actual Cost - Read Only Input (Total Official Cost + Total Black Cost)
+
+Below the ingredients product selection I wanna show the required expense needed to create this product which should come from here .... User can add additional expense and change the existing one so it will be an appendable section with the following fields: 
+1). Name
+2). Amount
+

@@ -11,12 +11,6 @@
               <input type="hidden" name="parent_id" id="parent_id" value="<?php echo $id; ?>">
             </div>
           </div>
-          <div class="col-12 col-sm-6 mb-1">
-            <div class="form-group">
-              <label class="form-label" for="expense">Expense</label>
-              <input type="number" step="any" min="0" class="form-control" name="expense" id="expense" value="<?php echo floatval($parent_product['expense']); ?>" placeholder="Enter Expense">
-            </div>
-          </div>
         </div>
 
         <div class="row mt-2">
@@ -64,6 +58,54 @@
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="appendIngredientRow()">
                 <i class="fa fa-plus"></i> Add Ingredient
               </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col-12">
+            <h6 class="mb-1">Additional Expenses / Charges</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm compact-table">
+                <thead class="table-light text-center">
+                  <tr>
+                    <th style="min-width:300px;">Expense Name <span class="text-danger">*</span></th>
+                    <th style="min-width:150px;">Amount <span class="text-danger">*</span></th>
+                    <th style="width:100px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="charge_area">
+                  <!-- Dynamic expense rows pre-populated -->
+                  <?php 
+                  $c_index = 0;
+                  foreach($product_charges as $charge) { 
+                    $c_index++;
+                  ?>
+                    <tr class="charge-row" id="charge_row_<?php echo $c_index; ?>" data-id="<?php echo $c_index; ?>">
+                      <td>
+                        <input type="text" class="form-control input-charge-name" name="charge_name[]" value="<?php echo htmlspecialchars($charge['name']); ?>" placeholder="Enter Expense Name" required>
+                      </td>
+                      <td>
+                        <input type="number" step="any" min="0" class="form-control input-charge-amount" name="charge_amount[]" value="<?php echo floatval($charge['amount']); ?>" onkeyup="calculateTotalExpense()" onchange="calculateTotalExpense()" placeholder="0.00" required>
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn btn-flat-danger btn-sm" onclick="removeChargeRow(<?php echo $c_index; ?>)">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  <?php } ?>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-1 mb-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="appendChargeRow()">
+                <i class="fa fa-plus"></i> Add Expense
+              </button>
+              <div class="d-flex align-items-center">
+                <label class="form-label mb-0" for="expense" style="white-space: nowrap; margin-right: 10px;">Total Expense:</label>
+                <input type="number" step="any" min="0" class="form-control" name="expense" id="expense" value="<?php echo floatval($parent_product['expense']); ?>" placeholder="Total Expense" readonly style="width: 150px;">
+              </div>
             </div>
           </div>
         </div>
@@ -267,5 +309,45 @@ $(document).ready(function() {
 
   // Run once initially to disable pre-populated options
   updateIngredientOptions();
+
+  // Set nextChargeIndex
+  nextChargeIndex = <?php echo $c_index; ?>;
 });
+
+var nextChargeIndex = 0;
+
+function appendChargeRow(name = '', amount = '') {
+  nextChargeIndex++;
+  var newRow = `
+    <tr class="charge-row" id="charge_row_${nextChargeIndex}" data-id="${nextChargeIndex}">
+      <td>
+        <input type="text" class="form-control input-charge-name" name="charge_name[]" value="${name}" placeholder="Enter Expense Name" required>
+      </td>
+      <td>
+        <input type="number" step="any" min="0" class="form-control input-charge-amount" name="charge_amount[]" value="${amount}" onkeyup="calculateTotalExpense()" onchange="calculateTotalExpense()" placeholder="0.00" required>
+      </td>
+      <td class="text-center">
+        <button type="button" class="btn btn-flat-danger btn-sm" onclick="removeChargeRow(${nextChargeIndex})">
+          <i class="fa fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `;
+  $('#charge_area').append(newRow);
+  calculateTotalExpense();
+}
+
+function removeChargeRow(id) {
+  $('#charge_row_' + id).remove();
+  calculateTotalExpense();
+}
+
+function calculateTotalExpense() {
+  var total = 0;
+  $('.input-charge-amount').each(function() {
+    var val = parseFloat($(this).val()) || 0;
+    total += val;
+  });
+  $('#expense').val(total.toFixed(2));
+}
 </script>

@@ -122,6 +122,10 @@ $route[$r_inventory . '/purchase-order'] = 'inventory/purchase_order/local';
 $route[$r_inventory . '/get_purchase_order_local'] = 'inventory/get_purchase_order_local';
 $route[$r_inventory . '/purchase-order/add-local']    = 'inventory/purchase_order_form/add_local';
 
+$route[$r_inventory . '/formula-product-order'] = 'inventory/formula_product_order';
+$route[$r_inventory . '/get_formula_product_orders'] = 'inventory/get_formula_product_orders';
+$route[$r_inventory . '/formula-product-order/add'] = 'inventory/formula_product_order_form/add';
+
 $route[$r_inventory . '/imp-purchase-order']  = 'inventory/purchase_order/import';
 $route[$r_inventory . '/purchase-order/add-import']    = 'inventory/purchase_order_form/add_import';
 $route[$r_inventory . '/purchase-order/edit-import/(:num)'] = 'inventory/purchase_order_form/edit_import/$1';
