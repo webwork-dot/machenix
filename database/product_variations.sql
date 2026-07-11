@@ -1,0 +1,21 @@
+CREATE TABLE `product_variations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `product_id` int(11) NOT NULL,
+  `slug` varchar(150) DEFAULT NULL,
+  `code` varchar(50) DEFAULT NULL,
+  `size` int(11) DEFAULT NULL,
+  `color` int(11) DEFAULT NULL,
+  `name` varchar(500) DEFAULT NULL,
+  `sku` varchar(100) DEFAULT NULL,
+  `hsn` varchar(150) DEFAULT NULL,
+  `product_mrp` double(20,2) NOT NULL DEFAULT 0.00,
+  `selling_price` double(10,2) NOT NULL DEFAULT 0.00,
+  `stock` int(11) DEFAULT 0,
+  `weight` decimal(16,2) DEFAULT NULL,
+  `height` decimal(16,2) DEFAULT NULL,
+  `length` decimal(16,2) DEFAULT NULL,
+  `width` decimal(16,2) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

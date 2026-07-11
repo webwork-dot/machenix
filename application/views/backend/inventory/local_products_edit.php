@@ -128,6 +128,14 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
+              <label>Opening Stock</label>
+              <input type="number" class="form-control" placeholder="Enter Opening Stock" name="opening_stock" min="0"
+                value="<?php echo isset($data['opening_stock']) ? htmlspecialchars($data['opening_stock']) : '0'; ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
               <label>Selling Price <span class="required">*</span></label>
               <input type="number" class="form-control" placeholder="Enter Selling Price" name="costing_price"
                 value="<?php echo $data['costing_price']; ?>" required>

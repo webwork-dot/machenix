@@ -164,7 +164,11 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             },
       
             "ajax":{
+                <?php if ($status != 'complete') { ?>
                 "url": "<?php echo base_url('inventory/get_sales_order'); ?>",
+                <?php } else { ?>
+                "url": "<?php echo base_url('inventory/get_completed_sales_order'); ?>",
+                <?php } ?>
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){

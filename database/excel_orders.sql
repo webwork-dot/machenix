@@ -1,0 +1,22 @@
+CREATE TABLE `excel_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `unique_id` varchar(250) DEFAULT NULL,
+  `is_move` tinyint(1) NOT NULL DEFAULT 0,
+  `is_complete` int(11) NOT NULL DEFAULT 0,
+  `customer_id` int(11) NOT NULL,
+  `warehouse_id` int(11) NOT NULL,
+  `company_id` int(11) DEFAULT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `pincode` varchar(255) NOT NULL,
+  `state` varchar(25) NOT NULL,
+  `size` varchar(255) NOT NULL,
+  `order_date` date NOT NULL,
+  `product_name` varchar(250) NOT NULL,
+  `quantity` varchar(250) NOT NULL,
+  `amount` decimal(16,2) NOT NULL,
+  `batch_no` varchar(250) DEFAULT NULL,
+  `order_no` varchar(250) DEFAULT NULL,
+  `refrence_no` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

@@ -31,3 +31,27 @@ Below the ingredients product selection I wanna show the required expense needed
 1). Name
 2). Amount
 
+Below this I wanna create a grand total section which will show the following fields:
+
+1). Total Official Cost (Sum of Total Official Cost from all batches)
+2). Total Black Cost (Sum of Total Black Cost from all batches) 
+3). Total Actual Cost (Sum of Total Actual Cost from all batches) 
+4). Off Cost Per Qty (Total Official Cost / Total Quantity)
+5). Actual Cost Per Qty (Total Actual Cost / Total Quantity)
+6). Total Expense (Sum of all expenses) 
+7). Final Total (Sum of all actual cost + all expenses) 
+
+- Save the Quantity and product total info in this table ...
+- Save the product batch items with batch info in this table ...
+- Save the expenses in this table ...
+- Deduct product from inventory and save inventory history also.
+- Add stock of the formula product as a new batch and save history.
+
+Some Rules:
+1). The batch white and black quantity cannot exceed more than required quantity and available qty..
+2). Can't select same batch again in ingredient.
+3). Don't allow form to submit if all the required qty condition is not completed.
+4). Don't allow to select negative value in any input field.
+5). On insert don't allow user to select same batch number again. It should be unique.
+
+Last but not the least. Follow the existing coding pattern and keep the code simple as much as possible.

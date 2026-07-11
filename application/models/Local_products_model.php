@@ -266,6 +266,8 @@ class Local_products_model extends CI_Model
                 $data['is_other_sku']   = 0;
                 $data['product_type']   = 'local';
                 $data['added_date']     = date("Y-m-d H:i:s");
+                $opening_stock = $this->input->post('opening_stock');
+                $data['opening_stock']  = (!empty($opening_stock)) ? intval($opening_stock) : 0;
 
                 $this->db->insert('raw_products', $data);
                 $user_id = $this->db->insert_id();
@@ -434,6 +436,8 @@ class Local_products_model extends CI_Model
             $data['supplier_name']  = '';
 
             $data['product_type'] = 'local';
+            $opening_stock = $this->input->post('opening_stock');
+            $data['opening_stock']  = (!empty($opening_stock)) ? intval($opening_stock) : 0;
             $this->db->where('id', $id);
             $this->db->update('raw_products', $data);
 

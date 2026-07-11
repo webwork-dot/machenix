@@ -1,0 +1,23 @@
+CREATE TABLE `po_expense` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `input_method` varchar(50) DEFAULT NULL,
+  `company_id` int(11) NOT NULL,
+  `type` enum('official','unofficial') NOT NULL,
+  `expense_type` int(11) NOT NULL,
+  `vendor_id` int(11) NOT NULL,
+  `supplier_id` varchar(255) DEFAULT NULL,
+  `purchase_no` varchar(255) DEFAULT NULL,
+  `purchase_date` date NULL DEFAULT,
+  `usd` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `batch_no` varchar(100) NOT NULL,
+  `expense_date` date DEFAULT NULL,
+  `narration` text DEFAULT NULL,
+  `gst_type` enum('','igst','cgst_sgst') DEFAULT '',
+  `sub_total` decimal(16,5) NOT NULL DEFAULT 0.00000,
+  `gst_total` decimal(16,5) NOT NULL DEFAULT 0.00000,
+  `grand_total` decimal(16,5) NOT NULL DEFAULT 0.00000,
+  `is_delete` tinyint(1) NOT NULL DEFAULT 0,
+  `added_by_id` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

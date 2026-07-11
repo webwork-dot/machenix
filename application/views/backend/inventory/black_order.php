@@ -78,7 +78,9 @@
             <div class="row">
                <div class="col-md-12 mt-10">
                   <h5 class="mb-0"><b>Total Black Order <span id="total_count"> (0)</span></b>
-                      <button type="button" id="btn_generate_invoice" class="btn btn-primary float-end" style="margin-top: -5px;" disabled>Generate Invoice</button>
+                    <?php if ($_GET['status'] != 'completed') { ?>
+                        <button type="button" id="btn_generate_invoice" class="btn btn-primary float-end" style="margin-top: -5px;" disabled>Generate Invoice</button>
+                    <?php } ?>
 				  </h5>
                </div>
             </div>
@@ -87,17 +89,28 @@
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-					<th style="width: 15px;">#</th>
-					<th>Date</th>
-					<th>Customer Name</th>
-					<th>Order NO</th>
-					<th>Product Name</th>
-					<th>Item Code</th>
-					<th>Batch No</th>
-					<th>Warehouse</th>
-					<th>Black Qty</th>
+                    <?php if ($_GET['status'] != 'completed') { ?>
+                      <th style="width: 15px;">#</th>
+                      <th>Date</th>
+                      <th>Customer Name</th>
+                      <th>Order NO</th>
+                      <th>Product Name</th>
+                      <th>Item Code</th>
+                      <th>Batch No</th>
+                      <th>Warehouse</th>
+                      <th>Black Qty</th>
+                    <?php } else { ?>
+                      <th style="width: 15px;">#</th>
+                      <th>Date</th>
+                      <th>Customer Name</th>
+                      <th>Invoice No</th>
+                      <th>Warehouse</th>
+                      <th>Product Count</th>
+                      <th>Qty Count</th>
+                      <th>Grand Total</th>
+                    <?php } ?>
                     <?php if ($staff_access !== 7) { ?>
-                    <th>Actions</th>
+                      <th>Actions</th>
                     <?php } ?>
                   </tr>
                </thead>
@@ -167,11 +180,17 @@
             },	
             "drawCallback": function (settings, json) {
                 $('[data-toggle="tooltip"]').tooltip('update');
+                <?php if ($_GET['status'] != 'completed') { ?>
                 applyCheckboxVisibility();
+                <?php } ?>
             },
       
             "ajax":{
+                <?php if ($_GET['status'] != 'completed') { ?>
                 "url": "<?php echo base_url('inventory/get_black_order'); ?>",
+                <?php } else { ?>
+                "url": "<?php echo base_url('inventory/get_completed_black_order'); ?>",
+                <?php } ?>
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
@@ -188,15 +207,26 @@
             },   
                      
             "columns": [
-                { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "customer_name" },
-                { "data": "order_no" },
-                { "data": "product_name" },
-                { "data": "item_code" },
-                { "data": "batch_no" },
-                { "data": "warehouse_name" },
-                { "data": "black_qty" },
+                <?php if ($_GET['status'] != 'completed') { ?>
+                    { "data": "sr_no" },
+                    { "data": "date" },
+                    { "data": "customer_name" },
+                    { "data": "order_no" },
+                    { "data": "product_name" },
+                    { "data": "item_code" },
+                    { "data": "batch_no" },
+                    { "data": "warehouse_name" },
+                    { "data": "black_qty" },
+                <?php } else { ?>
+                    { "data": "sr_no" },
+                    { "data": "date" },
+                    { "data": "customer_name" },
+                    { "data": "invoice_no" },
+                    { "data": "warehouse_name" },
+                    { "data": "product_count" },
+                    { "data": "qty_count" },
+                    { "data": "grand_total" },
+                <?php } ?>
                 <?php if ($staff_access !== 7) { ?>
                    { "data": "action" },
                 <?php } ?>
@@ -207,7 +237,11 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8]
+                        <?php if ($_GET['status'] != 'completed') { ?>
+                        "columns": [0,1,2,3,4,5,6,7,8]
+                        <?php } else { ?>
+                        "columns": [0,1,2,3,4,5,6,7]
+                        <?php } ?>
                     }
                 },
                 {
@@ -215,7 +249,11 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8]
+                        <?php if ($_GET['status'] != 'completed') { ?>
+                        "columns": [0,1,2,3,4,5,6,7,8]
+                        <?php } else { ?>
+                        "columns": [0,1,2,3,4,5,6,7]
+                        <?php } ?>
                     }
                 }
             ], 

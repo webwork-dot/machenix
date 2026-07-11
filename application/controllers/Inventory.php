@@ -1266,8 +1266,6 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
-        } elseif ($param1 == "delete") {
-            $this->inventory_model->delete_formula_product_order($param2);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'formula_product_order';
@@ -1286,6 +1284,99 @@ class Inventory extends CI_Controller
             $this->inventory_model->get_formula_product_orders();
         }
     }
+
+    public function formula_product_order_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        if ($param1 == 'add') {
+            $page_data['products'] = $this->db->where(array('product_type' => 'local', 'has_formula' => 1, 'is_deleted' => 0))
+                                             ->order_by('name', 'ASC')
+                                             ->get('raw_products')
+                                             ->result_array();
+            $page_data['warehouse_list'] = $this->common_model->getSessionWarehouse();
+
+            $page_data['navigation']  = 'formula_product_order';
+            $page_data['page_name']  = 'formula_product_in_add';
+            $page_data['page_title'] = 'Add Formula Product In';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_formula_ingredients_details()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(array('status' => 'error', 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $parent_id = (int)$this->input->post('product_id');
+        $warehouse_id = (int)$this->input->post('warehouse_id');
+        $company_id = (int)$this->session->userdata('company_id');
+
+        if (empty($parent_id) || empty($warehouse_id)) {
+            echo json_encode(array('status' => 'error', 'message' => 'Missing product or warehouse'));
+            return;
+        }
+
+        // Fetch ingredients for formula
+        $formula_items = $this->db->query("SELECT pf.product_id, pf.quantity as req_qty, rp.name, rp.item_code 
+            FROM product_formula pf
+            JOIN raw_products rp ON pf.product_id = rp.id
+            WHERE pf.parent_id = ? 
+            ORDER BY pf.id ASC", array($parent_id))->result_array();
+
+        $ingredients = array();
+        foreach ($formula_items as $item) {
+            $ing_id = (int)$item['product_id'];
+            $req_qty_pc = (int)$item['req_qty'];
+
+            // Get total available qty from inventory (white and black stocks)
+            $inv_qty_row = $this->db->query("SELECT SUM(official_qty) as av_white, SUM(black_qty) as av_black 
+                FROM inventory 
+                WHERE product_id = ? AND warehouse_id = ? AND company_id = ?", 
+                array($ing_id, $warehouse_id, $company_id))->row_array();
+
+            $av_white = $inv_qty_row ? (int)$inv_qty_row['av_white'] : 0;
+            $av_black = $inv_qty_row ? (int)$inv_qty_row['av_black'] : 0;
+
+            // Fetch available batches for this ingredient
+            $batches = $this->db->query("SELECT id, batch_no, official_qty as av_white, black_qty as av_black, official_rate_rs as official_rate, actual_inr as black_rate
+                FROM inventory
+                WHERE product_id = ? AND warehouse_id = ? AND company_id = ? AND (official_qty > 0 OR black_qty > 0)
+                ORDER BY id ASC", array($ing_id, $warehouse_id, $company_id))->result_array();
+
+            $ingredients[] = array(
+                'product_id' => $ing_id,
+                'name' => $item['name'],
+                'item_code' => $item['item_code'],
+                'qty_per_pc' => $req_qty_pc,
+                'available_white' => $av_white,
+                'available_black' => $av_black,
+                'batches' => $batches
+            );
+        }
+
+        // Fetch default expenses for the formula product
+        $expenses = $this->db->query("SELECT name, amount FROM product_charges WHERE product_id = ? ORDER BY id ASC", array($parent_id))->result_array();
+
+        echo json_encode(array(
+            'status' => 200,
+            'ingredients' => $ingredients,
+            'expenses' => $expenses
+        ));
+    }
+
+    public function formula_product_order_add_post()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->add_formula_product_order();
+    }
+
 
     // Purchase Order Ends
 
@@ -3586,6 +3677,16 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_completed_sales_order()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_completed_sales_order();
+        }
+    }
+
     public function get_black_order()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -3593,6 +3694,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_black_order();
+        }
+    }
+
+    public function get_completed_black_order()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_completed_black_order();
         }
     }
 

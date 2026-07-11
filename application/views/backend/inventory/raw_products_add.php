@@ -248,6 +248,13 @@
             </div>
           </div>
 
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Opening Stock</label>
+              <input type="number" class="form-control" placeholder="Enter Opening Stock" name="opening_stock" min="0">
+            </div>
+          </div>
+
           <div class="col-12 mb-2">
             <div class="variation-row-container">
               <div class="variation-header">
