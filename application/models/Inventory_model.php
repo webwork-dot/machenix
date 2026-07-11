@@ -10807,8 +10807,8 @@ class Inventory_model extends CI_Model
 				$order_ids = explode(',', $item['unique_id']);
 				$first_order_id = !empty($order_ids[0]) ? $order_ids[0] : 0;
 
-				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $first_order_id . "','Sales Order View')";
-				$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $first_order_id;
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
+				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
 				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $first_order_id;
 
 				$action = '<div class="btn-group">
@@ -10816,8 +10816,8 @@ class Inventory_model extends CI_Model
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View White Invoice</a>
-						<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
+						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
+						<!-- <a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank" style="display: none;"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a> -->
 					</div>
 				</div>';
 
@@ -10859,6 +10859,47 @@ class Inventory_model extends CI_Model
 			"total_amount" => $total_amount_formatted
 		);
 		echo json_encode($json_data);
+	}
+
+	public function get_invoice_order_details_by_id($id)
+	{
+		$invoice = $this->db->where('id', $id)->get('invoice_order')->row_array();
+		if (empty($invoice)) {
+			return [];
+		}
+
+		$products_query = $this->db->query("
+			SELECT 
+				iop.product_name, p.hsn_code, iop.qty as qtys,
+				iop.bill_total as amount, iop.gst_amount,
+				iop.gst, iop.final_total as total 
+			FROM invoice_order_products as iop
+			INNER JOIN raw_products as p ON p.id = iop.product_id
+			WHERE iop.parent_id = $id
+		");
+
+		$invoice['products'] = ($products_query->num_rows() > 0) ? $products_query->result_array() : [];
+
+		$company = $this->common_model->getRowById('company', '*', ['id' => $invoice['company_id']]);
+		$invoice['company'] = ($company) ? $company : [];
+		
+		$customer = $this->common_model->getRowById('customer', '*', ['id' => $invoice['customer_id']]);
+		$invoice['customer'] = [
+			'company_name' => $invoice['customer_name'],
+			'address' => $invoice['billing_address'] ? $invoice['billing_address'] : ($customer['address'] ?? ''),
+			'city_name' => $invoice['billing_city_name'] ? $invoice['billing_city_name'] : ($customer['city_name'] ?? ''),
+			'pincode' => $invoice['billing_pincode'] ? $invoice['billing_pincode'] : ($customer['pincode'] ?? ''),
+			'owner_mobile' => $customer['owner_mobile'] ?? '',
+			'gst_no' => $invoice['billing_gst_no'] ? $invoice['billing_gst_no'] : ($customer['gst_no'] ?? ''),
+			'state_name' => $invoice['billing_state_name'] ? $invoice['billing_state_name'] : ($customer['state_name'] ?? ''),
+			'state_id' => $invoice['billing_state_id'] ? $invoice['billing_state_id'] : ($customer['state_id'] ?? '')
+		];
+
+		// Map fields for sales_invoice.php compatibility
+		$invoice['order_no'] = $invoice['invoice_no'];
+		$invoice['date'] = $invoice['invoice_date'] ? $invoice['invoice_date'] : $invoice['date'];
+
+		return $invoice;
 	}
 
 	public function add_conversion_order_post()
@@ -11354,18 +11395,19 @@ class Inventory_model extends CI_Model
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
-		$keyword_filter = " AND type='conversion'";
+		$keyword_filter = "";
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (company_name like '%" . $keyword . "%' 
-            OR refrence_no like '%" . $keyword . "%'
-            OR order_no like '%" . $keyword . "%')";
+			$keyword_filter .= " AND (io.customer_name like '%" . $keyword . "%' 
+            OR io.refrence_no like '%" . $keyword . "%'
+            OR io.order_no like '%" . $keyword . "%'
+            OR io.invoice_no like '%" . $keyword . "%')";
 		endif;
 		
 		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
 			$keyword        = $_REQUEST['customer_id'];
-			$keyword_filter .= " AND (customer_id = '" . $keyword . "')";
+			$keyword_filter .= " AND (io.customer_id = '" . $keyword . "')";
 		endif;
 
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
@@ -11373,54 +11415,71 @@ class Inventory_model extends CI_Model
 			$from =  date('Y-m-d', strtotime($added_date[0]));
 			$to =  date('Y-m-d', strtotime($added_date[1]));
 			if ($from == $to) {
-				$keyword_filter .= " AND (DATE(date) = '$from')";
+				$keyword_filter .= " AND (DATE(io.date) = '$from')";
 			} else {
-				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+				$keyword_filter .= " AND (DATE(io.date) BETWEEN '$from' AND '$to')";
 			}
 		}
 
 		$company_id = $this->session->userdata('company_id');
 		if ($company_id) {
-			$keyword_filter .= " AND (company_id='" . $company_id . "')";
+			$keyword_filter .= " AND (io.company_id='" . $company_id . "')";
 			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+				$keyword_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
 			}
 		}
 
-		$total_count = $this->db->query("SELECT id FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC")->num_rows();
-		$query = $this->db->query("SELECT id,order_type,order_no,refrence_no,is_generated, is_approved,date,customer_id,customer_name,warehouse_name,grand_total,company_name,remark FROM sales_order WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
+		$total_count = $this->db->query("
+			SELECT io.id 
+			FROM invoice_order AS io
+			WHERE io.is_deleted = '0' AND io.type = 'conversion' $keyword_filter
+		")->num_rows();
+
+		$query = $this->db->query("
+			SELECT io.*,
+				(SELECT COUNT(DISTINCT product_id) FROM invoice_order_products WHERE parent_id = io.id) AS product_count,
+				(SELECT SUM(qty) FROM invoice_order_products WHERE parent_id = io.id) AS qty_count
+			FROM invoice_order AS io
+			WHERE io.is_deleted = '0' AND io.type = 'conversion' $keyword_filter 
+			ORDER BY io.date DESC 
+			LIMIT $start, $length
+		");
 
 		if (!empty($query)) {
+			$i = 0;
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
-				$customer_id = $item['customer_id'];
-				$customer_name = $item['customer_name'];
+				$order_ids = explode(',', $item['unique_id']);
+				$first_order_id = !empty($order_ids[0]) ? $order_ids[0] : 0;
 
-				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
-				$action = '<a href="javascript:void(0)" onclick="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 btn-outline-dark" style="height: 30px !important; padding: 4px 8px;"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
+				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
 
-				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
-				$qty = 0;
-				$query2 = $this->db->query("SELECT SUM(qty) as total_qty FROM sales_order_product WHERE (order_id='$id') GROUP BY order_id");
-				if ($query2->num_rows() > 0) {
-					$qty = (float)$query2->row_array()['total_qty'];
-				}
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
+					</div>
+				</div>';
 
 				$data[] = array(
-					"sr_no"       => ++$start,
-					"id"          => $item['id'],
-					"order_no"        => $item['order_no'],
-					"refrence_no"        => $item['refrence_no'],
-					"customer_name"        => $customer_name,
-					"warehouse_name"        => ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
-					"company_name"        => ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
-					"grand_total"        => $item['grand_total'],
-					"date"        => date('d M, Y', strtotime($item['date'])),
-					"total_pro"      => $total_pro,
-					"qty"      => $qty,
-					"remark"      => $item['remark'],
-					"action"      => $action,
+					"sr_no"          => $start + $i + 1,
+					"id"             => $id,
+					"order_no"       => $item['order_no'],
+					"invoice_no"     => $item['invoice_no'] ? $item['invoice_no'] : '-',
+					"invoice_date"   => ($item['invoice_date'] != '0000-00-00' && $item['invoice_date'] != null) ? date('d M, Y', strtotime($item['invoice_date'])) : '-',
+					"refrence_no"    => $item['refrence_no'],
+					"customer_name"  => $item['customer_name'],
+					"warehouse_name" => $item['warehouse_name'] ? $item['warehouse_name'] : '-',
+					"total_pro"      => $item['product_count'],
+					"qty"            => (int)$item['qty_count'],
+					"grand_total"    => $item['grand_total'],
+					"date"           => date('d M, Y', strtotime($item['date'])),
+					"action"         => $action,
 				);
+				$i++;
 			}
 		}
 
@@ -11640,15 +11699,15 @@ class Inventory_model extends CI_Model
 				$order_ids = explode(',', $item['unique_id']);
 				$first_order_id = !empty($order_ids[0]) ? $order_ids[0] : 0;
 
-				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $first_order_id . "','Sales Order View')";
-				$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $first_order_id;
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
+				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
 
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
+						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
 					</div>
 				</div>';
 

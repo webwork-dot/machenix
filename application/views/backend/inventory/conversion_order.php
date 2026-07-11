@@ -48,7 +48,7 @@
 					<th>#</th>
 					<th>Date</th>
 					<th>Customer Name</th>
-					<th>Order NO</th>
+					<th>Invoice No</th>
 					<th>Warehouse</th>
 					<th>Total Qty</th>
 					<th>Total Products</th>
@@ -102,7 +102,7 @@
                 { "data": "sr_no" },
                 { "data": "date" },
                 { "data": "customer_name" },
-                { "data": "order_no" },
+                { "data": "invoice_no" },
                 { "data": "warehouse_name" },
                 { "data": "qty" },
                 { "data": "total_pro" },

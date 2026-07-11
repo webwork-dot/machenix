@@ -3687,6 +3687,32 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function invoice_order_print($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $receipt_no = sprintf('%05d', $id);
+        $this->load->library('pdf');
+        $this->load->library('zip');
+        
+        $page_data['data'] = $this->inventory_model->get_invoice_order_details_by_id($id);
+        if (empty($page_data['data'])) {
+            show_404();
+        }
+
+        $html_content = $this->load->view('invoice/sales/sales_invoice', $page_data, TRUE);
+
+        $this->pdf->set_paper("A4", "portrait");
+        $this->pdf->set_option('isHtml5ParserEnabled', TRUE);
+        $this->pdf->load_html($html_content);
+        $this->pdf->render();
+        
+        $pdfname = 'invoice_' . $receipt_no . '.pdf';
+        $this->pdf->stream($pdfname, array("Attachment" => 0));
+    }
+
     public function get_black_order()
     {
         if ($this->session->userdata('inventory_login') != true) {
