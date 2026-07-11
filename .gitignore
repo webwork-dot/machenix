@@ -1,1 +1,6 @@
-
+application/logs/
+application/writable/
+training
+database
+uploads
+system/system.zip
