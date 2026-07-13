@@ -22,7 +22,7 @@
          </div>
         <div class="card-datatable d-report mb-2">
 		
-          <table class="table leads-table" id="report-datatable">
+           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
@@ -32,8 +32,15 @@
 					<th>Warehouse Name</th>
 					<th>Company Name</th>
 					<th>Reason</th>
+					<th>Batch</th>
 					<th>Product</th>
-					<th>Quantity</th>
+					<th>White Qty</th>
+					<th>Black Qty</th>
+					<th>White Amt</th>
+					<th>Total White Amt</th>
+					<th>Black Amt</th>
+					<th>Total Black Amt</th>
+					<th>Final Amt</th>
 					<th>Added Date</th>
                   </tr>
                </thead>
@@ -41,54 +48,61 @@
          </div>
       </div>
    </div>
-</div>
-
-<script type="text/javascript">       
-    $(document).ready(function($) {
-    	var dataTable = $('#report-datatable').DataTable({ 
-    	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-            "ordering": false,
-            "sDom": 'rt<"dtPagination"lp><"clear">',
-            "pagingType": "simple_numbers",
-            "processing": true,
-            'scrollX': true,
-            "serverSide": true, 
-            "lengthChange": true,  
-            "language" : {
-                sLengthMenu: "_MENU_",
-                'processing': $('.loader').show()
-            },	
-            "drawCallback": function (settings, json) {
-                $('[data-toggle="tooltip"]').tooltip('update');
-            },
-      
-            "ajax":{
-                "url": "<?php echo base_url('inventory/get_goods_return_history/'.$id); ?>",
-                "dataType": "json",
-                "type": "POST",
-                "data": function(data){
-                       var date_range="";			
-                },
-                "beforeSend": function() {
-                    $('.loader').show();
-                },
-                "complete": function() {
-                    $('.loader').hide();
-                }
-            },   
-                     
-            "columns": [
-                { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "order_id" },
-                { "data": "order_no" },
-                { "data": "warehouse_name" },
-                { "data": "company_name" },
-                { "data": "reason" },
-                { "data": "product_name" },
-                { "data": "product_qty" },
-                { "data": "added_date" },
-            ], 
+ </div>
+ 
+ <script type="text/javascript">       
+     $(document).ready(function($) {
+     	var dataTable = $('#report-datatable').DataTable({ 
+     	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+             "ordering": false,
+             "sDom": 'rt<"dtPagination"lp><"clear">',
+             "pagingType": "simple_numbers",
+             "processing": true,
+             'scrollX': true,
+             "serverSide": true, 
+             "lengthChange": true,  
+             "language" : {
+                 sLengthMenu: "_MENU_",
+                 'processing': $('.loader').show()
+             },	
+             "drawCallback": function (settings, json) {
+                 $('[data-toggle="tooltip"]').tooltip('update');
+             },
+       
+             "ajax":{
+                 "url": "<?php echo base_url('inventory/get_goods_return_history/'.$id); ?>",
+                 "dataType": "json",
+                 "type": "POST",
+                 "data": function(data){
+                        var date_range="";			
+                 },
+                 "beforeSend": function() {
+                     $('.loader').show();
+                 },
+                 "complete": function() {
+                     $('.loader').hide();
+                 }
+             },   
+                      
+             "columns": [
+                 { "data": "sr_no" },
+                 { "data": "date" },
+                 { "data": "order_id" },
+                 { "data": "order_no" },
+                 { "data": "warehouse_name" },
+                 { "data": "company_name" },
+                 { "data": "reason" },
+                 { "data": "batch_no" },
+                 { "data": "product_name" },
+                 { "data": "white_qty" },
+                 { "data": "black_qty" },
+                 { "data": "white_amt" },
+                 { "data": "white_total" },
+                 { "data": "black_amt" },
+                 { "data": "black_total" },
+                 { "data": "final_total" },
+                 { "data": "added_date" },
+             ], 
            
             "buttons": [
                 {

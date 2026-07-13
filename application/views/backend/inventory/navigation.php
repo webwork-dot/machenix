@@ -185,7 +185,7 @@
 		<?php } ?>
 	   
         <?php if($user_id == 4 || in_array('27',$access_array)) {?>
-		<li class="nav-item hidden <?php if($page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view') echo 'active'; ?>">
+		<li class="nav-item <?php if($page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view') echo 'active'; ?>">
            <a class="d-flex align-items-center " href="<?php echo site_url('inventory/goods-return'); ?>">
                <i data-feather="align-left"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Return</span>
@@ -238,7 +238,7 @@
         <?php } ?>
         
         <?php if($user_id == 4 || in_array('30',$access_array) || in_array('31',$access_array) || in_array('32',$access_array)) { ?>
-		<li class="nav-item hidden">   
+		<li class="nav-item <?php if($page_name == 'purchase_reports') echo 'active'; ?>">   
 		   <a class="d-flex align-items-center" href="#">
 				<i class="feather icon-layers"></i>
 			   <span class="menu-title text-truncate" data-i18n="Orders">Reports</span>
@@ -246,7 +246,7 @@
 		   <ul class="menu-content">
 		       
                <?php if($user_id == 4 || in_array('30',$access_array)) {?>
-				<li class="nav-item ">
+				<li class="nav-item <?php if($page_name == 'purchase_reports') echo 'active'; ?>">
 				   <a class="d-flex align-items-center " href="<?php echo site_url('inventory/purchase-reports'); ?>">
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Purchase</span>
@@ -262,7 +262,7 @@
 			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('31',$access_array)) {?>
-				<li class="nav-item ">
+				<li class="nav-item hidden">
 				   <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-reports'); ?>">
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Sales</span>
@@ -270,7 +270,7 @@
 			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('32',$access_array)) {?>
-				<li class="nav-item ">
+				<li class="nav-item hidden">
 				   <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-return-reports'); ?>">
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Sales Return</span>
@@ -278,7 +278,7 @@
 			    </li>
                <?php } ?>
                <?php if($user_id == 4 || in_array('37',$access_array)) {?>
-				<li class="nav-item ">
+				<li class="nav-item hidden">
 				   <a class="d-flex align-items-center " href="<?php echo site_url('inventory/stock-reports'); ?>">
 					   <i class="feather icon-circle"></i>
 					   <span class="menu-title text-truncate">Stock Report</span>

@@ -779,7 +779,7 @@ class Inventory extends CI_Controller
         }
 
         $company_id = $this->session->userdata('company_id');
-        $customer_list = $this->common_model->getResultById('customer', 'id, owner_name', ['is_deleted' => '0', 'company_id' => $company_id, 'type' => 'customer']);
+        $customer_list = $this->common_model->getResultById('customer', 'id, owner_name, company_name', ['is_deleted' => '0', 'company_id' => $company_id, 'type' => 'customer']);
         $page_data['customer_list'] = ($customer_list != '') ? $customer_list : [];
 
         $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
@@ -2060,7 +2060,7 @@ class Inventory extends CI_Controller
             $off_taxable_value = (float)($r['taxable_value'] ?? 0);
             $off_gst_amt = (float)($r['gst_amt'] ?? 0);
             $off_gst_percent = ($off_taxable_value > 0) ? (($off_gst_amt * 100) / $off_taxable_value) : 0;
-            $total_duty_gst = $off_duty_amt + $off_gst_amt;
+            $total_duty_gst = $off_duty_amt + $off_gst_amt + $r['duty_percent'];
 
             $line = array(
                 'id' => (int)($r['id'] ?? 0),
@@ -3142,6 +3142,34 @@ class Inventory extends CI_Controller
             echo '<option value="' . $item['id'] . '">' . $item['name'] . '</option>';
         }
     }
+
+    public function get_batches_by_warehouse()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $warehouse_id = $this->input->post('warehouse_id', true);
+        $company_id = $this->session->userdata('company_id');
+        $results = $this->inventory_model->get_batches_by_warehouse($warehouse_id, $company_id);
+        header('Content-Type: application/json');
+        echo json_encode($results);
+    }
+
+    public function get_products_by_batch()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $warehouse_id = $this->input->post('warehouse_id', true);
+        $batch_no = $this->input->post('batch_no', true);
+        $company_id = $this->session->userdata('company_id');
+        $results = $this->inventory_model->get_products_by_batch($warehouse_id, $company_id, $batch_no);
+        header('Content-Type: application/json');
+        echo json_encode($results);
+    }
+
 
     public function get_product_by_company()
     {
@@ -4311,6 +4339,8 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_purchase_report($param2);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['page_name']  = 'purchase_reports';

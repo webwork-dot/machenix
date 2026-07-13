@@ -12,7 +12,7 @@
               <select class="form-control select2" name="customer_id" id="customer_id" required>
                 <option value="">Select</option>
                 <?php foreach ($customer_list as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>"><?php echo $value['owner_name'];?></option>
+                  <option value="<?php echo $value['id'];?>"><?php echo $value['company_name'];?></option>
                 <?php endforeach; ?>
               </select>
             </div>

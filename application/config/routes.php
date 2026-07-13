@@ -158,6 +158,7 @@ $route[$r_inventory . '/purchase-order/edit/(:num)'] = 'inventory/purchase_order
 $route[$r_inventory . '/purchase-order-entry/view/(:num)'] = 'inventory/purchase_order_form/view_entry/$1';
 
 $route[$r_inventory . '/purchase-reports'] = 'inventory/purchase_reports';
+$route[$r_inventory . '/purchase-reports/delete/(:any)'] = 'inventory/purchase_reports/delete/$1';
 $route[$r_inventory . '/sales-reports'] = 'inventory/sales_reports';
 $route[$r_inventory . '/sales-return-reports'] = 'inventory/sales_return_reports';
 $route[$r_inventory . '/stock-reports'] = 'inventory/stock_reports';

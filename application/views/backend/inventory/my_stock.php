@@ -84,27 +84,27 @@
          </div>
          
         <div class="card-datatable d-report mb-2">
-          <button onclick="showAjaxModal('<?php echo site_url('modal/popup_inventory/modal_add_product_stock/' . $warehouse_id); ?>', 'Add Product Stock')" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" style="margin-right: 10px;">
+          <!-- <button onclick="showAjaxModal('<?php echo site_url('modal/popup_inventory/modal_add_product_stock/' . $warehouse_id); ?>', 'Add Product Stock')" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" style="margin-right: 10px;">
               <span><i class="feather icon-plus"></i> Add Product</span>
-          </button>
+          </button> -->
           <!--<a href="<?php echo site_url('inventory/stock-transfer'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-repeat"></i> <?= get_phrase('stock_transfer');?></span></a>         -->
-          <table class="table leads-table" id="report-datatable">
-               <thead>
-                  <tr>
-					<th>#</th>
-					<th>Category</th>
-					<th>Product Name</th>
-					<th>Quantity</th>
-					<th>Black Qty</th>
-					<th>White Qty</th>
-					<th>PO Qty</th>
-					<th>Priority Qty</th>
-					<th>Loading Qty</th>
-					<th>Cost</th>
-					<th>Cost with Expense</th>
-					<th>Actions</th>
-                  </tr>
-               </thead>
+            <table class="table leads-table" id="report-datatable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Category</th>
+                        <th>Product Name</th>
+                        <th>Quantity</th>
+                        <th>Black Qty</th>
+                        <th>White Qty</th>
+                        <th>PO Qty</th>
+                        <th>Priority Qty</th>
+                        <th>Loading Qty</th>
+                        <th>Cost</th>
+                        <th>Cost with Expense</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
             </table>
          </div>
       </div>

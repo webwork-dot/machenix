@@ -440,7 +440,7 @@ function formatNumber($value)
             <div class="form-group">
               <label>Official USD Rate</label>
               <input type="number" class="form-control" placeholder="Enter USD Rate"
-                value="<?php echo $data['usd_rate']; ?>" name="usd_rate">
+                value="<?php echo number_format($data['usd_rate'], 2); ?>" name="usd_rate">
             </div>
           </div>
 
@@ -448,7 +448,7 @@ function formatNumber($value)
             <div class="form-group">
               <label>Actual USD Rate</label>
               <input type="number" class="form-control" placeholder="Enter USD Rate"
-                value="<?php echo $data['actual_usd_rate']; ?>" name="actual_usd_rate">
+                value="<?php echo number_format($data['actual_usd_rate'], 2); ?>" name="actual_usd_rate">
             </div>
           </div>
 
@@ -456,7 +456,7 @@ function formatNumber($value)
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
               <label>Actual RMB</label>
-              <input type="number" class="form-control" placeholder="Enter Rate" value="<?php echo $data['rate']; ?>"
+              <input type="number" class="form-control" placeholder="Enter Rate" value="<?php echo number_format($data['rate'], 2); ?>"
                 name="rate">
             </div>
           </div>
@@ -465,7 +465,7 @@ function formatNumber($value)
             <div class="form-group">
               <label>Min Billing Price <span class="required">*</span></label>
               <input type="number" class="form-control" placeholder="Enter Min Billing Price" name="product_mrp"
-                value="<?php echo $data['product_mrp']; ?>" required>
+                value="<?php echo number_format($data['product_mrp'], 2); ?>" required>
             </div>
           </div>
 
@@ -473,7 +473,7 @@ function formatNumber($value)
             <div class="form-group">
               <label>Min Selling Price <span class="required">*</span></label>
               <input type="number" class="form-control" placeholder="Enter Min Selling Price" name="costing_price"
-                value="<?php echo $data['costing_price']; ?>" required>
+                value="<?php echo number_format($data['costing_price'], 2); ?>" required>
             </div>
           </div>
 

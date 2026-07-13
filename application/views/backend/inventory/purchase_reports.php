@@ -51,7 +51,7 @@
 </style>
 
 
-<?php include('filter/date_range.php'); ?>
+<?php // include('filter/date_range.php'); ?>
 <div class="row" id="table-bordered">
   <div class="col-12">
     <div class="card">
@@ -69,14 +69,14 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Date</th>
-              <th>Supplier</th>
-              <th>SKU Code</th>
-              <th>Cost Price</th>
-              <th>Quantity </th>
+              <th>Type</th>
+              <th>Date / PO No.</th>
+              <th>Vendor / Supplier Name</th>
+              <th>Total Product</th>
+              <th>Total Quantity</th>
               <th>Amount</th>
-              <th>GST </th>
-              <th>Total Amount </th>
+              <th>Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
         </table>
@@ -98,9 +98,6 @@
         "processing": true,
         'scrollX': true,
         "serverSide": true,
-        "pageLength": isDateFiltered ? -1 : 100, // Show all if date filtered
-        "paging": !isDateFiltered, // Disable paging if date filtered
-        "lengthChange": !isDateFiltered, // Disable length change if date filtered
         "language": {
             sLengthMenu: "_MENU_",
             'processing': $('.loader').show()
@@ -126,42 +123,39 @@
         },
 
         "columns": [
-            {"data": "sr_no"},
-            {"data": "date"},
-            {"data": "supplier_name"},
-            {"data": "sku"},
-            {"data": "cp"},
-            {"data": "quantity"},
-            {"data": "amount"},
-            {"data": "gst"},
-            {"data": "total_amount"},
+            { "data": "sr_no" },
+            { "data": "type" },
+            { "data": "date" },
+            { "data": "suppliers" },
+            { "data": "total_products" },
+            { "data": "total_quantity" },
+            { "data": "total_amount" },
+            { "data": "po_date" },
+            { "data": "action" },
         ],
 
         "buttons": [
             {
                 "extend": 'excel',
                 "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
+                "exportOptions": {
+                   "columns": [0,1,2,3,4,5]
+                }
             },
             {
                 "extend": 'pdfHtml5',
                 "orientation": 'landscape',
                 "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
+                "exportOptions": {
+                   "columns": [0,1,2,3,4,5]
+                }
             }
         ],
 
         "infoCallback": function(settings, start, end, max, total, pre) {
             $(".loader").fadeOut("slow");
             $('#total_count').html('(' + total + ')');
-            if (isDateFiltered) {
-                return 'Showing all ' + total + ' entries';
-            }
             return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
-        },
-        
-        createdRow: function(row, data, index) {
-            if (data['error'] == '1') {
-                $(row).addClass('table-error');
-            }
         },
 
         'columnDefs': [{
@@ -181,15 +175,12 @@
   $('.datepicker_report').daterangepicker({
     autoUpdateInput: false,
     autoApply: false,
-    //autoclose: true, 
     locale: {
       format: 'DD-MM-YYYY',
       cancelLabel: 'Clear'
     },
     maxDate: moment(),
-    //maxDate: moment().add(0, 'days'), // 30 days from the current day
   })
-  //Date range picker with time picker
 
   $('.datepicker_report').on('apply.daterangepicker', function(ev, picker) {
     $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));

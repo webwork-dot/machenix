@@ -264,52 +264,13 @@
 
           <div class="col-6 mb-1">
             <div class="row">
-              <h6 class="mb-1">Shipping Address</h6>
-              <div class="col-4 mb-1">
-                <label class="form-label" for="shipping_state">Select State</label>
-                <select class="form-select select2 shipping_state_id" name="shipping_state_id" id="shipping_state_id" onchange="get_shipping_city(this.value);">
-                  <option value="">Select State</option>
-                  <?php foreach($states as $state){?>
-                  <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
-                  <?php }?>
-                </select>
-              </div>
-              <div class="col-4 mb-1">
-                <label class="form-label" for="shipping_city">Select City</label>
-                <select class="form-select select2 shipping_city_id" name="shipping_city_id" id="shipping_city_id">
-                  <option value="">Select City</option>
-                </select>
-              </div>
-              <div class="col-4 mb-1">
-                <div class="form-group">
-                  <label>Pincode</label>
-                  <input type="text" class="form-control" placeholder="Pincode" name="shipping_pincode" id="shipping_pincode">
-                </div>
-              </div>
-              <div class="col-6 mb-1">
-                <div class="form-group">
-                  <label>GST Name</label>
-                  <input type="text" class="form-control" placeholder="GST Name" name="shipping_gst" id="shipping_gst">
-                </div>
-              </div>
-              <div class="col-6 mb-1">
-                <div class="form-group">
-                  <label>GST No</label>
-                  <input type="text" class="form-control" placeholder="GST No" name="shipping_gst_no" id="shipping_gst_no">
-                </div>
-              </div>
+              <h6 class="mb-1">Billing Address</h6>
               <div class="col-12 mb-1">
                 <div class="form-group">
                   <label>Address</label>
-                  <textarea class="form-control" placeholder="Shipping Address" rows="2" name="shipping_address" id="shipping_address"></textarea>
+                  <textarea class="form-control" placeholder="Billing Address" rows="2" name="billing_address" id="billing_address"></textarea>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="col-6 mb-1">
-            <div class="row">
-              <h6 class="mb-1">Billing Address</h6>
               <div class="col-4 mb-1">
                 <label class="form-label" for="billing_state">Select State</label>
                 <select class="form-select select2 billing_state_id" name="billing_state_id" id="billing_state_id" onchange="get_billing_city(this.value);">
@@ -343,16 +304,57 @@
                   <input type="text" class="form-control" placeholder="GST No" name="billing_gst_no" id="billing_gst_no">
                 </div>
               </div>
-              <div class="col-12 mb-1">
-                <div class="form-group">
-                  <label>Address</label>
-                  <textarea class="form-control" placeholder="Billing Address" rows="2" name="billing_address" id="billing_address"></textarea>
-                </div>
-              </div>
+              
             </div>
           </div>
 
           <div class="col-6 mb-1">
+            <div class="row">
+              <h6 class="mb-1">Shipping Address</h6>
+              <div class="col-12 mb-1">
+                <div class="form-group">
+                  <label>Address</label>
+                  <textarea class="form-control" placeholder="Shipping Address" rows="2" name="shipping_address" id="shipping_address"></textarea>
+                </div>
+              </div>
+              <div class="col-4 mb-1">
+                <label class="form-label" for="shipping_state">Select State</label>
+                <select class="form-select select2 shipping_state_id" name="shipping_state_id" id="shipping_state_id" onchange="get_shipping_city(this.value);">
+                  <option value="">Select State</option>
+                  <?php foreach($states as $state){?>
+                  <option value="<?php echo $state['id'];?>"><?php echo $state['name'];?></option>
+                  <?php }?>
+                </select>
+              </div>
+              <div class="col-4 mb-1">
+                <label class="form-label" for="shipping_city">Select City</label>
+                <select class="form-select select2 shipping_city_id" name="shipping_city_id" id="shipping_city_id">
+                  <option value="">Select City</option>
+                </select>
+              </div>
+              <div class="col-4 mb-1">
+                <div class="form-group">
+                  <label>Pincode</label>
+                  <input type="text" class="form-control" placeholder="Pincode" name="shipping_pincode" id="shipping_pincode">
+                </div>
+              </div>
+              <div class="col-6 mb-1">
+                <div class="form-group">
+                  <label>GST Name</label>
+                  <input type="text" class="form-control" placeholder="GST Name" name="shipping_gst" id="shipping_gst">
+                </div>
+              </div>
+              <div class="col-6 mb-1">
+                <div class="form-group">
+                  <label>GST No</label>
+                  <input type="text" class="form-control" placeholder="GST No" name="shipping_gst_no" id="shipping_gst_no">
+                </div>
+              </div>
+              
+            </div>
+          </div>
+
+          <div class="col-12 mb-1">
             
           </div>
 

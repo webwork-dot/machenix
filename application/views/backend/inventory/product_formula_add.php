@@ -10,7 +10,7 @@
               <select class="form-select select2" name="parent_id" id="parent_id" required>
                 <option value="">Select Product</option>
                 <?php foreach($parent_products as $item){?>
-                  <option value="<?php echo $item['id'];?>"><?php echo htmlspecialchars($item['name']) . ' (' . htmlspecialchars($item['item_code']) . ')';?></option>
+                  <option value="<?php echo $item['id'];?>"><?php echo htmlspecialchars($item['name']) . ' (' . htmlspecialchars($item['product_type']) . ')';?></option>
                 <?php }?>
               </select>
             </div>

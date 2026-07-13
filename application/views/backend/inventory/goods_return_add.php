@@ -31,7 +31,7 @@
             <div class="col-12 col-sm-3 mb-1">
 			  <input type="hidden" name="excel_id" id="excel_id" value="0">
               <label class="form-label" for="state">Warehouse <span class="required">*</span></label>
-              <select class=" form-select select2" name="warehouse_id" id="from_warehouse_id" onchange="get_product_by_warehouse(this.value,'1');" required>
+              <select class=" form-select select2" name="warehouse_id" id="from_warehouse_id" onchange="onWarehouseChange(this.value);" required>
                 <option value="">Select Warehouse </option>
                 <?php foreach($warehouse_list as $item){?>
 					<option value="<?php echo $item['id'];?>"><?php echo $item['name'];?></option>
@@ -72,31 +72,37 @@
 			<div id = "requirement_area_1">
 				<div class="col-12 col-sm-12 mb-1">
 					<div class="table-responsive">
-						<div class="col-lg-12 no-pad" style="min-height: 300px;">
+						<div class="col-lg-12 no-pad">
 							<a class="btn btn-info text-white btn-sm" onclick="appendRequirement()" style="float:right;margin-bottom:5px;"><i class=" uil-plus-circle"></i>&nbsp;Add Row</a>
 							<table class="table table-striped table-bordered mn-table" id = "requirement_area">
 								<thead>
 								   <tr>
-									<th>
-									    <p>Order ID </p>
-									</th>
 								    <th>
-									    <p>Product </p>
+									    <p>Batch</p>
+								    </th>
+								    <th>
+									    <p>Product</p>
 								    </th>
 									<th style="width: 95px">
-									    <p>Customer</p>
+									    <p>White Qty</p>
 									</th>
 									<th style="width: 95px">
-									    <p>Sale Quantity</p>
+									    <p>Black Qty</p>
 									</th>
 									<th style="width: 95px">
-									    <p>Quantity</p>
+									    <p>White Amt</p>
+									</th>
+									<th style="width: 110px">
+									    <p>Total White Amt</p>
 									</th>
 									<th style="width: 95px">
-									    <p>Amount</p>
+									    <p>Black Amt</p>
 									</th>
-									<th style="width: 180px">
-									    <p>Reason</p>
+									<th style="width: 110px">
+									    <p>Total Black Amt</p>
+									</th>
+									<th style="width: 110px">
+									    <p>Final Amt</p>
 									</th>
 									<th style="width: 95px">
 									    <p>Action</p>
@@ -105,38 +111,40 @@
 								</thead>
 								<tbody class="element-1 new-table" id="product_1">
 								   <tr>
-								      <td style="width: 120px !important;">
-										<input type="text" step="any" id="porder_id_1" name="porder_id[]" onkeyup="getProductsById(this, 1)" class="form-control" required>
+									  <td>
+										<span class="new-td">
+											<select class="form-control select2 batch_no" name="batch_no[]" id="batch_no_1" onchange="onBatchChange(this.value, 1)" required>
+												<option value="">Select Batch</option>
+											</select> 
+										</span>
 									  </td>
 									  <td>
 										<span class="new-td">
-											<select class="form-control select2 product_id"  name="product_id[]"  id="product_id_1" data-toggle="select2" onchange="getOrderById(this, 1)" required>
-												<option value="">Select SKU - Size</option>
+											<select class="form-control select2 product_id" name="product_id[]" id="product_id_1" onchange="onProductChange(1)" required>
+												<option value="">Select Product</option>
 											</select> 
 										</span>
 									  </td>
 									  <td>
-                                         <p class="td-blank">
-                                            <input type="text" id="customer_1"  name="customer[]" placeholder="Customer" class="form-control" readonly>
-                                         </p>
-                                      </td>
-									  <td>
-										 <p class="td-blank"><input type="number" step="any" id="sale_quantity_1"  name="sale_quantity[]" placeholder="Sale Qty" value="0" class="form-control" readonly></p>
+										 <p class="td-blank"><input type="number" step="any" id="white_qty_1" name="white_qty[]" value="0" class="form-control qty-input" onkeyup="calculateRowAmounts(1)" onchange="calculateRowAmounts(1)" required></p>
 									  </td>
 									  <td>
-										 <p class="td-blank"><input type="number" step="any" id="quantity_1"  name="quantity[]" placeholder="Qty" onkeyup="check_available_qty(this.value,'1')" value="0" class="form-control" required></p>
+										 <p class="td-blank"><input type="number" step="any" id="black_qty_1" name="black_qty[]" value="0" class="form-control qty-input" onkeyup="calculateRowAmounts(1)" onchange="calculateRowAmounts(1)" required></p>
 									  </td>
 									  <td>
-										 <p class="td-blank"><input type="number" step="any" id="amount_1"  name="amount[]" placeholder="Amount"  value="0" class="form-control" readonly></p>
+										 <p class="td-blank"><input type="number" step="any" id="white_amt_1" name="white_amt[]" value="0" class="form-control amt-input" onkeyup="calculateRowAmounts(1)" onchange="calculateRowAmounts(1)" required></p>
 									  </td>
 									  <td>
-										 <span class="new-td">
-											<select class="form-control reason" name="reason_id[]"  id="reason_1" required>
-												<option value="Customer Return">Customer Return</option>
-												<option value="RTO">RTO</option>
-												<option value="Cancelled">Cancelled</option>
-											</select> 
-										</span>
+										 <p class="td-blank"><input type="number" step="any" id="white_total_1" name="white_total[]" value="0.00" class="form-control" readonly></p>
+									  </td>
+									  <td>
+										 <p class="td-blank"><input type="number" step="any" id="black_amt_1" name="black_amt[]" value="0" class="form-control amt-input" onkeyup="calculateRowAmounts(1)" onchange="calculateRowAmounts(1)" required></p>
+									  </td>
+									  <td>
+										 <p class="td-blank"><input type="number" step="any" id="black_total_1" name="black_total[]" value="0.00" class="form-control" readonly></p>
+									  </td>
+									  <td>
+										 <p class="td-blank"><input type="number" step="any" id="final_total_1" name="final_total[]" value="0.00" class="form-control" readonly></p>
 									  </td>
 									  <td></td>
 								   </tr>
@@ -147,7 +155,29 @@
 					</div>
 				</div>
 				
-				
+				<div class="row justify-content-end mt-2 mb-2 pr-2">
+					<div class="col-12 col-md-4 float-right">
+						<div class="card" style="background: #e3e3e3;">
+							<div class="card-body p-2">
+								<div class="d-flex justify-content-between mb-1">
+									<strong>Total White Amt:</strong>
+									<span id="grand_white_total">0.00</span>
+									<input type="hidden" name="white_total" id="input_grand_white_total" value="0.00">
+								</div>
+								<div class="d-flex justify-content-between mb-1">
+									<strong>Total Black Amt:</strong>
+									<span id="grand_black_total">0.00</span>
+									<input type="hidden" name="black_total" id="input_grand_black_total" value="0.00">
+								</div>
+								<div class="d-flex justify-content-between">
+									<strong>Final Total:</strong>
+									<span id="grand_final_total" class="fw-bold text-primary">0.00</span>
+									<input type="hidden" name="final_total" id="input_grand_final_total" value="0.00">
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
             
             <div class="col-12 text-center">
@@ -162,372 +192,293 @@
 </div>
 
 <script>
-
-    let debouncer;
-    function getProductsById(element, id) {
-        clearTimeout(debouncer);
-        if(element.value != '') {
-            debouncer = setTimeout(() => {
-                let warehouse = document.querySelector('#from_warehouse_id').value;
-                if(warehouse == '') {
-                     Swal.fire({
-                        title: "Error!",
-                        text: "Please Select Warehouse !!" ,
-                        icon: "error",
-                        customClass: {
-                            confirmButton: "btn btn-primary"
-                        },
-                        buttonsStyling: !1
-            		});
-            		
-            		$('#porder_id_' + id).val('');
-                } else {
-                    $(".loader").show(); 
-                    $.ajax({
-                        type: "POST",
-                        url: "<?php echo base_url(); ?>inventory/get_sale_order_items",
-                        data: {value: element.value},
-                        dataType: 'JSON',
-                        success: function(data) {
-                            $(".loader").fadeOut("slow");
-                            if(data.product.length == 0) {
-                                resetCurrentField(id)
-                            } else { 
-                                resetCurrentField(id)
-                                let options = '<option value="">Select SKU - Size</option>';
-                                data.product.forEach((prod) => {
-                                    let totalQty = parseInt(prod.qty);
-                                    let returnQty = parseInt(prod.return_qty);
-                                    
-                                    if(totalQty > returnQty) {
-                                        options += `<option value="${prod.id}">${prod.item_code} - ${prod.size_name}</option>`;
-                                    }
-                                }); 
-                                
-                                document.querySelector('#product_id_' + id).innerHTML = options;
-                                $('#product_id_' + id).select2();
-                            }
-                        },
-                        
-                    });     
-                }
-            }, 500);
-        } else {
-            resetCurrentField(id);
+    function onWarehouseChange(warehouse_id) {
+        // Clear all except the first row, reset first row
+        var rowCount = $(".element-1").length;
+        if (rowCount > 1) {
+            $(".element-1").not(":first").remove();
         }
-	} 
-	
-	function getOrderById(element, id) {
-	    let value = element.value;
-	    let orderId = $('#porder_id_' + id).val();
-	    
-	    let allValue = document.querySelectorAll('[name="product_id[]"]');
-	    let allOrderId = document.querySelectorAll('[name="porder_id[]"]');
-	    let counter = 0;
-	    for(let i = 0; i < allValue.length; i++) {
-	        if(allValue[i].value == value && allOrderId[i].value == orderId) {
-	            if(counter != 2) {
-	                counter++;
-	            } else {
-	                break;
-	            }
-	        }
-	    }
-	    
-	    if(counter == 2) {
-	        element.innerHTML = `<option value="">Select SKU - Size</option>`;
-	        $('#porder_id_' + id).val('');
-	        
-	        Swal.fire({
-    			title: "Error!",
-    			text: "SKU and Order ID cannot be same" ,
-    			icon: "error",
-    			customClass: {
-    				confirmButton: "btn btn-primary"
-    			},
-    			buttonsStyling: !1
-    		});
-	    } else {
-            $(".loader").show();
-            $.ajax({
-                type: "POST",
-                url: "<?php echo base_url(); ?>inventory/get_sale_order_product",
-                data: {value: value},
-                dataType: 'JSON',
-                success: function(data) {
-                    $(".loader").fadeOut("slow");
-                    console.log(data.product.length)
-                    if(data.product.length == 0) {
-                        document.querySelector('#sale_quantity_' + id).value = 0;
-                        document.querySelector('#quantity_' + id).value = 0;
-                        document.querySelector('#amount_' + id).value = 0;
-                        document.querySelector('#customer_' + id).value = '';
-                    } else {
-                        document.querySelector('#sale_quantity_' + id).value = data.product.sale_qty;
-                        document.querySelector('#quantity_' + id).value = 0;
-                        document.querySelector('#amount_' + id).value = data.product.total_amount;
-                        document.querySelector('#customer_' + id).value = data.product.customer_name;
-                    }
-                },
-                
-            });   
-	    }
-	}
-	 
-	function resetCurrentField(id) {
-	    document.querySelector('#product_id_' + id).innerHTML = `<option value="">Select SKU - Size</option>`;
-	    document.querySelector('#sale_quantity_' + id).value = 0;
-	    document.querySelector('#quantity_' + id).value = 0;
-	    document.querySelector('#amount_' + id).value = 0;
-	    document.querySelector('#customer_' + id).value = '';
-	}
-	
+        
+        // Reset the first row
+        $('#batch_no_1').val('').trigger('change.select2');
+        $('#product_id_1').val('').trigger('change.select2');
+        $('#white_qty_1').val(0);
+        $('#black_qty_1').val(0);
+        $('#white_amt_1').val(0);
+        $('#white_total_1').val('0.00');
+        $('#black_amt_1').val(0);
+        $('#black_total_1').val('0.00');
+        $('#final_total_1').val('0.00');
+        
+        calculateGrandTotals();
+        
+        if (warehouse_id !== '') {
+            get_batches_by_warehouse(warehouse_id, 1);
+        }
+    }
 
-    
-    function appendRequirement() {
-        var from_warehouse_id = $('#from_warehouse_id').find(":selected").val();
-        if(from_warehouse_id==''){
-            Swal.fire({
-							title: "Error!",
-							text: "Please Select Warehouse !!" ,
-							icon: "error",
-							customClass: {
-								confirmButton: "btn btn-primary"
-							},
-							buttonsStyling: !1
-						});
-        }else{
-            var total_element = $(".element-1").length;  
-            var lastid = $(".element-1:last").attr("id");
-            var split_id = lastid.split("_");
-            var nextindex = Number(split_id[1]) + 1;
-            if($('#product_id_'+split_id[1]).find(":selected").val() == ''){
-                Swal.fire({
-									title: "Error!",
-									text: "Please Select Previous Product !!" ,
-									icon: "error",
-									customClass: {
-										confirmButton: "btn btn-primary"
-									},
-									buttonsStyling: !1
-								});
-            }else{
-                $(".loader").show(); 
-                // $('#requirement_area').append('<tbody class="element-1 new-table" id="product_'+ nextindex +'"><tr><td><span class="new-td"><select class="form-control select2 product_id"  name="product_id[]"  id="product_id_'+ nextindex +'" data-toggle="select2" onchange="get_batch_by_product(this.value,'+ nextindex +');"  required><option value="">Select Product</option><?php foreach($products_list as $item){?><option value="<?php echo $item->id; ?>"><?php echo $item->item_code.' - '.$item->name; ?></option><?php } ?></select></span></td><td style="width: 120px !important;"><input type="text" step="any" id="porder_id_'+ nextindex +'" name="porder_id[]" class="form-control" ></td><td style="width: 80px !important;"><p class="td-blank"><input type="number" step="any" id="quantity_'+ nextindex +'"  name="quantity[]" placeholder="Qty" onkeyup="check_available_qty(this.value,'+ nextindex +')" value="0" class="form-control" required></p></td><td><button type="button" class="btn btn-danger btn-sm" style="margin-top: 0px;" name="button" onclick="removeRequirement(this)"> <i class="dripicons-minus"></i> </button></td></tr></tbody>');
-                $('#requirement_area').append(`<tbody class="element-1 new-table" id="product_${nextindex}">
-                                                  <tr>
-                                                    <td>
-                                                      <input type="text" step="any" id="porder_id_${nextindex}" name="porder_id[]" class="form-control" onkeyup="getProductsById(this, ${nextindex})" required/>
-                                                    </td>
-                                                    <td>
-                                                      <span class="new-td">
-                                                        <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="getOrderById(this, ${nextindex})" data-toggle="select2" required>
-                                                          <option value="">Select SKU - Size</option>
-                                                        </select>
-                                                      </span>
-                                                    </td>
-                                                    <td>
-                                                      <p class="td-blank">
-                                                        <input type="text" id="customer_${nextindex}" name="customer[]" placeholder="Customer" class="form-control" readonly>
-                                                      </p>
-                                                    </td>
-                                                    <td>
-                                                      <p class="td-blank">
-                                                        <input type="number" step="any" id="sale_quantity_${nextindex}"  name="sale_quantity[]" placeholder="Sale Qty" value="0" class="form-control" readonly>
-                                                      </p>
-                                                    </td>
-                                                    <td>
-                                                      <p class="td-blank">
-                                                        <input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" onkeyup="check_available_qty(this.value,${nextindex})" value="0" class="form-control" required />
-                                                      </p>
-                                                    </td>
-                                                     <td>
-                                                        <p class="td-blank">
-                                                          <input type="number" step="any" id="amount_${nextindex}"  name="amount[]" placeholder="Amount"  value="0" class="form-control" readonly>
-                                                        </p>
-                                                      </td>
-                                                      <td>
-                                                        <span class="new-td">
-                											<select class="form-control reason" name="reason_id[]"  id="reason_${nextindex}" required>
-                												<option value="Customer Return">Customer Return</option>
-                												<option value="RTO">RTO</option>
-                												<option value="Cancelled">Cancelled</option>
-                											</select> 
-                										</span>
-                									  </td>
-                                                    <td>
-                                                      <button type="button" class="btn btn-danger btn-sm" style="margin-top: 0px" name="button" onclick="removeRequirement(this)">
-                                                        <i class="dripicons-minus"></i>
-                                                      </button>
-                                                    </td>
-                                                  </tr>
-                                                </tbody>`);
-                                                
-                                                
-                                                
-				$(".loader").fadeOut("slow");
-				$(".select2").select2();
-				var warehouse_id = $('#from_warehouse_id').val();
-				get_product_by_warehouse(warehouse_id,nextindex);
+    function get_batches_by_warehouse(warehouse_id, id) {
+        if (warehouse_id === '') {
+            $('#batch_no_' + id).html('<option value="">Select Batch</option>').trigger('change.select2');
+            return;
+        }
+        $(".loader").show();
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url('inventory/get_batches_by_warehouse'); ?>",
+            data: { warehouse_id: warehouse_id },
+            dataType: 'JSON',
+            success: function(data) {
+                $(".loader").fadeOut("slow");
+                let options = '<option value="">Select Batch</option>';
+                data.forEach((batch) => {
+                    options += `<option value="${batch.batch_no}">${batch.batch_no}</option>`;
+                });
+                $('#batch_no_' + id).html(options);
+                $('#batch_no_' + id).select2();
+            },
+            error: function() {
+                $(".loader").fadeOut("slow");
             }
-        }	
+        });
     }
-    
-    function removeRequirement(requirementElem) {
-       $(requirementElem).parent().parent().remove();
-      
+
+    function onBatchChange(batch_no, id) {
+        var warehouse_id = $('#from_warehouse_id').val();
+        if (warehouse_id === '' || batch_no === '') {
+            $('#product_id_' + id).html('<option value="">Select Product</option>').trigger('change.select2');
+            return;
+        }
+        
+        $(".loader").show();
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url('inventory/get_products_by_batch'); ?>",
+            data: { warehouse_id: warehouse_id, batch_no: batch_no },
+            dataType: 'JSON',
+            success: function(data) {
+                $(".loader").fadeOut("slow");
+                let options = '<option value="">Select Product</option>';
+                data.forEach((prod) => {
+                    options += `<option value="${prod.id}">${prod.name}</option>`;
+                });
+                $('#product_id_' + id).html(options);
+                $('#product_id_' + id).select2();
+            },
+            error: function() {
+                $(".loader").fadeOut("slow");
+            }
+        });
     }
-	
-	function check_available_qty(value, id) {
-        let availableQty = document.querySelector('#sale_quantity_' + id).value
-        if(parseFloat(value) > parseFloat(availableQty)) {
-            document.querySelector('#quantity_' + id).value = 0;
-            
+
+    function onProductChange(id) {
+        // Reset quantities/amounts for the row when product changes
+        $('#white_qty_' + id).val(0);
+        $('#black_qty_' + id).val(0);
+        $('#white_amt_' + id).val(0);
+        $('#white_total_' + id).val('0.00');
+        $('#black_amt_' + id).val(0);
+        $('#black_total_' + id).val('0.00');
+        $('#final_total_' + id).val('0.00');
+        calculateRowAmounts(id);
+    }
+
+    function checkDuplicateCombination(id) {
+        var current_batch = $('#batch_no_' + id).val();
+        var current_product = $('#product_id_' + id).val();
+        
+        if (current_batch === '' || current_product === '') return false;
+
+        var is_duplicate = false;
+        $(".element-1").each(function() {
+            var row_id = $(this).attr('id').split('_')[1];
+            if (row_id != id) {
+                var batch = $('#batch_no_' + row_id).val();
+                var product = $('#product_id_' + row_id).val();
+                if (batch === current_batch && product === current_product) {
+                    is_duplicate = true;
+                    return false; // break loop
+                }
+            }
+        });
+
+        if (is_duplicate) {
             Swal.fire({
                 title: "Error!",
-                text: "Quantity Can't be greater than Sale Quantity" ,
+                text: "This Batch and Product combination is already added in another row!",
                 icon: "error",
                 customClass: {
                     confirmButton: "btn btn-primary"
                 },
                 buttonsStyling: !1
             });
-	    }
-	    
-		/*
-            var is_disabled = 0 ;
-            var total_element = $(".element-1").length + 1; 
-            for (let i = 1; i < total_element ; i++) {
-                if($("#quantity_"+i).val()){
-                    var quantity = parseInt($("#quantity_"+i).val());
-    				console.log('qty:',quantity);
-    				console.log('av:',available);
-    				if(quantity > available){
-    					is_disabled = 1 ;
-    				}
-                }
-            }
-    		
-            if(is_disabled == 1){
-                alert('Quantity cannot greater than Available Quantity')
-                $(':input[type="submit"]').prop('disabled', true);
-            }else{
-                $(':input[type="submit"]').prop('disabled', false);
-            }
-		*/
-    }
-    
-    function get_product_by_warehouse(b,nextindex) {
-		var warehouse_id = $('#from_warehouse_id').find(":selected").val();
-	    var a = {
-		   warehouse_id: b
-		};
-		$.ajax({
-			type: "POST",
-			url:   "<?php echo base_url()?>inventory/get_product_by_warehouse",
-			data: a,
-			success: function(res) {
-			 //  $('#product_id_'+nextindex).children("option:not(:first)").remove();
-			 //  $('#product_id_'+nextindex).append(res);
-			}
-		});
-    }
-	
-	function get_batch_by_product(b,nextindex) {
-		var warehouse_id = $('#from_warehouse_id').find(":selected").val();
-		var product_id = $('#product_id_'+nextindex).find(":selected").val();
-		var is_disabled = 0 ;
-		var total_element = $(".element-1").length + 1; 
-		for (let i = 1; i < total_element ; i++) {
-			if(nextindex != i){
-				if($("#product_id_"+i).val() == product_id){
-					$("#product_id_"+nextindex+" option").prop("selected", false);
-					$(".select2").select2();
-					is_disabled = 1 ;
-				}
-			}
-		}
-		
-		if(is_disabled == 0){
-			$(".select2").select2();
-			$('#available_'+nextindex).val(0);
-			var a = {
-			   warehouse_id: warehouse_id,
-			   product_id: product_id,
-			};
-			$.ajax({
-				type: "POST",
-				url:   "<?php echo base_url()?>inventory/get_qty_by_product",
-				data: a,
-				success: function(res) {
-				   $('#available_'+nextindex).val(res.quantity);
-				}
-			});
-		}else{
-			Swal.fire({
-				title: "Error!",
-				text: "Product Can't Be Same!!!" ,
-				icon: "error",
-				customClass: {
-					confirmButton: "btn btn-primary"
-				},
-				buttonsStyling: !1
-			});
-			$(':input[type="submit"]').prop('disabled', true);
-		}
-    }
-    
-    function get_product_details(b,nextindex) {
-		var warehouse_id = $('#from_warehouse_id').find(":selected").val();
-		var product_id = $('#product_id_'+nextindex).find(":selected").val();
-		var batch_no = $('#batch_no_'+nextindex).find(":selected").val();
-		is_disabled = 0 ;
-		var total_element = $(".element-1").length + 1; 
-        for (let i = 1; i < total_element ; i++) {
-			if($("#product_id_"+i).val() && nextindex != i){
-                var old_product_id = $("#product_id_"+i).val();
-                var old_batch_no = $("#batch_no_"+i).val();
-				if(old_product_id == product_id && batch_no == old_batch_no){
-					$("#batch_no_"+nextindex+" option").prop("selected", false);
-					$(".select2").select2();
-					//$('#available_'+nextindex).val(0);
-					is_disabled = 1 ;
-				}
-            }
+            $('#product_id_' + id).val('').trigger('change.select2');
+            return true;
         }
-		
-		if(is_disabled == 0){
-			$(':input[type="submit"]').prop('disabled', false);
-			var a = {
-			   warehouse_id: warehouse_id,
-			   product_id: product_id,
-			   batch_no: batch_no,
-			};
-			$.ajax({
-				type: "POST",
-				url:   "<?php echo base_url()?>inventory/get_available_qty",
-				data: a,
-				success: function(res) {
-				   $('#available_'+nextindex).val(res.quantity);
-				}
-			});
-		}else{
-			Swal.fire({
-				title: "Error!",
-				text: "Product Can't Be Same!!!" ,
-				icon: "error",
-				customClass: {
-					confirmButton: "btn btn-primary"
-				},
-				buttonsStyling: !1
-			});
-			$(':input[type="submit"]').prop('disabled', true);
-			//$('#product_id_'+nextindex).prop("selected", false);
-			//$(".select2").select2();
-		}
-	    
+        return false;
     }
-	
- 
-    
+
+    function calculateRowAmounts(id) {
+        // Check duplicate on qty/amt changes
+        if (checkDuplicateCombination(id)) {
+            return;
+        }
+
+        var white_qty = parseFloat($('#white_qty_' + id).val()) || 0;
+        var white_amt = parseFloat($('#white_amt_' + id).val()) || 0;
+        var black_qty = parseFloat($('#black_qty_' + id).val()) || 0;
+        var black_amt = parseFloat($('#black_amt_' + id).val()) || 0;
+
+        var white_total = white_qty * white_amt;
+        var black_total = black_qty * black_amt;
+        var final_total = white_total + black_total;
+
+        $('#white_total_' + id).val(white_total.toFixed(2));
+        $('#black_total_' + id).val(black_total.toFixed(2));
+        $('#final_total_' + id).val(final_total.toFixed(2));
+
+        calculateGrandTotals();
+    }
+
+    function calculateGrandTotals() {
+        var grand_white_total = 0;
+        var grand_black_total = 0;
+        var grand_final_total = 0;
+
+        $(".element-1").each(function() {
+            var id = $(this).attr('id').split('_')[1];
+            var white_total = parseFloat($('#white_total_' + id).val()) || 0;
+            var black_total = parseFloat($('#black_total_' + id).val()) || 0;
+            var final_total = parseFloat($('#final_total_' + id).val()) || 0;
+
+            grand_white_total += white_total;
+            grand_black_total += black_total;
+            grand_final_total += final_total;
+        });
+
+        $('#grand_white_total').text(grand_white_total.toFixed(2));
+        $('#input_grand_white_total').val(grand_white_total.toFixed(2));
+
+        $('#grand_black_total').text(grand_black_total.toFixed(2));
+        $('#input_grand_black_total').val(grand_black_total.toFixed(2));
+
+        $('#grand_final_total').text(grand_final_total.toFixed(2));
+        $('#input_grand_final_total').val(grand_final_total.toFixed(2));
+    }
+
+    function appendRequirement() {
+        var warehouse_id = $('#from_warehouse_id').val();
+        if (warehouse_id === '') {
+            Swal.fire({
+                title: "Error!",
+                text: "Please Select Warehouse !!",
+                icon: "error",
+                customClass: {
+                    confirmButton: "btn btn-primary"
+                },
+                buttonsStyling: !1
+            });
+            return;
+        }
+
+        var lastid = $(".element-1:last").attr("id");
+        var split_id = lastid.split("_");
+        var nextindex = Number(split_id[1]) + 1;
+
+        if ($('#product_id_' + split_id[1]).val() === '') {
+            Swal.fire({
+                title: "Error!",
+                text: "Please Select Previous Product !!",
+                icon: "error",
+                customClass: {
+                    confirmButton: "btn btn-primary"
+                },
+                buttonsStyling: !1
+            });
+            return;
+        }
+
+        $(".loader").show();
+
+        var newRow = `
+            <tbody class="element-1 new-table" id="product_${nextindex}">
+                <tr>
+                    <td>
+                        <span class="new-td">
+                            <select class="form-control select2 batch_no" name="batch_no[]" id="batch_no_${nextindex}" onchange="onBatchChange(this.value, ${nextindex})" required>
+                                <option value="">Select Batch</option>
+                            </select> 
+                        </span>
+                    </td>
+                    <td>
+                        <span class="new-td">
+                            <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="onProductChange(${nextindex})" required>
+                                <option value="">Select Product</option>
+                            </select> 
+                        </span>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="white_qty_${nextindex}" name="white_qty[]" value="0" class="form-control qty-input" onkeyup="calculateRowAmounts(${nextindex})" onchange="calculateRowAmounts(${nextindex})" required></p>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="black_qty_${nextindex}" name="black_qty[]" value="0" class="form-control qty-input" onkeyup="calculateRowAmounts(${nextindex})" onchange="calculateRowAmounts(${nextindex})" required></p>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="white_amt_${nextindex}" name="white_amt[]" value="0" class="form-control amt-input" onkeyup="calculateRowAmounts(${nextindex})" onchange="calculateRowAmounts(${nextindex})" required></p>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="white_total_${nextindex}" name="white_total[]" value="0.00" class="form-control" readonly></p>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="black_amt_${nextindex}" name="black_amt[]" value="0" class="form-control amt-input" onkeyup="calculateRowAmounts(${nextindex})" onchange="calculateRowAmounts(${nextindex})" required></p>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="black_total_${nextindex}" name="black_total[]" value="0.00" class="form-control" readonly></p>
+                    </td>
+                    <td>
+                        <p class="td-blank"><input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" value="0.00" class="form-control" readonly></p>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm" style="margin-top: 0px;" name="button" onclick="removeRequirement(this)"> <i class="dripicons-minus"></i> </button>
+                    </td>
+                </tr>
+            </tbody>
+        `;
+
+        $('#requirement_area').append(newRow);
+        $(".loader").fadeOut("slow");
+        $(".select2").select2();
+
+        // Populate batches for the new row
+        get_batches_by_warehouse(warehouse_id, nextindex);
+    }
+
+    function removeRequirement(requirementElem) {
+        $(requirementElem).parent().parent().remove();
+        calculateGrandTotals();
+    }
+
+    function checkForm(form) {
+        var total_qty = 0;
+        $(".element-1").each(function() {
+            var id = $(this).attr('id').split('_')[1];
+            var w_qty = parseFloat($('#white_qty_' + id).val()) || 0;
+            var b_qty = parseFloat($('#black_qty_' + id).val()) || 0;
+            total_qty += (w_qty + b_qty);
+        });
+
+        if (total_qty <= 0) {
+            Swal.fire({
+                title: "Error!",
+                text: "Total return quantity must be greater than 0!",
+                icon: "error",
+                customClass: {
+                    confirmButton: "btn btn-primary"
+                },
+                buttonsStyling: !1
+            });
+            return false;
+        }
+        return true;
+    }
 </script>
