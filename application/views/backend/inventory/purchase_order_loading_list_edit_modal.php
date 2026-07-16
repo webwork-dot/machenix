@@ -540,7 +540,7 @@
   $products_query = $products_raw;
 
   // Get supplier list for invoice dropdowns
-  $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' ORDER BY name ASC")->result_array();
+  $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' AND type='import' ORDER BY name ASC")->result_array();
 
   // Get invoice supplier mappings (invoice_no => invoice_supplier_id)
   $invoice_supplier_map = [];

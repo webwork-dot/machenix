@@ -1163,7 +1163,7 @@ class Inventory extends CI_Controller
 
         $where = array('is_deleted' => '0');
         $page_data['warehouse_list']     = $this->common_model->selectWhere('warehouse', $where, 'ASC', 'name');
-        $page_data['supplier_list']     = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id), 'ASC', 'name');
+        $page_data['supplier_list']     = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id, 'type' => 'import'), 'ASC', 'name');
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
         
         // Get ready products with category names
@@ -1292,6 +1292,9 @@ class Inventory extends CI_Controller
         }
 
         if ($param1 == 'add') {
+            $company_id = $this->session->userdata('company_id');
+            $page_data['expenses'] = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);
+
             $page_data['products'] = $this->db->where(array('product_type' => 'local', 'has_formula' => 1, 'is_deleted' => 0))
                                              ->order_by('name', 'ASC')
                                              ->get('raw_products')
@@ -1360,7 +1363,7 @@ class Inventory extends CI_Controller
         }
 
         // Fetch default expenses for the formula product
-        $expenses = $this->db->query("SELECT name, amount FROM product_charges WHERE product_id = ? ORDER BY id ASC", array($parent_id))->result_array();
+        $expenses = $this->db->query("SELECT expense_id, name, amount FROM product_charges WHERE product_id = ? ORDER BY id ASC", array($parent_id))->result_array();
 
         echo json_encode(array(
             'status' => 200,
@@ -1718,7 +1721,7 @@ class Inventory extends CI_Controller
             SELECT rp.*, 
                    (SELECT c.name FROM categories c WHERE FIND_IN_SET(c.id, rp.categories) > 0 LIMIT 1) as category_name
             FROM raw_products rp
-            WHERE rp.is_deleted = '0' AND rp.type = 'ready' AND rp.status = '1' AND rp.supplier_id = ?
+            WHERE rp.is_deleted = '0' AND rp.type = 'ready' AND rp.status = '1' AND FIND_IN_SET(?, rp.supplier_id) > 0
             ORDER BY rp.categories ASC
         ", array($supplier_id))->result();
         
@@ -1727,7 +1730,7 @@ class Inventory extends CI_Controller
             SELECT rp.*, 
                    (SELECT c.name FROM categories c WHERE FIND_IN_SET(c.id, rp.categories) > 0 LIMIT 1) as category_name
             FROM raw_products rp
-            WHERE rp.is_deleted = '0' AND rp.type = 'spare' AND rp.status = '1' AND rp.supplier_id = ?
+            WHERE rp.is_deleted = '0' AND rp.type = 'spare' AND rp.status = '1' AND FIND_IN_SET(?, rp.supplier_id) > 0
             ORDER BY rp.categories ASC
         ", array($supplier_id))->result();
 
@@ -2060,7 +2063,7 @@ class Inventory extends CI_Controller
             $off_taxable_value = (float)($r['taxable_value'] ?? 0);
             $off_gst_amt = (float)($r['gst_amt'] ?? 0);
             $off_gst_percent = ($off_taxable_value > 0) ? (($off_gst_amt * 100) / $off_taxable_value) : 0;
-            $total_duty_gst = $off_duty_amt + $off_gst_amt + $r['duty_percent'];
+            $total_duty_gst = $off_duty_amt + $off_gst_amt + $r['duty_surcharge'];
 
             $line = array(
                 'id' => (int)($r['id'] ?? 0),
@@ -2241,7 +2244,8 @@ class Inventory extends CI_Controller
                 ed.expense_name, 
                 ed.amount, 
                 ed.gst_amt, 
-                ed.total_amt
+                ed.total_amt,
+                e.supplier_id
             FROM po_expense e
             JOIN po_expense_details ed ON e.id = ed.parent_id
             WHERE e.batch_no = ? AND e.is_delete = 0
@@ -3904,6 +3908,180 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_invoices_or_orders_by_customer()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(array('status' => 'error', 'message' => 'Unauthorized'));
+            return;
+        }
+
+        if ($this->input->is_ajax_request()) {
+            $customer_id = (int)$this->input->post('customer_id');
+            $type = $this->input->post('type'); // 'official' or 'unofficial'
+            $company_id = (int)$this->session->userdata('company_id');
+
+            if (empty($customer_id) || empty($type)) {
+                echo json_encode(array('status' => 'success', 'data' => []));
+                return;
+            }
+
+            if ($type == 'official') {
+                $this->db->select('id, invoice_no, order_no');
+                $this->db->from('invoice_order');
+                $this->db->where(array(
+                    'customer_id' => $customer_id,
+                    'company_id' => $company_id,
+                    'is_deleted' => 0
+                ));
+                $this->db->where("id IN (SELECT parent_id FROM invoice_order_products WHERE qty > return_qty)", NULL, FALSE);
+                $this->db->order_by('id', 'DESC');
+                $query = $this->db->get();
+                $result = $query->result_array();
+            } else {
+                $this->db->select('id, invoice_no, order_no');
+                $this->db->from('sales_order');
+                $this->db->where(array(
+                    'customer_id' => $customer_id,
+                    'company_id' => $company_id,
+                    'is_deleted' => 0
+                ));
+                $this->db->where("id IN (SELECT order_id FROM sales_order_product_batch WHERE black_qty > return_black_qty)", NULL, FALSE);
+                $this->db->order_by('id', 'DESC');
+                $query = $this->db->get();
+                $result = $query->result_array();
+            }
+
+            echo json_encode(array('status' => 'success', 'data' => $result));
+        }
+    }
+
+    public function get_invoice_or_order_details()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(array('status' => 'error', 'message' => 'Unauthorized'));
+            return;
+        }
+
+        if ($this->input->is_ajax_request()) {
+            $order_no = $this->input->post('order_no', true);
+            $type = $this->input->post('type'); // 'official' or 'unofficial'
+            $company_id = (int)$this->session->userdata('company_id');
+
+            if (empty($order_no) || empty($type)) {
+                echo json_encode(array('status' => 'error', 'message' => 'Invalid parameters'));
+                return;
+            }
+
+            if ($type == 'official') {
+                $invoice = $this->db->where(array(
+                    'invoice_no' => $order_no,
+                    'company_id' => $company_id,
+                    'is_deleted' => 0
+                ))->get('invoice_order')->row_array();
+
+                if (!$invoice) {
+                    echo json_encode(array('status' => 'error', 'message' => 'Invoice not found'));
+                    return;
+                }
+
+                $products = $this->db->where(array(
+                    'parent_id' => $invoice['id']
+                ))->where('qty > return_qty')->get('invoice_order_products')->result_array();
+
+                foreach ($products as &$p) {
+                    $p['batch_no'] = '-';
+                    if (!empty($p['batch_id'])) {
+                        $batch = $this->db->where('id', $p['batch_id'])->get('sales_order_product_batch')->row_array();
+                        if ($batch) {
+                            $p['batch_no'] = $batch['batch_no'];
+                        }
+                    }
+                }
+
+                $grouped = array();
+                foreach ($products as $p) {
+                    $pid = $p['product_id'];
+                    if (!isset($grouped[$pid])) {
+                        $grouped[$pid] = array(
+                            'product_id' => $pid,
+                            'product_name' => $p['product_name'],
+                            'item_code' => $p['item_code'],
+                            'total_qty' => 0,
+                            'batches' => array()
+                        );
+                    }
+                    $grouped[$pid]['total_qty'] += (int)$p['qty'];
+                    $grouped[$pid]['batches'][] = array(
+                        'id' => $p['id'],
+                        'batch_id' => $p['batch_id'],
+                        'batch_no' => $p['batch_no'],
+                        'qty' => (int)$p['qty'],
+                        'return_qty' => (int)$p['return_qty'],
+                        'amount' => floatval($p['amount']),
+                        'gst' => floatval($p['gst']),
+                        'gst_amount' => floatval($p['gst_amount']),
+                        'final_total' => floatval($p['final_total'])
+                    );
+                }
+                echo json_encode(array(
+                    'status' => 'success',
+                    'order' => $invoice,
+                    'products' => array_values($grouped)
+                ));
+            } else {
+                $order = $this->db->where(array(
+                    'order_no' => $order_no,
+                    'company_id' => $company_id,
+                    'is_deleted' => 0
+                ))->get('sales_order')->row_array();
+
+                if (!$order) {
+                    echo json_encode(array('status' => 'error', 'message' => 'Sales order not found'));
+                    return;
+                }
+
+                $this->db->select('pb.*, p.product_id, p.product_name, p.item_code');
+                $this->db->from('sales_order_product_batch pb');
+                $this->db->join('sales_order_product p', 'pb.order_product_id = p.id');
+                $this->db->where(array(
+                    'pb.order_id' => $order['id']
+                ));
+                $this->db->where('pb.black_qty > pb.return_black_qty');
+                $query = $this->db->get();
+                $batches = $query->result_array();
+
+                $grouped = array();
+                foreach ($batches as $b) {
+                    $pid = $b['product_id'];
+                    if (!isset($grouped[$pid])) {
+                        $grouped[$pid] = array(
+                            'product_id' => $pid,
+                            'product_name' => $b['product_name'],
+                            'item_code' => $b['item_code'],
+                            'total_qty' => 0,
+                            'batches' => array()
+                        );
+                    }
+                    $grouped[$pid]['total_qty'] += (int)$b['black_qty'];
+                    $grouped[$pid]['batches'][] = array(
+                        'id' => $b['id'],
+                        'batch_no' => $b['batch_no'],
+                        'black_qty' => (int)$b['black_qty'],
+                        'return_black_qty' => (int)$b['return_black_qty'],
+                        'black_amount' => floatval($b['black_amount']),
+                        'amount' => floatval($b['black_amount']),
+                        'black_total' => floatval($b['black_total'])
+                    );
+                }
+                echo json_encode(array(
+                    'status' => 'success',
+                    'order' => $order,
+                    'products' => array_values($grouped)
+                ));
+            }
+        }
+    }
+
     public function get_goods_return()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -4727,14 +4905,17 @@ class Inventory extends CI_Controller
 		}
 
 		if ($param1 == 'product_formula_add') {
+			$company_id = $this->session->userdata('company_id');
+			$page_data['expenses'] = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);
+
 			// For parent product dropdown: only local products that do NOT have a formula yet and are not deleted
-			$page_data['parent_products'] = $this->db->where(array('product_type' => 'local', 'has_formula' => 0, 'is_deleted' => 0))
+			$page_data['parent_products'] = $this->db->where(array('has_formula' => 0, 'is_deleted' => 0))
 													->order_by('name', 'ASC')
 													->get('raw_products')
 													->result_array();
 
 			// For ingredients list: local products that are not deleted
-			$page_data['ingredient_products'] = $this->db->where(array('product_type' => 'local', 'is_deleted' => 0))
+			$page_data['ingredient_products'] = $this->db->where(array('is_deleted' => 0))
 														->order_by('name', 'ASC')
 														->get('raw_products')
 														->result_array();
@@ -4750,6 +4931,9 @@ class Inventory extends CI_Controller
 				$this->session->set_flashdata('error_message', 'Parent product not found.');
 				redirect(base_url('inventory/product-formula'), 'refresh');
 			}
+
+			$company_id = $this->session->userdata('company_id');
+			$page_data['expenses'] = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);
 
 			// Get existing formula items
 			$page_data['formula_items'] = $this->db->where('parent_id', $parent_id)->order_by('id', 'ASC')->get('product_formula')->result_array();

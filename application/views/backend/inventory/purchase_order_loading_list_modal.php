@@ -530,7 +530,7 @@
   $products_query = $products_raw;
 
   // Get supplier list for invoice dropdowns
-  $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' ORDER BY name ASC")->result_array();
+  $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' AND type='import' ORDER BY name ASC")->result_array();
 ?>
 
 <?php echo form_open('inventory/update_purchase_order_loading_list', ['class' => 'priority-list-form', 'onsubmit' => 'return checkForm(this);']); ?>

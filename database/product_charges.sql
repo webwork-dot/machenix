@@ -30,6 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `product_charges` (
   `id` int(11) NOT NULL,
   `product_id` int(11) DEFAULT NULL,
+  `expense_id` int(11) DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
   `amount` decimal(16,2) NOT NULL DEFAULT 0.00,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()

@@ -12,6 +12,14 @@
             </div>
           </div>
         </div>
+        <div class="row">
+          <div class="col-12 col-sm-6 mb-1">
+            <div class="form-group">
+              <label class="form-label" for="remark">Remark</label>
+              <textarea class="form-control" name="remark" id="remark" rows="3" placeholder="Enter remark details (optional)"><?php echo htmlspecialchars($parent_product['remark'] ?? ''); ?></textarea>
+            </div>
+          </div>
+        </div>
 
         <div class="row mt-2">
           <div class="col-12">
@@ -83,7 +91,14 @@
                   ?>
                     <tr class="charge-row" id="charge_row_<?php echo $c_index; ?>" data-id="<?php echo $c_index; ?>">
                       <td>
-                        <input type="text" class="form-control input-charge-name" name="charge_name[]" value="<?php echo htmlspecialchars($charge['name']); ?>" placeholder="Enter Expense Name" required>
+                        <select class="form-control select2 select-charge-expense" name="charge_expense_id[]" id="charge_expense_id_<?php echo $c_index; ?>" required style="width:100%">
+                          <option value="">Select Expense Type</option>
+                          <?php foreach($expenses as $exp) { ?>
+                            <option value="<?php echo $exp['id']; ?>" <?php if($exp['id'] == $charge['expense_id']) echo 'selected'; ?>>
+                              <?php echo htmlspecialchars($exp['name']); ?>
+                            </option>
+                          <?php } ?>
+                        </select>
                       </td>
                       <td>
                         <input type="number" step="any" min="0" class="form-control input-charge-amount" name="charge_amount[]" value="<?php echo floatval($charge['amount']); ?>" onkeyup="calculateTotalExpense()" onchange="calculateTotalExpense()" placeholder="0.00" required>
@@ -125,6 +140,7 @@
 <script type="text/javascript">
 var nextindex = <?php echo $index; ?>;
 var ingredientProducts = <?php echo json_encode($ingredient_products); ?>;
+var expenseTypes = <?php echo json_encode($expenses ?? []); ?>;
 
 function updateIngredientOptions() {
   var parentId = $('#parent_id').val();
@@ -295,20 +311,69 @@ function validateForm() {
     return false;
   }
 
+  var selectedExpenses = [];
+  var hasDuplicateExpense = false;
+  var hasInvalidExpenseAmount = false;
+
+  $('.charge-row').each(function() {
+    var rowId = $(this).attr('data-id');
+    var expenseId = $('#charge_expense_id_' + rowId).val();
+    var amount = parseFloat($(this).find('.input-charge-amount').val()) || 0;
+
+    if (expenseId) {
+      if (selectedExpenses.includes(expenseId)) {
+        hasDuplicateExpense = true;
+      }
+      selectedExpenses.push(expenseId);
+      if (amount <= 0) {
+        hasInvalidExpenseAmount = true;
+      }
+    }
+  });
+
+  if (hasDuplicateExpense) {
+    Swal.fire({
+      title: "Error!",
+      text: "Duplicate expenses are not allowed in the charges list.",
+      icon: "error",
+      customClass: { confirmButton: "btn btn-primary" },
+      buttonsStyling: false
+    });
+    return false;
+  }
+
+  if (hasInvalidExpenseAmount) {
+    Swal.fire({
+      title: "Error!",
+      text: "Expense amounts must be greater than 0.",
+      icon: "error",
+      customClass: { confirmButton: "btn btn-primary" },
+      buttonsStyling: false
+    });
+    return false;
+  }
+
   return true;
 }
 
 $(document).ready(function() {
   // Initialize select2 on pre-populated selects
   $('.select-ingredient').select2();
+  $('.select-charge-expense').select2();
 
   // Listen to ingredient selection changes
   $(document).on('change', '.select-ingredient', function() {
     updateIngredientOptions();
   });
 
+  // Listen to expense selection changes
+  $(document).on('change', '.select-charge-expense', function() {
+    updateExpenseSelectOptions();
+  });
+
   // Run once initially to disable pre-populated options
   updateIngredientOptions();
+  updateExpenseSelectOptions();
 
   // Set nextChargeIndex
   nextChargeIndex = <?php echo $c_index; ?>;
@@ -316,12 +381,50 @@ $(document).ready(function() {
 
 var nextChargeIndex = 0;
 
-function appendChargeRow(name = '', amount = '') {
+function updateExpenseSelectOptions() {
+  var selected = [];
+  $('.select-charge-expense').each(function() {
+    var val = $(this).val();
+    if (val) {
+      selected.push(val);
+    }
+  });
+
+  $('.select-charge-expense').each(function() {
+    var $select = $(this);
+    var currentValue = $select.val();
+    
+    $select.find('option').each(function() {
+      var optVal = $(this).val();
+      if (!optVal) return;
+      
+      var shouldDisable = false;
+      if (selected.includes(optVal) && optVal !== currentValue) {
+        shouldDisable = true;
+      }
+      
+      $(this).prop('disabled', shouldDisable);
+    });
+    
+    $select.trigger('change.select2');
+  });
+}
+
+function appendChargeRow(selectedExpenseId = '', amount = '') {
   nextChargeIndex++;
+  
+  var optionsHtml = '<option value="">Select Expense Type</option>';
+  $.each(expenseTypes, function(i, exp) {
+    var selected = (selectedExpenseId && exp.id == selectedExpenseId) ? 'selected' : '';
+    optionsHtml += '<option value="' + exp.id + '" ' + selected + '>' + escapeHtml(exp.name) + '</option>';
+  });
+
   var newRow = `
     <tr class="charge-row" id="charge_row_${nextChargeIndex}" data-id="${nextChargeIndex}">
       <td>
-        <input type="text" class="form-control input-charge-name" name="charge_name[]" value="${name}" placeholder="Enter Expense Name" required>
+        <select class="form-control select2 select-charge-expense" name="charge_expense_id[]" id="charge_expense_id_${nextChargeIndex}" required style="width:100%">
+          ${optionsHtml}
+        </select>
       </td>
       <td>
         <input type="number" step="any" min="0" class="form-control input-charge-amount" name="charge_amount[]" value="${amount}" onkeyup="calculateTotalExpense()" onchange="calculateTotalExpense()" placeholder="0.00" required>
@@ -334,11 +437,14 @@ function appendChargeRow(name = '', amount = '') {
     </tr>
   `;
   $('#charge_area').append(newRow);
+  $('#charge_expense_id_' + nextChargeIndex).select2();
+  updateExpenseSelectOptions();
   calculateTotalExpense();
 }
 
 function removeChargeRow(id) {
   $('#charge_row_' + id).remove();
+  updateExpenseSelectOptions();
   calculateTotalExpense();
 }
 

@@ -198,8 +198,8 @@
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
               <label>Supplier <span class="required">*</span></label>
-              <select class="form-select select2" name="supplier_id" id="supplier_id" required>
-                <option value="">Select Supplier</option>
+              <select class="form-select select2" name="supplier_id[]" id="supplier_id" multiple required>
+               
                 <?php foreach ($suppliers as $supplier): ?>
                   <option value="<?php echo $supplier['id']; ?>"><?php echo $supplier['name']; ?></option>
                 <?php endforeach; ?>
@@ -451,9 +451,9 @@ $(document).ready(function () {
         $('.category-select').select2('open');
     });
     
-    $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
-        $('#supplier_id').select2('open');
-    });
+    // $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
+    //     $('#supplier_id').select2('open');
+    // });
 
     $(document).on('input', 'input[name="duty_charge"]', function () {
         let val = parseFloat($(this).val());

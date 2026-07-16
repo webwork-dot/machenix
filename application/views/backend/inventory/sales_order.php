@@ -75,6 +75,12 @@
                             <span class="d-none d-md-block">Complete</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=all" class="nav-link <?php echo ($status == 'all') ? 'active' : ''; ?>">
+                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                            <span class="d-none d-md-block">All Orders</span>
+                        </a>
+                    </li>
                     
                 </ul>
             </div>

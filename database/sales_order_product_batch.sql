@@ -40,6 +40,8 @@ CREATE TABLE `sales_order_product_batch` (
   `black_qty` int(11) NOT NULL DEFAULT 0,
   `recieved_qty` int(11) NOT NULL DEFAULT 0,
   `recieved_black_qty` int(11) NOT NULL DEFAULT 0,
+  `return_qty` int(11) NOT NULL DEFAULT 0,
+  `return_black_qty` int(11) NOT NULL DEFAULT 0,
   `amount` decimal(16,2) NOT NULL DEFAULT 0.00,
   `bill_amount` decimal(16,2) NOT NULL DEFAULT 0.00,
   `bill_total` decimal(16,2) NOT NULL DEFAULT 0.00,

@@ -42,6 +42,7 @@ CREATE TABLE `formula_product_in` (
   `actual_cost_pc` decimal(16,2) NOT NULL DEFAULT 0.00,
   `total_expense` decimal(16,2) NOT NULL DEFAULT 0.00,
   `final_total` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `remark` TEXT DEFAULT NULL,
   `added_by` int(11) DEFAULT NULL,
   `added_by_name` varchar(255) DEFAULT NULL,
   `added_date` datetime DEFAULT current_timestamp()

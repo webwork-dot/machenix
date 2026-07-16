@@ -214,10 +214,12 @@ function formatNumber($value)
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
               <label>Supplier <span class="required">*</span></label>
-              <select class="form-select select2" name="supplier_id" id="supplier_id" required>
-                <option value="">Select Supplier</option>
+              <?php 
+              $selected_suppliers = !empty($data['supplier_id']) ? explode(',', $data['supplier_id']) : [];
+              ?>
+              <select class="form-select select2" name="supplier_id[]" id="supplier_id" multiple required>
                 <?php foreach ($suppliers as $supplier): ?>
-                  <option value="<?php echo $supplier['id']; ?>" <?php echo ($data['supplier_id'] == $supplier['id']) ? 'selected' : ''; ?>><?php echo $supplier['name']; ?></option>
+                  <option value="<?php echo $supplier['id']; ?>" <?php echo in_array($supplier['id'], $selected_suppliers) ? 'selected' : ''; ?>><?php echo $supplier['name']; ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -639,9 +641,9 @@ function formatNumber($value)
       $('.category-select').select2('open');
     });
 
-    $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
-      $('#supplier_id').select2('open');
-    });
+    // $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
+    //   $('#supplier_id').select2('open');
+    // });
 
     $(document).on('input', 'input[name="duty_charge"]', function () {
       let val = parseFloat($(this).val());

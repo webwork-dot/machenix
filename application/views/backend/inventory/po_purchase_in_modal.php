@@ -62,7 +62,7 @@ foreach ($products_raw as $product) {
 
 // Get supplier list for the "Add Supplier" modal
 $company_id = $this->session->userdata('company_id');
-$supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' ORDER BY name ASC")->result_array();
+$supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' AND type='import' ORDER BY name ASC")->result_array();
 ?>
 
 <style>
@@ -556,7 +556,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     <th style="width: 100px;">Duty Surcharge 10%</th>
                                     <th style="width: 100px;">Taxable Value</th>
                                     <th style="width: 100px;">GST Amt</th>
-                                    <th style="width: 200px;">Total Amt</th>
+                                    <th style="width: 200px;">Total Duty/GST</th>
                                 </tr>
                             </thead>
                             <tfoot>

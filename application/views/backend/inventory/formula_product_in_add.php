@@ -62,6 +62,15 @@
           </div>
         </div>
 
+        <div class="row mb-1">
+          <div class="col-12">
+            <div class="form-group">
+              <label class="form-label font-weight-bold" for="remark">Remark</label>
+              <textarea class="form-control" name="remark" id="remark" rows="2" placeholder="Enter remark"></textarea>
+            </div>
+          </div>
+        </div>
+
         <!-- Ingredients Stock Allocation -->
         <div class="row" id="ingredients_wrapper" style="display:none;">
           <div class="col-12">
@@ -184,6 +193,7 @@
 
 <script type="text/javascript">
 var ingredientList = [];
+var expenseTypes = <?php echo json_encode($expenses ?? []); ?>;
 
 function loadIngredientsAndExpenses() {
   var productId = $('#product_id').val();
@@ -276,10 +286,13 @@ function loadIngredientsAndExpenses() {
         var expHtml = '';
         if (res.expenses && res.expenses.length > 0) {
           $.each(res.expenses, function(i, exp) {
-            expHtml += createExpenseRowMarkup(exp.name, exp.amount);
+            var randomId = Math.floor(Math.random() * 1000000);
+            expHtml += createExpenseRowMarkup(exp.expense_id, exp.amount, randomId);
           });
         }
         $('#expense_tbody').html(expHtml);
+        $('#expense_tbody .select-charge-expense').select2();
+        updateExpenseSelectOptions();
 
         updateRequiredQuantities();
         recalculateAll();
@@ -356,6 +369,9 @@ function addBatchRow(ingId) {
   $(`#batches_container_${ingId}`).append(rowHtml);
   $(`#batch_row_${randomId} .select-batch`).select2();
   updateBatchSelectOptions(ingId);
+  if ($('#type').val() === 'black') {
+    $(`#batch_row_${randomId} .white-qty-input`).prop('readonly', true).val(0);
+  }
 }
 
 function removeBatchRow(button, ingId) {
@@ -425,6 +441,11 @@ function onBatchSelectChange(select) {
   $row.find('.black-cost-input').val(blackCost.toFixed(2));
 
   $row.find('.white-qty-input, .black-qty-input').prop('disabled', false);
+  if ($('#type').val() === 'black') {
+    $row.find('.white-qty-input').prop('readonly', true).val(0);
+  } else {
+    $row.find('.white-qty-input').prop('readonly', false);
+  }
 
   // Set default allocated values (max possible but not exceeding required remaining)
   var requiredTotal = parseInt($(`#ing_row_${ingId}`).find('.required-qty-cell').text()) || 0;
@@ -439,8 +460,11 @@ function onBatchSelectChange(select) {
 
   var remaining = Math.max(0, requiredTotal - currentAllocated);
   
-  // Allocate white first
-  var w_to_alloc = Math.min(remaining, whiteStock);
+  // Allocate white first (only if type is white)
+  var w_to_alloc = 0;
+  if ($('#type').val() !== 'black') {
+    w_to_alloc = Math.min(remaining, whiteStock);
+  }
   remaining -= w_to_alloc;
   var b_to_alloc = Math.min(remaining, blackStock);
 
@@ -571,25 +595,67 @@ function recalculateAll() {
   $('#grand_final_total').val((grandActualCost + grandExpense).toFixed(2));
 }
 
+function updateExpenseSelectOptions() {
+  var selected = [];
+  $('.select-charge-expense').each(function() {
+    var val = $(this).val();
+    if (val) {
+      selected.push(val);
+    }
+  });
+
+  $('.select-charge-expense').each(function() {
+    var $select = $(this);
+    var currentValue = $select.val();
+    
+    $select.find('option').each(function() {
+      var optVal = $(this).val();
+      if (!optVal) return;
+      
+      var shouldDisable = false;
+      if (selected.includes(optVal) && optVal !== currentValue) {
+        shouldDisable = true;
+      }
+      
+      $(this).prop('disabled', shouldDisable);
+    });
+    
+    $select.trigger('change.select2');
+  });
+}
+
 function addExpenseRow() {
-  var markup = createExpenseRowMarkup('', '0.00');
+  var randomId = Math.floor(Math.random() * 1000000);
+  var markup = createExpenseRowMarkup('', '0.00', randomId);
   $('#expense_tbody').append(markup);
+  $('#charge_expense_id_' + randomId).select2();
+  updateExpenseSelectOptions();
 }
 
 function removeExpenseRow(button) {
   $(button).closest('tr').remove();
+  updateExpenseSelectOptions();
   recalculateAll();
 }
 
-function createExpenseRowMarkup(name, amount) {
-  var randomId = Math.floor(Math.random() * 1000000);
+function createExpenseRowMarkup(selectedExpenseId = '', amount = '', rowId = '') {
+  var randomId = rowId || Math.floor(Math.random() * 1000000);
+  
+  var optionsHtml = '<option value="">Select Expense Type</option>';
+  $.each(expenseTypes, function(i, exp) {
+    var selected = (selectedExpenseId && exp.id == selectedExpenseId) ? 'selected' : '';
+    optionsHtml += '<option value="' + exp.id + '" ' + selected + '>' + escapeHtml(exp.name) + '</option>';
+  });
+
   return `
     <tr class="expense-row" id="expense_row_${randomId}">
       <td>
-        <input type="text" class="form-control form-control-sm" name="charge_name[]" value="${escapeHtml(name)}" placeholder="Expense Name" required>
+        <select class="form-control form-control-sm select2 select-charge-expense" name="charge_expense_id[]" id="charge_expense_id_${randomId}" required style="width:100%">
+          ${optionsHtml}
+        </select>
       </td>
       <td>
-        <input type="number" step="any" min="0" class="form-control form-control-sm text-end expense-amount-input" name="charge_amount[]" value="${parseFloat(amount).toFixed(2)}" onkeyup="onExpenseAmountChange(this)" onchange="onExpenseAmountChange(this)" required>
+        <input type="number" step="any" min="0" class="form-control form-control-sm text-end expense-amount-input" name="charge_amount[]" value="${parseFloat(amount || 0).toFixed(2)}" onkeyup="onExpenseAmountChange(this)" onchange="onExpenseAmountChange(this)" required>
       </td>
       <td class="text-center align-middle">
         <button type="button" class="btn btn-flat-danger btn-sm p-25" onclick="removeExpenseRow(this)">
@@ -669,7 +735,61 @@ function validateProductionForm() {
     return false;
   }
 
+  var selectedExpenses = [];
+  var hasDuplicateExpense = false;
+  var hasInvalidExpenseAmount = false;
+
+  $('.expense-row').each(function() {
+    var expenseId = $(this).find('.select-charge-expense').val();
+    var amount = parseFloat($(this).find('.expense-amount-input').val()) || 0;
+
+    if (expenseId) {
+      if (selectedExpenses.includes(expenseId)) {
+        hasDuplicateExpense = true;
+      }
+      selectedExpenses.push(expenseId);
+      if (amount <= 0) {
+        hasInvalidExpenseAmount = true;
+      }
+    }
+  });
+
+  if (hasDuplicateExpense) {
+    Swal.fire({
+      title: "Validation Error",
+      text: "Duplicate expenses are not allowed in the charges list.",
+      icon: "error"
+    });
+    return false;
+  }
+
+  if (hasInvalidExpenseAmount) {
+    Swal.fire({
+      title: "Validation Error",
+      text: "Expense amounts must be greater than 0.",
+      icon: "error"
+    });
+    return false;
+  }
+
   return true;
+}
+
+function handleTypeRestriction() {
+  var type = $('#type').val();
+  if (type === 'black') {
+    $('.white-qty-input').prop('readonly', true).val(0);
+    $('.white-qty-input').each(function() {
+      calculateBatchCosts($(this).closest('tr'));
+    });
+    recalculateAll();
+  } else {
+    $('.white-qty-input').each(function() {
+      if (!$(this).prop('disabled')) {
+        $(this).prop('readonly', false);
+      }
+    });
+  }
 }
 
 $(document).ready(function() {
@@ -681,6 +801,16 @@ $(document).ready(function() {
   // Handle selections
   $('#product_id, #warehouse_id').on('change', function() {
     loadIngredientsAndExpenses();
+  });
+
+  // Handle type change
+  $('#type').on('change', function() {
+    handleTypeRestriction();
+  });
+
+  // Listen to expense selection changes
+  $(document).on('change', '.select-charge-expense', function() {
+    updateExpenseSelectOptions();
   });
 
   // Handle total quantity changes

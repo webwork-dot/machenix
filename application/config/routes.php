@@ -193,6 +193,8 @@ $route[$r_inventory . '/stock-transfer-list'] = 'inventory/stock_transfer_list';
 
 $route[$r_inventory . '/goods-return'] 		= 'inventory/goods_return';
 $route[$r_inventory . '/goods-return/add'] 	= 'inventory/goods_return_form/add';
+$route[$r_inventory . '/goods-return/get-invoices-or-orders'] = 'inventory/get_invoices_or_orders_by_customer';
+$route[$r_inventory . '/goods-return/get-details'] = 'inventory/get_invoice_or_order_details';
 $route[$r_inventory . '/goods-return/view/(:any)'] 	= 'inventory/goods_return_form/view/$1';
 
 $route[$r_inventory . '/payment-reconceliation'] 		= 'inventory/payment_reconceliation';

@@ -44,6 +44,7 @@ CREATE TABLE `invoice_order_products` (
   `gst_amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `bill_total` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `final_total` decimal(16,5) NOT NULL DEFAULT 0.00000
+  `return_qty` int(11) NOT NULL DEFAULT 0,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --

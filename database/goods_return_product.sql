@@ -1,6 +1,8 @@
 CREATE TABLE `goods_return_product` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL,
+  `order_id` int(11) NOT NULL,
+  `product_batch_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `product_name` varchar(250) NOT NULL,
   `white_qty` int(11) NOT NULL DEFAULT 0,
@@ -9,6 +11,8 @@ CREATE TABLE `goods_return_product` (
   `white_total` decimal(16,2) NOT NULL DEFAULT 0.00000,
   `black_amt` decimal(16,2) NOT NULL DEFAULT 0.00000,
   `black_total` decimal(16,2) NOT NULL DEFAULT 0.00000,
+  `gst` decimal(16,2) NOT NULL DEFAULT 0.00000,
+  `gst_amt` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `final_total` decimal(16,2) NOT NULL DEFAULT 0.00000,
   `item_code` varchar(250) DEFAULT NULL,
   `quantity` varchar(250) NOT NULL,

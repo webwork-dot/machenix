@@ -106,19 +106,19 @@
             <td class="text-end">${fmt(p.black_qty, 0)}</td>
             <td class="text-end">${fmt(p.act_qty, 0)}</td>
             <td class="text-end">${fmt(p.cbm_per_pc, 5)}</td>
-            <td class="text-end">${fmt(p.off_cbm_total, 2)}</td>
-            <td class="text-end">${fmt(p.actual_cbm_total, 2)}</td>
-            <td class="text-end">${fmt(p.actual_cost_with_exp, 5)}</td>
-            <td class="text-end">${fmt(p.rmb_per_pc, 2)}</td>
-            <td class="text-end">${fmt(p.rmb_total, 2)}</td>
-            <td class="text-end">${fmt(p.usd_per_pc, 2)}</td>
-            <td class="text-end">${fmt(p.usd_total, 2)}</td>
-            <td class="text-end">${fmt(p.cost_without_expense_rs, 2)}</td>
-            <td class="text-end">${fmt(p.total_rs_without_expense, 2)}</td>
-            <td class="text-end">${fmt(p.off_usd_per_pc, 2)}</td>
-            <td class="text-end">${fmt(p.total_off_usd, 2)}</td>
-            <td class="text-end">${fmt(p.off_rs_per_pc, 2)}</td>
-            <td class="text-end">${fmt(p.total_off_rs, 2)}</td>
+            <td class="text-end">${fmt(p.off_cbm_total, 5)}</td>
+            <td class="text-end">${fmt(p.actual_cbm_total, 5)}</td>
+            <td class="text-end">${fmt(p.actual_cost_with_exp, 2)}</td>
+            <td class="text-end">${fmt(p.rmb_per_pc, 5)}</td>
+            <td class="text-end">${fmt(p.rmb_total, 5)}</td>
+            <td class="text-end">${fmt(p.usd_per_pc, 5)}</td>
+            <td class="text-end">${fmt(p.usd_total, 5)}</td>
+            <td class="text-end">${fmt(p.cost_without_expense_rs, 5)}</td>
+            <td class="text-end">${fmt(p.total_rs_without_expense, 5)}</td>
+            <td class="text-end">${fmt(p.off_usd_per_pc, 5)}</td>
+            <td class="text-end">${fmt(p.total_off_usd, 5)}</td>
+            <td class="text-end">${fmt(p.off_rs_per_pc, 5)}</td>
+            <td class="text-end">${fmt(p.total_off_rs, 5)}</td>
             <td class="text-end">${fmt(p.off_duty_percent, 2)}</td>
             <td class="text-end">${fmt(p.off_duty_amt, 2)}</td>
             <td class="text-end">${fmt(p.off_surcharge, 2)}</td>
@@ -208,25 +208,25 @@
                   <td class="text-end">${fmt(totals.act_qty, 0)}</td>
                   <!-- <td class="text-end">${fmt(totals.cbm_per_pc, 5)}</td> -->
                   <td class="text-end">-</td>
-                  <td class="text-end">${fmt(totals.off_cbm_total, 2)}</td>
-                  <td class="text-end">${fmt(totals.actual_cbm_total, 2)}</td>
-                  <!-- <td class="text-end">${fmt(totals.actual_cost_with_exp, 5)}</td> -->
+                  <td class="text-end">${fmt(totals.off_cbm_total, 5)}</td>
+                  <td class="text-end">${fmt(totals.actual_cbm_total, 5)}</td>
+                  <!-- <td class="text-end">${fmt(totals.actual_cost_with_exp, 2)}</td> -->
                   <td class="text-end">-</td>
-                  <!-- <td class="text-end">${fmt(totals.rmb_per_pc, 2)}</td> -->
+                  <!-- <td class="text-end">${fmt(totals.rmb_per_pc, 5)}</td> -->
                   <td class="text-end">-</td>
-                  <td class="text-end">${fmt(totals.rmb_total, 2)}</td>
-                  <!-- <td class="text-end">${fmt(totals.usd_per_pc, 2)}</td> -->
+                  <td class="text-end">${fmt(totals.rmb_total, 5)}</td>
+                  <!-- <td class="text-end">${fmt(totals.usd_per_pc, 5)}</td> -->
                   <td class="text-end">-</td>
-                  <td class="text-end">${fmt(totals.usd_total, 2)}</td>
-                  <!-- <td class="text-end">${fmt(totals.cost_without_expense_rs, 2)}</td> -->
+                  <td class="text-end">${fmt(totals.usd_total, 5)}</td>
+                  <!-- <td class="text-end">${fmt(totals.cost_without_expense_rs, 5)}</td> -->
                   <td class="text-end">-</td>
-                  <td class="text-end">${fmt(totals.total_rs_without_expense, 2)}</td>
-                  <!-- <td class="text-end">${fmt(totals.off_usd_per_pc, 2)}</td> -->
+                  <td class="text-end">${fmt(totals.total_rs_without_expense, 5)}</td>
+                  <!-- <td class="text-end">${fmt(totals.off_usd_per_pc, 5)}</td> -->
                   <td class="text-end">-</td>
-                  <td class="text-end">${fmt(totals.total_off_usd, 2)}</td>
-                  <!-- <td class="text-end">${fmt(totals.off_rs_per_pc, 2)}</td> -->
+                  <td class="text-end">${fmt(totals.total_off_usd, 5)}</td>
+                  <!-- <td class="text-end">${fmt(totals.off_rs_per_pc, 5)}</td> -->
                   <td class="text-end">-</td>
-                  <td class="text-end">${fmt(totals.total_off_rs, 2)}</td>
+                  <td class="text-end">${fmt(totals.total_off_rs, 5)}</td>
                   <!-- <td class="text-end">${fmt(totals.off_duty_percent, 2)}</td> -->
                   <td class="text-end">-</td>
                   <td class="text-end">${fmt(totals.off_duty_amt, 2)}</td>
@@ -357,17 +357,44 @@
       let totalGst = 0;
       let totalFinal = 0;
 
+      // Build a map of supplier ID -> supplier name
+      const supplierMap = {};
+      if (Array.isArray(suppliers)) {
+        suppliers.forEach(s => {
+          supplierMap[String(s.supplier_id)] = s.supplier_name;
+        });
+      }
+
       expenseItems.forEach(item => {
         const net = toNum(item.amount);
         const gst = toNum(item.gst_amt);
         const final = toNum(item.total_amt);
+        const supplier_id = item.supplier_id ? item.supplier_id.split(',').map(id => id.trim()).filter(id => id !== '') : [];
+        
+        let nameHtml = `<span>${escapeHtml(item.expense_name)}</span>`;
+        if (Array.isArray(suppliers) && supplier_id.length !== suppliers.length) {
+          const expSupplierNames = supplier_id.map(id => supplierMap[String(id)] || 'Unknown Supplier');
+          const namesTooltip = expSupplierNames.join(', ');
+          nameHtml += `
+            <i class="fa fa-info-circle text-info" 
+               data-toggle="tooltip" 
+               data-bs-placement="top" 
+               title="${escapeHtml(namesTooltip)}" 
+               style="cursor: pointer;"></i>
+          `;
+        }
+
         totalNet += net;
         totalGst += gst;
         totalFinal += final;
 
         expRowsHtml += `
           <tr>
-            <td>${escapeHtml(item.expense_name)}</td>
+            <td>
+              <div class="d-flex justify-content-between align-items-center">
+                ${nameHtml}
+              </div>
+            </td>
             <td class="text-end">${fmt(net, 2)}</td>
             <td class="text-end">${fmt(gst, 2)}</td>
             <td class="text-end">${fmt(final, 2)}</td>
@@ -401,6 +428,16 @@
           </div>
         </div>
       `);
+
+      // Initialize tooltips in the newly added element
+      if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call($expenseCol[0].querySelectorAll('[data-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      } else if ($.fn.tooltip) {
+        $expenseCol.find('[data-toggle="tooltip"]').tooltip();
+      }
     }
 
     if (Array.isArray(supplierAccounts) && supplierAccounts.length > 0) {
