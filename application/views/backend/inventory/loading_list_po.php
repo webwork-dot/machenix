@@ -151,10 +151,10 @@ $(document).ready(function($) {
         "data": "total_usd"
       },
       {
-        "data": "delivery_date"
+        "data": "arrival_date"
       },
       {
-        "data": "arrival_date"
+        "data": "expected_arrival_date"
       },
       {
         "data": "status"

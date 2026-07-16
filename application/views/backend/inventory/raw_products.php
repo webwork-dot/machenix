@@ -30,6 +30,7 @@
                <thead>
                   <tr>
 					<th>#</th>
+					<th>Image</th>
 					<th>SKU Code</th>
 					<th style="width: 45%;">Product Name</th>
 					<th>Alias</th>
@@ -83,6 +84,7 @@
                      
             "columns": [
                 { "data": "sr_no" },
+                { "data": "image" },
                 { "data": "item_code" },
                 { "data": "name" },
                 { "data": "alias" },
@@ -96,7 +98,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0, 1, 2, 3, 4, 5],
+                       "columns": [0, 2, 3, 4, 5, 6],
                        
                     }
                 },
@@ -105,7 +107,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5]
+                       "columns": [0,2,3,4,5,6]
                     }
                 }
             ], 

@@ -98,16 +98,26 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>HSN Code <span class="required req-cont">*</span></label>
-              <input type="text" class="form-control req-inp" placeholder="Enter HSN Code" name="hsn_code"
-                value="<?php echo $data['hsn_code']; ?>" required="">
+              <label>GST Applicable <span class="required">*</span></label>
+              <select class="form-select select2" name="is_gst_applicable" id="is_gst_applicable" required>
+                <option value="1" <?php echo (!isset($data['is_gst_applicable']) || $data['is_gst_applicable'] == 1) ? 'selected' : ''; ?>>Yes</option>
+                <option value="0" <?php echo (isset($data['is_gst_applicable']) && $data['is_gst_applicable'] == 0) ? 'selected' : ''; ?>>No</option>
+              </select>
             </div>
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Tax Rate (in %)<span class="required req-cont">*</span></label>
-              <input type="number" class="form-control req-inp" placeholder="Enter Tax Rate (in %)" name="gst"
+              <label>HSN Code <span class="required gst-req-star">*</span></label>
+              <input type="text" class="form-control" placeholder="Enter HSN Code" name="hsn_code"
+                value="<?php echo $data['hsn_code']; ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Tax Rate (in %)<span class="required gst-req-star">*</span></label>
+              <input type="number" class="form-control" placeholder="Enter Tax Rate (in %)" name="gst"
                 value="<?php echo $data['gst']; ?>">
             </div>
           </div>
@@ -136,8 +146,15 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Selling Price <span class="required">*</span></label>
-              <input type="number" class="form-control" placeholder="Enter Selling Price" name="costing_price"
+              <label>Min Billing Price <span class="required">*</span></label>
+              <input type="number" class="form-control" placeholder="Enter Min Billing Price" name="product_mrp" required value="<?php echo $data['product_mrp']; ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Min Selling Price <span class="required">*</span></label>
+              <input type="number" class="form-control" placeholder="Enter Min Selling Price" name="costing_price"
                 value="<?php echo $data['costing_price']; ?>" required>
             </div>
           </div>
@@ -280,7 +297,25 @@
 
 <script>
 
+function toggleGstRequirements() {
+  var is_gst = $('#is_gst_applicable').val();
+  if (is_gst == '1') {
+    $('input[name="hsn_code"]').attr('required', 'required');
+    $('input[name="gst"]').attr('required', 'required');
+    $('.gst-req-star').removeClass('d-none');
+  } else {
+    $('input[name="hsn_code"]').removeAttr('required');
+    $('input[name="gst"]').removeAttr('required');
+    $('.gst-req-star').addClass('d-none');
+  }
+}
+
   $(document).ready(function () {
+    $('#is_gst_applicable').change(function() {
+      toggleGstRequirements();
+    });
+    toggleGstRequirements();
+
     $(document).on('focus', '.category-select + .select2 .select2-selection', function () {
       $('.category-select').select2('open');
     });

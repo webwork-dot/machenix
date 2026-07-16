@@ -1597,6 +1597,8 @@ class Inventory_model extends CI_Model
 				$data['item_code']      = $item_code;
 				$data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
 				$data['gst']            = ($gst) ? $gst : 0;
+				$is_gst_applicable      = $this->input->post('is_gst_applicable');
+				$data['is_gst_applicable'] = isset($is_gst_applicable) ? intval($is_gst_applicable) : 1;
 
 				$duty_charge = clean_and_escape($this->input->post('duty_charge') ?? 0);
 				$data['duty_charge']    = $duty_charge;
@@ -1881,6 +1883,8 @@ class Inventory_model extends CI_Model
 			$data['costing_price']  	= clean_and_escape($this->input->post('costing_price'));
 			$data['gst']            	= ($gst) ? $gst : 0;
 			$data['unit']           	= clean_and_escape($this->input->post('unit'));
+			$is_gst_applicable      	= $this->input->post('is_gst_applicable');
+			$data['is_gst_applicable'] 	= isset($is_gst_applicable) ? intval($is_gst_applicable) : 1;
 
 			$duty_charge = clean_and_escape($this->input->post('duty_charge') ?? 0);
 			$data['duty_charge']    = $duty_charge;
@@ -2229,7 +2233,7 @@ class Inventory_model extends CI_Model
 		$total_count = $this->db->query("SELECT  p.id FROM raw_products as p
 		LEFT JOIN product_variation as pv ON p.id = pv.product_id
 		WHERE (p.is_deleted='0' AND p.product_type='import') $keyword_filter group by p.id ORDER BY p.id ASC")->num_rows();
-		$query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty FROM raw_products as p
+		$query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty, (SELECT image FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, id ASC LIMIT 1) AS product_image FROM raw_products as p
 		LEFT JOIN product_variation as pv ON p.id = pv.product_id
 		WHERE (p.is_deleted='0' AND p.product_type='import') $keyword_filter group by p.id ORDER BY p.id DESC LIMIT $start, $length");
 
@@ -2281,6 +2285,7 @@ class Inventory_model extends CI_Model
 
 				$data[] = array(
 					"sr_no"       => ++$start,
+					"image"       => !empty($item['product_image']) ? '<img src="' . base_url() . $item['product_image'] . '" width="40" height="40" style="object-fit: cover; border-radius: 4px;">' : '-',
 					"id"          => $item['id'],
 					"name"        => $item['name'],
 					"alias"        => $item['alias'],

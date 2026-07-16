@@ -416,15 +416,12 @@
                     </td>
                     <td><input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('1')" value="1" class="form-control" required=""></td>
                     <td>
-                      <div class="input-group">
-                        <input type="number" step="any" id="master_amount_1" name="master_amount[]" onkeyup="calculate_amt('1')" value="" class="form-control">
-                        <span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="1" onclick="showPriceHistory('1')"><i class="fa fa-history px-1"></i></span>
-                      </div>
+                      <input type="hidden" id="master_amount_1" name="master_amount[]" value="">
                     </td>
                     <td><input type="hidden" id="total_amount_1" name="total_amount[]" value="0"></td>
                     <td class="col-hide"><input type="hidden" id="bill_amount_1" name="bill_amount[]" value="0" data-manual="false"></td>
                     <td class="col-hide"><input type="hidden" id="bill_total_1" name="bill_total[]" value="0"></td>
-                    <td><input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_amt('1')" value="" class="form-control"></td>
+                    <td><input type="hidden" id="gst_1" name="gst[]" value=""></td>
                     <td><input type="hidden" id="gst_amount_1" name="gst_amount[]" value="0"></td>
                     <td><input type="hidden" id="total_bill_gst_amount_1" name="total_bill_gst_amount[]" value="0"></td>
                     <td class="col-hide"><input type="hidden" id="black_amount_per_unit_1" name="black_amt[]" value="0"></td>
@@ -742,15 +739,12 @@ function appendRequirement() {
         </td>
         <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
         <td>
-          <div class="input-group">
-            <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')">
-            <span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="${nextindex}" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
-          </div>
+          <input type="hidden" id="master_amount_${nextindex}" name="master_amount[]">
         </td>
         <td><input type="hidden" id="total_amount_${nextindex}" name="total_amount[]" value="0"></td>
         <td class="col-hide"><input type="hidden" id="bill_amount_${nextindex}" name="bill_amount[]" value="0" data-manual="false"></td>
         <td class="col-hide"><input type="hidden" id="bill_total_${nextindex}" name="bill_total[]" value="0"></td>
-        <td><input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control" onkeyup="calculate_amt('${nextindex}')"></td>
+        <td><input type="hidden" id="gst_${nextindex}" name="gst[]"></td>
         <td><input type="hidden" id="gst_amount_${nextindex}" name="gst_amount[]" value="0"></td>
         <td><input type="hidden" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" value="0"></td>
         <td class="col-hide"><input type="hidden" id="black_amount_per_unit_${nextindex}" name="black_amt[]" value="0"></td>

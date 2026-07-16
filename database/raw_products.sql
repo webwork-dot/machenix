@@ -32,6 +32,7 @@ CREATE TABLE `raw_products` (
   `costing_price` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `status` tinyint(1) NOT NULL DEFAULT 1,
   `amount` decimal(16,5) NOT NULL,
+  `is_gst_applicable` tinyint(1) NOT NULL DEFAULT 1,
   `gst` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `gst_amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `total_amount` decimal(16,5) NOT NULL DEFAULT 0.00000,

@@ -217,8 +217,18 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>HSN Code <span class="required req-cont">*</span></label>
-              <input type="text" class="form-control req-inp" placeholder="Enter HSN Code" name="hsn_code" required>
+              <label>GST Applicable <span class="required">*</span></label>
+              <select class="form-select select2" name="is_gst_applicable" id="is_gst_applicable" required>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>HSN Code <span class="required gst-req-star">*</span></label>
+              <input type="text" class="form-control" placeholder="Enter HSN Code" name="hsn_code">
             </div>
           </div>
 
@@ -231,8 +241,8 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
-              <label>Tax Rate (in %)<span class="required req-cont">*</span></label>
-              <input type="number" class="form-control req-inp" placeholder="Enter Tax Rate" name="gst" value="0">
+              <label>Tax Rate (in %)<span class="required gst-req-star">*</span></label>
+              <input type="number" class="form-control" placeholder="Enter Tax Rate" name="gst" value="0">
             </div>
           </div>
 
@@ -446,7 +456,25 @@
 
 <script>
 
+function toggleGstRequirements() {
+  var is_gst = $('#is_gst_applicable').val();
+  if (is_gst == '1') {
+    $('input[name="hsn_code"]').attr('required', 'required');
+    $('input[name="gst"]').attr('required', 'required');
+    $('.gst-req-star').removeClass('d-none');
+  } else {
+    $('input[name="hsn_code"]').removeAttr('required');
+    $('input[name="gst"]').removeAttr('required');
+    $('.gst-req-star').addClass('d-none');
+  }
+}
+
 $(document).ready(function () {
+    $('#is_gst_applicable').change(function() {
+      toggleGstRequirements();
+    });
+    toggleGstRequirements();
+
     $(document).on('focus', '.category-select + .select2 .select2-selection', function () {
         $('.category-select').select2('open');
     });
