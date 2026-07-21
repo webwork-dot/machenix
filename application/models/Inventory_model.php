@@ -11129,8 +11129,7 @@ class Inventory_model extends CI_Model
 			}
 		}
 
-		if($status == 'pending' && $status == 'all') {
-
+		if($status == 'pending' || $status == 'all') {
 			$total_count = $this->db->query("
 				SELECT 
 					so.id 
@@ -11529,6 +11528,16 @@ class Inventory_model extends CI_Model
 				so.id 
 			FROM sales_order AS so
 			WHERE (so.is_deleted='0') $keyword_filter 
+				AND EXISTS (
+					SELECT 1
+					FROM sales_commission sc
+					WHERE sc.order_id = so.id
+					GROUP BY sc.order_id
+					HAVING
+							SUM(CASE WHEN sc.is_paid = 1 THEN 1 ELSE 0 END) = 0
+							AND (SUM(sc.shared_commission) >= 0
+							OR SUM(sc.my_commission) >= 0)
+				)
 			ORDER BY so.date DESC
 		")->num_rows();
 
@@ -11537,6 +11546,16 @@ class Inventory_model extends CI_Model
 				so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name 
 			FROM sales_order AS so
 			WHERE (so.is_deleted='0') $keyword_filter  
+				AND EXISTS (
+					SELECT 1
+					FROM sales_commission sc
+					WHERE sc.order_id = so.id
+					GROUP BY sc.order_id
+					HAVING
+							SUM(CASE WHEN sc.is_paid = 1 THEN 1 ELSE 0 END) = 0
+							AND (SUM(sc.shared_commission) >= 0
+							OR SUM(sc.my_commission) >= 0)
+				)
 			ORDER BY so.date DESC LIMIT $start, $length
 		");
 		
