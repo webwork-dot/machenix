@@ -182,6 +182,12 @@
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Black Order</span>
            </a>
         </li>
+        <li class="nav-item <?php if($page_name == 'sales_commission') echo 'active'; ?>">
+           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-commission'); ?>">
+               <i data-feather="align-left"></i>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Commission</span>
+           </a>
+        </li>
 		<?php } ?>
 	   
         <?php if($user_id == 4 || in_array('27',$access_array)) {?>
@@ -363,7 +369,7 @@
         <?php } ?>
         
 		<?php if($user_id == 4) {?>
-        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit') echo 'active'; ?>">
+        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit' || $page_name == 'commission_slab' || $page_name == 'commission_slab_add' || $page_name == 'commission_slab_edit') echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
                 <i class="feather icon-layers"></i>
                 <span class="menu-title text-truncate">My Vendors</span>

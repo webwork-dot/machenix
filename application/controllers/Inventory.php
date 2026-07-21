@@ -201,12 +201,24 @@ class Inventory extends CI_Controller
         // $page_data['staff_type']  = $this->inventory_model->get_staff_type()->result_array();
         $page_data['staff_access']  = $this->inventory_model->get_staff_access()->result_array();
         $page_data['company_list']     = $this->common_model->selectWhere('company', array('is_deleted' => '0'), 'ASC', 'name');
+        $page_data['commissions'] = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
         if ($param1 == 'staff_add') {
             $page_data['page_name'] = 'staff_add';
             $page_data['page_title'] = get_phrase('add_staff');
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'staff_edit') {
             $page_data['data'] = $this->inventory_model->get_staff_by_id($param2)->row_array();
+            $staff_commissions = $this->common_model->getResultById('staff_commission', 'commission_id, customer_comm, distributer_comm', ['staff_id' => $param2]);
+            $existing_comm = [];
+            if (!empty($staff_commissions)) {
+                foreach ($staff_commissions as $sc) {
+                    $existing_comm[$sc['commission_id']] = [
+                        'customer_comm' => $sc['customer_comm'],
+                        'distributer_comm' => $sc['distributer_comm']
+                    ];
+                }
+            }
+            $page_data['existing_comm'] = $existing_comm;
             $page_data['page_name'] = 'staff_edit';
             $page_data['id'] = $param2;
             $page_data['page_title'] = get_phrase('edit_staff');
@@ -605,6 +617,7 @@ class Inventory extends CI_Controller
         $page_data['units_list']     = $this->common_model->select('units');
         $page_data['product_units']  = $this->common_model->getResultById('product_unit', 'id, name', ['is_delete' => '0']);
         $page_data['suppliers']     = $this->common_model->getResultById('supplier', 'id, name', ['company_id' => $company_id, 'type' => 'import', 'is_deleted' => '0']);
+        $page_data['commissions']    = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
         // $page_data['form_list']     = $this->common_model->select('product_form');
         // $page_data['colors']     = $this->common_model->select('colors');
         // $page_data['sizes']     = $this->common_model->select('oc_attribute_values');
@@ -3262,6 +3275,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->delete_customer($param2);
         } elseif ($param1 == "reassign") {
             $this->inventory_model->reassign_customer();
+        } elseif ($param1 == "share") {
+            $this->inventory_model->share_customer();
         } elseif ($param1 == "replicate_post") {
             $this->inventory_model->replicate_customer();
         } elseif ($param1 == "follow") {
@@ -3495,6 +3510,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_conversion_order_post();
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_conversion_order($param2);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['page_name']  = 'conversion_order';
@@ -3718,6 +3735,31 @@ class Inventory extends CI_Controller
             $this->inventory_model->get_completed_sales_order();
         }
     }
+
+    public function sales_commission($param1 = "", $param2 = "", $param3 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+
+            $page_data['navigation']  = 'sales_commission';
+            $page_data['page_name']  = 'sales_commission';
+            $page_data['page_title'] = get_phrase('sales_commission');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_sales_commission()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_sales_commission();
+        }
+    }
+
 
     public function invoice_order_print($id)
     {
@@ -4369,6 +4411,56 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_other_charges();
+        }
+    }
+
+    public function commission_slab($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_commission_slab($param2);
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_commission_slab($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_commission_slab($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'commission_slab';
+            $page_data['page_name']  = 'commission_slab';
+            $page_data['page_title'] = 'Commission Slab';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function commission_slab_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['navigation']  = 'commission_slab';
+        if ($param1 == 'commission_slab_add') {
+            $page_data['page_name']  = 'commission_slab_add';
+            $page_data['page_title'] = 'Add Commission Slab';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'commission_slab_edit') {
+            $data                    = $this->inventory_model->get_commission_slab_by_id($param2)->row_array();
+            $page_data['data']       = $data;
+            $page_data['page_name']  = 'commission_slab_edit';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Commission Slab';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_commission_slab()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_commission_slab();
         }
     }
  

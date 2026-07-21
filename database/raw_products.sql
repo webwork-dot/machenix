@@ -1,6 +1,7 @@
 CREATE TABLE `raw_products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `is_variation` tinyint(1) NOT NULL DEFAULT 0,
+  `commission_id` int(11) NOT NULL,
   `categories` varchar(255) DEFAULT NULL,
   `sizes` varchar(255) DEFAULT NULL,
   `group_id` varchar(255) NOT NULL,

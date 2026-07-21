@@ -30,6 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `sales_order` (
   `id` int(11) NOT NULL,
   `type` enum('normal','bill','conversion') NOT NULL DEFAULT 'normal',
+  `sale_person_id` varchar(250) NOT NULL,
   `unique_id` varchar(250) DEFAULT NULL,
   `order_type` enum('normal','excel','') NOT NULL DEFAULT 'normal',
   `order_no` varchar(250) NOT NULL,

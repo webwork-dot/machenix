@@ -129,6 +129,18 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <div class="form-group">
+              <label>Commission <span class="required">*</span></label>
+              <select class="form-select select2" name="commission_id" required>
+                <option value="">Select Commission</option>
+                <?php foreach ($commissions as $comm): ?>
+                  <option value="<?php echo $comm['id']; ?>"><?php echo $comm['name']; ?> (<?php echo $comm['commission']; ?>%)</option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
               <label>Opening Stock</label>
               <input type="number" class="form-control" placeholder="Enter Opening Stock" name="opening_stock" min="0">
             </div>

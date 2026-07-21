@@ -249,10 +249,7 @@ class Common_model extends CI_Model{
         return $sql->name;
     }
 
-
-
-
-  public function state_list()
+    public function state_list()
     {
         $query = $this->db->query("SELECT * FROM states WHERE id='1568' order by name");
         $count = $query->num_rows();

@@ -1,6 +1,8 @@
 CREATE TABLE `customer` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` enum('customer','leads') NOT NULL DEFAULT 'customer',
+  `is_distributor` tinyint(1) NOT NULL DEFAULT 0,
+  `shared_id` int(11) NOT NULL DEFAULT 0,
   `company_id` varchar(255) DEFAULT NULL,
   `company_name` varchar(250) NOT NULL,
   `address` longtext DEFAULT NULL,

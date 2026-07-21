@@ -108,6 +108,40 @@ $company_ids = explode(',', $data['company_id']);
                      <input type="file" class="form-control" name="pan_photo" accept="image/*">
                     </div>
                   </div>
+
+                  <div class="col-12 mt-2">
+                    <h5 class="mb-1">Commissions</h5>
+                    <div class="table-responsive">
+                      <table class="table table-bordered">
+                        <thead>
+                          <tr>
+                            <th>Commission Slab</th>
+                            <th>Customer Commission (%)</th>
+                            <th>Distributor Commission (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <?php foreach ($commissions as $comm): 
+                            $cust_val = isset($existing_comm[$comm['id']]['customer_comm']) ? floatval($existing_comm[$comm['id']]['customer_comm']) : '';
+                            $dist_val = isset($existing_comm[$comm['id']]['distributer_comm']) ? floatval($existing_comm[$comm['id']]['distributer_comm']) : '';
+                          ?>
+                            <tr>
+                              <td>
+                                <?php echo $comm['name']; ?> (<?php echo $comm['commission']; ?>%)
+                                <input type="hidden" name="commission_ids[]" value="<?php echo $comm['id']; ?>">
+                              </td>
+                              <td>
+                                <input type="number" step="0.01" class="form-control" name="customer_comm[<?php echo $comm['id']; ?>]" value="<?php echo $cust_val; ?>" placeholder="Enter Customer Commission">
+                              </td>
+                              <td>
+                                <input type="number" step="0.01" class="form-control" name="distributer_comm[<?php echo $comm['id']; ?>]" value="<?php echo $dist_val; ?>" placeholder="Enter Distributor Commission">
+                              </td>
+                            </tr>
+                          <?php endforeach; ?>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                </div>
                 
                 <div class="row">

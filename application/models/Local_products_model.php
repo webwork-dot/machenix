@@ -233,6 +233,7 @@ class Local_products_model extends CI_Model
                 $data['name']           = $name;
                 $data['alias']          = clean_and_escape($this->input->post('alias'));
                 $data['categories']     = $categories;
+                $data['commission_id']  = clean_and_escape($this->input->post('commission_id'));
                 $data['item_code']      = $item_code;
                 $data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
                 $data['gst']            = ($gst) ? $gst : 0;
@@ -416,6 +417,7 @@ class Local_products_model extends CI_Model
             $data['alias']          = clean_and_escape($this->input->post('alias'));
             $data['is_variation']   = 0;
             $data['categories']     = $categories;
+            $data['commission_id']  = clean_and_escape($this->input->post('commission_id'));
             $data['item_code']      = $item_code;
             $data['hsn_code']       = clean_and_escape($this->input->post('hsn_code'));
             $data['min_stock']      = clean_and_escape($this->input->post('intimation'));

@@ -123,6 +123,17 @@
               </div>
             </div>
 
+            <div class="col-12 col-sm-3 mb-1">
+              <div class="form-group" style="margin-top: 30px;">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" name="is_distributor" id="is_distributor" value="1">
+                  <label class="form-check-label" for="is_distributor">Is Distributor</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
             <div class="col-12 col-sm-6 mb-1">
               <div class="form-group">
                 <label>Address Line 1 <span class="required">*</span></label>

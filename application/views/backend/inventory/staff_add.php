@@ -110,6 +110,37 @@
                      <input type="file" class="form-control" name="pan_photo" accept="image/*">
                     </div>
                   </div>
+
+                  <div class="col-12 mt-2">
+                    <h5 class="mb-1">Commissions</h5>
+                    <div class="table-responsive">
+                      <table class="table table-bordered">
+                        <thead>
+                          <tr>
+                            <th>Commission Slab</th>
+                            <th>Customer Commission (%)</th>
+                            <th>Distributor Commission (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <?php foreach ($commissions as $comm): ?>
+                            <tr>
+                              <td>
+                                <?php echo $comm['name']; ?> (<?php echo $comm['commission']; ?>%)
+                                <input type="hidden" name="commission_ids[]" value="<?php echo $comm['id']; ?>">
+                              </td>
+                              <td>
+                                <input type="number" step="0.01" class="form-control" name="customer_comm[<?php echo $comm['id']; ?>]" placeholder="Enter Customer Commission">
+                              </td>
+                              <td>
+                                <input type="number" step="0.01" class="form-control" name="distributer_comm[<?php echo $comm['id']; ?>]" placeholder="Enter Distributor Commission">
+                              </td>
+                            </tr>
+                          <?php endforeach; ?>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                </div>
                 
                <div class="row">

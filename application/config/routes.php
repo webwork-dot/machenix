@@ -71,6 +71,10 @@ $route[$r_inventory . '/charges'] = 'inventory/other_charges';
 $route[$r_inventory . '/charges/add'] = 'inventory/other_charges_form/other_charges_add';
 $route[$r_inventory . '/charges/edit/(:num)'] = 'inventory/other_charges_form/other_charges_edit/$1';
 
+$route[$r_inventory . '/commission-slab'] = 'inventory/commission_slab';
+$route[$r_inventory . '/commission-slab/add'] = 'inventory/commission_slab_form/commission_slab_add';
+$route[$r_inventory . '/commission-slab/edit/(:num)'] = 'inventory/commission_slab_form/commission_slab_edit/$1';
+
 $route[$r_inventory . '/bank-accounts'] = 'inventory/bank_accounts';
 $route[$r_inventory . '/bank-accounts/add']    = 'inventory/bank_accounts_form/bank_accounts_add';
 $route[$r_inventory . '/bank-accounts/edit/(:num)'] = 'inventory/bank_accounts_form/bank_accounts_edit/$1';
@@ -219,6 +223,9 @@ $route[$r_inventory . '/conversion-order'] = 'inventory/conversion_order';
 $route[$r_inventory . '/conversion-order/add'] = 'inventory/conversion_order_form/add';
 
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
+$route[$r_inventory . '/sales-commission'] = 'inventory/sales_commission';
+$route[$r_inventory . '/get_sales_commission'] = 'inventory/get_sales_commission';
+$route[$r_inventory . '/get_completed_sales_commission'] = 'inventory/get_completed_sales_commission';
 $route[$r_inventory . '/sales-order/add']    = 'inventory/sales_order_form/add';
 $route[$r_inventory . '/sales-invoice/add']    = 'inventory/sales_order_form/invoice_add';
 $route[$r_inventory . '/sales-order/approve/(:num)']    = 'inventory/sales_order_form/approve/$1';
