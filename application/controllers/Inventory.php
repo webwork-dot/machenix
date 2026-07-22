@@ -3746,6 +3746,12 @@ class Inventory extends CI_Controller
             $page_data['navigation']  = 'sales_commission';
             $page_data['page_name']  = 'sales_commission';
             $page_data['page_title'] = get_phrase('sales_commission');
+
+            // Get commission totals
+            $totals = $this->inventory_model->get_sales_commission_totals();
+            $page_data['pending_commission_total'] = $totals['pending'];
+            $page_data['complete_commission_total'] = $totals['complete'];
+
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -3758,6 +3764,14 @@ class Inventory extends CI_Controller
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_sales_commission();
         }
+    }
+
+    public function make_sales_commission_payment()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->make_sales_commission_payment();
     }
 
 

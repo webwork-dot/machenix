@@ -33,6 +33,7 @@ CREATE TABLE `sales_order` (
   `sale_person_id` varchar(250) NOT NULL,
   `unique_id` varchar(250) DEFAULT NULL,
   `order_type` enum('normal','excel','') NOT NULL DEFAULT 'normal',
+  `is_distributor` tinyint(1) NOT NULL DEFAULT 0,
   `order_no` varchar(250) NOT NULL,
   `invoice_no` varchar(250) NOT NULL,
   `invoice_date` date NOT NULL,

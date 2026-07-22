@@ -3810,7 +3810,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date, arrival_date FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date, arrival_date, expected_date FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -4067,7 +4067,8 @@ class Inventory_model extends CI_Model
 					"date"       							=> date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
 					"boe_no"									=> $item['boe_no'],
 					"boe_date"								=> date('d M, Y', strtotime($item['boe_date'])),
-					"arrival_date"								=> date('d M, Y', strtotime($item['arrival_date'])),
+					"arrival_date"								=> date('d M, Y', strtotime($item['expected_date'])),
+					"expected_arrival_date"								=> date('d M, Y', strtotime($item['arrival_date'])),
 					"delivery_date"       		=> date('d M, Y', strtotime($delivery_date)),
 					"suppliers"        				=> array_to_list($po['supplier']),
 					"spare_parts_count"       => array_to_list($po['spare']),
@@ -5502,7 +5503,8 @@ class Inventory_model extends CI_Model
 								'loading_list_qty' => 0,
 								'quantity' => 0,
 								'pending' => 0,
-								'black_qty' => 0
+								'black_qty' => 0,
+								'actual_qty' => 0
 							];
 						} else {
 							$source_table = $is_edit ? 'purchase_in_product' : 'loading_po_product';
@@ -5641,7 +5643,7 @@ class Inventory_model extends CI_Model
 								$check_inv = "";
 							}
 
-							if($check_inv == "") {
+							if(empty($check_inv)) {
 								$this->db->insert('inventory', $inv);
 								$inventory_id = $this->db->insert_id();
 
@@ -9673,8 +9675,9 @@ class Inventory_model extends CI_Model
 			$sales_record = $this->common_model->getRowById('sales_order', '*', ['id' => $id]);
 			
 			$customer_id = (int)$sales_record['customer_id'];
-			$cust_record = $this->db->select('added_by_id')->where('id', $customer_id)->get('customer')->row_array();
+			$cust_record = $this->db->select('added_by_id, is_distributor')->where('id', $customer_id)->get('customer')->row_array();
 			$sale_person_id = isset($cust_record['added_by_id']) ? (int)$cust_record['added_by_id'] : 0;
+			$is_distributor = isset($cust_record['is_distributor']) ? (int)$cust_record['is_distributor'] : 0;
 			$sales_products = $this->common_model->getResultById('sales_order_product', '*', ['order_id' => $id]);
 			$sales_batches = $this->common_model->getResultById('sales_order_product_batch', '*', ['order_id' => $id]);
 
@@ -9710,6 +9713,7 @@ class Inventory_model extends CI_Model
 
 			$data = array();
 			$data['sale_person_id']         = $sale_person_id;
+			$data['is_distributor']         = $is_distributor;
 			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 			$data['date']     		   	 		= ($this->input->post('date'));
 			$data['warehouse_id']      		= $warehouse_id;
@@ -9847,71 +9851,7 @@ class Inventory_model extends CI_Model
 
 				$product_id = (int)$product_log_data['product_id'];
 
-				// Fetch commission_id from raw_products using product_id
-				$raw_prod = $this->db->select('commission_id')->where('id', $product_id)->get('raw_products')->row_array();
-				$commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
-
-				// Fetch commission from product_commission_slab using commission_id
-				$product_comm_val = 0.00;
-				if ($commission_id > 0) {
-					$comm_slab = $this->db->select('commission')->where('id', $commission_id)->get('product_commission_slab')->row_array();
-					$product_comm_val = isset($comm_slab['commission']) ? (float)$comm_slab['commission'] : 0.00;
-				}
-
-				// Fetch staff commission using sale_person_id and commission_id
-				$staff_comm_id = 0;
-				$staff_customer_comm = 0.00;
-				$staff_distributer_comm = 0.00;
-				if ($sale_person_id > 0 && $commission_id > 0) {
-					$staff_comm = $this->db->select('id, customer_comm, distributer_comm')
-										   ->where('staff_id', $sale_person_id)
-										   ->where('commission_id', $commission_id)
-										   ->get('staff_commission')
-										   ->row_array();
-					if (!empty($staff_comm)) {
-						$staff_comm_id = (int)$staff_comm['id'];
-						$staff_customer_comm = (float)$staff_comm['customer_comm'];
-						$staff_distributer_comm = (float)$staff_comm['distributer_comm'];
-					}
-				}
-
-				// Fetch customer commission sharing values
-				$share_staff_id = 0;
-				$shared_commission = 0.00;
-				$my_commission = 100.00;
-				if ($customer_id > 0 && $commission_id > 0 && $sale_person_id > 0) {
-					$cust_comm = $this->db->select('shared_staff_id, shared_commission, my_commission')
-										   ->where('customer_id', $customer_id)
-										   ->where('commission_id', $commission_id)
-										   ->where('staff_id', $sale_person_id)
-										   ->get('customer_commission')
-										   ->row_array();
-					if (!empty($cust_comm)) {
-						$share_staff_id = (int)$cust_comm['shared_staff_id'];
-						$shared_commission = (float)$cust_comm['shared_commission'];
-						$my_commission = (float)$cust_comm['my_commission'];
-					}
-				}
-
-				// Insert into sales_commission
-				$sales_comm_data = array(
-					'order_id'            => $order_id,
-					'order_product_id'    => $order_product_id,
-					'product_id'          => $product_id,
-					'commission_id'       => $commission_id,
-					'product_comm'        => $product_comm_val,
-					'staff_id'            => $sale_person_id,
-					'staff_comm_id'       => $staff_comm_id,
-					'customer_comm'       => $staff_customer_comm,
-					'distributer_comm'    => $staff_distributer_comm,
-					'share_staff_id'      => $share_staff_id,
-					'shared_commission'   => $shared_commission,
-					'my_commission'       => $my_commission,
-					'is_paid'             => 0,
-					'created_at'          => date("Y-m-d H:i:s")
-				);
-				$this->db->insert('sales_commission', $sales_comm_data);
-
+				$product_total_amt = 0;
 				foreach($batch_id[$i] as $index => $bid) {
 					$batch_detail = $this->db->where('id', $bid)->get('inventory')->row_array();
 
@@ -9944,6 +9884,9 @@ class Inventory_model extends CI_Model
 					$this->db->insert('sales_order_product_batch', $data_product_bat);
 					$product_log_data['batches'][] = $data_product_bat;
 					$total_white_qty_sum += (float) ($batch_white_qty[$i][$index] ?? 0);
+
+					$allocated_qty = (float)($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]);
+					$product_total_amt = $product_total_amt + ($allocated_qty * (float) $batch_rate[$i][$index]);
 
 					if($batch_detail['quantity'] < ($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]) || $batch_detail['quantity'] == 0) {
 						throw new Exception('Insufficient stock for ' . $product_name . '. Available Live Qty: ' . $stocks . '.');
@@ -10005,6 +9948,79 @@ class Inventory_model extends CI_Model
 
 						$this->db->insert('inventory_history', $inv_his);
 					}
+				}
+
+				// Fetch commission_id from raw_products using product_id
+				$raw_prod = $this->db->select('commission_id')->where('id', $product_id)->get('raw_products')->row_array();
+				$commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
+
+				// Fetch commission from product_commission_slab using commission_id
+				$product_comm = 0.00;
+				if ($commission_id > 0) {
+					$comm_slab = $this->db->select('commission')->where('id', $commission_id)->get('product_commission_slab')->row_array();
+					$product_comm = isset($comm_slab['commission']) ? (float)$comm_slab['commission'] : 0.00;
+				}
+
+				// Fetch staff commission using sale_person_id and commission_id
+				$staff_comm_id = 0;
+				$staff_customer_comm = 0.00;
+				$staff_distributer_comm = 0.00;
+				if ($sale_person_id > 0 && $commission_id > 0) {
+					$staff_comm = $this->db->select('id, customer_comm, distributer_comm')
+										   ->where('staff_id', $sale_person_id)
+										   ->where('commission_id', $commission_id)
+										   ->get('staff_commission')
+										   ->row_array();
+					if (!empty($staff_comm)) {
+						$staff_comm_id = (int)$staff_comm['id'];
+						$staff_customer_comm = (float)$staff_comm['customer_comm'];
+						$staff_distributer_comm = (float)$staff_comm['distributer_comm'];
+					}
+				}
+
+				// Fetch customer commission sharing values
+				$share_staff_id = 0;
+				$shared_commission = 0.00;
+				$my_commission = 100.00;
+				if ($customer_id > 0 && $commission_id > 0 && $sale_person_id > 0) {
+					$cust_comm = $this->db->select('shared_staff_id, shared_commission, my_commission')
+										   ->where('customer_id', $customer_id)
+										   ->where('commission_id', $commission_id)
+										   ->where('staff_id', $sale_person_id)
+										   ->get('customer_commission')
+										   ->row_array();
+					if (!empty($cust_comm)) {
+						$share_staff_id = (int)$cust_comm['shared_staff_id'];
+						$shared_commission = (float)$cust_comm['shared_commission'];
+						$my_commission = (float)$cust_comm['my_commission'];
+					}
+				}
+
+				// Insert into sales_commission
+				$product_comm_amt = $product_total_amt * ($product_comm / (100 + $product_comm));
+				$chosen_comm = ($is_distributor == 1) ? $staff_distributer_comm : $staff_customer_comm;
+				$commission_amount = $product_comm_amt * ($chosen_comm / 100);
+
+				if ($commission_id > 0 && $staff_comm_id > 0 && $product_comm > 0 && ($staff_customer_comm > 0 || $staff_distributer_comm > 0) && $product_total_amt > 0 && $commission_amount > 0) {
+					$sales_comm_data = array(
+						'order_id'            => $order_id,
+						'order_product_id'    => $order_product_id,
+						'product_id'          => $product_id,
+						'commission_id'       => $commission_id,
+						'product_comm'        => $product_comm,
+						'product_comm_amt'    => $product_comm_amt,
+						'staff_id'            => $sale_person_id,
+						'staff_comm_id'       => $staff_comm_id,
+						'customer_comm'       => $staff_customer_comm,
+						'distributer_comm'    => $staff_distributer_comm,
+						'commission_amount'   => $commission_amount,
+						'share_staff_id'      => $share_staff_id,
+						'shared_commission'   => $shared_commission,
+						'my_commission'       => $my_commission,
+						'is_paid'             => 0,
+						'created_at'          => date("Y-m-d H:i:s")
+					);
+					$this->db->insert('sales_commission', $sales_comm_data);
 				}
 				$log_json['new_sale_order']['products'][] = $product_log_data;
 			}
@@ -10091,9 +10107,11 @@ class Inventory_model extends CI_Model
 			}
 
 			$sale_person_id = 0;
+			$is_distributor = 0;
 			if ($customer_id != '') {
-				$cust_record = $this->db->select('added_by_id')->where('id', $customer_id)->get('customer')->row_array();
+				$cust_record = $this->db->select('added_by_id, is_distributor')->where('id', $customer_id)->get('customer')->row_array();
 				$sale_person_id = isset($cust_record['added_by_id']) ? (int)$cust_record['added_by_id'] : 0;
+				$is_distributor = isset($cust_record['is_distributor']) ? (int)$cust_record['is_distributor'] : 0;
 			}
 
 			$warehouse_id = $this->input->post('warehouse_id');
@@ -10119,6 +10137,7 @@ class Inventory_model extends CI_Model
 
 			$data = array();
 			$data['sale_person_id']         = $sale_person_id;
+			$data['is_distributor']         = $is_distributor;
 			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 			$data['date']     		   	 		= ($this->input->post('date'));
 			$data['customer_id']       		= $customer_id;
@@ -10355,9 +10374,11 @@ class Inventory_model extends CI_Model
 				}
 
 				$sale_person_id = 0;
+				$is_distributor = 0;
 				if ($customer_id != '') {
-					$cust_record = $this->db->select('added_by_id')->where('id', $customer_id)->get('customer')->row_array();
+					$cust_record = $this->db->select('added_by_id, is_distributor')->where('id', $customer_id)->get('customer')->row_array();
 					$sale_person_id = isset($cust_record['added_by_id']) ? (int)$cust_record['added_by_id'] : 0;
+					$is_distributor = isset($cust_record['is_distributor']) ? (int)$cust_record['is_distributor'] : 0;
 				}
 				
 				$warehouse_id = $this->input->post('warehouse_id');
@@ -10388,6 +10409,7 @@ class Inventory_model extends CI_Model
 
 				$data = array();
 				$data['sale_person_id']         = $sale_person_id;
+				$data['is_distributor']         = $is_distributor;
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 				$data['date']     		   	 		= ($this->input->post('date'));
@@ -10627,9 +10649,11 @@ class Inventory_model extends CI_Model
 				}
 
 				$sale_person_id = 0;
+				$is_distributor = 0;
 				if ($customer_id != '') {
-					$cust_record = $this->db->select('added_by_id')->where('id', $customer_id)->get('customer')->row_array();
+					$cust_record = $this->db->select('added_by_id, is_distributor')->where('id', $customer_id)->get('customer')->row_array();
 					$sale_person_id = isset($cust_record['added_by_id']) ? (int)$cust_record['added_by_id'] : 0;
+					$is_distributor = isset($cust_record['is_distributor']) ? (int)$cust_record['is_distributor'] : 0;
 				}
 				
 				$warehouse_id = $this->input->post('warehouse_id');
@@ -10659,6 +10683,7 @@ class Inventory_model extends CI_Model
 
 				$data = array();
 				$data['sale_person_id']         = $sale_person_id;
+				$data['is_distributor']         = $is_distributor;
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 				$data['date']     		   	 		= ($this->input->post('date'));
@@ -10804,76 +10829,13 @@ class Inventory_model extends CI_Model
 							$this->db->insert('sales_order_product', $data_product);
 							$order_product_id = $this->db->insert_id();
 
-							// Fetch commission_id from raw_products using product_id
-							$raw_prod = $this->db->select('commission_id')->where('id', $product_id)->get('raw_products')->row_array();
-							$commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
-
-							// Fetch commission from product_commission_slab using commission_id
-							$product_comm_val = 0.00;
-							if ($commission_id > 0) {
-								$comm_slab = $this->db->select('commission')->where('id', $commission_id)->get('product_commission_slab')->row_array();
-								$product_comm_val = isset($comm_slab['commission']) ? (float)$comm_slab['commission'] : 0.00;
-							}
-
-							// Fetch staff commission using sale_person_id and commission_id
-							$staff_comm_id = 0;
-							$staff_customer_comm = 0.00;
-							$staff_distributer_comm = 0.00;
-							if ($sale_person_id > 0 && $commission_id > 0) {
-								$staff_comm = $this->db->select('id, customer_comm, distributer_comm')
-													   ->where('staff_id', $sale_person_id)
-													   ->where('commission_id', $commission_id)
-													   ->get('staff_commission')
-													   ->row_array();
-								if (!empty($staff_comm)) {
-									$staff_comm_id = (int)$staff_comm['id'];
-									$staff_customer_comm = (float)$staff_comm['customer_comm'];
-									$staff_distributer_comm = (float)$staff_comm['distributer_comm'];
-								}
-							}
-
-							// Insert into sales_commission
-							$share_staff_id = 0;
-							$shared_commission = 0.00;
-							$my_commission = 100.00;
-							if ($customer_id > 0 && $commission_id > 0 && $sale_person_id > 0) {
-								$cust_comm = $this->db->select('shared_staff_id, shared_commission, my_commission')
-													   ->where('customer_id', $customer_id)
-													   ->where('commission_id', $commission_id)
-													   ->where('staff_id', $sale_person_id)
-													   ->get('customer_commission')
-													   ->row_array();
-								if (!empty($cust_comm)) {
-									$share_staff_id = (int)$cust_comm['shared_staff_id'];
-									$shared_commission = (float)$cust_comm['shared_commission'];
-									$my_commission = (float)$cust_comm['my_commission'];
-								}
-							}
-
-							$sales_comm_data = array(
-								'order_id'            => $order_id,
-								'order_product_id'    => $order_product_id,
-								'product_id'          => $product_id,
-								'commission_id'       => $commission_id,
-								'product_comm'        => $product_comm_val,
-								'staff_id'            => $sale_person_id,
-								'staff_comm_id'       => $staff_comm_id,
-								'customer_comm'       => $staff_customer_comm,
-								'distributer_comm'    => $staff_distributer_comm,
-								'share_staff_id'      => $share_staff_id,
-								'shared_commission'   => $shared_commission,
-								'my_commission'       => $my_commission,
-								'is_paid'             => 0,
-								'created_at'          => date("Y-m-d H:i:s")
-							);
-							$this->db->insert('sales_commission', $sales_comm_data);
-
 							$product_log_data = $data_product;
 							$product_log_data['id'] = $order_product_id;
 							$product_log_data['batches'] = array();
 
 							$row_index = $x_value_arr[$i];
 
+							$product_total_amt = 0;
 							if (!empty($batch_id[$row_index])) {
 								foreach ($batch_id[$row_index] as $index => $bid) {
 									if (empty($bid)) continue;
@@ -10885,6 +10847,7 @@ class Inventory_model extends CI_Model
 
 									$allocated_qty = (float)($batch_white_qty[$row_index][$index] + $batch_black_qty[$row_index][$index]);
 
+									$product_total_amt = $product_total_amt + ($allocated_qty * (float) $batch_rate[$row_index][$index]);
 									$data_product_bat = array(
 										'order_id'          => $order_id,
 										'order_product_id'  => $order_product_id,
@@ -10989,6 +10952,78 @@ class Inventory_model extends CI_Model
 								}
 							} else {
 								throw new Exception('No batch allocated for product: ' . $product['name']);
+							}
+
+							// Fetch commission_id from raw_products using product_id
+							$raw_prod = $this->db->select('commission_id')->where('id', $product_id)->get('raw_products')->row_array();
+							$commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
+
+							// Fetch commission from product_commission_slab using commission_id
+							$product_comm = 0.00;
+							if ($commission_id > 0) {
+								$comm_slab = $this->db->select('commission')->where('id', $commission_id)->get('product_commission_slab')->row_array();
+								$product_comm = isset($comm_slab['commission']) ? (float)$comm_slab['commission'] : 0.00;
+							}
+
+							// Fetch staff commission using sale_person_id and commission_id
+							$staff_comm_id = 0;
+							$staff_customer_comm = 0.00;
+							$staff_distributer_comm = 0.00;
+							if ($sale_person_id > 0 && $commission_id > 0) {
+								$staff_comm = $this->db->select('id, customer_comm, distributer_comm')
+													   ->where('staff_id', $sale_person_id)
+													   ->where('commission_id', $commission_id)
+													   ->get('staff_commission')
+													   ->row_array();
+								if (!empty($staff_comm)) {
+									$staff_comm_id = (int)$staff_comm['id'];
+									$staff_customer_comm = (float)$staff_comm['customer_comm'];
+									$staff_distributer_comm = (float)$staff_comm['distributer_comm'];
+								}
+							}
+
+							// Insert into sales_commission
+							$share_staff_id = 0;
+							$shared_commission = 0.00;
+							$my_commission = 100.00;
+							if ($customer_id > 0 && $commission_id > 0 && $sale_person_id > 0) {
+								$cust_comm = $this->db->select('shared_staff_id, shared_commission, my_commission')
+													   ->where('customer_id', $customer_id)
+													   ->where('commission_id', $commission_id)
+													   ->where('staff_id', $sale_person_id)
+													   ->get('customer_commission')
+													   ->row_array();
+								if (!empty($cust_comm)) {
+									$share_staff_id = (int)$cust_comm['shared_staff_id'];
+									$shared_commission = (float)$cust_comm['shared_commission'];
+									$my_commission = (float)$cust_comm['my_commission'];
+								}
+							}
+
+							$product_comm_amt = $product_total_amt * ($product_comm / (100 + $product_comm));
+							$chosen_comm = ($is_distributor == 1) ? $staff_distributer_comm : $staff_customer_comm;
+							$commission_amount = $product_comm_amt * ($chosen_comm / 100);
+
+							if ($commission_id > 0 && $staff_comm_id > 0 && $product_comm > 0 && ($staff_customer_comm > 0 || $staff_distributer_comm > 0) && $product_total_amt > 0 && $commission_amount > 0) {
+								$sales_comm_data = array(
+									'order_id'            => $order_id,
+									'order_product_id'    => $order_product_id,
+									'product_id'          => $product_id,
+									'commission_id'       => $commission_id,
+									'product_comm'        => $product_comm,
+									'product_comm_amt'    => $product_comm_amt,
+									'staff_id'            => $sale_person_id,
+									'staff_comm_id'       => $staff_comm_id,
+									'customer_comm'       => $staff_customer_comm,
+									'distributer_comm'    => $staff_distributer_comm,
+									'commission_amount'   => $commission_amount,
+									'share_staff_id'      => $share_staff_id,
+									'shared_commission'   => $shared_commission,
+									'my_commission'       => $my_commission,
+									'is_paid'             => 0,
+									'created_at'          => date("Y-m-d H:i:s")
+								);
+								$this->db->insert('sales_commission', $sales_comm_data);
 							}
 
 							$log_json['products'][] = $product_log_data;
@@ -11468,6 +11503,63 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function get_sales_commission_totals()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$company_filter = "";
+		if ($company_id) {
+			$company_filter .= " AND (so.company_id='" . $company_id . "')";
+			if ($this->session->userdata('super_type_id') == 7) {
+				$company_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			}
+		}
+
+		$pending_total = 0.00;
+		$pending_query = $this->db->query("
+			SELECT SUM(sc.commission_amount) as total_comm_amount
+			FROM sales_commission AS sc
+			JOIN sales_order AS so ON sc.order_id = so.id
+			WHERE (so.is_deleted='0' AND so.is_approved='1') $company_filter
+			AND EXISTS (
+				SELECT 1
+				FROM sales_commission sc2
+				WHERE sc2.order_id = so.id
+				GROUP BY sc2.order_id
+				HAVING
+					SUM(CASE WHEN sc2.is_paid = 1 THEN 1 ELSE 0 END) = 0 
+					AND SUM(sc2.commission_amount) > 0 
+			)
+		");
+		if ($pending_query->num_rows() > 0) {
+			$pending_total = (float)$pending_query->row()->total_comm_amount;
+		}
+
+		$complete_total = 0.00;
+		$complete_query = $this->db->query("
+			SELECT SUM(sc.commission_amount) as total_comm_amount
+			FROM sales_commission AS sc
+			JOIN sales_order AS so ON sc.order_id = so.id
+			WHERE (so.is_deleted='0' AND so.is_approved='1') $company_filter
+			AND EXISTS (
+				SELECT 1
+				FROM sales_commission sc2
+				WHERE sc2.order_id = so.id
+				GROUP BY sc2.order_id
+				HAVING
+					SUM(CASE WHEN sc2.is_paid = 1 THEN 1 ELSE 0 END) > 0 
+					AND SUM(sc2.commission_amount) > 0 
+			)
+		");
+		if ($complete_query->num_rows() > 0) {
+			$complete_total = (float)$complete_query->row()->total_comm_amount;
+		}
+
+		return array(
+			'pending' => $pending_total,
+			'complete' => $complete_total
+		);
+	}
+
 	public function get_sales_commission()
 	{
 		$params['draw'] = $_REQUEST['draw'];
@@ -11488,13 +11580,27 @@ class Inventory_model extends CI_Model
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""){
 			$status        = $_REQUEST['status'];
 			$keyword_filter .= " AND (so.is_approved = '1')";
-			// if ($status == 'pending') {
-			// 	$keyword_filter .= " AND (so.is_approved = '0')";
-			// } elseif ($status == 'invoice') {
-				// $keyword_filter .= " AND (so.is_approved = '1' AND so.is_generated = '0')";
-			// } elseif ($status == 'complete') {
-			// 	$keyword_filter .= " AND (so.is_approved = '1' AND so.is_generated = '1')";
-			// } 
+			if($status == 'pending') {
+				$keyword_filter .= " AND EXISTS (
+					SELECT 1
+					FROM sales_commission sc
+					WHERE sc.order_id = so.id
+					GROUP BY sc.order_id
+					HAVING
+						SUM(CASE WHEN sc.is_paid = 1 THEN 1 ELSE 0 END) = 0 
+						AND SUM(sc.commission_amount) > 0 
+				)";
+			} else if($status == 'complete') {
+				$keyword_filter .= " AND EXISTS (
+					SELECT 1
+					FROM sales_commission sc
+					WHERE sc.order_id = so.id
+					GROUP BY sc.order_id
+					HAVING
+						SUM(CASE WHEN sc.is_paid = 1 THEN 1 ELSE 0 END) > 0 
+						AND SUM(sc.commission_amount) > 0 
+				)";
+			}
 		} else {
 			$status = 'pending';
 		}
@@ -11528,34 +11634,14 @@ class Inventory_model extends CI_Model
 				so.id 
 			FROM sales_order AS so
 			WHERE (so.is_deleted='0') $keyword_filter 
-				AND EXISTS (
-					SELECT 1
-					FROM sales_commission sc
-					WHERE sc.order_id = so.id
-					GROUP BY sc.order_id
-					HAVING
-							SUM(CASE WHEN sc.is_paid = 1 THEN 1 ELSE 0 END) = 0
-							AND (SUM(sc.shared_commission) >= 0
-							OR SUM(sc.my_commission) >= 0)
-				)
 			ORDER BY so.date DESC
 		")->num_rows();
 
 		$query = $this->db->query("
 			SELECT 
-				so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name 
+				so.id, so.order_type, so.order_no, so.is_generated, so.is_approved, so.date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total 
 			FROM sales_order AS so
 			WHERE (so.is_deleted='0') $keyword_filter  
-				AND EXISTS (
-					SELECT 1
-					FROM sales_commission sc
-					WHERE sc.order_id = so.id
-					GROUP BY sc.order_id
-					HAVING
-							SUM(CASE WHEN sc.is_paid = 1 THEN 1 ELSE 0 END) = 0
-							AND (SUM(sc.shared_commission) >= 0
-							OR SUM(sc.my_commission) >= 0)
-				)
 			ORDER BY so.date DESC LIMIT $start, $length
 		");
 		
@@ -11565,19 +11651,11 @@ class Inventory_model extends CI_Model
 				$order_type = $item['order_type'];
 				$customer_id = $item['customer_id'];
 
-				$products_url = base_url() . 'inventory/sales-order/products/' . $id;
-				$not_url = base_url() . 'inventory/sales-order/not-uploaded/' . $id;
+				$comm_amt_query = $this->db->query("SELECT SUM(commission_amount) as comm_amt FROM sales_commission WHERE order_id = '$id' GROUP BY order_id");
+				$comm_amt = ($comm_amt_query->num_rows() > 0) ? $comm_amt_query->row()->comm_amt : 0;
 				
 				$action = '';
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_commission_view_modal/" . $id . "','Sales Order View')";
-
-				$delete_html = '';
-				if ($this->session->userdata('super_type_id') != 7) {
-					$delete_url = "confirm_modal('" . base_url() . "inventory/sales_order/delete/" . $id . "','Are you sure want to delete!')";
-					$delete_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>';
-				}
-
-				$edit_order_html = '';
 
 				$action ='<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
@@ -11607,35 +11685,37 @@ class Inventory_model extends CI_Model
 				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
 				$customer_name = $item['customer_name'];
 
+
+				$sr_no_val = ++$start;
+				if (isset($_REQUEST['status']) && $_REQUEST['status'] == 'pending') {
+					$sr_no_val = '<input type="checkbox" class="order-chk" value="' . $id . '" data-amount="' . $comm_amt . '">';
+				}
+
 				$data[] = array(
-					"sr_no"						=> ++$start,
+					"sr_no"						=> $sr_no_val,
 					"id"          		=> $item['id'],
-					"order_no"      	=> $item['order_no'],
-					"refrence_no"			=> $item['refrence_no'],
-					"customer_name"		=> $customer_name,
-					"warehouse_name"	=> ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
-					"company_name"		=> ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
-					"grand_total"   	=> $item['grand_total'],
 					"date"          	=> date('d M, Y', strtotime($item['date'])),
-					"total_pro"     	=> $total_pro,
+					"customer_name"		=> $customer_name,
+					"order_no"      	=> $item['order_no'],
+					"warehouse_name"	=> ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
 					"qty"           	=> $qty,
-					"remark"        	=> $item['remark'],
-					"invoice_no"		=> $item['invoice_no'],
-					"invoice_date"		=> ($item['invoice_date'] != '0000-00-00' && $item['invoice_date'] != null) ? date('d M, Y', strtotime($item['invoice_date'])) : '-',
-					"added_by"          => ($item['added_by_name'] != '' && $item['added_by_name'] != null) ? $item['added_by_name'] : '-',
+					"total_pro"     	=> $total_pro,
+					"grand_total"   	=> $item['grand_total'],
+					"total_comm"			=> $comm_amt,
 					"action"          => $action,
 				);
 			}
 		}
 
-		$total_amount_formatted = '0.00';
-		if (isset($_REQUEST['status']) && $_REQUEST['status'] == 'complete' && $this->session->userdata('super_type_id') != 7) {
-			$sum_query = $this->db->query("SELECT SUM(so.grand_total) as total_amount FROM sales_order AS so WHERE (so.is_deleted='0') $keyword_filter");
-			if ($sum_query->num_rows() > 0) {
-				$row = $sum_query->row_array();
-				$total_val = $row['total_amount'];
-				$total_amount_formatted = number_format((float)($total_val ?? 0), 2, '.', ',');
-			}
+		$total_comm_amount = 0.00;
+		$sum_query = $this->db->query("
+			SELECT SUM(sc_outer.commission_amount) as total_comm_amount
+			FROM sales_commission AS sc_outer
+			JOIN sales_order AS so ON sc_outer.order_id = so.id
+			WHERE (so.is_deleted='0') $keyword_filter
+		");
+		if ($sum_query->num_rows() > 0) {
+			$total_comm_amount = (float) $sum_query->row()->total_comm_amount;
 		}
 
 		$json_data = array(
@@ -11643,9 +11723,59 @@ class Inventory_model extends CI_Model
 			"recordsTotal" => $total_count,
 			"recordsFiltered" => $total_count,
 			"data" => $data,
-			"total_amount" => $total_amount_formatted
+			"total_amount" => number_format($total_comm_amount, 2, '.', ',')
 		);
 		echo json_encode($json_data);
+	}
+
+	public function make_sales_commission_payment()
+	{
+		$this->db->trans_begin();
+		try {
+			$order_ids_str = $this->input->post('order_ids');
+			$payment_date = $this->input->post('payment_date');
+			$remark = $this->input->post('remark');
+
+			if (empty($order_ids_str) || empty($payment_date) || empty($remark)) {
+				throw new Exception('All fields are mandatory');
+			}
+
+			$order_ids = explode(',', $order_ids_str);
+			if (empty($order_ids)) {
+				throw new Exception('No orders selected');
+			}
+
+			$update_data = array(
+				'is_paid' => 1,
+				'payment_date' => $payment_date,
+				'remark' => $remark
+			);
+
+			$this->db->where_in('order_id', $order_ids);
+			$this->db->where('is_paid', 0);
+			$this->db->update('sales_commission', $update_data);
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$result = array(
+					"status" => 400,
+					"message" => "Error occurred while processing payment",
+				);
+			} else {
+				$this->db->trans_commit();
+				$result = array(
+					"status" => 200,
+					"message" => "Payment processed successfully",
+				);
+			}
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$result = array(
+				"status" => 400,
+				"message" => "Exception occurred: " . $e->getMessage(),
+			);
+		}
+		return simple_json_output($result);
 	}
 
 	public function get_invoice_order_details_by_id($id)
@@ -11722,9 +11852,11 @@ class Inventory_model extends CI_Model
 				}
 
 				$sale_person_id = 0;
+				$is_distributor = 0;
 				if ($customer_id != '') {
-					$cust_record = $this->db->select('added_by_id')->where('id', $customer_id)->get('customer')->row_array();
+					$cust_record = $this->db->select('added_by_id, is_distributor')->where('id', $customer_id)->get('customer')->row_array();
 					$sale_person_id = isset($cust_record['added_by_id']) ? (int)$cust_record['added_by_id'] : 0;
+					$is_distributor = isset($cust_record['is_distributor']) ? (int)$cust_record['is_distributor'] : 0;
 				}
 				
 				$warehouse_id = $this->input->post('warehouse_id');
@@ -11754,6 +11886,7 @@ class Inventory_model extends CI_Model
 
 				$data = array();
 				$data['sale_person_id']         = $sale_person_id;
+				$data['is_distributor']         = $is_distributor;
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 				$data['date']     		   	 		= ($this->input->post('date'));
@@ -11945,71 +12078,6 @@ class Inventory_model extends CI_Model
 
 							$this->db->insert('sales_order_product', $data_product);
 							$order_product_id = $this->db->insert_id();
-
-							// Fetch commission_id from raw_products using product_id
-							$raw_prod = $this->db->select('commission_id')->where('id', $product_id)->get('raw_products')->row_array();
-							$commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
-
-							// Fetch commission from product_commission_slab using commission_id
-							$product_comm_val = 0.00;
-							if ($commission_id > 0) {
-								$comm_slab = $this->db->select('commission')->where('id', $commission_id)->get('product_commission_slab')->row_array();
-								$product_comm_val = isset($comm_slab['commission']) ? (float)$comm_slab['commission'] : 0.00;
-							}
-
-							// Fetch staff commission using sale_person_id and commission_id
-							$staff_comm_id = 0;
-							$staff_customer_comm = 0.00;
-							$staff_distributer_comm = 0.00;
-							if ($sale_person_id > 0 && $commission_id > 0) {
-								$staff_comm = $this->db->select('id, customer_comm, distributer_comm')
-													   ->where('staff_id', $sale_person_id)
-													   ->where('commission_id', $commission_id)
-													   ->get('staff_commission')
-													   ->row_array();
-								if (!empty($staff_comm)) {
-									$staff_comm_id = (int)$staff_comm['id'];
-									$staff_customer_comm = (float)$staff_comm['customer_comm'];
-									$staff_distributer_comm = (float)$staff_comm['distributer_comm'];
-								}
-							}
-
-							// Fetch customer commission sharing values
-							$share_staff_id = 0;
-							$shared_commission = 0.00;
-							$my_commission = 100.00;
-							if ($customer_id > 0 && $commission_id > 0 && $sale_person_id > 0) {
-								$cust_comm = $this->db->select('shared_staff_id, shared_commission, my_commission')
-													   ->where('customer_id', $customer_id)
-													   ->where('commission_id', $commission_id)
-													   ->where('staff_id', $sale_person_id)
-													   ->get('customer_commission')
-													   ->row_array();
-								if (!empty($cust_comm)) {
-									$share_staff_id = (int)$cust_comm['shared_staff_id'];
-									$shared_commission = (float)$cust_comm['shared_commission'];
-									$my_commission = (float)$cust_comm['my_commission'];
-								}
-							}
-
-							// Insert into sales_commission
-							$sales_comm_data = array(
-								'order_id'            => $order_id,
-								'order_product_id'    => $order_product_id,
-								'product_id'          => $product_id,
-								'commission_id'       => $commission_id,
-								'product_comm'        => $product_comm_val,
-								'staff_id'            => $sale_person_id,
-								'staff_comm_id'       => $staff_comm_id,
-								'customer_comm'       => $staff_customer_comm,
-								'distributer_comm'    => $staff_distributer_comm,
-								'share_staff_id'      => $share_staff_id,
-								'shared_commission'   => $shared_commission,
-								'my_commission'       => $my_commission,
-								'is_paid'             => 0,
-								'created_at'          => date("Y-m-d H:i:s")
-							);
-							$this->db->insert('sales_commission', $sales_comm_data);
 
 							$product_log_data = $data_product;
 							$product_log_data['id'] = $order_product_id;

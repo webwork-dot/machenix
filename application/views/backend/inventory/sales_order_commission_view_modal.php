@@ -26,9 +26,7 @@
   // commissions
   $commissions = $this->db->query("SELECT * FROM sales_commission WHERE order_id = '$sales_order_id'")->result_array();
   
-  $customer_id = $sales_order['customer_id'];
-  $customer = $this->db->query("SELECT is_distributor FROM customer WHERE id = '$customer_id'")->row_array();
-  $is_distributor = isset($customer['is_distributor']) ? (int)$customer['is_distributor'] : 0;
+  $is_distributor = isset($sales_order['is_distributor']) ? (int)$sales_order['is_distributor'] : 0;
 
   $commission_map = [];
   foreach ($commissions as $comm) {
@@ -553,7 +551,7 @@
                         if ($p_comm !== null && $p_comm > 0) {
                             $b_qty = floatval($b['white_qty'] + $b['black_qty']);
                             $b_amt = floatval($b['amount']);
-                            $b_comm_val = ($b_amt * $b_qty) / (1 + ($p_comm / 100));
+                            $b_comm_val = ($b_amt * $b_qty) * ($p_comm / ($p_comm + 100));
                         }
                         $grand_total_commission += $b_comm_val;
                         $b_sale_comm_val = $b_comm_val * $sale_comm_pct / 100;

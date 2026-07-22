@@ -226,6 +226,7 @@ $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
 $route[$r_inventory . '/sales-commission'] = 'inventory/sales_commission';
 $route[$r_inventory . '/get_sales_commission'] = 'inventory/get_sales_commission';
 $route[$r_inventory . '/get_completed_sales_commission'] = 'inventory/get_completed_sales_commission';
+$route[$r_inventory . '/make_sales_commission_payment'] = 'inventory/make_sales_commission_payment';
 $route[$r_inventory . '/sales-order/add']    = 'inventory/sales_order_form/add';
 $route[$r_inventory . '/sales-invoice/add']    = 'inventory/sales_order_form/invoice_add';
 $route[$r_inventory . '/sales-order/approve/(:num)']    = 'inventory/sales_order_form/approve/$1';

@@ -324,12 +324,10 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                         <td class="text-center">
                                             <?php echo $sr_no++; ?>
                                             <input type="hidden" name="invoice_no[]" value="<?php echo $product['invoice_no'] ?? 1; ?>">
+                                            <input type="hidden" name="row_id[]" value="<?php echo $row_id; ?>">
+                                            <input type="hidden" name="product_id[]" value="<?php echo $product['product_id']; ?>">
+                                            <input type="hidden" name="supplier_id_row[]" value="<?php echo $supplier_id; ?>">
                                         </td>
-
-                                        <!-- optional: helps if you want a flat list too -->
-                                        <input type="hidden" name="row_id[]" value="<?php echo $row_id; ?>">
-                                        <input type="hidden" name="product_id[]" value="<?php echo $product['product_id']; ?>">
-                                        <input type="hidden" name="supplier_id_row[]" value="<?php echo $supplier_id; ?>">
 
                                         <td>
                                             <input type="text"
@@ -1295,10 +1293,10 @@ function appendPurchaseInProductRow($section, p) {
         <td class="text-center">
             0
             <input type="hidden" name="invoice_no[]" value="1">
+            <input type="hidden" name="row_id[]" value="0">
+            <input type="hidden" name="product_id[]" value="${p.id}">
+            <input type="hidden" name="supplier_id_row[]" value="${$section.data('supplier-id')}">
         </td>
-        <input type="hidden" name="row_id[]" value="0">
-        <input type="hidden" name="product_id[]" value="${p.id}">
-        <input type="hidden" name="supplier_id_row[]" value="${$section.data('supplier-id')}">
         <td><input type="text" class="form-control form-control-sm" name="product_name[]" value="${p.name}" readonly></td>
         <td><input type="text" class="form-control form-control-sm" name="item_code[]" value="${p.item_code}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-qty" name="actual_qty[]" value="0" onkeyup="calculateActual(this)"></td>

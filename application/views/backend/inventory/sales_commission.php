@@ -61,24 +61,12 @@
                             <span class="d-none d-md-block">Pending</span>
                         </a>
                     </li>
-                    <!-- <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-commission?status=invoice" class="nav-link <?php echo ($status == 'invoice') ? 'active' : ''; ?>">
-                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                            <span class="d-none d-md-block">Generate Invoice</span>
-                        </a>
-                    </li> -->
                     <li class="nav-item">
                         <a href="<?php echo base_url();?>inventory/sales-commission?status=complete" class="nav-link <?php echo ($status == 'complete') ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">Complete</span>
                         </a>
                     </li>
-                    <!-- <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-commission?status=all" class="nav-link <?php echo ($status == 'all') ? 'active' : ''; ?>">
-                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                            <span class="d-none d-md-block">All Orders</span>
-                        </a>
-                    </li> -->
                     
                 </ul>
             </div>
@@ -87,21 +75,24 @@
    <div class="col-12">
       <div class="card">
          <div class="card-body">
-             <div class="row">
-                <div class="col-md-12 mt-10">
+             <div class="row align-items-center">
+                <div class="col-md-8 mt-10">
                    <h5 class="mb-0"><b>Total Sales Commission <span id="total_count"> (0)</span></b>
-                   <?php if ($status == 'complete' && $staff_access !== 7) { ?>
-                      &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
-                   <?php } ?>
+                      &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount"><?php echo number_format(($status == 'complete') ? $complete_commission_total : $pending_commission_total, 2, '.', ','); ?></span></b>
 				  </h5>
                 </div>
+                <?php if ($status == 'pending'): ?>
+                <div class="col-md-4 text-end mt-10">
+                   <button type="button" id="pay-btn" class="btn btn-primary waves-effect waves-float waves-light" style="display:none;" onclick="openPaymentModal()">Make Payment</button>
+                </div>
+                <?php endif; ?>
               </div>
           </div>
         <div class="card-datatable d-report mb-2">
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-					<th>#</th>
+					<th><?php if ($status == 'pending') { echo '<input type="checkbox" id="select-all" class="form-check-input">'; } else { echo '#'; } ?></th>
 					<th>Date</th>
 					<th>Customer Name</th>
 					<th>Order NO</th>
@@ -109,6 +100,7 @@
 					<th>Total Qty</th>
 					<th>Total Products</th>
 					<th>Total Amount</th>
+					<th>Commission Amount</th>
                     <th>Actions</th>
                   </tr>
                </thead>
@@ -173,7 +165,8 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 { "data": "qty" },
                 { "data": "total_pro" },
                 { "data": "grand_total" },
-                 { "data": "action" },
+                { "data": "total_comm" },
+                { "data": "action" },
              ],
             
              "buttons": [
@@ -200,8 +193,6 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                  var json = settings.json;
                  if (json && json.total_amount !== undefined) {
                      $('#total_sales_amount').html(json.total_amount);
-                 } else {
-                     $('#total_sales_amount').html('0.00');
                  }
                  return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
              }, 
@@ -220,6 +211,46 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 
+            $('#select-all').prop('checked', false);
+            togglePayButton();
         });
+
+        $(document).on('change', '#select-all', function() {
+            $('.order-chk').prop('checked', this.checked);
+            togglePayButton();
+        });
+
+        $(document).on('change', '.order-chk', function() {
+            var allChecked = ($('.order-chk:checked').length === $('.order-chk').length);
+            $('#select-all').prop('checked', allChecked);
+            togglePayButton();
+        });
+
+        function togglePayButton() {
+            var checked_count = $('.order-chk:checked').length;
+            if (checked_count > 0) {
+                var total_amount = 0.00;
+                $('.order-chk:checked').each(function() {
+                    total_amount += parseFloat($(this).data('amount')) || 0.00;
+                });
+                $('#pay-btn').show().html('Make Payment (₹' + total_amount.toFixed(2) + ')');
+            } else {
+                $('#pay-btn').hide();
+            }
+        }
     });
+
+    function openPaymentModal() {
+        var selected_ids = [];
+        var total_amount = 0.00;
+        $('.order-chk:checked').each(function() {
+            selected_ids.push($(this).val());
+            total_amount += parseFloat($(this).data('amount')) || 0.00;
+        });
+        
+        if (selected_ids.length > 0) {
+            var url = "<?php echo base_url('modal/popup_inventory/sales_commission_payment_modal'); ?>/" + encodeURIComponent(selected_ids.join(',')) + "/" + total_amount.toFixed(2);
+            showLargeModal(url, 'Commission Payment');
+        }
+    }
 </script>
