@@ -21,6 +21,7 @@
     <a href="<?php echo site_url('inventory/expense-type'); ?>" class="sub-link <?php echo ($navigation == 'expense_type') ? 'active' : ''; ?>">Expense Type</a>
     <a href="<?php echo site_url('inventory/charges'); ?>" class="sub-link <?php echo ($navigation == 'other_charges') ? 'active' : ''; ?>">Charges</a>
     <a href="<?php echo site_url('inventory/commission-slab'); ?>" class="sub-link <?php echo ($navigation == 'commission_slab') ? 'active' : ''; ?>">Commissions</a>
+    <a href="<?php echo site_url('inventory/profit-commission-slab'); ?>" class="sub-link <?php echo ($navigation == 'profit_commission_slab') ? 'active' : ''; ?>">Profit Commission Slab</a>
     <a href="<?php echo site_url('inventory/bank-accounts'); ?>" class="sub-link <?php echo ($navigation == 'bank_accounts') ? 'active' : ''; ?>">Bank Accounts</a>
     <a href="<?php echo site_url('inventory/my-company'); ?>" class="sub-link <?php echo ($navigation == 'my_company') ? 'active' : ''; ?>">My Vendors</a>
     <!-- <a href="<?php echo site_url('inventory/po-expense'); ?>" class="sub-link <?php echo ($navigation == 'po_expense') ? 'active' : ''; ?>">Expense</a> -->

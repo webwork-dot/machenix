@@ -75,6 +75,10 @@ $route[$r_inventory . '/commission-slab'] = 'inventory/commission_slab';
 $route[$r_inventory . '/commission-slab/add'] = 'inventory/commission_slab_form/commission_slab_add';
 $route[$r_inventory . '/commission-slab/edit/(:num)'] = 'inventory/commission_slab_form/commission_slab_edit/$1';
 
+$route[$r_inventory . '/profit-commission-slab'] = 'inventory/profit_commission_slab';
+$route[$r_inventory . '/profit-commission-slab/add'] = 'inventory/profit_commission_slab_form/profit_commission_slab_add';
+$route[$r_inventory . '/profit-commission-slab/edit/(:num)'] = 'inventory/profit_commission_slab_form/profit_commission_slab_edit/$1';
+
 $route[$r_inventory . '/bank-accounts'] = 'inventory/bank_accounts';
 $route[$r_inventory . '/bank-accounts/add']    = 'inventory/bank_accounts_form/bank_accounts_add';
 $route[$r_inventory . '/bank-accounts/edit/(:num)'] = 'inventory/bank_accounts_form/bank_accounts_edit/$1';

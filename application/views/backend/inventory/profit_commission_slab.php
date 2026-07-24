@@ -9,9 +9,6 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.html5.min.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
 
-
-<?php // include('filter/date_range.php'); ?>
-
  <?php include('nav/nav_settings.php'); ?>
 <div class="row" id="table-bordered">
   <div class="col-12">
@@ -19,7 +16,7 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-12 mt-10">
-            <h5 class="mb-0"><b>Total Commission Slabs <span id="total_count"> (0)</span></b>
+            <h5 class="mb-0"><b>Total Profit Commission Slabs <span id="total_count"> (0)</span></b>
             </h5>
           </div>
         </div>
@@ -27,17 +24,18 @@
 
       <div class="card-datatable d-report mb-2">
 
-        <a href="<?php echo site_url('inventory/commission-slab/add'); ?>"
-          class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0"
+        <a href="<?php echo site_url('inventory/profit-commission-slab/add'); ?>"
+          class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
-            Add Commission Slab</span></a>
-
+            Add Profit Commission Slab</span></a>
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Commission (%)</th>
+              <th>Range (Name)</th>
+              <th>Commission From</th>
+              <th>Commission To</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -67,7 +65,7 @@ $(document).ready(function($) {
     },
 
     "ajax": {
-      "url": "<?php echo base_url('inventory/get_commission_slab'); ?>",
+      "url": "<?php echo base_url('inventory/get_profit_commission_slab'); ?>",
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
@@ -86,6 +84,12 @@ $(document).ready(function($) {
       },
       {
         data: 'name'
+      },
+      {
+        data: 'comm_from'
+      },
+      {
+        data: 'comm_to'
       },
       {
         data: 'action'

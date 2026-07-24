@@ -117,26 +117,36 @@
                       <table class="table table-bordered">
                         <thead>
                           <tr>
-                            <th>Commission Slab</th>
+                            <th>Product Slab</th>
+                            <th>Profit Slab</th>
                             <th>Customer Commission (%)</th>
                             <th>Distributor Commission (%)</th>
                           </tr>
                         </thead>
                         <tbody>
-                          <?php foreach ($commissions as $comm): ?>
+                          <?php 
+                          $profit_count = count($profit_slabs);
+                          foreach ($commissions as $comm): 
+                            $first = true;
+                            foreach ($profit_slabs as $p_slab):
+                          ?>
                             <tr>
+                              <?php if ($first): ?>
+                                <td rowspan="<?php echo $profit_count; ?>" style="vertical-align: middle; font-weight: bold; background-color: #f8f9fa;">
+                                  <?php echo $comm['name']; ?>
+                                </td>
+                              <?php $first = false; endif; ?>
                               <td>
-                                <?php echo $comm['name']; ?> (<?php echo $comm['commission']; ?>%)
-                                <input type="hidden" name="commission_ids[]" value="<?php echo $comm['id']; ?>">
+                                <?php echo $p_slab['name']; ?>
                               </td>
                               <td>
-                                <input type="number" step="0.01" class="form-control" name="customer_comm[<?php echo $comm['id']; ?>]" placeholder="Enter Customer Commission">
+                                <input type="number" step="0.01" class="form-control" name="customer_comm[<?php echo $comm['id']; ?>][<?php echo $p_slab['id']; ?>]" placeholder="Enter Customer Commission">
                               </td>
                               <td>
-                                <input type="number" step="0.01" class="form-control" name="distributer_comm[<?php echo $comm['id']; ?>]" placeholder="Enter Distributor Commission">
+                                <input type="number" step="0.01" class="form-control" name="distributer_comm[<?php echo $comm['id']; ?>][<?php echo $p_slab['id']; ?>]" placeholder="Enter Distributor Commission">
                               </td>
                             </tr>
-                          <?php endforeach; ?>
+                          <?php endforeach; endforeach; ?>
                         </tbody>
                       </table>
                     </div>

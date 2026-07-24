@@ -202,17 +202,18 @@ class Inventory extends CI_Controller
         $page_data['staff_access']  = $this->inventory_model->get_staff_access()->result_array();
         $page_data['company_list']     = $this->common_model->selectWhere('company', array('is_deleted' => '0'), 'ASC', 'name');
         $page_data['commissions'] = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
+        $page_data['profit_slabs'] = $this->common_model->getResultById('profit_commission_slab', 'id, name, comm_from, comm_to', ['is_deleted' => '0']);
         if ($param1 == 'staff_add') {
             $page_data['page_name'] = 'staff_add';
             $page_data['page_title'] = get_phrase('add_staff');
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'staff_edit') {
             $page_data['data'] = $this->inventory_model->get_staff_by_id($param2)->row_array();
-            $staff_commissions = $this->common_model->getResultById('staff_commission', 'commission_id, customer_comm, distributer_comm', ['staff_id' => $param2]);
+            $staff_commissions = $this->common_model->getResultById('staff_commission', 'commission_id, profit_id, customer_comm, distributer_comm', ['staff_id' => $param2]);
             $existing_comm = [];
             if (!empty($staff_commissions)) {
                 foreach ($staff_commissions as $sc) {
-                    $existing_comm[$sc['commission_id']] = [
+                    $existing_comm[$sc['commission_id']][$sc['profit_id']] = [
                         'customer_comm' => $sc['customer_comm'],
                         'distributer_comm' => $sc['distributer_comm']
                     ];
@@ -4522,6 +4523,56 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_commission_slab();
+        }
+    }
+
+    public function profit_commission_slab($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_profit_commission_slab($param2);
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_profit_commission_slab($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_profit_commission_slab($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'profit_commission_slab';
+            $page_data['page_name']  = 'profit_commission_slab';
+            $page_data['page_title'] = 'Profit Commission Slab';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function profit_commission_slab_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['navigation']  = 'profit_commission_slab';
+        if ($param1 == 'profit_commission_slab_add') {
+            $page_data['page_name']  = 'profit_commission_slab_add';
+            $page_data['page_title'] = 'Add Profit Commission Slab';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'profit_commission_slab_edit') {
+            $data                    = $this->inventory_model->get_profit_commission_slab_by_id($param2)->row_array();
+            $page_data['data']       = $data;
+            $page_data['page_name']  = 'profit_commission_slab_edit';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Profit Commission Slab';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_profit_commission_slab()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_profit_commission_slab();
         }
     }
  

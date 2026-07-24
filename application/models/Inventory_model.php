@@ -1302,10 +1302,10 @@ class Inventory_model extends CI_Model
 			"url"     => $this->session->userdata('previous_url'),
 		);
 
-		$name        = clean_and_escape($this->input->post('name'));
 		$commission  = clean_and_escape($this->input->post('commission'));
+		$name        = (float)$commission . '%';
 
-		if ($name == '' || $commission == '') {
+		if ($commission == '') {
 			$this->session->set_flashdata('error_message', 'All fields are required');
 			$resultpost = array(
 				"status"  => 400,
@@ -1350,11 +1350,11 @@ class Inventory_model extends CI_Model
 			"url"     => $this->session->userdata('previous_url'),
 		);
 
-		$name        = clean_and_escape($this->input->post('name'));
 		$commission  = clean_and_escape($this->input->post('commission'));
+		$name        = (float)$commission . '%';
 		$id          = (int) $id;
 
-		if ($name == '' || $commission == '') {
+		if ($commission == '') {
 			$this->session->set_flashdata('error_message', 'All fields are required');
 			$resultpost = array(
 				"status"  => 400,
@@ -1445,6 +1445,207 @@ class Inventory_model extends CI_Model
 					"id"          => $item['id'],
 					"name"        => $item['name'],
 					"commission"  => $item['commission'],
+					"action"      => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function add_profit_commission_slab()
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Profit commission slab added successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$comm_from = $this->input->post('comm_from');
+		$comm_to   = $this->input->post('comm_to');
+
+		if ($comm_from === '' || $comm_to === '') {
+			$this->session->set_flashdata('error_message', 'All fields are required');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "All fields are required",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$comm_from = (float)$comm_from;
+		$comm_to   = (float)$comm_to;
+
+		if ($comm_from > $comm_to) {
+			$this->session->set_flashdata('error_message', 'Commission From cannot be greater than Commission To');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Commission From cannot be greater than Commission To",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Overlapping check
+		$check = $this->db->query(
+			"SELECT id FROM profit_commission_slab 
+			WHERE is_deleted = '0' 
+			  AND comm_from <= ? 
+			  AND comm_to >= ? 
+			LIMIT 1",
+			array($comm_to, $comm_from)
+		);
+
+		if ($check->num_rows() > 0) {
+			$this->session->set_flashdata('error_message', 'Overlapping commission range is not allowed');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Overlapping commission range is not allowed",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$name = $comm_from . ' - ' . $comm_to . '%';
+		$data = array(
+			'name'       => $name,
+			'comm_from'  => $comm_from,
+			'comm_to'    => $comm_to,
+			'created_at' => date("Y-m-d H:i:s"),
+		);
+
+		$this->db->insert('profit_commission_slab', $data);
+		$this->session->set_flashdata('flash_message', 'Profit commission slab added successfully');
+
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_profit_commission_slab($id = "")
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Profit commission slab updated successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$comm_from = $this->input->post('comm_from');
+		$comm_to   = $this->input->post('comm_to');
+		$id        = (int)$id;
+
+		if ($comm_from === '' || $comm_to === '') {
+			$this->session->set_flashdata('error_message', 'All fields are required');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "All fields are required",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$comm_from = (float)$comm_from;
+		$comm_to   = (float)$comm_to;
+
+		if ($comm_from > $comm_to) {
+			$this->session->set_flashdata('error_message', 'Commission From cannot be greater than Commission To');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Commission From cannot be greater than Commission To",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Overlapping check excluding current ID
+		$check = $this->db->query(
+			"SELECT id FROM profit_commission_slab 
+			WHERE is_deleted = '0' 
+			  AND id != ? 
+			  AND comm_from <= ? 
+			  AND comm_to >= ? 
+			LIMIT 1",
+			array($id, $comm_to, $comm_from)
+		);
+
+		if ($check->num_rows() > 0) {
+			$this->session->set_flashdata('error_message', 'Overlapping commission range is not allowed');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Overlapping commission range is not allowed",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$name = $comm_from . ' - ' . $comm_to . '%';
+		$data = array(
+			'name'       => $name,
+			'comm_from'  => $comm_from,
+			'comm_to'    => $comm_to,
+		);
+
+		$this->db->where('id', $id);
+		$this->db->update('profit_commission_slab', $data);
+
+		$this->session->set_flashdata('flash_message', 'Profit commission slab updated successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function delete_profit_commission_slab($id)
+	{
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Profit commission slab deleted successfully",
+			"url" => $this->session->userdata('previous_url'),
+		);
+
+		$data['is_deleted'] = '1';
+		$this->db->where('id', $id);
+		$this->db->update('profit_commission_slab', $data);
+
+		return simple_json_output($resultpost);
+	}
+
+	public function get_profit_commission_slab_by_id($id)
+	{
+		$this->db->where('id', $id);
+		return $this->db->get('profit_commission_slab');
+	}
+
+	public function get_profit_commission_slab()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (name like '%" . $keyword . "%')";
+		endif;
+
+		$total_count = $this->db->query("SELECT id FROM profit_commission_slab WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, name, comm_from, comm_to FROM profit_commission_slab WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delete_url = "confirm_modal('" . base_url() . "inventory/profit_commission_slab/delete/" . $id . "','Are you sure want to delete!')";
+				$edit_url = base_url() . 'inventory/profit-commission-slab/edit/' . $id;
+				$action = '';
+				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
+				';
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"id"          => $item['id'],
+					"name"        => $item['name'],
+					"comm_from"   => $item['comm_from'],
+					"comm_to"     => $item['comm_to'],
 					"action"      => $action,
 				);
 			}
@@ -18122,16 +18323,20 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 			$this->db->insert('sys_users', $data);
 			$staff_id = $this->db->insert_id();
 
-			$commission_ids = $this->input->post('commission_ids');
 			$customer_comm_inputs = $this->input->post('customer_comm');
 			$distributer_comm_inputs = $this->input->post('distributer_comm');
-			if (!empty($commission_ids)) {
-				foreach ($commission_ids as $comm_id) {
-					$cust_val = isset($customer_comm_inputs[$comm_id]) && $customer_comm_inputs[$comm_id] !== '' ? (float)$customer_comm_inputs[$comm_id] : 0.00;
-					$dist_val = isset($distributer_comm_inputs[$comm_id]) && $distributer_comm_inputs[$comm_id] !== '' ? (float)$distributer_comm_inputs[$comm_id] : 0.00;
+			$all_commissions = $this->db->where('is_deleted', '0')->get('product_commission_slab')->result_array();
+			$all_profits = $this->db->where('is_deleted', '0')->get('profit_commission_slab')->result_array();
+			foreach ($all_commissions as $comm) {
+				$comm_id = $comm['id'];
+				foreach ($all_profits as $profit) {
+					$profit_id = $profit['id'];
+					$cust_val = isset($customer_comm_inputs[$comm_id][$profit_id]) && $customer_comm_inputs[$comm_id][$profit_id] !== '' ? (float)$customer_comm_inputs[$comm_id][$profit_id] : 0.00;
+					$dist_val = isset($distributer_comm_inputs[$comm_id][$profit_id]) && $distributer_comm_inputs[$comm_id][$profit_id] !== '' ? (float)$distributer_comm_inputs[$comm_id][$profit_id] : 0.00;
 					$this->db->insert('staff_commission', [
 						'staff_id' => $staff_id,
 						'commission_id' => $comm_id,
+						'profit_id' => $profit_id,
 						'customer_comm' => $cust_val,
 						'distributer_comm' => $dist_val,
 						'created_at' => date("Y-m-d H:i:s")
@@ -18235,21 +18440,58 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 			$this->db->where('id', $id);
 			$this->db->update('sys_users', $data);
 
-			$commission_ids = $this->input->post('commission_ids');
 			$customer_comm_inputs = $this->input->post('customer_comm');
 			$distributer_comm_inputs = $this->input->post('distributer_comm');
-			$this->db->where('staff_id', $id)->delete('staff_commission');
-			if (!empty($commission_ids)) {
-				foreach ($commission_ids as $comm_id) {
-					$cust_val = isset($customer_comm_inputs[$comm_id]) && $customer_comm_inputs[$comm_id] !== '' ? (float)$customer_comm_inputs[$comm_id] : 0.00;
-					$dist_val = isset($distributer_comm_inputs[$comm_id]) && $distributer_comm_inputs[$comm_id] !== '' ? (float)$distributer_comm_inputs[$comm_id] : 0.00;
-					$this->db->insert('staff_commission', [
-						'staff_id' => $id,
-						'commission_id' => $comm_id,
-						'customer_comm' => $cust_val,
-						'distributer_comm' => $dist_val,
-						'created_at' => date("Y-m-d H:i:s")
-					]);
+
+			$existing_records = $this->db->where('staff_id', $id)->get('staff_commission')->result_array();
+			$existing_map = [];
+			foreach ($existing_records as $rec) {
+				$existing_map[$rec['commission_id'] . '_' . $rec['profit_id']] = $rec;
+			}
+
+			$all_commissions = $this->db->where('is_deleted', '0')->get('product_commission_slab')->result_array();
+			$all_profits = $this->db->where('is_deleted', '0')->get('profit_commission_slab')->result_array();
+
+			$new_keys = [];
+
+			foreach ($all_commissions as $comm) {
+				$comm_id = $comm['id'];
+				foreach ($all_profits as $profit) {
+					$profit_id = $profit['id'];
+					$key = $comm_id . '_' . $profit_id;
+					$new_keys[$key] = true;
+
+					$cust_val = isset($customer_comm_inputs[$comm_id][$profit_id]) && $customer_comm_inputs[$comm_id][$profit_id] !== '' ? (float)$customer_comm_inputs[$comm_id][$profit_id] : 0.00;
+					$dist_val = isset($distributer_comm_inputs[$comm_id][$profit_id]) && $distributer_comm_inputs[$comm_id][$profit_id] !== '' ? (float)$distributer_comm_inputs[$comm_id][$profit_id] : 0.00;
+
+					if (isset($existing_map[$key])) {
+						// Update existing entry if anything changed
+						$db_cust = (float)$existing_map[$key]['customer_comm'];
+						$db_dist = (float)$existing_map[$key]['distributer_comm'];
+						if ($db_cust !== $cust_val || $db_dist !== $dist_val) {
+							$this->db->where('id', $existing_map[$key]['id'])->update('staff_commission', [
+								'customer_comm' => $cust_val,
+								'distributer_comm' => $dist_val
+							]);
+						}
+					} else {
+						// Insert new entry
+						$this->db->insert('staff_commission', [
+							'staff_id' => $id,
+							'commission_id' => $comm_id,
+							'profit_id' => $profit_id,
+							'customer_comm' => $cust_val,
+							'distributer_comm' => $dist_val,
+							'created_at' => date("Y-m-d H:i:s")
+						]);
+					}
+				}
+			}
+
+			// Clean up removed active slabs
+			foreach ($existing_map as $key => $rec) {
+				if (!isset($new_keys[$key])) {
+					$this->db->where('id', $rec['id'])->delete('staff_commission');
 				}
 			}
 
