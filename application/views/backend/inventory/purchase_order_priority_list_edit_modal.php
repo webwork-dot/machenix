@@ -69,7 +69,7 @@
 
   // Get suppliers for dropdown (filtered by company if needed)
   $company_id = $this->session->userdata('company_id');
-  $supplier_where = array('is_deleted' => '0');
+  $supplier_where = array('is_deleted' => '0', 'type' => 'import');
   if ($company_id) {
       $supplier_where['company_id'] = $company_id;
   }
@@ -416,7 +416,7 @@ readyProductsData[<?php echo $item->id; ?>] = {
   id: <?php echo $item->id; ?>,
   name: '<?php echo addslashes($item->name); ?>',
   category_name: '<?php echo addslashes($item->category_name ?? '-'); ?>',
-  supplier_id: <?php echo $item->supplier_id ?? 'null'; ?>,
+  supplier_id: '<?php echo addslashes($item->supplier_id ?? ""); ?>',
   categories: '<?php echo addslashes($item->categories ?? ''); ?>'
 };
 <?php endforeach; ?>
@@ -427,7 +427,7 @@ spareProductsData[<?php echo $item->id; ?>] = {
   id: <?php echo $item->id; ?>,
   name: '<?php echo addslashes($item->name); ?>',
   category_name: '<?php echo addslashes($item->category_name ?? '-'); ?>',
-  supplier_id: <?php echo $item->supplier_id ?? 'null'; ?>,
+  supplier_id: '<?php echo addslashes($item->supplier_id ?? ""); ?>',
   categories: '<?php echo addslashes($item->categories ?? ''); ?>'
 };
 <?php endforeach; ?>
@@ -440,7 +440,17 @@ function getFilteredProducts(type, supplierId) {
   for (var productId in productsData) {
     var product = productsData[productId];
     // Filter by supplier_id: show product if supplier_id matches OR supplier_id is null/empty (products without supplier)
-    if (!supplierId || !product.supplier_id || product.supplier_id == supplierId) {
+    var isSupplierMatch = false;
+    if (!supplierId || !product.supplier_id) {
+      isSupplierMatch = true;
+    } else {
+      var supplierList = product.supplier_id.toString().split(',');
+      if (supplierList.indexOf(supplierId.toString()) !== -1) {
+        isSupplierMatch = true;
+      }
+    }
+
+    if (isSupplierMatch) {
       filteredOptions += '<option value="' + product.id + '">' +
         (product.category_name || '-') + ' - ' + product.name + '</option>';
     }
@@ -458,13 +468,13 @@ supplierOptions += '<option value="<?php echo $supplier->id; ?>"><?php echo adds
 // Store original quantities for tracking
 var originalQuantities = {};
 <?php foreach($priority_products as $product): ?>
-originalQuantities[<?php echo $product['id']; ?>] = <?php echo $product['original_quantity']; ?>;
+originalQuantities[<?php echo $product['id']; ?>] = <?php echo (int)($product['original_quantity'] ?? 0); ?>;
 <?php endforeach; ?>
 
 // Store original quantities for loading products that came from priority list
 var loadingOriginalQuantities = {};
 <?php foreach($loading_products as $loading_product): ?>
-loadingOriginalQuantities['<?php echo $loading_product['id']; ?>'] = <?php echo $loading_product['quantity']; ?>;
+loadingOriginalQuantities['<?php echo $loading_product['id']; ?>'] = <?php echo (int)($loading_product['quantity'] ?? 0); ?>;
 <?php endforeach; ?>
 
 var loadingProductCounter = 0;

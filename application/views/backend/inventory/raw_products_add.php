@@ -157,6 +157,47 @@
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
     border-radius: 5px;
   }
+
+  .supplier-pricing-container {
+    background: linear-gradient(135deg, #ffffff 0%, #fcfdfe 100%);
+    border: 2px solid #e3e7ed;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .supplier-pricing-container:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-color: #7367f0;
+  }
+
+  .supplier-pricing-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #7367f0 0%, #9e95f5 100%);
+    border-radius: 12px 0 0 12px;
+  }
+
+  .supplier-pricing-header {
+    background: linear-gradient(135deg, #7367f0 0%, #9e95f5 100%);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(115, 103, 240, 0.3);
+  }
 </style>
 
 <div class="row">
@@ -277,6 +318,14 @@
             </div>
           </div>
 
+          <div class="col-12 col-sm-3 mb-1">
+            <label class="form-label" for="state">Status <span class="required">*</span></label>
+            <select class="form-select select2" name="status" required>
+              <option value="1">Active </option>
+              <option value="0">Inactive </option>
+            </select>
+          </div>
+
           <div class="col-12 mb-2">
             <div class="variation-row-container">
               <div class="variation-header">
@@ -341,56 +390,8 @@
             </button>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Official USD Rate</label>
-              <input type="number" class="form-control" placeholder="Enter USD Rate" name="usd_rate" value="0">
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Actual USD Rate</label>
-              <input type="number" class="form-control" placeholder="Enter USD Rate" name="actual_usd_rate" value="0">
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Actual RMB</label>
-              <input type="number" class="form-control" placeholder="Enter Rate" name="rate" value="0">
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Min Billing Price <span class="required">*</span></label>
-              <input type="number" class="form-control" placeholder="Enter Min Billing Price" name="product_mrp" required value="0">
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Min Selling Price <span class="required">*</span></label>
-              <input type="number" class="form-control" placeholder="Enter Min Selling Price" name="costing_price" required value="0">
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-3 mb-1">
-            <div class="form-group">
-              <label>Stock Intimation <span class="required">*</span></label>
-              <input type="number" class="form-control" placeholder="Enter Stock Intimation" name="intimation"
-                id="intimation" value='0' required="">
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-3 mb-1">
-            <label class="form-label" for="state">Status <span class="required">*</span></label>
-            <select class="form-select select2" name="status" required>
-              <option value="1">Active </option>
-              <option value="0">Inactive </option>
-            </select>
-          </div>
+          <!-- Dynamic Supplier-wise Pricing Sections -->
+          <div class="col-12" id="supplier_pricing_sections_container"></div>
 
           <div class="col-12  pr_img_div" id="pr_img_div">
             <!-- <div class="form-group">
@@ -471,12 +472,12 @@
 function toggleGstRequirements() {
   var is_gst = $('#is_gst_applicable').val();
   if (is_gst == '1') {
-    $('input[name="hsn_code"]').attr('required', 'required');
-    $('input[name="gst"]').attr('required', 'required');
+    $('input[name="hsn_code"]').attr('required', 'required').prop('readonly', false);
+    $('input[name="gst"]').attr('required', 'required').prop('readonly', false);
     $('.gst-req-star').removeClass('d-none');
   } else {
-    $('input[name="hsn_code"]').removeAttr('required');
-    $('input[name="gst"]').removeAttr('required');
+    $('input[name="hsn_code"]').removeAttr('required').prop('readonly', true).val('');
+    $('input[name="gst"]').removeAttr('required').prop('readonly', true).val(0);
     $('.gst-req-star').addClass('d-none');
   }
 }
@@ -503,6 +504,11 @@ $(document).ready(function () {
             $(this).val(0);
         }
     });
+
+    $('#supplier_id').on('change', function() {
+        updateSupplierPricingSections();
+    });
+    updateSupplierPricingSections();
 });
 
 // document.addEventListener('DOMContentLoaded', () => {
@@ -675,4 +681,94 @@ $(document).on("click", ".btn-delete-product-img-session", function() {
     }
   })
 });
+
+function updateSupplierPricingSections() {
+    var container = $('#supplier_pricing_sections_container');
+    var selectedOptions = $('#supplier_id').find(':selected');
+    
+    var currentValues = {};
+    container.find('.supplier-pricing-container').each(function() {
+        var supplierId = $(this).data('supplier-id');
+        currentValues[supplierId] = {
+            usd_rate: $(this).find('input[name^="supplier_usd_rate"]').val(),
+            actual_usd_rate: $(this).find('input[name^="supplier_actual_usd_rate"]').val(),
+            rate: $(this).find('input[name^="supplier_rate"]').val(),
+            product_mrp: $(this).find('input[name^="supplier_product_mrp"]').val(),
+            costing_price: $(this).find('input[name^="supplier_costing_price"]').val(),
+            intimation: $(this).find('input[name^="supplier_intimation"]').val()
+        };
+    });
+
+    container.empty();
+
+    if (selectedOptions.length === 0) {
+        return;
+    }
+
+    selectedOptions.each(function() {
+        var supplierId = $(this).val();
+        var supplierName = $(this).text();
+        
+        var old = currentValues[supplierId] || {
+            usd_rate: '0',
+            actual_usd_rate: '0',
+            rate: '0',
+            product_mrp: '0',
+            costing_price: '0',
+            intimation: '0'
+        };
+
+        var cardHtml = `
+          <div class="supplier-pricing-container mb-2" data-supplier-id="${supplierId}">
+            <div class="supplier-pricing-header">
+              <i class="uil uil-user"></i> Supplier: ${supplierName}
+            </div>
+            <div class="row">
+              <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                  <label>Official USD Rate</label>
+                  <input type="number" class="form-control" placeholder="Enter USD Rate" name="supplier_usd_rate[${supplierId}]" value="${old.usd_rate}" step="any">
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                  <label>Actual USD Rate</label>
+                  <input type="number" class="form-control" placeholder="Enter USD Rate" name="supplier_actual_usd_rate[${supplierId}]" value="${old.actual_usd_rate}" step="any">
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                  <label>Actual RMB</label>
+                  <input type="number" class="form-control" placeholder="Enter Rate" name="supplier_rate[${supplierId}]" value="${old.rate}" step="any">
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                  <label>Min Billing Price <span class="required">*</span></label>
+                  <input type="number" class="form-control" placeholder="Enter Min Billing Price" name="supplier_product_mrp[${supplierId}]" required value="${old.product_mrp}" step="any">
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                  <label>Min Selling Price <span class="required">*</span></label>
+                  <input type="number" class="form-control" placeholder="Enter Min Selling Price" name="supplier_costing_price[${supplierId}]" required value="${old.costing_price}" step="any">
+                </div>
+              </div>
+
+              <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                  <label>Stock Intimation <span class="required">*</span></label>
+                  <input type="number" class="form-control" placeholder="Enter Stock Intimation" name="supplier_intimation[${supplierId}]" value="${old.intimation}" required>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.append(cardHtml);
+    });
+}
 </script>

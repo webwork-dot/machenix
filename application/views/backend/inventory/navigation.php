@@ -198,6 +198,14 @@
            </a>
         </li>
         <?php } ?>
+        <?php if($user_id == 4 || in_array('27',$access_array)) {?>
+		<li class="nav-item <?php if($page_name == 'replace_products') echo 'active'; ?>">
+           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/replace-products'); ?>">
+               <i data-feather="align-left"></i>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Replace Products</span>
+           </a>
+        </li>
+        <?php } ?>
         <?php if($user_id == 4 || in_array('28',$access_array)) {?>
 		<li class="nav-item hidden <?php if($page_name == 'payment_reconceliation' || $page_name == 'payment_reconceliation_add' || $page_name == 'payment_reconceliation_view') echo 'active'; ?>">
            <a class="d-flex align-items-center " href="<?php echo site_url('inventory/payment-reconceliation'); ?>">

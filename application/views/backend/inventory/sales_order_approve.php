@@ -295,6 +295,7 @@
 							<table class="table table-bordered table-sm compact-table">
 								<thead class="table-light text-center">
 									<tr>
+										<th style="min-width:100px;">Move Replace</th>
 										<th style="min-width:200px;">Product <span class="text-danger">*</span></th>
 										<th style="min-width:120px;">Qty <span class="text-danger">*</span></th>
 										<th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
@@ -326,6 +327,13 @@
 										$final_total = (float) ($product['final_total'] ?? ($total_bill_gst_amount + $black_total));
 									?>
 									<tr class="element-1 sales-line-item" id="product_<?php echo $k; ?>" data-id="<?php echo $k; ?>">
+										<td class="text-center">
+											<?php
+												$chk_query = $this->db->get_where('replace_products', ['order_prod_id' => $product['id']]);
+												$is_checked = ($chk_query->num_rows() > 0) ? 'checked' : '';
+											?>
+											<input type="checkbox" class="form-check-input" name="replace_product_chk_<?php echo $k; ?>" value="1" <?php echo $is_checked; ?>>
+										</td>
 										<td>
 											<input type="hidden" name="x_value[]" id="x_value_<?php echo $k; ?>" value="<?php echo $k; ?>">
 											<input type="hidden" name="old_id[]" id="old_id_<?php echo $k; ?>" value="<?php echo $product['id']; ?>">
@@ -338,6 +346,10 @@
 												<?php } ?>
 											</select>
 											<input type="hidden" name="product_id[]" value="<?php echo $product['product_id']; ?>">
+											<div class="product-qty-info mt-25" id="product_qty_info_<?php echo $k; ?>" style="display: none;">
+												<span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+												<span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; margin-left: 5px;">Avail. Black: <span class="avail-black-val">0</span></span>
+											</div>
 										</td>
 										<td>
 											<input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" value="<?php echo $qty; ?>" class="form-control text-center" readonly>
@@ -863,7 +875,38 @@ function calculate_batch_amt_reverse(element, index) {
 function clearAllBatches() {
 	$('.batch-row').remove();
 	$('.btn-add-batch').show();
+	$('.sales-line-item').each(function() {
+		var index = $(this).data('id');
+		updateProductOverallQty(index);
+	});
 	recalculate();
+}
+
+function updateProductOverallQty(index) {
+	var warehouse_id = $('#warehouse_id').val();
+	var product_val = $('#product_id_' + index).val();
+	var info_container = $('#product_qty_info_' + index);
+
+	if (!warehouse_id || warehouse_id == '0' || !product_val) {
+		info_container.hide();
+		return;
+	}
+
+	var product_id = String(product_val).split('|')[0];
+
+	$.ajax({
+		type: "POST",
+		url: "<?php echo base_url(); ?>inventory/get_warehouse_product_qty",
+		data: { warehouse_id: warehouse_id, product_id: product_id },
+		dataType: "json",
+		success: function(res) {
+			info_container.find('.avail-white-val').text(res.total_white);
+			if (info_container.find('.avail-black-val').length > 0) {
+				info_container.find('.avail-black-val').text(res.total_black);
+			}
+			info_container.show();
+		}
+	});
 }
 
 function showPriceHistory(index, batch_index) {
@@ -955,6 +998,7 @@ function addBatch(index) {
 
 	var batch_row = `
 		<tr class="batch-row batch-row-${index}">
+			<td></td>
 			<td style="padding-left: 20px !important;">
 				<select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
 					<option value="">Select Batch</option>
@@ -1302,6 +1346,10 @@ $(document).ready(function() {
 	recalculate();
 	$('.select2').select2();
 	$('#charge_id_1').select2({ dropdownParent: $('body') });
+	$('.sales-line-item').each(function() {
+		var index = $(this).data('id');
+		updateProductOverallQty(index);
+	});
 });
 </script>
 

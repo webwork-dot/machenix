@@ -413,6 +413,9 @@
                       <select class="form-control select2 product_id" name="product_id[]" id="product_id_1" data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
                         <option value="">Select Product</option>
                       </select>
+                      <div class="product-qty-info mt-25" id="product_qty_info_1" style="display: none;">
+                        <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+                      </div>
                     </td>
                     <td><input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('1')" value="1" class="form-control" required=""></td>
                     <td>
@@ -736,6 +739,9 @@ function appendRequirement() {
           <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
             <option value="">Select Product</option>
           </select>
+          <div class="product-qty-info mt-25" id="product_qty_info_${nextindex}" style="display: none;">
+            <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+          </div>
         </td>
         <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
         <td>
@@ -874,11 +880,39 @@ function appendRequirement() {
     $('#black_amount_per_unit_' + index).val('');
     $('#black_amount_' + index).val('');
     $('#final_total_' + index).val('');
+    $('#product_qty_info_' + index).hide();
     recalculate();
   }
 
+  function updateProductOverallQty(index) {
+    var warehouse_id = $('#warehouse_id').val();
+    var product_val = $('#product_id_' + index).val();
+    var info_container = $('#product_qty_info_' + index);
+
+    if (!warehouse_id || warehouse_id == '0' || !product_val) {
+      info_container.hide();
+      return;
+    }
+
+    var product_id = String(product_val).split('|')[0];
+
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url(); ?>inventory/get_warehouse_product_qty",
+      data: { warehouse_id: warehouse_id, product_id: product_id },
+      dataType: "json",
+      success: function(res) {
+        info_container.find('.avail-white-val').text(res.total_white);
+        info_container.show();
+      }
+    });
+  }
+
   function get_details_by_product(product_id, index) {
-    if(!product_id) return;
+    if(!product_id) {
+      $('#product_qty_info_' + index).hide();
+      return;
+    }
     
     // Clear any existing batches on product change
     $('.batch-row-' + index).remove();
@@ -895,6 +929,8 @@ function appendRequirement() {
       resetLineItem(index);
       return;
     }
+
+    updateProductOverallQty(index);
 
     var customer_id = $('#customer_id').val();
 
@@ -1454,6 +1490,7 @@ function appendRequirement() {
     $('.sales-line-item').each(function() {
       var index = $(this).data('id');
       toggleMainRowReadonly(index, false);
+      updateProductOverallQty(index);
     });
     recalculate();
   }

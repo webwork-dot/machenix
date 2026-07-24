@@ -44,14 +44,22 @@
         </div>
 
         <div class="row">
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
+                value="<?php echo date('Y-m-d');?>" id="date_picker">
+            </div>
+          </div>
+
+          <div class="col-12 col-md-4">
             <div class="form-group">
               <label class="form-label font-weight-bold" for="quantity">Quantity <span class="text-danger">*</span></label>
               <input type="number" min="1" step="1" class="form-control font-weight-bold text-center" name="quantity" id="quantity" value="1" required>
             </div>
           </div>
 
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md-4">
             <div class="form-group">
               <label class="form-label font-weight-bold" for="type">Type <span class="text-danger">*</span></label>
               <select class="form-select select2" name="type" id="type" required>
@@ -524,7 +532,7 @@ function calculateBatchCosts($row) {
 
   var totalOff = wQty * offCost;
   var totalBlack = bQty * blackCost;
-  var actualCost = totalOff + totalBlack;
+  var actualCost = blackCost * (wQty + bQty);
 
   $row.find('.total-off-cost-input').val(totalOff.toFixed(2));
   $row.find('.total-black-cost-input').val(totalBlack.toFixed(2));

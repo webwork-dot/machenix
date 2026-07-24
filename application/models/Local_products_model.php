@@ -58,8 +58,11 @@ class Local_products_model extends CI_Model
 
                 $delete_url = "confirm_modal('" . base_url() . "inventory/local-products/delete/" . $id . "','Are you sure want to delete!')";
                 $edit_url = base_url() . 'inventory/local-products/edit/' . $id;
+                $history_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_product_history/" . $id . "', 'Product History')";
                 $action = '';
                 $action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+
+                $action .= '<a href="javascript:void(0);" onclick="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="History"><button type="button" class="btn mr-1 mb-1 icon-btn-history" style="background-color: #7367f0; color: #fff; border-color: #7367f0;"><i class="fa fa-history" aria-hidden="true"></i></button></a>';
 
                 $action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
 
@@ -315,6 +318,24 @@ class Local_products_model extends CI_Model
                     );
                 } else {
                     $this->db->trans_commit();
+
+                    // Insert audit log
+                    $product_data = $this->db->where('id', $user_id)->get('raw_products')->row_array();
+                    $log_data = array(
+                        'parent_id'      => NULL,
+                        'ref_id'         => $user_id,
+                        'module'         => 'product',
+                        'action'         => 'add',
+                        'message'        => 'Product added by ' . $this->session->userdata('super_name'),
+                        'json'           => json_encode($product_data),
+                        'table_name'     => 'raw_products',
+                        'added_by'       => $this->session->userdata('super_user_id'),
+                        'added_by_email' => $this->session->userdata('super_email'),
+                        'added_by_name'  => $this->session->userdata('super_name'),
+                        'added_by_type'  => $this->session->userdata('super_type')
+                    );
+                    $this->db->insert('sys_logs', $log_data);
+
                     $this->session->set_flashdata('flash_message', get_phrase('products_added_successfully'));
                     $resultpost = array(
                         "status" => 200,
@@ -447,8 +468,29 @@ class Local_products_model extends CI_Model
             $data['product_type'] = 'local';
             $opening_stock = $this->input->post('opening_stock');
             $data['opening_stock']  = (!empty($opening_stock)) ? intval($opening_stock) : 0;
+            $old_product_data = $this->db->where('id', $id)->get('raw_products')->row_array();
             $this->db->where('id', $id);
             $this->db->update('raw_products', $data);
+
+            $new_product_data = $this->db->where('id', $id)->get('raw_products')->row_array();
+            $log_json = array(
+                'old_data' => $old_product_data,
+                'new_data' => $new_product_data
+            );
+            $log_data = array(
+                'parent_id'      => NULL,
+                'ref_id'         => $id,
+                'module'         => 'product',
+                'action'         => 'update',
+                'message'        => 'Product updated by ' . $this->session->userdata('super_name'),
+                'json'           => json_encode($log_json),
+                'table_name'     => 'raw_products',
+                'added_by'       => $this->session->userdata('super_user_id'),
+                'added_by_email' => $this->session->userdata('super_email'),
+                'added_by_name'  => $this->session->userdata('super_name'),
+                'added_by_type'  => $this->session->userdata('super_type')
+            );
+            $this->db->insert('sys_logs', $log_data);
 
             $user_id = $id;
 
@@ -494,6 +536,23 @@ class Local_products_model extends CI_Model
         $data['is_deleted'] = '1';
         $this->db->where('id', $id);
         $this->db->update('raw_products', $data);
+
+        // Insert audit log
+        $product_data = $this->db->where('id', $id)->get('raw_products')->row_array();
+        $log_data = array(
+            'parent_id'      => NULL,
+            'ref_id'         => $id,
+            'module'         => 'product',
+            'action'         => 'delete',
+            'message'        => 'Product deleted by ' . $this->session->userdata('super_name'),
+            'json'           => json_encode($product_data),
+            'table_name'     => 'raw_products',
+            'added_by'       => $this->session->userdata('super_user_id'),
+            'added_by_email' => $this->session->userdata('super_email'),
+            'added_by_name'  => $this->session->userdata('super_name'),
+            'added_by_type'  => $this->session->userdata('super_type')
+        );
+        $this->db->insert('sys_logs', $log_data);
         
         $inventory_prod = $this->db->where('product_id', $id)->get('inventory');
         if($inventory_prod->num_rows() > 0) {

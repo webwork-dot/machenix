@@ -351,9 +351,8 @@
             </div>
           </div>
 
-          
 
-          <div class="col-6 mb-1">
+          <div class="col-12 mb-1">
             
           </div>
 
@@ -389,6 +388,7 @@
               <table class="table table-bordered table-sm compact-table">
                 <thead class="table-light text-center">
                   <tr>
+                    <th style="min-width:100px;">Move Replace</th>
                     <th style="min-width:200px;">Product <span class="text-danger">*</span></th>
                     <th style="min-width:50px;">Qty <span class="text-danger">*</span></th>
                     <th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
@@ -406,12 +406,19 @@
                 </thead>
                 <tbody id="requirement_area">
                   <tr class="element-1 sales-line-item" id="product_1" data-id="1">
+                    <td class="text-center">
+                      <input type="checkbox" class="form-check-input" name="replace_product_chk_1" value="1">
+                    </td>
                     <td>
                       <input type="hidden" name="x_value[]" id="x_value_1" value="1">
                       <input type="hidden" name="old_id[]" id="old_id_1" value="0">
                       <select class="form-control select2 product_id" name="product_id[]" id="product_id_1" data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
                         <option value="">Select Product</option>
                       </select>
+                      <div class="product-qty-info mt-25" id="product_qty_info_1" style="display: none;">
+                        <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+                        <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; margin-left: 5px;">Avail. Black: <span class="avail-black-val">0</span></span>
+                      </div>
                     </td>
                     <td><input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('1')" value="1" class="form-control" required=""></td>
                     <td>
@@ -729,12 +736,19 @@ function appendRequirement() {
     
     $('#requirement_area').append(`
       <tr class="element-1 sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
+        <td class="text-center">
+          <input type="checkbox" class="form-check-input" name="replace_product_chk_${nextindex}" value="1">
+        </td>
         <td>
           <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
           <input type="hidden" name="old_id[]" id="old_id_${nextindex}" value="0">
           <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
             <option value="">Select Product</option>
           </select>
+          <div class="product-qty-info mt-25" id="product_qty_info_${nextindex}" style="display: none;">
+            <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+            <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; margin-left: 5px;">Avail. Black: <span class="avail-black-val">0</span></span>
+          </div>
         </td>
         <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
         <td>
@@ -873,11 +887,42 @@ function appendRequirement() {
     $('#black_amount_per_unit_' + index).val('');
     $('#black_amount_' + index).val('');
     $('#final_total_' + index).val('');
+    $('#product_qty_info_' + index).hide();
     recalculate();
   }
 
+  function updateProductOverallQty(index) {
+    var warehouse_id = $('#warehouse_id').val();
+    var product_val = $('#product_id_' + index).val();
+    var info_container = $('#product_qty_info_' + index);
+
+    if (!warehouse_id || warehouse_id == '0' || !product_val) {
+      info_container.hide();
+      return;
+    }
+
+    var product_id = String(product_val).split('|')[0];
+
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url(); ?>inventory/get_warehouse_product_qty",
+      data: { warehouse_id: warehouse_id, product_id: product_id },
+      dataType: "json",
+      success: function(res) {
+        info_container.find('.avail-white-val').text(res.total_white);
+        if (info_container.find('.avail-black-val').length > 0) {
+          info_container.find('.avail-black-val').text(res.total_black);
+        }
+        info_container.show();
+      }
+    });
+  }
+
   function get_details_by_product(product_id, index) {
-    if(!product_id) return;
+    if(!product_id) {
+      $('#product_qty_info_' + index).hide();
+      return;
+    }
     
     // Clear any existing batches on product change
     $('.batch-row-' + index).remove();
@@ -894,6 +939,8 @@ function appendRequirement() {
       resetLineItem(index);
       return;
     }
+
+    updateProductOverallQty(index);
 
     var customer_id = $('#customer_id').val();
 
@@ -1453,6 +1500,7 @@ function appendRequirement() {
     $('.sales-line-item').each(function() {
       var index = $(this).data('id');
       toggleMainRowReadonly(index, false);
+      updateProductOverallQty(index);
     });
     recalculate();
   }
@@ -1493,6 +1541,7 @@ function appendRequirement() {
 
     var batch_row = `
       <tr class="batch-row batch-row-${index}">
+        <td></td>
         <td style="padding-left: 20px !important;">
           <select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
             <option value="">Select Batch</option>

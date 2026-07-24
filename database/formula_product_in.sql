@@ -31,6 +31,7 @@ CREATE TABLE `formula_product_in` (
   `id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
   `batch_no` varchar(255) DEFAULT NULL,
+  `date` DATE DEFAULT NULL,
   `product_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `qty` int(11) NOT NULL,

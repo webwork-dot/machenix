@@ -388,6 +388,7 @@
               <table class="table table-bordered table-sm compact-table">
                 <thead class="table-light text-center">
                   <tr>
+                    <th style="min-width:100px;">Move Replace</th>
                     <th style="min-width:200px;">Product <span class="text-danger">*</span></th>
                     <th style="min-width:50px;">Qty <span class="text-danger">*</span></th>
                     <th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
@@ -405,6 +406,9 @@
                 </thead>
                 <tbody id="requirement_area">
                   <tr class="element-1 sales-line-item" id="product_1" data-id="1">
+                    <td class="text-center">
+                      <input type="checkbox" class="form-check-input" name="replace_product_chk_1" value="1">
+                    </td>
                     <td>
                       <input type="hidden" name="x_value[]" id="x_value_1" value="1">
                       <select class="form-control select2 product_id" name="product_id[]" id="product_id_1" data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
@@ -725,6 +729,9 @@ function appendRequirement() {
     
     $('#requirement_area').append(`
       <tr class="element-1 sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
+        <td class="text-center">
+          <input type="checkbox" class="form-check-input" name="replace_product_chk_${nextindex}" value="1">
+        </td>
         <td>
           <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
           <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>

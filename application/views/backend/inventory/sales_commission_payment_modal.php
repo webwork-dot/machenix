@@ -5,14 +5,14 @@
       <input type="hidden" name="order_ids" value="<?php echo urldecode($param2); ?>">
       
       <div class="row">
-        <div class="col-12 mb-2">
+        <div class="col-6 mb-2">
           <div class="form-group">
             <label>Total Amt <span class="required">*</span></label>
             <input type="text" class="form-control" name="total_amount" value="<?php echo number_format((float)$param3, 2, '.', ''); ?>" readonly required>
           </div>
         </div>
 
-        <div class="col-12 mb-2">
+        <div class="col-6 mb-2">
           <div class="form-group">
             <label>Date <span class="required">*</span></label>
             <input type="date" class="form-control" name="payment_date" value="<?php echo date('Y-m-d'); ?>" required>

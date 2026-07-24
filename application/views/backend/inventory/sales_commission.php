@@ -250,7 +250,7 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
         
         if (selected_ids.length > 0) {
             var url = "<?php echo base_url('modal/popup_inventory/sales_commission_payment_modal'); ?>/" + encodeURIComponent(selected_ids.join(',')) + "/" + total_amount.toFixed(2);
-            showLargeModal(url, 'Commission Payment');
+            showAjaxModal(url, 'Commission Payment');
         }
     }
 </script>

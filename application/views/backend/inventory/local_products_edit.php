@@ -312,12 +312,12 @@
 function toggleGstRequirements() {
   var is_gst = $('#is_gst_applicable').val();
   if (is_gst == '1') {
-    $('input[name="hsn_code"]').attr('required', 'required');
-    $('input[name="gst"]').attr('required', 'required');
+    $('input[name="hsn_code"]').attr('required', 'required').prop('readonly', false);
+    $('input[name="gst"]').attr('required', 'required').prop('readonly', false);
     $('.gst-req-star').removeClass('d-none');
   } else {
-    $('input[name="hsn_code"]').removeAttr('required');
-    $('input[name="gst"]').removeAttr('required');
+    $('input[name="hsn_code"]').removeAttr('required').prop('readonly', true).val('');
+    $('input[name="gst"]').removeAttr('required').prop('readonly', true).val(0);
     $('.gst-req-star').addClass('d-none');
   }
 }

@@ -637,11 +637,13 @@ class Inventory extends CI_Controller
             $data                    = $this->inventory_model->get_raw_products_by_id($param2)->row_array();
             $sku_products            = $this->common_model->getResultById('product_sku', 'id, product_id, sku_code', ['product_id' => $param2]);
             $variations              = $this->common_model->getResultById('product_variation', '*', ['product_id' => $param2]);
+            $product_variations      = $this->common_model->getResultById('product_variations', '*', ['product_id' => $param2]);
             $page_data['modesy_images'] = $this->file_model->get_product_images_uncached($param2);
 
             $page_data['data']       = $data;
             $page_data['skus']       = $sku_products;
             $page_data['variations'] = ($variations != '') ? $variations : [];
+            $page_data['product_variations'] = ($product_variations != '') ? $product_variations : [];
             $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
             $page_data['page_name']  = 'raw_products_edit';
             $page_data['id']         = $param2;
@@ -3716,6 +3718,16 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_warehouse_product_qty()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_warehouse_product_qty();
+        }
+    }
+
     public function get_sales_order()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -3772,6 +3784,41 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
         $this->inventory_model->make_sales_commission_payment();
+    }
+
+    public function replace_products()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+
+            $page_data['navigation']  = 'replace_products';
+            $page_data['page_name']  = 'replace_products';
+            $page_data['page_title'] = get_phrase('replace_products');
+
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_replace_products()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_replace_products();
+        }
+    }
+
+    public function get_pending_replace_products_by_supplier()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_pending_replace_products_by_supplier();
+        }
     }
 
 
