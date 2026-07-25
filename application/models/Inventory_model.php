@@ -10388,6 +10388,7 @@ class Inventory_model extends CI_Model
 					);
 					$this->db->insert('sales_commission', $sales_comm_data);
 				}
+				
 				$is_replace = ($this->input->post('replace_product_chk_' . $i) == 1) ? 1 : 0;
 				if ($is_replace) {
 					// Retrieve product details
@@ -17698,60 +17699,30 @@ class Inventory_model extends CI_Model
 	public function get_batch_detail_data($batch_no)
 	{
 		$po = $this->db->query("
-				SELECT
-						id,
-						voucher_no,
-						boe_no,
-						boe_date,
-						completed_date,
-						loading_date,
-						date
-				FROM purchase_order
-				WHERE voucher_no = ?
-					AND is_deleted = 0
-					AND method = 'import'
-				LIMIT 1
+			SELECT id
+			FROM purchase_order
+			WHERE voucher_no = ?
+				AND is_deleted = 0
+				AND method = 'import'
+			LIMIT 1
 		", array($batch_no))->row_array();
 
 		$rows = $this->db->query("
-				SELECT
-						pp.id,
-						pp.parent_id,
-						pp.product_id,
-						pp.supplier_id,
-						COALESCE(s.name, 'Unknown Supplier') AS supplier_name,
-						pp.product_name,
-						pp.item_code,
-						pp.hsn_code,
-						pp.official_ci_qty,
-						pp.black_qty,
-						pp.actual_qty,
-						pp.cbm,
-						pp.unit_price_rmb,
-						pp.actual_usd,
-						pp.actual_inr,
-						pp.official_ci_unit_price_usd,
-						pp.official_rate_rs,
-						pp.official_total_rs,
-						pp.duty_percent,
-						pp.duty_amt,
-						pp.duty_surcharge,
-						pp.taxable_value,
-						pp.gst_amt,
-						pp.invoice,
-						pp.invoice_date,
-						pp.invoice_supplier_id,
-						pop.id AS purchase_order_product_id
-				FROM purchase_in_product pp
-				LEFT JOIN supplier s
-						ON s.id = pp.supplier_id
-				LEFT JOIN purchase_order_product pop
-						ON pop.parent_id = pp.parent_id
-						AND pop.product_id = pp.product_id
-						AND pop.supplier_id = pp.supplier_id
-				WHERE pp.parent_id = ?
-					AND pp.is_deleted = 0
-				ORDER BY pp.supplier_id ASC, pp.id ASC
+			SELECT
+				pp.id,
+				pp.product_id,
+				pp.supplier_id,
+				pp.official_ci_qty,
+				pp.actual_qty,
+				pp.cbm,
+				pp.actual_inr,
+				pp.official_total_rs,
+				pp.duty_amt,
+				pp.duty_surcharge
+			FROM purchase_in_product pp
+			WHERE pp.parent_id = ?
+				AND pp.is_deleted = 0
+			ORDER BY pp.supplier_id ASC, pp.id ASC
 		", array($po['id']))->result_array();
 
 		$suppliers = array();
@@ -17763,78 +17734,37 @@ class Inventory_model extends CI_Model
 			if (!isset($suppliers[$supplier_id])) {
 				$suppliers[$supplier_id] = array(
 					'supplier_id' => $supplier_id,
-					'supplier_name' => (string)($r['supplier_name'] ?? 'Unknown Supplier'),
-					'invoice' => '',
-					'invoice_date' => '',
 					'products' => array()
 				);
 			}
 
-			if (!empty($r['invoice']) && isset($r['invoice_supplier_id']) && (int)$r['invoice_supplier_id'] === $supplier_id) {
-				$suppliers[$supplier_id]['invoice'] = (string)$r['invoice'];
-				$suppliers[$supplier_id]['invoice_date'] = !empty($r['invoice_date']) ? date('Y-m-d', strtotime($r['invoice_date'])) : '';
-			}
-
 			$official_qty = (float)($r['official_ci_qty'] ?? 0);
-			$black_qty = (float)($r['black_qty'] ?? 0);
 			$act_qty = (float)($r['actual_qty'] ?? 0);
 			$cbm_per_pc = (float)($r['cbm'] ?? 0);
 			$off_cbm_total = $official_qty * $cbm_per_pc;
 			$actual_cbm_total = $act_qty * $cbm_per_pc;
 
-			$rmb_per_pc = (float)($r['unit_price_rmb'] ?? 0);
-			$rmb_total = $act_qty * $rmb_per_pc;
-			$total_off_rmb = $official_qty * $rmb_per_pc;
-			$usd_per_pc = (float)($r['actual_usd'] ?? 0);
-			$usd_total = $act_qty * $usd_per_pc;
 			$cost_without_expense_rs = (float)($r['actual_inr'] ?? 0);
 			$total_rs_without_expense = $cost_without_expense_rs * $act_qty;
-			$off_usd_per_pc = (float)($r['official_ci_unit_price_usd'] ?? 0);
-			$total_off_usd = $official_qty * $off_usd_per_pc;
-			$off_rs_per_pc = (float)($r['official_rate_rs'] ?? 0);
 			$total_off_rs = (float)($r['official_total_rs'] ?? 0);
-			$off_duty_percent = (float)($r['duty_percent'] ?? 0);
 			$off_duty_amt = (float)($r['duty_amt'] ?? 0);
 			$off_surcharge = (float)($r['duty_surcharge'] ?? 0);
-			$off_taxable_value = (float)($r['taxable_value'] ?? 0);
-			$off_gst_amt = (float)($r['gst_amt'] ?? 0);
-			$off_gst_percent = ($off_taxable_value > 0) ? (($off_gst_amt * 100) / $off_taxable_value) : 0;
-			$total_duty_gst = $off_duty_amt + $off_gst_amt + $r['duty_surcharge'];
 
 			$line = array(
 				'id' => (int)($r['id'] ?? 0),
-				'purchase_order_product_id' => (int)($r['purchase_order_product_id'] ?? 0),
 				'product_id' => (int)($r['product_id'] ?? 0),
-				'product_name' => (string)($r['product_name'] ?? ''),
-				'model_no' => (string)($r['item_code'] ?? ''),
-				'hsn_code' => (string)($r['hsn_code'] ?? ''),
 				'official_qty' => $official_qty,
-				'black_qty' => $black_qty,
 				'act_qty' => $act_qty,
-				'cbm_per_pc' => $cbm_per_pc,
 				'off_cbm_total' => $off_cbm_total,
 				'actual_cbm_total' => $actual_cbm_total,
-				'rmb_per_pc' => $rmb_per_pc,
-				'rmb_total' => $rmb_total,
-				'total_off_rmb' => $total_off_rmb,
-				'usd_per_pc' => $usd_per_pc,
-				'usd_total' => $usd_total,
-				'cost_without_expense_rs' => $cost_without_expense_rs,
 				'total_rs_without_expense' => $total_rs_without_expense,
-				'off_usd_per_pc' => $off_usd_per_pc,
-				'total_off_usd' => $total_off_usd,
-				'off_rs_per_pc' => $off_rs_per_pc,
 				'total_off_rs' => $total_off_rs,
-				'off_duty_percent' => $off_duty_percent,
 				'off_duty_amt' => $off_duty_amt,
-				'off_surcharge' => $off_surcharge,
-				'off_taxable_value' => $off_taxable_value,
-				'off_gst_percent' => $off_gst_percent,
-				'off_gst_amt' => $off_gst_amt,
-				'total_duty_gst' => $total_duty_gst
+				'off_surcharge' => $off_surcharge
 			);
 
 			$suppliers[$supplier_id]['products'][] = $line;
+
 			if (!isset($supplier_actual_cbm[$supplier_id])) {
 				$supplier_actual_cbm[$supplier_id] = 0;
 				$supplier_off_cbm[$supplier_id] = 0;
@@ -17844,54 +17774,49 @@ class Inventory_model extends CI_Model
 		}
 
 		$all_batch_expenses = $this->db->query("
-				SELECT supplier_id, sub_total, type 
-				FROM po_expense 
-				WHERE batch_no = ? AND is_delete = 0
+			SELECT supplier_id, sub_total, type 
+			FROM po_expense 
+			WHERE batch_no = ? AND is_delete = 0
 		", array($batch_no));
 
 		$expenses = ($all_batch_expenses->num_rows() > 0) ? $all_batch_expenses->result_array() : [];
-		
+
 		foreach ($suppliers as &$supplier) {
 			// Actual Expense
 			$act_exp = [];
 			foreach ($expenses as $exp) {
 				$exp_suppliers = explode(',', $exp["supplier_id"]);
-				
-				// Supplier Total
+
 				$total_act_cbm = 0;
-				
-				if(in_array($supplier['supplier_id'], $exp_suppliers)) {
-					foreach($exp_suppliers as $exp_sup) {
-						if(isset($supplier_actual_cbm[$exp_sup])) {
+				if (in_array($supplier['supplier_id'], $exp_suppliers)) {
+					foreach ($exp_suppliers as $exp_sup) {
+						if (isset($supplier_actual_cbm[$exp_sup])) {
 							$total_act_cbm += $supplier_actual_cbm[$exp_sup];
 						}
 					}
 				}
 
-				// avg expense
-				if($total_act_cbm > 0) {
+				if ($total_act_cbm > 0) {
 					$act_exp[] = $exp['sub_total'] / $total_act_cbm;
 				}
 			}
-			
-			// Official Expense
+
+				// Official Expense
 			$off_exp = [];
 			foreach ($expenses as $exp) {
-				if($exp['type'] == 'official') {
+				if ($exp['type'] == 'official') {
 					$exp_suppliers = explode(',', $exp["supplier_id"]);
 
-					// Supplier Total
 					$total_off_cbm = 0;
-					if(in_array($supplier['supplier_id'], $exp_suppliers)) {
-						foreach($exp_suppliers as $exp_sup) {
-							if(isset($supplier_off_cbm[$exp_sup])) {
+					if (in_array($supplier['supplier_id'], $exp_suppliers)) {
+						foreach ($exp_suppliers as $exp_sup) {
+							if (isset($supplier_off_cbm[$exp_sup])) {
 								$total_off_cbm += $supplier_off_cbm[$exp_sup];
 							}
 						}
 					}
 
-					// avg expense
-					if($total_off_cbm > 0) {
+					if ($total_off_cbm > 0) {
 						$off_exp[] = $exp['sub_total'] / $total_off_cbm;
 					}
 				}
@@ -17904,8 +17829,7 @@ class Inventory_model extends CI_Model
 				$p_off_total_expense = $p_off_expense + $product['total_off_rs'] + $product['off_duty_amt'] + $product['off_surcharge'];
 				$p_off_per_pc = ($product['official_qty'] > 0) ? $p_off_total_expense / $product['official_qty'] : 0;
 				$p_cost_without_exp = ($product['act_qty'] > 0) ? $p_total_expense / $product['act_qty'] : 0;
-				
-				// Updating Product Row
+
 				$product['expense'] = $p_expense;
 				$product['total_expense'] = $p_total_expense;
 				$product['official_expense'] = $p_off_expense;
@@ -17913,34 +17837,29 @@ class Inventory_model extends CI_Model
 				$product['official_exp_per_pc'] = $p_off_per_pc;
 				$product['actual_cost_with_exp'] = $p_cost_without_exp;
 			}
-
-			unset($product); 
+			unset($product);
 		}
+		unset($supplier);
 
+		// Persist expense details to DB and inventory
 		foreach ($suppliers as $supplier) {
 			foreach ($supplier['products'] as $product) {
-				// Update batch
-				$this->db->where('id', $product['id'])->update('purchase_in_product', [
+				$update_data = [
 					'expense' => $product['expense'],
 					'total_expense' => $product['total_expense'],
 					'official_expense' => $product['official_expense'],
 					'total_official_expense' => $product['total_official_expense'],
 					'official_exp_per_pc' => $product['official_exp_per_pc'],
 					'actual_cost_with_exp' => $product['actual_cost_with_exp'],
-				]);
+				];
 
-				// Inventory Stock
-				$check_inv = $this->db->where(['product_id' => $product['product_id'], 'supplier_id' => $supplier['supplier_id'], 'batch_no' => $batch_no])->get('inventory');
-				if ($check_inv->num_rows() > 0) {
-					$this->db->where(['product_id' => $product['product_id'], 'supplier_id' => $supplier['supplier_id'], 'batch_no' => $batch_no])->update('inventory', [
-						'expense' => $product['expense'],
-						'total_expense' => $product['total_expense'],
-						'official_expense' => $product['official_expense'],
-						'total_official_expense' => $product['total_official_expense'],
-						'official_exp_per_pc' => $product['official_exp_per_pc'],
-						'actual_cost_with_exp' => $product['actual_cost_with_exp'],
-					]);
-				}
+				$this->db->where('id', $product['id'])->update('purchase_in_product', $update_data);
+
+				$this->db->where([
+					'product_id' => $product['product_id'],
+					'supplier_id' => $supplier['supplier_id'],
+					'batch_no' => $batch_no
+				])->update('inventory', $update_data);
 			}
 		}
 	}
