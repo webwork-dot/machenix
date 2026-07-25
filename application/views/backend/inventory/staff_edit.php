@@ -34,12 +34,12 @@ $company_ids = explode(',', $data['company_id']);
                      </div>
                   </div>
                   
-                   <div class="col-md-4">
-                      <div class="form-group">
-                         <label><?php echo get_phrase('email'); ?><span class="required">*</span></label>
-                          <input type="text" class="form-control" placeholder="Email" name="email" value="<?php echo $data['email']; ?>" required>
-                      </div>
-                   </div> 
+                  <div class="col-md-4">
+                     <div class="form-group">
+                        <label><?php echo get_phrase('email'); ?><span class="required">*</span></label>
+                        <input type="text" class="form-control" placeholder="Email" name="email" value="<?php echo $data['email']; ?>" required>
+                     </div>
+                  </div> 
                    
                   <div class="col-md-4">
                     <div class="form-group">
