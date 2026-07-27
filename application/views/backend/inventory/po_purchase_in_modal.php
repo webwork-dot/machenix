@@ -24,17 +24,17 @@ $products_raw = $this->db
             rp.rate AS rp_rate,
             rp.actual_usd_rate AS rp_actual_usd_rate,
             rp.duty_charge,
-            inv.quantity AS inv_qty,
+            (SELECT SUM(quantity) FROM inventory WHERE 
+                (po_row_id = pop.id) 
+                OR 
+                (po_row_id = 0 AND product_id = pop.product_id 
+                 AND batch_no = (SELECT voucher_no FROM purchase_order WHERE id = '$po_id')
+                 AND warehouse_id = (SELECT warehouse_id FROM purchase_order WHERE id = '$po_id'))
+            ) AS inv_qty,
             (SELECT is_complete FROM purchase_overflow_product WHERE parent_id = pop.id LIMIT 1) AS overflow_is_complete
         FROM $source_table pop
         LEFT JOIN supplier s ON s.id = pop.supplier_id
         LEFT JOIN raw_products rp ON rp.id = pop.product_id
-        LEFT JOIN inventory inv ON 
-             (inv.po_row_id = pop.id) 
-             OR 
-             (inv.po_row_id = 0 AND inv.product_id = pop.product_id 
-              AND inv.batch_no = (SELECT voucher_no FROM purchase_order WHERE id = '$po_id')
-              AND inv.warehouse_id = (SELECT warehouse_id FROM purchase_order WHERE id = '$po_id'))
         WHERE pop.parent_id = '$po_id' AND pop.loading_qty > 0 AND pop.is_deleted = 0
         ORDER BY pop.id ASC
     ")

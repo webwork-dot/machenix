@@ -996,6 +996,31 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function pending_po()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'import_purchase_order';
+            $page_data['type']      = 'import';
+            $page_data['page_name']  = 'pending_po';
+            $page_data['page_title'] = 'Pending PO';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_pending_po()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_pending_purchase_order();
+        }
+    }
+
     public function revert_purchase_order_in($id)
     {
         if ($this->session->userdata('inventory_login') != true) {

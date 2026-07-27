@@ -21,4 +21,5 @@
     <a href="<?php echo site_url('inventory/loading-list-po'); ?>" class="sub-link <?php echo ($page_name == 'loading_list_po') ? 'active' : ''; ?>">Loading List</a>
     <a href="<?php echo site_url('inventory/po-purchase-in'); ?>" class="sub-link <?php echo ($page_name == 'po_purchase_in') ? 'active' : ''; ?>">Purchase In</a>
     <a href="<?php echo site_url('inventory/po-expense'); ?>" class="sub-link <?php echo ($page_name == 'po_expense') ? 'active' : ''; ?>">Expense</a>
+    <a href="<?php echo site_url('inventory/pending-po'); ?>" class="sub-link <?php echo ($page_name == 'pending_po') ? 'active' : ''; ?>">Pending PO</a>
 </div>

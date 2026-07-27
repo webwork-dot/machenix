@@ -10,13 +10,19 @@
   // Get active commissions
   $commissions = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
   
+  // Get active profit slabs
+  $profit_slabs = $this->common_model->getResultById('profit_commission_slab', 'id, name, comm_from, comm_to', ['is_deleted' => '0']);
+  
   // Get existing customer commissions (to pre-populate)
-  $customer_commissions = $this->common_model->getResultById('customer_commission', 'commission_id, shared_commission', ['customer_id' => $customer_id]);
+  $customer_commissions = $this->common_model->getResultById('customer_commission', 'commission_id, profit_id, my_commission, shared_commission', ['customer_id' => $customer_id]);
   
   $existing_comm = [];
   if (!empty($customer_commissions)) {
       foreach ($customer_commissions as $cc) {
-          $existing_comm[$cc['commission_id']] = (float)$cc['shared_commission'];
+          $existing_comm[$cc['commission_id']][$cc['profit_id']] = [
+              'shared_commission' => (float)$cc['shared_commission'],
+              'my_commission' => (float)$cc['my_commission']
+          ];
       }
   }
 ?>
@@ -50,29 +56,38 @@
             <table class="table table-bordered">
               <thead>
                 <tr>
-                  <th>Commission Slab</th>
+                  <th>Product Slab</th>
+                  <th>Profit Slab</th>
                   <th>Share Commission (%)</th>
                   <th>My Commission (%)</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($commissions as $comm): 
-                  $share_val = isset($existing_comm[$comm['id']]) ? floatval($existing_comm[$comm['id']]) : 0.00;
-                  $my_val = 100 - $share_val;
+                <?php 
+                $profit_count = count($profit_slabs);
+                foreach ($commissions as $comm): 
+                  $first = true;
+                  foreach ($profit_slabs as $p_slab):
+                    $share_val = isset($existing_comm[$comm['id']][$p_slab['id']]['shared_commission']) ? floatval($existing_comm[$comm['id']][$p_slab['id']]['shared_commission']) : 0.00;
+                    $my_val = isset($existing_comm[$comm['id']][$p_slab['id']]['my_commission']) ? floatval($existing_comm[$comm['id']][$p_slab['id']]['my_commission']) : 100.00;
                 ?>
                   <tr>
+                    <?php if ($first): ?>
+                      <td rowspan="<?php echo $profit_count; ?>" style="vertical-align: middle; font-weight: bold; background-color: #f8f9fa;">
+                        <?php echo $comm['name']; ?> (<?php echo $comm['commission']; ?>%)
+                      </td>
+                    <?php $first = false; endif; ?>
                     <td>
-                      <?php echo $comm['name']; ?> (<?php echo $comm['commission']; ?>%)
-                      <input type="hidden" name="commission_ids[]" value="<?php echo $comm['id']; ?>">
+                      <?php echo $p_slab['name']; ?>
                     </td>
                     <td>
-                      <input type="number" step="0.01" min="0" max="100" class="form-control" name="share_comm[<?php echo $comm['id']; ?>]" id="share_comm_<?php echo $comm['id']; ?>" value="<?php echo $share_val; ?>" oninput="calculateCommission(<?php echo $comm['id']; ?>)" placeholder="0.00">
+                      <input type="number" step="0.01" min="0" max="100" class="form-control" name="share_comm[<?php echo $comm['id']; ?>][<?php echo $p_slab['id']; ?>]" id="share_comm_<?php echo $comm['id']; ?>_<?php echo $p_slab['id']; ?>" value="<?php echo $share_val; ?>" oninput="calculateCommission(<?php echo $comm['id']; ?>, <?php echo $p_slab['id']; ?>)" placeholder="0.00">
                     </td>
                     <td>
-                      <input type="number" step="0.01" class="form-control" name="my_comm[<?php echo $comm['id']; ?>]" id="my_comm_<?php echo $comm['id']; ?>" value="<?php echo $my_val; ?>" readonly>
+                      <input type="number" step="0.01" class="form-control" name="my_comm[<?php echo $comm['id']; ?>][<?php echo $p_slab['id']; ?>]" id="my_comm_<?php echo $comm['id']; ?>_<?php echo $p_slab['id']; ?>" value="<?php echo $my_val; ?>" readonly>
                     </td>
                   </tr>
-                <?php endforeach; ?>
+                <?php endforeach; endforeach; ?>
               </tbody>
             </table>
           </div>
@@ -93,9 +108,9 @@
 </div>
 
 <script>
-function calculateCommission(slabId) {
-  let shareInput = document.getElementById('share_comm_' + slabId);
-  let myInput = document.getElementById('my_comm_' + slabId);
+function calculateCommission(commId, profitId) {
+  let shareInput = document.getElementById('share_comm_' + commId + '_' + profitId);
+  let myInput = document.getElementById('my_comm_' + commId + '_' + profitId);
   let shareVal = parseFloat(shareInput.value) || 0;
   if (shareVal < 0) shareVal = 0;
   if (shareVal > 100) shareVal = 100;

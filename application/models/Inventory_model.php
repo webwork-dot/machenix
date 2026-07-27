@@ -4464,6 +4464,124 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function get_pending_purchase_order()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+		$company_id = $this->session->userdata('company_id');
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
+		endif;
+
+		$keyword_filter .= " AND (delivery_status = 'purchase_in')";
+		$keyword_filter .= " AND (company_id = '$company_id')";
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$sql_base = "FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter 
+		AND EXISTS (
+			SELECT 1 FROM purchase_order_product pop 
+			WHERE pop.parent_id = purchase_order.id 
+			AND (
+				SELECT COALESCE(SUM(pip.actual_qty), 0) 
+				FROM purchase_in_product pip 
+				WHERE pip.parent_id = purchase_order.id 
+				AND pip.product_id = pop.product_id 
+				AND pip.supplier_id = pop.supplier_id 
+				AND pip.is_deleted = '0'
+			) < pop.quantity
+		)";
+
+		$total_count = $this->db->query("SELECT id $sql_base ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, delivery_status, voucher_no, date, delivery_date $sql_base ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delivery_status = $item['delivery_status'];
+				$delivery_date = $item['delivery_date'];
+				$action = '';
+
+				// Purchase Order
+				$po = [
+					"ready"    => [],
+					"spare"    => [],
+					"supplier" => [],
+				];
+
+				$sql = "
+					SELECT
+						pop.supplier_id,
+						COALESCE(s.name, '') AS supplier_name,
+						SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS spare_qty,
+						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS ready_qty
+					FROM purchase_order_product pop
+					LEFT JOIN supplier s ON s.id = pop.supplier_id
+					WHERE pop.parent_id = '$id'
+					GROUP BY pop.supplier_id, s.name
+					ORDER BY pop.id
+				";
+
+				$rows = $this->db->query($sql)->result_array();
+				foreach ($rows as $r) {
+					$po['ready'][]    = $r['ready_qty'];
+					$po['spare'][]    = $r['spare_qty'];
+					$po['supplier'][] = $r['supplier_name'];
+				}
+
+				// PO Action
+				$action ='-';
+				$export_excel_url="generate_excel('".$id."')";
+				$view_po_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_order_details/" . $id . "','PO Details - " . $item['voucher_no'] . "')";
+				$show_pending_product_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_pending_products/" . $id . "','Pending Products - " . $item['voucher_no'] . "')";
+				$action ='<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $show_pending_product_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Show Pending Product</a>
+					</div>
+				</div>';
+
+				$data[] = array(
+					"sr_no"             => ++$start,
+					"id"                => $item['id'],
+					"date"              => date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
+					"delivery_date"     => date('d M, Y', strtotime($delivery_date)),
+					"suppliers"         => array_to_list($po['supplier']),
+					"spare_parts_count" => array_to_list($po['spare']),
+					"ready_goods_count" => array_to_list($po['ready']),
+					"action"            => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
 	public function generate_priotity_purchase_order_excel($id)
 	{
 		$data = $this->db->query("
@@ -9723,14 +9841,18 @@ class Inventory_model extends CI_Model
 			// Delete existing customer commissions
 			$this->db->where('customer_id', $customer_id)->delete('customer_commission');
 
-			$commission_ids = $this->input->post('commission_ids');
 			$share_comm_inputs = $this->input->post('share_comm');
 			$my_comm_inputs = $this->input->post('my_comm');
 
-			if (!empty($commission_ids)) {
-				foreach ($commission_ids as $comm_id) {
-					$share_val = isset($share_comm_inputs[$comm_id]) && $share_comm_inputs[$comm_id] !== '' ? (float)$share_comm_inputs[$comm_id] : 0.00;
-					$my_val = isset($my_comm_inputs[$comm_id]) && $my_comm_inputs[$comm_id] !== '' ? (float)$my_comm_inputs[$comm_id] : 0.00;
+			$all_commissions = $this->db->where('is_deleted', '0')->get('product_commission_slab')->result_array();
+			$all_profits = $this->db->where('is_deleted', '0')->get('profit_commission_slab')->result_array();
+
+			foreach ($all_commissions as $comm) {
+				$comm_id = $comm['id'];
+				foreach ($all_profits as $profit) {
+					$profit_id = $profit['id'];
+					$share_val = isset($share_comm_inputs[$comm_id][$profit_id]) && $share_comm_inputs[$comm_id][$profit_id] !== '' ? (float)$share_comm_inputs[$comm_id][$profit_id] : 0.00;
+					$my_val = isset($my_comm_inputs[$comm_id][$profit_id]) && $my_comm_inputs[$comm_id][$profit_id] !== '' ? (float)$my_comm_inputs[$comm_id][$profit_id] : 0.00;
 
 					// Insert row for customer commission mapping
 					$this->db->insert('customer_commission', [
@@ -9738,6 +9860,7 @@ class Inventory_model extends CI_Model
 						'staff_id'          => $current_staff_id,
 						'shared_staff_id'   => $shared_id,
 						'commission_id'     => $comm_id,
+						'profit_id'         => $profit_id,
 						'my_commission'     => $my_val,
 						'shared_commission' => $share_val,
 						'created_at'        => date("Y-m-d H:i:s")

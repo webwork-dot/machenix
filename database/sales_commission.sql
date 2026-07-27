@@ -54,20 +54,25 @@ CREATE TABLE `sales_commission` (
   `id` int(11) NOT NULL,
   `order_id` int(11) NOT NULL,
   `order_product_id` int(11) NOT NULL,
+  `order_product_batch_id` int(11) NOT NULL, new
+
   `product_id` int(11) NOT NULL,
   `commission_id` int(11) NOT NULL,
   `product_comm` decimal(16,2) NOT NULL DEFAULT 0.00,
   `product_comm_amt` decimal(16,2) NOT NULL DEFAULT 0.00,
+
   `staff_id` int(11) NOT NULL,
   `staff_comm_id` int(11) NOT NULL,
-  `customer_range` varchar(255) NOT NULL DEFAULT '', new
+  `customer_range` varchar(255) DEFAULT NULL, new
   `customer_comm` decimal(16,2) NOT NULL DEFAULT 0.00,
   `distributer_comm` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `customer_amount` decimal(16,2) NOT NULL DEFAULT 0.00, -----
-  `distributer_amount` decimal(16,2) NOT NULL DEFAULT 0.00, new
+  `commission_amount` decimal(16,2) NOT NULL DEFAULT 0.00,
+
   `share_staff_id` int(11) NOT NULL DEFAULT 0,
+  `shared_staff_comm_id` int(11) NOT NULL DEFAULT 0, new
   `shared_commission` decimal(16,2) NOT NULL DEFAULT 0.00,
   `my_commission` decimal(16,2) NOT NULL DEFAULT 0.00,
+
   `is_paid` tinyint(1) NOT NULL DEFAULT 0,
   `payment_date` DATE DEFAULT NULL,
   `remark` TEXT DEFAULT NULL,

@@ -147,6 +147,7 @@ $route[$r_inventory . '/po-purchase-in']     = 'inventory/po_purchase_in';
 $route[$r_inventory . '/po-expense']          = 'inventory/po_expense';
 $route[$r_inventory . '/po-expense/add']      = 'inventory/po_expense_form/add';
 $route[$r_inventory . '/po-expense/edit/(:num)']  = 'inventory/po_expense_form/edit/$1';
+$route[$r_inventory . '/pending-po']          = 'inventory/pending_po';
 
 $route[$r_inventory . '/payments']          = 'inventory/payments';
 $route[$r_inventory . '/payments/add']      = 'inventory/payments_form/add';
