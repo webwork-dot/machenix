@@ -147,6 +147,40 @@
   </div>
 </div>
 
+<!-- Replace Products Modal -->
+<div class="modal fade" id="replaceProductsModal" tabindex="-1" aria-labelledby="replaceProductsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="replaceProductsModalLabel">Replacement Products</h5>
+        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span></span>
+          <button type="button" class="btn btn-success btn-sm" id="apply_all_replace_btn" onclick="applyAllReplacement()">Apply All</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped" id="replace_products_modal_table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>SKU</th>
+                <th>Qty</th>
+                <th>Category</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="replace_products_modal_tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php
 $po_products_entries = [];
 foreach ($po_products as $supplierId => $supplierData) {
@@ -211,7 +245,12 @@ function addSupplierRow() {
             style="display:none; min-width: 38px;" title="Refresh Products">
             <i data-feather="refresh-cw"></i>
           </button>
-          <button type="button" class="btn btn-remove btn-sm waves-effect waves-float waves-light" 
+          <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light ms-25" 
+            onclick="openReplaceProductsModal(${supplierRowId})" id="replace_products_btn_${supplierRowId}" 
+            style="display:none;" title="Replace Products">
+            Replace Products
+          </button>
+          <button type="button" class="btn btn-remove btn-sm waves-effect waves-float waves-light ms-25" 
             onclick="removeSupplierRow(${supplierRowId})" id="remove_supplier_${supplierRowId}" style="display:none; min-width: 38px;">
             <i data-feather="trash-2"></i>
           </button>
@@ -454,6 +493,7 @@ function handleSupplierChange(selectElement, supplierRowId) {
     productRowCounts['spare'][supplierRowId] = 0;
     // Hide refresh button when supplier is deselected
     $('#refresh_supplier_' + supplierRowId).hide();
+    $('#replace_products_btn_' + supplierRowId).hide();
   }
 
   // Show/hide remove button and refresh button
@@ -465,8 +505,10 @@ function handleSupplierChange(selectElement, supplierRowId) {
   // Show refresh button if supplier is selected
   if (selectedSupplierId) {
     $('#refresh_supplier_' + supplierRowId).show();
+    $('#replace_products_btn_' + supplierRowId).show();
   } else {
     $('#refresh_supplier_' + supplierRowId).hide();
+    $('#replace_products_btn_' + supplierRowId).hide();
   }
 }
 
@@ -691,10 +733,15 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
   var existingInStockQty = productData.in_stock_qty || 0;
   var existingCompanyStock = productData.current_company_qty || productData.company_stock || 0;
 
+  var isReplaceVal = productData.is_replace == 1 ? '1' : '0';
+  var rowClass = productData.is_replace == 1 ? 'table-warning' : '';
+  var replaceQtyAttr = productData.is_replace == 1 ? `data-replace-qty="${existingQty}"` : '';
+
   var productRowHtml = `
-    <tr class="product-row ${sectionType}-product" id="${sectionPrefix}_product_${supplierRowId}_${productRowId}" data-product-id="${productData.product_id || productData.id}">
+    <tr class="product-row ${sectionType}-product ${rowClass}" id="${sectionPrefix}_product_${supplierRowId}_${productRowId}" data-product-id="${productData.product_id || productData.id}" ${replaceQtyAttr}>
       <td>
         <input type="hidden" name="${sectionPrefix}_product_id[${supplierRowId}][]" value="${productData.product_id || productData.id}">
+        <input type="hidden" class="is-applied-input" name="${sectionPrefix}_is_applied[${supplierRowId}][]" value="${isReplaceVal}">
         <span class="product-name-display">${displayName}</span>
       </td>
       <td>
@@ -819,6 +866,184 @@ function calculateGrandTotalCBM() {
 // Note: Product selection is now handled automatically when supplier is selected
 // Products are displayed as readonly text inputs, so handleProductChange is no longer needed
 
+var currentModalSupplierRowId = null;
+var replaceProductsList = [];
+
+function openReplaceProductsModal(supplierRowId) {
+  currentModalSupplierRowId = supplierRowId;
+  var supplierId = $('#supplier_id_' + supplierRowId).val();
+  if (!supplierId) return;
+
+  $('.loader').show();
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url(); ?>inventory/get_pending_replace_products_by_supplier",
+    data: {
+      supplier_id: supplierId,
+      type: '<?php echo $type; ?>',
+      po_id: '<?php echo $id; ?>'
+    },
+    dataType: 'json',
+    success: function(res) {
+      $('.loader').hide();
+      if (res.status == 200) {
+        replaceProductsList = res.data;
+        renderReplaceProductsModalTable();
+        var myModal = new bootstrap.Modal(document.getElementById('replaceProductsModal'));
+        myModal.show();
+      } else {
+        Swal.fire({
+          title: "Info",
+          text: "No pending replacement products found for this supplier.",
+          icon: "info",
+          customClass: {
+            confirmButton: "btn btn-primary"
+          },
+          buttonsStyling: !1
+        });
+      }
+    },
+    error: function() {
+      $('.loader').hide();
+      Swal.fire({
+        title: "Error!",
+        text: "Error loading replacement products. Please try again.",
+        icon: "error",
+        customClass: {
+          confirmButton: "btn btn-primary"
+        },
+        buttonsStyling: !1
+      });
+    }
+  });
+}
+
+function renderReplaceProductsModalTable() {
+  var tbody = $('#replace_products_modal_tbody');
+  tbody.empty();
+  
+  if (replaceProductsList.length === 0) {
+    tbody.html('<tr><td colspan="5" class="text-center">No replacement products.</td></tr>');
+    return;
+  }
+
+  replaceProductsList.forEach(function(product) {
+    // Check if already applied / exist with matching qty
+    var alreadyExists = false;
+    var isApplied = false;
+    var row = $('#' + product.type + '_products_' + currentModalSupplierRowId + ' tr[data-product-id="' + product.id + '"]');
+    if (row.length > 0) {
+      alreadyExists = true;
+      var isAppliedVal = row.find('.is-applied-input').val();
+      var qtyVal = parseFloat(row.find('input[name^="' + product.type + '_qty"]').val()) || 0;
+      if (isAppliedVal === '1' && qtyVal >= parseFloat(product.replace_qty)) {
+        isApplied = true;
+      }
+    }
+
+    var btnHtml = '';
+    if (isApplied) {
+      btnHtml = `<button type="button" class="btn btn-success btn-sm" disabled>Applied</button>`;
+    } else {
+      btnHtml = `<button type="button" id="apply_btn_${product.replace_id}" class="btn btn-primary btn-sm" onclick="applyReplacementProduct(${product.replace_id})">Apply</button>`;
+    }
+
+    var tr = `
+      <tr id="modal_replace_row_${product.replace_id}">
+        <td>${$('<div>').text(product.name).html()}</td>
+        <td>${product.item_code}</td>
+        <td>${product.replace_qty}</td>
+        <td>${product.type === 'ready' ? 'Ready Stock' : 'Spare Part'}</td>
+        <td>${btnHtml}</td>
+      </tr>
+    `;
+    tbody.append(tr);
+  });
+}
+
+function applyReplacementProduct(replaceId) {
+  var product = replaceProductsList.find(p => p.replace_id == replaceId);
+  if (!product) return;
+
+  var supplierRowId = currentModalSupplierRowId;
+  var sectionPrefix = product.type;
+
+  // Check if product row exists
+  var row = $('#' + sectionPrefix + '_products_' + supplierRowId + ' tr[data-product-id="' + product.id + '"]');
+  if (row.length > 0) {
+    // Set quantity
+    row.attr('data-replace-qty', product.replace_qty);
+    row.find('.is-applied-input').val('1');
+    var qtyInput = row.find('input[name^="' + sectionPrefix + '_qty"]');
+    qtyInput.val(product.replace_qty).trigger('keyup');
+    // Highlight row
+    row.addClass('table-warning');
+  } else {
+    // If not exists, check if there's "No product selected" placeholder row
+    var tbody = $('#' + sectionPrefix + '_products_' + supplierRowId);
+    tbody.find('.no-product-row').remove();
+
+    // Create row with data
+    createProductRowWithData(product.type, supplierRowId, product);
+
+    // Get the newly added row
+    var newRow = tbody.find('tr[data-product-id="' + product.id + '"]');
+    newRow.attr('data-replace-qty', product.replace_qty);
+    newRow.find('.is-applied-input').val('1');
+    newRow.find('input[name^="' + sectionPrefix + '_qty"]').val(product.replace_qty).trigger('keyup');
+    // Highlight row
+    newRow.addClass('table-warning');
+  }
+
+  // Update button in modal
+  $('#apply_btn_' + replaceId).prop('disabled', true).text('Applied').removeClass('btn-primary').addClass('btn-success');
+}
+
+function applyAllReplacement() {
+  replaceProductsList.forEach(function(product) {
+    var btn = $('#apply_btn_' + product.replace_id);
+    if (btn.length > 0 && !btn.prop('disabled')) {
+      applyReplacementProduct(product.replace_id);
+    }
+  });
+}
+
+// Global listener on quantity changes to dynamic highlight and is_applied logic
+$(document).on('keyup change input', 'input[name^="ready_qty"], input[name^="spare_qty"]', function() {
+  var $input = $(this);
+  var row = $input.closest('tr');
+  var replaceQty = parseFloat(row.attr('data-replace-qty'));
+  
+  if (!isNaN(replaceQty)) {
+    var currentQty = parseFloat($input.val()) || 0;
+    var isAppliedInput = row.find('.is-applied-input');
+    var isAppliedVal = isAppliedInput.val();
+    
+    if (currentQty === 0) {
+      isAppliedInput.val('0');
+      row.removeClass('table-warning');
+      row.removeAttr('data-replace-qty');
+    } else {
+      if (isAppliedVal === '1') {
+        isAppliedInput.val('1');
+        row.addClass('table-warning');
+      } else {
+        row.removeClass('table-warning');
+      }
+    }
+    
+    var productId = row.attr('data-product-id');
+    var applyBtn = $('#apply_btn_' + productId);
+    if (applyBtn.length > 0) {
+      if (isAppliedInput.val() === '1' && currentQty >= replaceQty) {
+        applyBtn.prop('disabled', true).text('Applied').removeClass('btn-primary').addClass('btn-success');
+      } else {
+        applyBtn.prop('disabled', false).text('Apply').removeClass('btn-success').addClass('btn-primary');
+      }
+    }
+  }
+});
+
 // Initialize existing PO data on page load
 $(document).ready(function() {
   // Populate suppliers and products from existing PO data
@@ -875,6 +1100,7 @@ $(document).ready(function() {
       
       // Show refresh button since supplier is selected
       $('#refresh_supplier_' + currentSupplierRowId).show();
+      $('#replace_products_btn_' + currentSupplierRowId).show();
       
       // Recalculate CBM for each product row after a short delay to ensure DOM is ready
       setTimeout(function() {
@@ -903,6 +1129,7 @@ $(document).ready(function() {
       var rowId = $(this).attr('id').replace('supplier_id_', '');
       if ($(this).val()) {
         $('#refresh_supplier_' + rowId).show();
+        $('#replace_products_btn_' + rowId).show();
       }
     });
     

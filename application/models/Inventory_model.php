@@ -2924,6 +2924,7 @@ class Inventory_model extends CI_Model
 		);
 
 		// Get all product arrays
+		// Get all product arrays
 		$ready_product_ids = $this->input->post('ready_product_id');
 		$ready_qtys = $this->input->post('ready_qty');
 		$ready_cbms = $this->input->post('ready_cbm');
@@ -2933,6 +2934,7 @@ class Inventory_model extends CI_Model
 		$ready_loading_list_qtys = $this->input->post('ready_loading_list_qty');
 		$ready_in_stock_qtys = $this->input->post('ready_in_stock_qty');
 		$ready_company_stocks = $this->input->post('ready_company_stock');
+		$ready_is_applieds = $this->input->post('ready_is_applied');
 
 		$spare_product_ids = $this->input->post('spare_product_id');
 		$spare_qtys = $this->input->post('spare_qty');
@@ -2943,6 +2945,7 @@ class Inventory_model extends CI_Model
 		$spare_loading_list_qtys = $this->input->post('spare_loading_list_qty');
 		$spare_in_stock_qtys = $this->input->post('spare_in_stock_qty');
 		$spare_company_stocks = $this->input->post('spare_company_stock');
+		$spare_is_applieds = $this->input->post('spare_is_applied');
 
 		// Process products by supplier row ID (form uses 1-indexed row IDs)
 		// Find all supplier row IDs that have products
@@ -2970,6 +2973,7 @@ class Inventory_model extends CI_Model
 				foreach ($ready_product_ids[$supplier_row_id] as $product_index => $product_id) {
 					$product_id = intval($product_id);
 					$qty = floatval($ready_qtys[$supplier_row_id][$product_index] ?? 0);
+					$is_applied = intval($ready_is_applieds[$supplier_row_id][$product_index] ?? 0);
 					
 					// Skip if no product selected or quantity is 0
 					if ($product_id > 0 && $qty > 0) {
@@ -2986,6 +2990,7 @@ class Inventory_model extends CI_Model
 							'loading_list_qty' => intval($ready_loading_list_qtys[$supplier_row_id][$product_index] ?? 0),
 							'in_stock_qty' => intval($ready_in_stock_qtys[$supplier_row_id][$product_index] ?? 0),
 							'company_stock' => intval($ready_company_stocks[$supplier_row_id][$product_index] ?? 0),
+							'is_applied' => $is_applied,
 						);
 					}
 				}
@@ -2996,6 +3001,7 @@ class Inventory_model extends CI_Model
 				foreach ($spare_product_ids[$supplier_row_id] as $product_index => $product_id) {
 					$product_id = intval($product_id);
 					$qty = floatval($spare_qtys[$supplier_row_id][$product_index] ?? 0);
+					$is_applied = intval($spare_is_applieds[$supplier_row_id][$product_index] ?? 0);
 					
 					// Skip if no product selected or quantity is 0
 					if ($product_id > 0 && $qty > 0) {
@@ -3012,6 +3018,7 @@ class Inventory_model extends CI_Model
 							'loading_list_qty' => intval($spare_loading_list_qtys[$supplier_row_id][$product_index] ?? 0),
 							'in_stock_qty' => intval($spare_in_stock_qtys[$supplier_row_id][$product_index] ?? 0),
 							'company_stock' => intval($spare_company_stocks[$supplier_row_id][$product_index] ?? 0),
+							'is_applied' => $is_applied,
 						);
 					}
 				}
@@ -3057,6 +3064,7 @@ class Inventory_model extends CI_Model
 			$data_p = array(
 				'parent_id' => $insert_id,
 				'supplier_id' => $row['supplier_id'],
+				'is_replace' => (isset($row['is_applied']) && $row['is_applied'] == 1) ? 1 : 0,
 				'product_type' => $row['product_type'],
 				'product_id' => $row['product_id'],
 				'categories' => $product_details['categories'] ?? NULL,
@@ -3084,6 +3092,11 @@ class Inventory_model extends CI_Model
 					"message" => get_phrase('something_went_wrong')
 				);
 				return simple_json_output($resultpost);
+			}
+
+			// If is_applied = 1, call helper function update_replace_product
+			if (isset($row['is_applied']) && $row['is_applied'] == 1) {
+				$this->common_model->update_replace_product('pending', $insert_id, $row['product_id'], $row['quantity']);
 			}
 		}
 
@@ -3627,6 +3640,7 @@ class Inventory_model extends CI_Model
 		$ready_loading_list_qtys = $this->input->post('ready_loading_list_qty');
 		$ready_in_stock_qtys = $this->input->post('ready_in_stock_qty');
 		$ready_company_stocks = $this->input->post('ready_company_stock');
+		$ready_is_applieds = $this->input->post('ready_is_applied');
 
 		$spare_product_ids = $this->input->post('spare_product_id');
 		$spare_qtys = $this->input->post('spare_qty');
@@ -3637,6 +3651,7 @@ class Inventory_model extends CI_Model
 		$spare_loading_list_qtys = $this->input->post('spare_loading_list_qty');
 		$spare_in_stock_qtys = $this->input->post('spare_in_stock_qty');
 		$spare_company_stocks = $this->input->post('spare_company_stock');
+		$spare_is_applieds = $this->input->post('spare_is_applied');
 
 		// Process products by supplier row ID (same logic as add)
 		$all_supplier_row_ids = array();
@@ -3698,6 +3713,7 @@ class Inventory_model extends CI_Model
 							'loading_list_qty' => intval($ready_loading_list_qtys[$supplier_row_id][$product_index] ?? 0),
 							'in_stock_qty' => intval($ready_in_stock_qtys[$supplier_row_id][$product_index] ?? 0),
 							'company_stock' => intval($ready_company_stocks[$supplier_row_id][$product_index] ?? 0),
+							'is_applied' => intval($ready_is_applieds[$supplier_row_id][$product_index] ?? 0),
 						);
 					}
 				}
@@ -3723,6 +3739,7 @@ class Inventory_model extends CI_Model
 							'loading_list_qty' => intval($spare_loading_list_qtys[$supplier_row_id][$product_index] ?? 0),
 							'in_stock_qty' => intval($spare_in_stock_qtys[$supplier_row_id][$product_index] ?? 0),
 							'company_stock' => intval($spare_company_stocks[$supplier_row_id][$product_index] ?? 0),
+							'is_applied' => intval($spare_is_applieds[$supplier_row_id][$product_index] ?? 0),
 						);
 					}
 				}
@@ -3750,6 +3767,16 @@ class Inventory_model extends CI_Model
 			return simple_json_output($resultpost);
 		}
 
+		// Fetch existing replace products for this PO to revert them first
+		$existing_replaced_products = $this->db->get_where('purchase_order_product', array(
+			'parent_id' => $po_id,
+			'is_replace' => 1
+		))->result_array();
+
+		foreach ($existing_replaced_products as $erp) {
+			$this->common_model->revert_replace_products($po_id, $erp['product_id']);
+		}
+
 		// Delete existing products
 		$this->db->where('parent_id', $po_id);
 		$this->db->delete('purchase_order_product');
@@ -3767,6 +3794,8 @@ class Inventory_model extends CI_Model
 				);
 				return simple_json_output($resultpost);
 			}
+
+			$is_replace = (isset($row['is_applied']) && $row['is_applied'] == 1) ? 1 : 0;
 
 			$data_p = array(
 				'parent_id' => $po_id,
@@ -3789,6 +3818,7 @@ class Inventory_model extends CI_Model
 				'cartoon' => intval($product_details['cartoon_qty'] ?? 0),
 				'rate' => floatval($product_details['product_mrp'] ?? 0),
 				'basic_amount' => floatval($product_details['costing_price'] ?? 0),
+				'is_replace' => $is_replace,
 			);
 
 			if (!$this->db->insert('purchase_order_product', $data_p)) {
@@ -3798,6 +3828,11 @@ class Inventory_model extends CI_Model
 					"message" => get_phrase('something_went_wrong')
 				);
 				return simple_json_output($resultpost);
+			}
+
+			// If replacement is applied, trigger update_replace_product helper logic
+			if ($is_replace === 1) {
+				$this->common_model->update_replace_product('pending', $po_id, $row['product_id'], $row['quantity']);
 			}
 		}
 
@@ -3849,6 +3884,16 @@ class Inventory_model extends CI_Model
 			"url" => $this->session->userdata('previous_url'),
 		);
 
+		// Find any replaced products and revert them before deletion
+		$replaced_products = $this->db->get_where('purchase_order_product', array(
+			'parent_id' => $id,
+			'is_replace' => 1
+		))->result_array();
+
+		foreach ($replaced_products as $rp) {
+			$this->common_model->revert_replace_products($id, $rp['product_id']);
+		}
+
 		$data['is_deleted'] = '1';
 		$this->db->where('id', $id);
 		$this->db->update('purchase_order', $data);
@@ -3863,6 +3908,16 @@ class Inventory_model extends CI_Model
 			"message" => get_phrase('purchase_order_deleted_successfully'),
 			"url" => $this->session->userdata('previous_url'),
 		);
+
+		// Find any replaced products and revert them before deletion
+		$replaced_products = $this->db->get_where('purchase_order_product', array(
+			'parent_id' => $id,
+			'is_replace' => 1
+		))->result_array();
+
+		foreach ($replaced_products as $rp) {
+			$this->common_model->revert_replace_products($id, $rp['product_id']);
+		}
 
 		date_default_timezone_set('Asia/Kolkata');
 		$check_del = $this->db->query("SELECT id,warehouse_id,warehouse_name FROM purchase_order WHERE id='$id' and is_deleted='0' limit 1");
@@ -4470,106 +4525,180 @@ class Inventory_model extends CI_Model
 		$start = $_REQUEST['start'];
 		$length = $_REQUEST['length'];
 		$company_id = $this->session->userdata('company_id');
+		$type = $_REQUEST['type'] ?? 'order';
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
 
-		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
-		endif;
+		if ($type === 'product') {
+			if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+				$keyword        = $filter_data['keywords'];
+				$keyword_filter .= " AND (po.voucher_no like '%" . $keyword . "%' OR pop.product_name like '%" . $keyword . "%' OR pop.item_code like '%" . $keyword . "%')";
+			endif;
 
-		$keyword_filter .= " AND (delivery_status = 'purchase_in')";
-		$keyword_filter .= " AND (company_id = '$company_id')";
+			$keyword_filter .= " AND (po.delivery_status = 'purchase_in')";
+			$keyword_filter .= " AND (po.company_id = '$company_id')";
 
-		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
-			$added_date = explode(' - ', $_REQUEST['date_range']);
-			$from =  date('Y-m-d', strtotime($added_date[0]));
-			$to =  date('Y-m-d', strtotime($added_date[1]));
-			if ($from == $to) {
-				$keyword_filter .= " AND (DATE(date) = '$from')";
-			} else {
-				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+				$added_date = explode(' - ', $_REQUEST['date_range']);
+				$from =  date('Y-m-d', strtotime($added_date[0]));
+				$to =  date('Y-m-d', strtotime($added_date[1]));
+				if ($from == $to) {
+					$keyword_filter .= " AND (DATE(po.date) = '$from')";
+				} else {
+					$keyword_filter .= " AND (DATE(po.date) BETWEEN '$from' AND '$to')";
+				}
 			}
-		}
 
-		$sql_base = "FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter 
-		AND EXISTS (
-			SELECT 1 FROM purchase_order_product pop 
-			WHERE pop.parent_id = purchase_order.id 
+			$sql_base = "FROM purchase_order_product pop
+			INNER JOIN purchase_order po ON po.id = pop.parent_id
+			WHERE po.is_deleted = '0' AND po.method = 'import' $keyword_filter 
 			AND (
 				SELECT COALESCE(SUM(pip.actual_qty), 0) 
 				FROM purchase_in_product pip 
-				WHERE pip.parent_id = purchase_order.id 
+				WHERE pip.parent_id = pop.parent_id 
 				AND pip.product_id = pop.product_id 
 				AND pip.supplier_id = pop.supplier_id 
 				AND pip.is_deleted = '0'
-			) < pop.quantity
-		)";
+			) < pop.quantity";
 
-		$total_count = $this->db->query("SELECT id $sql_base ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, delivery_status, voucher_no, date, delivery_date $sql_base ORDER BY id DESC LIMIT $start, $length");
+			$total_count = $this->db->query("SELECT pop.id $sql_base")->num_rows();
+			$query = $this->db->query("
+				SELECT 
+					pop.id,
+					pop.parent_id,
+					pop.product_name,
+					pop.item_code,
+					po.voucher_no,
+					po.date AS po_date,
+					pop.quantity AS total_qty,
+					(
+						SELECT COALESCE(SUM(pip.actual_qty), 0)
+						FROM purchase_in_product pip
+						WHERE pip.parent_id = pop.parent_id
+						  AND pip.product_id = pop.product_id
+						  AND pip.supplier_id = pop.supplier_id
+						  AND pip.is_deleted = '0'
+					) AS received_qty
+				$sql_base 
+				ORDER BY pop.id DESC 
+				LIMIT $start, $length
+			");
 
-		if (!empty($query)) {
-			foreach ($query->result_array() as $item) {
-				$id = $item['id'];
-				$delivery_status = $item['delivery_status'];
-				$delivery_date = $item['delivery_date'];
-				$action = '';
+			if (!empty($query)) {
+				foreach ($query->result_array() as $item) {
+					$total_qty = (int)$item['total_qty'];
+					$received_qty = (int)$item['received_qty'];
+					$remaining_qty = $total_qty - $received_qty;
 
-				// Purchase Order
-				$po = [
-					"ready"    => [],
-					"spare"    => [],
-					"supplier" => [],
-				];
-
-				$sql = "
-					SELECT
-						pop.supplier_id,
-						COALESCE(s.name, '') AS supplier_name,
-						SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS spare_qty,
-						SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS ready_qty
-					FROM purchase_order_product pop
-					LEFT JOIN supplier s ON s.id = pop.supplier_id
-					WHERE pop.parent_id = '$id'
-					GROUP BY pop.supplier_id, s.name
-					ORDER BY pop.id
-				";
-
-				$rows = $this->db->query($sql)->result_array();
-				foreach ($rows as $r) {
-					$po['ready'][]    = $r['ready_qty'];
-					$po['spare'][]    = $r['spare_qty'];
-					$po['supplier'][] = $r['supplier_name'];
+					$data[] = array(
+						"sr_no"          => ++$start,
+						"batch_no"       => date('d M, Y', strtotime($item['po_date'])) . ' - ' . $item['voucher_no'],
+						"product_name"   => $item['product_name'] . ' (' . $item['item_code'] . ')',
+						"total_qty"      => $total_qty,
+						"received_qty"   => $received_qty,
+						"remaining_qty"  => $remaining_qty,
+					);
 				}
+			}
+		} else {
+			if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+				$keyword        = $filter_data['keywords'];
+				$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
+			endif;
 
-				// PO Action
-				$action ='-';
-				$export_excel_url="generate_excel('".$id."')";
-				$view_po_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_order_details/" . $id . "','PO Details - " . $item['voucher_no'] . "')";
-				$show_pending_product_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_pending_products/" . $id . "','Pending Products - " . $item['voucher_no'] . "')";
-				$action ='<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $show_pending_product_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Show Pending Product</a>
-					</div>
-				</div>';
+			$keyword_filter .= " AND (delivery_status = 'purchase_in')";
+			$keyword_filter .= " AND (company_id = '$company_id')";
 
-				$data[] = array(
-					"sr_no"             => ++$start,
-					"id"                => $item['id'],
-					"date"              => date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
-					"delivery_date"     => date('d M, Y', strtotime($delivery_date)),
-					"suppliers"         => array_to_list($po['supplier']),
-					"spare_parts_count" => array_to_list($po['spare']),
-					"ready_goods_count" => array_to_list($po['ready']),
-					"action"            => $action,
-				);
+			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+				$added_date = explode(' - ', $_REQUEST['date_range']);
+				$from =  date('Y-m-d', strtotime($added_date[0]));
+				$to =  date('Y-m-d', strtotime($added_date[1]));
+				if ($from == $to) {
+					$keyword_filter .= " AND (DATE(date) = '$from')";
+				} else {
+					$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+				}
+			}
+
+			$sql_base = "FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter 
+			AND EXISTS (
+				SELECT 1 FROM purchase_order_product pop 
+				WHERE pop.parent_id = purchase_order.id 
+				AND (
+					SELECT COALESCE(SUM(pip.actual_qty), 0) 
+					FROM purchase_in_product pip 
+					WHERE pip.parent_id = purchase_order.id 
+					AND pip.product_id = pop.product_id 
+					AND pip.supplier_id = pop.supplier_id 
+					AND pip.is_deleted = '0'
+				) < pop.quantity
+			)";
+
+			$total_count = $this->db->query("SELECT id $sql_base ORDER BY id ASC")->num_rows();
+			$query = $this->db->query("SELECT id, delivery_status, voucher_no, date, delivery_date $sql_base ORDER BY id DESC LIMIT $start, $length");
+
+			if (!empty($query)) {
+				foreach ($query->result_array() as $item) {
+					$id = $item['id'];
+					$delivery_status = $item['delivery_status'];
+					$delivery_date = $item['delivery_date'];
+					$action = '';
+
+					// Purchase Order
+					$po = [
+						"ready"    => [],
+						"spare"    => [],
+						"supplier" => [],
+					];
+
+					$sql = "
+						SELECT
+							pop.supplier_id,
+							COALESCE(s.name, '') AS supplier_name,
+							SUM(CASE WHEN pop.product_type = 'spare' THEN pop.quantity ELSE 0 END) AS spare_qty,
+							SUM(CASE WHEN pop.product_type = 'spare' THEN 0 ELSE pop.quantity END) AS ready_qty
+						FROM purchase_order_product pop
+						LEFT JOIN supplier s ON s.id = pop.supplier_id
+						WHERE pop.parent_id = '$id'
+						GROUP BY pop.supplier_id, s.name
+						ORDER BY pop.id
+					";
+
+					$rows = $this->db->query($sql)->result_array();
+					foreach ($rows as $r) {
+						$po['ready'][]    = $r['ready_qty'];
+						$po['spare'][]    = $r['spare_qty'];
+						$po['supplier'][] = $r['supplier_name'];
+					}
+
+					// PO Action
+					$action ='-';
+					$export_excel_url="generate_excel('".$id."')";
+					$view_po_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_order_details/" . $id . "','PO Details - " . $item['voucher_no'] . "')";
+					$show_pending_product_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_pending_products/" . $id . "','Pending Products - " . $item['voucher_no'] . "')";
+					$action ='<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $show_pending_product_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Show Pending Product</a>
+						</div>
+					</div>';
+
+					$data[] = array(
+						"sr_no"             => ++$start,
+						"id"                => $item['id'],
+						"date"              => date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
+						"delivery_date"     => date('d M, Y', strtotime($delivery_date)),
+						"suppliers"         => array_to_list($po['supplier']),
+						"spare_parts_count" => array_to_list($po['spare']),
+						"ready_goods_count" => array_to_list($po['ready']),
+						"action"            => $action,
+					);
+				}
 			}
 		}
 
@@ -5953,7 +6082,11 @@ class Inventory_model extends CI_Model
 		$product_ids       = $this->input->post('product_id');
 		$supplier_ids      = $this->input->post('supplier_id_row');
 
+		$replace_qty       = $this->input->post('replace_qty');
+		$replace_recv_qty  = $this->input->post('replace_recv_qty');
+
 		$rows = [];
+		$reverted_products = [];
 
 		if (is_array($row_ids)) {
 				foreach ($row_ids as $i => $row_id) {
@@ -6001,6 +6134,19 @@ class Inventory_model extends CI_Model
 						$off_q = (int) ($official_qty[$i] ?? 0);
 						$black_qty_val = ($act_q > $off_q) ? ($act_q - $off_q) : 0;
 
+						$rep_q = (int) ($replace_qty[$i] ?? 0);
+						$rep_recv_q = (int) ($replace_recv_qty[$i] ?? 0);
+
+						if ($rep_recv_q > $act_q) {
+							$rep_recv_q = $act_q;
+						}
+						if ($rep_recv_q > $rep_q) {
+							$rep_recv_q = $rep_q;
+						}
+						if ($rep_recv_q < 0) {
+							$rep_recv_q = 0;
+						}
+
 						// PO Prod Update
 						$po_prods = [
 								'actual_qty'        => $act_q,
@@ -6018,6 +6164,9 @@ class Inventory_model extends CI_Model
 								'total_amt'         => (float) ($total_amt[$i] ?? 0),
 								'invoice_no'        => $invoice_no[$i] ?? 1,
 								'black_qty'         => $black_qty_val,
+								'receivable_qty'    => $rep_q,
+								'received_qty'      => $rep_recv_q,
+								'is_replace'        => ($rep_q > 0) ? 1 : 0,
 						];
 
 						if ($is_edit && $row_id != 0) {
@@ -6028,6 +6177,16 @@ class Inventory_model extends CI_Model
 							if (isset($insert_data['id'])) unset($insert_data['id']);
 							$this->db->insert('purchase_in_product', $insert_data);
 							$pip_id = $this->db->insert_id();
+						}
+
+						if ($is_edit && !in_array($product_ids[$i], $reverted_products)) {
+							// Revert any previously received replacement products for this PO and product
+							$this->common_model->revert_replace_products($po_id, $product_ids[$i], 'received');
+							$reverted_products[] = $product_ids[$i];
+						}
+
+						if ($rep_recv_q > 0) {
+							$this->common_model->update_replace_product('loading', $po_id, $product_ids[$i], $rep_recv_q);
 						}
 
 						// Overflow management
@@ -6288,6 +6447,7 @@ class Inventory_model extends CI_Model
 			}
 		}
 
+		$reverted_products = [];
 		// 3. Execution (If we reach here, all items matched)
 		foreach ($po_products as $product) {
 			$product_id = $product['product_id'];
@@ -6331,6 +6491,12 @@ class Inventory_model extends CI_Model
 			}
 			if ($inv_to_delete) {
 				$this->db->where('id', $inv_to_delete['id'])->delete('inventory');
+			}
+
+			// Revert replacement products
+			if (!in_array($product_id, $reverted_products)) {
+				$this->common_model->revert_replace_products($po_id, $product_id, 'received');
+				$reverted_products[] = $product_id;
 			}
 		}
 
@@ -6400,6 +6566,8 @@ class Inventory_model extends CI_Model
 		$loading_list_qtys = $this->input->post('loading_list_qty');
 		$in_stock_qtys = $this->input->post('in_stock_qty');
 		$company_stocks = $this->input->post('company_stock');
+		$is_replaces = $this->input->post('is_replace');
+		$loading_is_replaces = $this->input->post('loading_is_replace');
 		$loading_lists = $this->input->post('loading_list'); // 0 for Priority List
 
 		// Get Loading Products (loading_list = 1)
@@ -6478,6 +6646,7 @@ class Inventory_model extends CI_Model
 										'supplier_id' => $supplier_id,
 										'product_type' => $product_type,
 										'product_id' => $product_id,
+										'is_replace' => isset($is_replaces[$row_key]) ? intval($is_replaces[$row_key]) : 0,
 										'categories' => $original_product['categories'],
 										'sizes' => $original_product['sizes'],
 										'group_id' => $original_product['group_id'],
@@ -6575,6 +6744,7 @@ class Inventory_model extends CI_Model
 						'supplier_id' => $supplier_id,
 						'product_type' => $product_type,
 						'product_id' => $product_id,
+						'is_replace' => isset($loading_is_replaces[$row_key]) ? intval($loading_is_replaces[$row_key]) : 0,
 						'categories' => $original_product['categories'],
 						'sizes' => $original_product['sizes'],
 						'group_id' => $original_product['group_id'],
@@ -6806,56 +6976,56 @@ class Inventory_model extends CI_Model
 	}
 
 	public function update_inventory_product() {
-	    $resultpost = array(
-          "status" => 200,
-          "message" => get_phrase('inventory_updated_successfully')
-        );
+		$resultpost = array(
+			"status" => 200,
+			"message" => get_phrase('inventory_updated_successfully')
+		);
 
-	    $stock_id = $this->input->post('parent_id');
-	    $manual = $this->input->post('manual');
-	    $update_qty = $this->input->post('qty');
-	    $curr_qty = $this->input->post('curr_qty');
-	    
-	    if($manual == "manual_in") {
-	      $qty = intval($curr_qty) + intval($update_qty);
-	    } else {
-	      $qty = intval($curr_qty) - intval($update_qty);
-	    }
-	    
-	    $this->db->where('id', $stock_id)->update('inventory', ['quantity' => $qty]);
-	    $stock_detail = $this->common_model->getRowById('inventory', '*', ['id' => $stock_id]);
-	    $history = [
-            "parent_id" => $stock_detail['id'],
-            "warehouse_id" => $stock_detail['warehouse_id'],
-            "warehouse_name" => $stock_detail['warehouse_name'],
-            "product_id" => $stock_detail['product_id'],
-            "product_order_id" => null,
-            "product_name" => $stock_detail['product_name'],
-            "size_id" => $stock_detail['size_id'],
-            "size_name" => $stock_detail['size_name'],
-            "categories" => $stock_detail['categories'],
-            "group_id" => $stock_detail['group_id'],
-            "color_id" => $stock_detail['color_id'],
-            "color_name" => $stock_detail['color_name'],
-            "sku" => $stock_detail['sku'],
-            "item_code" => $stock_detail['item_code'],
-            "quantity" => $update_qty,
-            "status" => $manual,
-            "received_date" => date("Y-m-d"),
-            "batch_no" => null,
-            "expiry_date" => null,
-            "invoice_no" => '',
-            "received_amount" => '0',
-            "approved_date" => null,
-            "sample_qty" => null,
-            "ar_no" => null,
-            "added_date" => date("Y-m-d H:i:s"),
-            "added_by_id" => $this->session->userdata('super_user_id'),
-	        "added_by_name" => $this->session->userdata('super_name'),
-        ];
-        
-        $this->db->insert('inventory_history', $history);
-	    return simple_json_output($resultpost);
+		$stock_id = $this->input->post('parent_id');
+		$manual = $this->input->post('manual');
+		$update_qty = $this->input->post('qty');
+		$curr_qty = $this->input->post('curr_qty');
+		
+		if($manual == "manual_in") {
+			$qty = intval($curr_qty) + intval($update_qty);
+		} else {
+			$qty = intval($curr_qty) - intval($update_qty);
+		}
+		
+		$this->db->where('id', $stock_id)->update('inventory', ['quantity' => $qty]);
+		$stock_detail = $this->common_model->getRowById('inventory', '*', ['id' => $stock_id]);
+		$history = [
+			"parent_id" => $stock_detail['id'],
+			"warehouse_id" => $stock_detail['warehouse_id'],
+			"warehouse_name" => $stock_detail['warehouse_name'],
+			"product_id" => $stock_detail['product_id'],
+			"product_order_id" => null,
+			"product_name" => $stock_detail['product_name'],
+			"size_id" => $stock_detail['size_id'],
+			"size_name" => $stock_detail['size_name'],
+			"categories" => $stock_detail['categories'],
+			"group_id" => $stock_detail['group_id'],
+			"color_id" => $stock_detail['color_id'],
+			"color_name" => $stock_detail['color_name'],
+			"sku" => $stock_detail['sku'],
+			"item_code" => $stock_detail['item_code'],
+			"quantity" => $update_qty,
+			"status" => $manual,
+			"received_date" => date("Y-m-d"),
+			"batch_no" => null,
+			"expiry_date" => null,
+			"invoice_no" => '',
+			"received_amount" => '0',
+			"approved_date" => null,
+			"sample_qty" => null,
+			"ar_no" => null,
+			"added_date" => date("Y-m-d H:i:s"),
+			"added_by_id" => $this->session->userdata('super_user_id'),
+			"added_by_name" => $this->session->userdata('super_name'),
+		];
+		
+		$this->db->insert('inventory_history', $history);
+		return simple_json_output($resultpost);
 	}
 	
 	public function get_my_stock_batch()
@@ -6922,7 +7092,7 @@ class Inventory_model extends CI_Model
 					"with_exp"				=> $item['total_amt'],
 					"quantity"        => $item['quantity'],
 					"black_qty"				=> $item['black_qty'],
-					"official_qty"			=> $item['official_qty'],
+					"official_qty"		=> $item['official_qty'],
 					"batch_no"        => ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
 					"action"        	=> $action,
 				);
@@ -7580,6 +7750,16 @@ class Inventory_model extends CI_Model
 		// Start transaction
 		$this->db->trans_start();
 
+		// Revert any existing loading replacements for this PO before updating
+		$replaced_products = $this->db->get_where('po_products', array(
+			'parent_id' => $po_id,
+			'is_replace' => 1
+		))->result_array();
+
+		foreach ($replaced_products as $rp) {
+			$this->common_model->revert_replace_products($po_id, $rp['product_id'], 'loading');
+		}
+
 		// Update purchase_order table: delivery_status to 'loading'
 		$this->db->where('id', $po_id);
 		$this->db->update('purchase_order', [
@@ -7639,6 +7819,17 @@ class Inventory_model extends CI_Model
 				
 				// Only process if loading quantity is greater than 0
 				if ($loading_qty <= 0) continue;
+
+				// Apply replacement if this product is a replacement product in this PO
+				$check_replace = $this->db->get_where('po_products', array(
+					'parent_id' => $po_id,
+					'product_id' => $product_id,
+					'is_replace' => 1
+				))->row_array();
+
+				if ($check_replace) {
+					$this->common_model->update_replace_product('po', $po_id, $product_id, $loading_qty);
+				}
 
 				$official_ci_qty = isset($official_ci_qtys[$form_product_key]) ? intval($official_ci_qtys[$form_product_key]) : 0;
 				$black_qty = isset($black_qtys[$form_product_key]) ? intval($black_qtys[$form_product_key]) : 0;
@@ -7739,6 +7930,7 @@ class Inventory_model extends CI_Model
 					'supplier_id'          	=> $product_details['supplier_id'],
 					'product_type'         	=> $product_details['type'],
 					'product_id'           	=> $product_id,
+					'is_replace'           	=> $check_replace ? 1 : 0,
 					'product_name'         	=> $product_details['name'] ?? '',
 					'item_code'            	=> $product_details['item_code'],
 					'categories'           	=> $product_details['categories'] ?? NULL,
@@ -15825,7 +16017,7 @@ class Inventory_model extends CI_Model
 		
 		$type = $this->input->post('type', true); // 'official' or 'unofficial'
 		$customer_id = $this->input->post('customer_id', true);
-		$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'name');
+		$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
 		
 		$company_id = $this->session->userdata('company_id');
 		if (empty($company_id)) {
@@ -15834,7 +16026,6 @@ class Inventory_model extends CI_Model
 		if (empty($company_id)) {
 			$company_id = 0;
 		}
-		$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
 		
 		$order_no = $this->input->post('order_no', true);
 		$date = $this->input->post('date', true);
@@ -15854,27 +16045,33 @@ class Inventory_model extends CI_Model
 		$black_total = $this->input->post('black_total', true);
 		$final_total = $this->input->post('final_total', true);
 
-		// Find the database ID of the sales_order or invoice_order
+		// Find the database ID of the sales_order or invoice_order and populate company_id if not present
 		$order_db_id = 0;
 		if ($type === 'official') {
-			$order_row = $this->db->where(array(
-				'invoice_no' => $order_no,
-				'company_id' => $company_id,
-				'is_deleted' => 0
-			))->get('invoice_order')->row_array();
+			$this->db->where('invoice_no', $order_no);
+			$this->db->where('is_deleted', 0);
+			if (!empty($company_id)) {
+				$this->db->where('company_id', $company_id);
+			}
+			$order_row = $this->db->get('invoice_order')->row_array();
 			if ($order_row) {
 				$order_db_id = (int)$order_row['id'];
+				$company_id = (int)$order_row['company_id'];
 			}
 		} else {
-			$order_row = $this->db->where(array(
-				'order_no' => $order_no,
-				'company_id' => $company_id,
-				'is_deleted' => 0
-			))->get('sales_order')->row_array();
+			$this->db->where('order_no', $order_no);
+			$this->db->where('is_deleted', 0);
+			if (!empty($company_id)) {
+				$this->db->where('company_id', $company_id);
+			}
+			$order_row = $this->db->get('sales_order')->row_array();
 			if ($order_row) {
 				$order_db_id = (int)$order_row['id'];
+				$company_id = (int)$order_row['company_id'];
 			}
 		}
+
+		$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
 
 		$data = array();
 		$excel_id = $this->input->post('excel_id');
@@ -15936,10 +16133,10 @@ class Inventory_model extends CI_Model
 					}
 
 					if (empty($product_name) || $product_name === 'Unknown Product') {
-						$product_info = $this->db->where('id', $prod_id)->get('product')->row_array();
+						$product_info = $this->db->where('id', $prod_id)->get('raw_products')->row_array();
 						if ($product_info) {
 							$product_name = $product_info['name'];
-							$item_code = $product_info['code'];
+							$item_code = isset($product_info['item_code']) ? $product_info['item_code'] : (isset($product_info['code']) ? $product_info['code'] : '');
 						}
 					}
 
@@ -15990,7 +16187,7 @@ class Inventory_model extends CI_Model
 													 ->get('inventory')->row_array();
 
 						$product_info = $this->db->where('id', $prod_id)->get('raw_products')->row_array();
-						$categories = $product_info ? $product_info['category_id'] : '';
+						$categories = $product_info ? (isset($product_info['categories']) ? $product_info['categories'] : (isset($product_info['category_id']) ? $product_info['category_id'] : '')) : '';
 						$sku = $product_info ? $product_info['sku'] : '';
 
 						if ($inv_prod) {
@@ -21861,7 +22058,8 @@ public function get_sales_return_reports()
 			LEFT JOIN sales_order AS so ON so.id = rp.order_id
 			LEFT JOIN raw_products AS rp2 ON rp2.id = rp.product_id
 			LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
-			WHERE 1=1 $keyword_filter
+			WHERE 1=1 AND rp.is_deleted = '0' $keyword_filter
+			GROUP BY rp.order_id, rp.order_prod_id, rp.type
 		")->num_rows();
 
 		$query = $this->db->query("
@@ -21870,7 +22068,8 @@ public function get_sales_return_reports()
 			LEFT JOIN sales_order AS so ON so.id = rp.order_id
 			LEFT JOIN raw_products AS rp2 ON rp2.id = rp.product_id
 			LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
-			WHERE 1=1 $keyword_filter 
+			WHERE 1=1 AND rp.is_deleted = '0' $keyword_filter 
+			GROUP BY rp.order_id, rp.order_prod_id, rp.type
 			ORDER BY rp.created_at DESC 
 			LIMIT $start, $length
 		");
@@ -21907,13 +22106,19 @@ public function get_sales_return_reports()
 	{
 		$supplier_id = $this->input->post('supplier_id');
 		$type = $this->input->post('type'); // normal, bill, etc.
+		$po_id = intval($this->input->post('po_id') ?? 0);
+		
+		$po_condition = "";
+		if ($po_id > 0) {
+			$po_condition = " OR (rp.type = 'po' AND rp.po_id = '$po_id' AND rp.is_deleted = 0)";
+		}
 		
 		$query = $this->db->query("
 			SELECT rp.product_id, SUM(rp.qty) AS total_qty, p.type AS category_type, p.cbm, p.alias, p.hsn_code, p.gst, p.name AS product_name, p.item_code AS product_item_code,
 			(SELECT c.name FROM categories c WHERE FIND_IN_SET(c.id, p.categories) > 0 LIMIT 1) as category_name
 			FROM replace_products rp
 			INNER JOIN raw_products p ON p.id = rp.product_id
-			WHERE rp.type = 'pending' 
+			WHERE ((rp.type = 'pending' AND rp.is_deleted = 0) $po_condition) 
 			AND (p.supplier_id = '$supplier_id' OR FIND_IN_SET('$supplier_id', p.supplier_id))
 			GROUP BY rp.product_id
 			ORDER BY p.name ASC

@@ -43,14 +43,16 @@
 
   $temp_priority_products = [];
   foreach ($priority_products as $key => $product) {
-    $row = $this->db->query("SELECT quantity FROM purchase_order_product WHERE product_id = '" . $product['product_id'] . "' AND parent_id = '$po_id' ");
+    $row = $this->db->query("SELECT quantity, is_replace FROM purchase_order_product WHERE product_id = '" . $product['product_id'] . "' AND parent_id = '$po_id' ");
 
     $temp_prod = $product;
     if($row->num_rows() > 0){
       $row = $row->row_array();
       $temp_prod['original_quantity'] = $row['quantity'];
+      $temp_prod['is_replace'] = $row['is_replace'];
     } else {
       $temp_prod['original_quantity'] = $product['quantity'];
+      $temp_prod['is_replace'] = 0;
     }
     
     $temp_priority_products[] = $temp_prod;
@@ -66,6 +68,24 @@
       WHERE pop.parent_id = '$po_id' AND pop.is_priority = 0
       ORDER BY pop.sort ASC
   ")->result_array();
+
+  $temp_loading_products = [];
+  foreach ($loading_products as $key => $product) {
+    $row = $this->db->query("SELECT quantity, is_replace FROM purchase_order_product WHERE product_id = '" . $product['product_id'] . "' AND parent_id = '$po_id' ");
+
+    $temp_prod = $product;
+    if($row->num_rows() > 0){
+      $row = $row->row_array();
+      $temp_prod['original_quantity'] = $row['quantity'];
+      $temp_prod['is_replace'] = $row['is_replace'];
+    } else {
+      $temp_prod['original_quantity'] = $product['quantity'];
+      $temp_prod['is_replace'] = 0;
+    }
+    
+    $temp_loading_products[] = $temp_prod;
+  }
+  $loading_products = $temp_loading_products;
 
   // Get suppliers for dropdown (filtered by company if needed)
   $company_id = $this->session->userdata('company_id');
@@ -124,7 +144,7 @@
             foreach ($priority_products as $product): 
                 $type_label = ($product['product_type'] == 'ready') ? 'Ready Goods' : (($product['product_type'] == 'spare') ? 'Spare Parts' : '');
             ?>
-          <tr id="row_<?php echo $product['id']; ?>" data-product-id="<?php echo $product['id']; ?>">
+          <tr id="row_<?php echo $product['id']; ?>" data-product-id="<?php echo $product['id']; ?>"<?php echo (isset($product['is_replace']) && $product['is_replace'] == 1) ? ' class="table-warning"' : ''; ?>>
             <td>
               <?php echo $sr_no++; ?>
               <input type="hidden" name="old_product_id[<?php echo $product['id']; ?>]"
@@ -152,6 +172,8 @@
               <input type="hidden" name="product_name[<?php echo $product['id']; ?>]"
                 id="product_name_<?php echo $product['id']; ?>"
                 value="<?php echo htmlspecialchars($product['product_name']); ?>">
+              <input type="hidden" name="is_replace[<?php echo $product['id']; ?>]"
+                value="<?php echo $product['is_replace'] ?? 0; ?>" class="is-replace-input">
             </td>
             <td>
               <input type="text" class="form-control form-control-sm" name="item_code[<?php echo $product['id']; ?>]"
@@ -267,12 +289,13 @@
               foreach ($loading_products as $loading_product): 
             ?>
             <tr id="loading_row_<?php echo $loading_product['id']; ?>"
-              data-original-row-id="<?php echo $loading_product['id']; ?>">
+              data-original-row-id="<?php echo $loading_product['id']; ?>"<?php echo (isset($loading_product['is_replace']) && $loading_product['is_replace'] == 1) ? ' class="table-warning"' : ''; ?>>
               <td>
                 <?php echo $loading_sr_no++; ?>
                 <input type="hidden" name="loading_old_product_id[<?php echo $loading_product['id']; ?>]"
                   value="<?php echo $loading_product['id']; ?>">
                 <input type="hidden" name="loading_sort[<?php echo $loading_product['id']; ?>]" value="<?php echo $loading_product['sort']; ?>" class="loading-sort-input">
+                <input type="hidden" name="loading_is_replace[<?php echo $loading_product['id']; ?>]" value="<?php echo $loading_product['is_replace'] ?? 0; ?>" class="loading-is-replace-input">
               </td>
               <td>
                 <select class="form-control form-control-sm loading-supplier-select"
@@ -634,9 +657,12 @@ function checkQuantityChange(rowId) {
       updateLoadingRowNumbers();
     }
 
+    // Get is_replace value from the priority row
+    var isReplace = row.find('.is-replace-input').val() || 0;
+
     // Now add/create a new row in Loading Products
     addToLoadingProducts(loadingRowId, rowId, supplierId, supplierName, productType, typeLabel, productId,
-      productName, itemCode, removedQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock);
+      productName, itemCode, removedQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace);
 
     // If quantity is 0, hide the row
     if (currentQty == 0) {
@@ -682,16 +708,17 @@ function checkQuantityChange(rowId) {
 
 // Add to Loading Products table
 function addToLoadingProducts(loadingRowId, originalRowId, supplierId, supplierName, productType, typeLabel, productId,
-  productName, itemCode, quantity, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock) {
+  productName, itemCode, quantity, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace) {
   var loadingSrNo = $('#loading_products_tbody tr').length + 1;
   var totalCBM = quantity * cbm;
 
   var loadingRow = `
-        <tr id="loading_row_${loadingRowId}" data-original-row-id="${originalRowId}">
+        <tr id="loading_row_${loadingRowId}" data-original-row-id="${originalRowId}" class="${isReplace == 1 ? 'table-warning' : ''}">
             <td>
                 ${loadingSrNo}
                 <input type="hidden" name="loading_old_product_id[${loadingRowId}]" value="${originalRowId}">
                 <input type="hidden" name="loading_sort[${loadingRowId}]" value="${loadingSrNo}" class="loading-sort-input">
+                <input type="hidden" name="loading_is_replace[${loadingRowId}]" value="${isReplace || 0}" class="loading-is-replace-input">
             </td>
             <td>
                 <select class="form-control form-control-sm loading-supplier-select" name="loading_supplier_id[${loadingRowId}]" required>
@@ -918,13 +945,16 @@ function getLoadingRowSnapshot(loadingRowId) {
   var inStockQty = parseFloat($row.find('input[name^="loading_in_stock_qty"]').val()) || 0;
   var companyStock = parseFloat($row.find('input[name^="loading_company_stock"]').val()) || 0;
 
+  var isReplace = $row.find('.loading-is-replace-input').val() || 0;
+
   return {
     supplierId, supplierName,
     productType, typeLabel,
     productId, productName,
     itemCode, cbm,
     pendingPoQty, loadingListQty,
-    inStockQty, companyStock
+    inStockQty, companyStock,
+    isReplace
   };
 }
 
@@ -945,7 +975,7 @@ function addPriorityRowFromLoading(data, qtyToMove) {
   }
 
   var html = `
-    <tr id="row_${rowId}" data-product-id="${rowId}">
+    <tr id="row_${rowId}" data-product-id="${rowId}" class="${data.isReplace == 1 ? 'table-warning' : ''}">
       <td>
         ${rowCounter}
         <input type="hidden" name="old_product_id[${rowId}]" value="0">
@@ -966,6 +996,7 @@ function addPriorityRowFromLoading(data, qtyToMove) {
         <input type="text" class="form-control form-control-sm" value="${esc(data.productName)}" readonly>
         <input type="hidden" name="product_id[${rowId}]" value="${esc(data.productId)}">
         <input type="hidden" name="product_name[${rowId}]" id="product_name_${rowId}" value="${esc(data.productName)}">
+        <input type="hidden" name="is_replace[${rowId}]" value="${data.isReplace || 0}" class="is-replace-input">
       </td>
 
       <td>

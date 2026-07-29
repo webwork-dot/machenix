@@ -26,6 +26,8 @@
             
           <?php echo form_open('inventory/goods_return/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>  
           <input type="hidden" name="excel_id" id="excel_id" value="0">
+          <input type="hidden" name="type" id="type" value="">
+          <input type="hidden" name="order_no" id="order_no" value="">
           <div class="row">
             
             <div class="col-12 col-sm-3 mb-1">
@@ -33,24 +35,18 @@
               <select class="form-select select2" name="customer_id" id="customer_id" required>
                 <option value="">Select Customer </option>
                 <?php foreach($customer_list as $item){?>
-					<option value="<?php echo $item['id'];?>"><?php echo $item['company_name'];?></option>
+ 					<option value="<?php echo $item['id'];?>"><?php echo $item['company_name'];?></option>
                 <?php }?>
               </select>
             </div>
 
             <div class="col-12 col-sm-3 mb-1">
-              <label class="form-label" for="type">Type <span class="required">*</span></label>
-              <select class="form-select select2" name="type" id="type" required>
-                <option value="">Select Type</option>
-                <option value="official">Official</option>
-                <option value="unofficial">Unofficial</option>
-              </select>
-            </div>
-
-            <div class="col-12 col-sm-3 mb-1">
-              <label class="form-label" for="order_no">Invoice/Order No <span class="required">*</span></label>
-              <select class="form-select select2" name="order_no" id="order_no" required>
-                <option value="">Select Invoice/Order No</option>
+              <label class="form-label" for="product_id_select">Product <span class="required">*</span></label>
+              <select class="form-select select2" name="product_id_select" id="product_id_select" required>
+                <option value="">Select Product</option>
+                <?php foreach($product_list as $item){?>
+ 					<option value="<?php echo $item->id;?>"><?php echo htmlspecialchars($item->name . ' (' . $item->item_code . ')');?></option>
+                <?php }?>
               </select>
             </div>
             
@@ -61,12 +57,12 @@
                 </div>
             </div>
             
-			<div class="col-12 col-sm-12 mb-1">
+ 			<div class="col-12 col-sm-3 mb-1">
                 <div class="form-group">
-                    <label>Reason<span class="required">*</span></label>
-                    <textarea class="form-control" placeholder="" rows="1" name="reason" id="reason" required></textarea>
+                    <label class="form-label" for="reason">Reason<span class="required">*</span></label>
+                    <textarea class="form-control" placeholder="Enter reason" rows="1" name="reason" id="reason" required></textarea>
                 </div>
-            </div>			
+            </div>
             
             <div class="col-12" id="order_details_container" style="display: none;">
                 <input type="hidden" name="white_total" id="white_total" value="0.00">
@@ -88,15 +84,27 @@
 
 <script>
     function checkForm(form) {
+        var selectedSource = $('.order-source-radio:checked').length;
+        if (selectedSource === 0) {
+            Swal.fire({
+                title: "Error!",
+                text: "Please select an Invoice or Order to return from!",
+                icon: "error"
+            });
+            return false;
+        }
+
         var totalQty = 0;
         $('.qty-input').each(function() {
-            totalQty += parseFloat($(this).val()) || 0;
+            if (!$(this).prop('disabled')) {
+                totalQty += parseFloat($(this).val()) || 0;
+            }
         });
 
         if (totalQty <= 0) {
             Swal.fire({
                 title: "Error!",
-                text: "Please enter return quantity for at least one batch!",
+                text: "Please enter return quantity for the selected item!",
                 icon: "error"
             });
             return false;
@@ -105,99 +113,72 @@
     }
 
     $(document).ready(function() {
-        $('#customer_id, #type').on('change', function() {
-            loadInvoiceOrders();
-        });
-
-        $('#order_no').on('change', function() {
-            loadInvoiceOrderDetails();
+        $('#customer_id, #product_id_select').on('change', function() {
+            loadProductReturns();
         });
     });
 
-    function loadInvoiceOrders() {
+    function loadProductReturns() {
         var customerId = $('#customer_id').val();
-        var type = $('#type').val();
-        var $orderSelect = $('#order_no');
+        var productId = $('#product_id_select').val();
+        var $detailsContainer = $('#order_details_container');
 
-        // Clear dropdown and details first
-        $orderSelect.html('<option value="">Select Invoice/Order No</option>').trigger('change.select2');
-        $('#order_details_container').hide().find('#order_details_content').html('');
+        $detailsContainer.hide().find('#order_details_content').html('');
+        $('#type').val('');
+        $('#order_no').val('');
 
-        if (!customerId || !type) {
+        if (!customerId || !productId) {
             return;
         }
 
         $(".loader").show();
 
         $.ajax({
-            url: '<?php echo base_url("inventory/goods-return/get-invoices-or-orders"); ?>',
+            url: '<?php echo base_url("inventory/goods-return/get-customer-product-returns"); ?>',
             type: 'POST',
             dataType: 'JSON',
             data: {
                 customer_id: customerId,
-                type: type
+                product_id: productId
             },
             success: function(res) {
                 $(".loader").fadeOut("slow");
                 if (res.status === 'success') {
-                    let options = '<option value="">Select Invoice/Order No</option>';
-                    res.data.forEach(function(item) {
-                        let val = (type === 'official') ? item.invoice_no : item.order_no;
-                        let label = val ? val : ('ID: ' + item.id);
-                        options += `<option value="${val}">${label}</option>`;
-                    });
-                    $orderSelect.html(options).trigger('change.select2');
-                } else {
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Failed to load invoices/orders.",
-                        icon: "error"
-                    });
-                }
-            },
-            error: function() {
-                $(".loader").fadeOut("slow");
-                Swal.fire({
-                    title: "Error!",
-                    text: "An error occurred while loading invoices/orders.",
-                    icon: "error"
-                });
-            }
-        });
-    }
-
-    function loadInvoiceOrderDetails() {
-        var orderNo = $('#order_no').val();
-        var type = $('#type').val();
-        var $detailsContainer = $('#order_details_container');
-
-        $detailsContainer.hide().find('#order_details_content').html('');
-
-        if (!orderNo || !type) {
-            return;
-        }
-
-        $(".loader").show();
-
-        $.ajax({
-            url: '<?php echo base_url("inventory/goods-return/get-details"); ?>',
-            type: 'POST',
-            dataType: 'JSON',
-            data: {
-                order_no: orderNo,
-                type: type
-            },
-            success: function(res) {
-                $(".loader").fadeOut("slow");
-                if (res.status === 'success') {
-                    var html = renderOrderDetails(res, type);
+                    var html = renderReturnSections(res.white, res.black);
                     $('#order_details_content').html(html);
                     $detailsContainer.show();
                     calculateGrandTotals();
+
+                    // Add listener to radio button changes
+                    $('.order-source-radio').on('change', function() {
+                        var isChecked = $(this).is(':checked');
+                        if (isChecked) {
+                            var type = $(this).data('type');
+                            var orderNo = $(this).data('order-no');
+
+                            // Set form hidden fields
+                            $('#type').val(type);
+                            $('#order_no').val(orderNo);
+
+                            // Enable inputs in the selected card
+                            var $currentCard = $(this).closest('.card');
+                            $currentCard.find('input, select').not('.order-source-radio').prop('disabled', false);
+
+                            // Disable inputs in all other cards and reset their values
+                            $('#order_details_content .card').not($currentCard).each(function() {
+                                $(this).find('.qty-input').val(0);
+                                $(this).find('.submit-qty-input').val(0);
+                                $(this).find('.row-total-cell').text('0.00');
+                                $(this).find('input, select').not('.order-source-radio').prop('disabled', true);
+                            });
+
+                            calculateGrandTotals();
+                        }
+                    });
                 } else {
                     Swal.fire({
                         title: "Error!",
-                        text: res.message || "Failed to load order details.",
+                        text: res.message || "Failed to load details.",
                         icon: "error"
                     });
                 }
@@ -206,131 +187,210 @@
                 $(".loader").fadeOut("slow");
                 Swal.fire({
                     title: "Error!",
-                    text: "An error occurred while loading order details.",
+                    text: "An error occurred while loading details.",
                     icon: "error"
                 });
             }
         });
     }
 
-    function renderOrderDetails(data, type) {
+    function renderReturnSections(whiteList, blackList) {
         var html = '';
-        
-        // Order Info Header
+
+        // Group White Section by order_id
+        var groupedWhite = {};
+        if (whiteList && whiteList.length > 0) {
+            whiteList.forEach(function(item) {
+                var key = item.order_id;
+                if (!groupedWhite[key]) {
+                    groupedWhite[key] = {
+                        order_id: item.order_id,
+                        invoice_no: item.invoice_no,
+                        order_no: item.order_no,
+                        date: item.date,
+                        customer_name: item.customer_name,
+                        batches: []
+                    };
+                }
+                groupedWhite[key].batches.push(item);
+            });
+        }
+
+        // Group Black Section by order_id
+        var groupedBlack = {};
+        if (blackList && blackList.length > 0) {
+            blackList.forEach(function(item) {
+                var key = item.order_id;
+                if (!groupedBlack[key]) {
+                    groupedBlack[key] = {
+                        order_id: item.order_id,
+                        order_no: item.order_no,
+                        date: item.date,
+                        customer_name: item.customer_name,
+                        batches: []
+                    };
+                }
+                groupedBlack[key].batches.push(item);
+            });
+        }
+
+        // White Section Rendering
         html += `
             <div class="divider divider-left divider-primary mb-1 mt-2">
-                <div class="divider-text text-primary font-weight-bold"><i class="feather icon-info"></i> Order Information</div>
+                <div class="divider-text text-primary font-weight-bold"><i class="feather icon-file-text"></i> White Section (Invoices)</div>
             </div>
-            <div class="card mb-2 shadow-none border">
-                <div class="card-body p-1" style="background-color: #fafbfc;">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <strong>${type === 'official' ? 'Invoice No' : 'Order No'}:</strong> 
-                            ${type === 'official' ? (data.order.invoice_no || '-') : (data.order.order_no || '-')}
+        `;
+        if (Object.keys(groupedWhite).length > 0) {
+            Object.values(groupedWhite).forEach(function(group) {
+                html += `
+                <div class="card mb-2 shadow-none border">
+                    <div class="card-header bg-light-primary py-50 d-flex justify-content-between align-items-center" style="background-color: #f0f4fd; padding: 10px;">
+                        <div>
+                            <strong>Invoice No:</strong> ${group.invoice_no || '-'} | <strong>Date:</strong> ${group.date}
                         </div>
-                        <div class="col-md-4"><strong>Date:</strong> ${data.order.date}</div>
-                        <div class="col-md-4"><strong>Customer:</strong> ${data.order.customer_name}</div>
+                        <div class="form-check form-check-inline">
+                            <input type="radio" name="selected_order_source" class="form-check-input order-source-radio" data-type="official" data-order-no="${group.invoice_no}" id="select_white_${group.order_id}">
+                            <label class="form-check-label font-weight-bold text-primary" for="select_white_${group.order_id}">Select this Invoice to return</label>
+                        </div>
+                    </div>
+                    <div class="table-responsive border-top">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead class="table-light text-center">
+                                <tr>
+                                    <th style="text-align: left;">Product / Batch Details</th>
+                                    <th style="width: 120px;">Total Qty</th>
+                                    <th style="width: 120px;">Received Qty</th>
+                                    <th style="width: 150px;">Return Qty</th>
+                                    <th style="width: 120px;">Rate</th>
+                                    <th style="width: 100px;">GST %</th>
+                                    <th style="width: 130px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                group.batches.forEach(function(item) {
+                    var maxQty = item.qty - item.return_qty;
+                    html += `
+                                <tr class="batch-row" id="batch_row_${item.product_batch_id}" data-id="${item.product_batch_id}">
+                                    <td style="text-align: left; padding-left: 20px; vertical-align: middle;">
+                                        <i class="feather icon-package text-muted me-25"></i> Batch: <strong>${item.batch_no || '-'}</strong>
+                                        <input type="hidden" name="product_id[]" value="${item.product_id}" disabled>
+                                        <input type="hidden" name="product_batch_id[]" value="${item.product_batch_id}" disabled>
+                                        <input type="hidden" name="batch_no[]" value="${item.batch_no || '-'}" disabled>
+                                        <input type="hidden" name="white_qty[]" class="submit-qty-input" value="0" disabled>
+                                        <input type="hidden" name="black_qty[]" value="0" disabled>
+                                        <input type="hidden" name="white_amt[]" class="rate-hidden-input" value="${item.amount}" disabled>
+                                        <input type="hidden" name="black_amt[]" value="0" disabled>
+                                        <input type="hidden" name="gst[]" class="gst-hidden-input" value="${item.gst || 0}" disabled>
+                                    </td>
+                                    <td class="text-center font-monospace" style="vertical-align: middle;">${item.qty}</td>
+                                    <td class="text-center font-monospace" style="vertical-align: middle;">${item.return_qty}</td>
+                                    <td style="vertical-align: middle;">
+                                        <input type="number" value="0" min="0" max="${maxQty}" class="form-control form-control-sm text-center qty-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <input type="number" value="${parseFloat(item.amount).toFixed(2)}" step="0.01" class="form-control form-control-sm text-end rate-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <input type="number" value="${item.gst}" step="0.01" class="form-control form-control-sm text-center gst-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                    </td>
+                                    <td class="text-end font-monospace row-total-cell" style="vertical-align: middle;">0.00</td>
+                                </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-        `;
-
-        // Products table header
-        html += `
-            <div class="divider divider-left divider-info mb-1">
-                <div class="divider-text text-info font-weight-bold"><i class="feather icon-shopping-bag"></i> Products & Batches</div>
-            </div>
-            <div class="table-responsive border rounded mb-2">
-                <table class="table table-bordered table-sm mb-0">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th style="text-align: left;">Product / Batch Details</th>
-                            <th style="width: 120px;">Total Qty</th>
-                            <th style="width: 120px;">Received Qty</th>
-                            <th style="width: 150px;">Return Qty</th>
-                            <th style="width: 120px;">Rate</th>
-                            ${type === 'official' ? '<th style="width: 100px;">GST %</th>' : ''}
-                            <th style="width: 130px;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
-        data.products.forEach(function(p) {
-            // Product Row Header
-            html += `
-                <tr class="table-light">
-                    <td colspan="${type === 'official' ? '7' : '6'}" style="text-align: left; font-weight: bold;" class="text-dark py-50">
-                        ${p.product_name} <span class="badge bg-light-secondary text-secondary ms-50 font-small-2">${p.item_code}</span>
-                    </td>
-                </tr>
-            `;
-
-            // Batch Rows
-            p.batches.forEach(function(b) {
-                if (type === 'official') {
-                    let maxQty = b.qty - b.return_qty;
-                    html += `
-                        <tr class="batch-row" id="batch_row_${b.id}" data-id="${b.id}" data-rate="${b.amount}" data-gst="${b.gst}">
-                            <td style="text-align: left; padding-left: 20px; vertical-align: middle;">
-                                <i class="feather icon-package text-muted me-25"></i> Batch: <strong>${b.batch_no}</strong>
-                                <input type="hidden" name="product_id[]" value="${p.product_id}">
-                                <input type="hidden" name="product_batch_id[]" value="${b.id}">
-                                <input type="hidden" name="batch_no[]" value="${b.batch_no}">
-                                <input type="hidden" name="white_qty[]" class="submit-qty-input" value="0">
-                                <input type="hidden" name="black_qty[]" value="0">
-                                <input type="hidden" name="white_amt[]" value="${b.amount}">
-                                <input type="hidden" name="black_amt[]" value="0">
-                                <input type="hidden" name="gst[]" value="${b.gst || 0}">
-                            </td>
-                            <td class="text-center font-monospace" style="vertical-align: middle;">${b.qty}</td>
-                            <td class="text-center font-monospace" style="vertical-align: middle;">${b.return_qty}</td>
-                            <td style="vertical-align: middle;">
-                                <input type="number" value="0" min="0" max="${maxQty}" class="form-control form-control-sm text-center qty-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
-                            </td>
-                            <td class="text-end font-monospace" style="vertical-align: middle;">${b.amount.toFixed(2)}</td>
-                            <td class="text-center font-monospace" style="vertical-align: middle;">${b.gst}%</td>
-                            <td class="text-end font-monospace row-total-cell" style="vertical-align: middle;">0.00</td>
-                        </tr>
-                    `;
-                } else {
-                    let maxQty = b.black_qty - b.return_black_qty;
-                    html += `
-                        <tr class="batch-row" id="batch_row_${b.id}" data-id="${b.id}" data-rate="${b.amount}" data-gst="0">
-                            <td style="text-align: left; padding-left: 20px; vertical-align: middle;">
-                                <i class="feather icon-package text-muted me-25"></i> Batch: <strong>${b.batch_no}</strong>
-                                <input type="hidden" name="product_id[]" value="${p.product_id}">
-                                <input type="hidden" name="product_batch_id[]" value="${b.id}">
-                                <input type="hidden" name="batch_no[]" value="${b.batch_no}">
-                                <input type="hidden" name="white_qty[]" value="0">
-                                <input type="hidden" name="black_qty[]" class="submit-qty-input" value="0">
-                                <input type="hidden" name="white_amt[]" value="0">
-                                <input type="hidden" name="black_amt[]" value="${b.amount}">
-                                <input type="hidden" name="gst[]" value="0">
-                            </td>
-                            <td class="text-center font-monospace" style="vertical-align: middle;">${b.black_qty}</td>
-                            <td class="text-center font-monospace" style="vertical-align: middle;">${b.return_black_qty}</td>
-                            <td style="vertical-align: middle;">
-                                <input type="number" value="0" min="0" max="${maxQty}" class="form-control form-control-sm text-center qty-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
-                            </td>
-                            <td class="text-end font-monospace" style="vertical-align: middle;">${b.amount.toFixed(2)}</td>
-                            <td class="text-end font-monospace row-total-cell" style="vertical-align: middle;">0.00</td>
-                        </tr>
-                    `;
-                }
+                `;
             });
-        });
+        } else {
+            html += `<div class="alert alert-secondary p-1">No official invoices found with this product for this customer.</div>`;
+        }
 
-        // Summary Row
+        // Black Section Rendering
         html += `
-                    </tbody>
-                    <tfoot>
-                        <tr class="table-light font-weight-bold">
-                            <td colspan="${type === 'official' ? '6' : '5'}" class="text-end py-1">Grand Total:</td>
-                            <td class="text-end text-primary py-1 font-monospace" id="order_grand_total">0.00</td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="divider divider-left divider-dark mb-1 mt-2">
+                <div class="divider-text text-dark font-weight-bold"><i class="feather icon-file-text"></i> Black Section (Orders)</div>
+            </div>
+        `;
+        if (Object.keys(groupedBlack).length > 0) {
+            Object.values(groupedBlack).forEach(function(group) {
+                html += `
+                <div class="card mb-2 shadow-none border">
+                    <div class="card-header bg-light-secondary py-50 d-flex justify-content-between align-items-center" style="background-color: #f7f7f7; padding: 10px;">
+                        <div>
+                            <strong>Order No:</strong> ${group.order_no || '-'} | <strong>Date:</strong> ${group.date}
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="radio" name="selected_order_source" class="form-check-input order-source-radio" data-type="unofficial" data-order-no="${group.order_no}" id="select_black_${group.order_id}">
+                            <label class="form-check-label font-weight-bold text-dark" for="select_black_${group.order_id}">Select this Order to return</label>
+                        </div>
+                    </div>
+                    <div class="table-responsive border-top">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead class="table-light text-center">
+                                <tr>
+                                    <th style="text-align: left;">Product / Batch Details</th>
+                                    <th style="width: 120px;">Total Qty</th>
+                                    <th style="width: 120px;">Received Qty</th>
+                                    <th style="width: 150px;">Return Qty</th>
+                                    <th style="width: 120px;">Rate</th>
+                                    <th style="width: 130px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                group.batches.forEach(function(item) {
+                    var maxQty = item.qty - item.return_qty;
+                    html += `
+                                <tr class="batch-row" id="batch_row_${item.product_batch_id}" data-id="${item.product_batch_id}">
+                                    <td style="text-align: left; padding-left: 20px; vertical-align: middle;">
+                                        <i class="feather icon-package text-muted me-25"></i> Batch: <strong>${item.batch_no || '-'}</strong>
+                                        <input type="hidden" name="product_id[]" value="${item.product_id}" disabled>
+                                        <input type="hidden" name="product_batch_id[]" value="${item.product_batch_id}" disabled>
+                                        <input type="hidden" name="batch_no[]" value="${item.batch_no || '-'}" disabled>
+                                        <input type="hidden" name="white_qty[]" value="0" disabled>
+                                        <input type="hidden" name="black_qty[]" class="submit-qty-input" value="0" disabled>
+                                        <input type="hidden" name="white_amt[]" value="0" disabled>
+                                        <input type="hidden" name="black_amt[]" class="rate-hidden-input" value="${item.amount}" disabled>
+                                        <input type="hidden" name="gst[]" value="0" disabled>
+                                    </td>
+                                    <td class="text-center font-monospace" style="vertical-align: middle;">${item.qty}</td>
+                                    <td class="text-center font-monospace" style="vertical-align: middle;">${item.return_qty}</td>
+                                    <td style="vertical-align: middle;">
+                                        <input type="number" value="0" min="0" max="${maxQty}" class="form-control form-control-sm text-center qty-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <input type="number" value="${parseFloat(item.amount).toFixed(2)}" step="0.01" class="form-control form-control-sm text-end rate-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                    </td>
+                                    <td class="text-end font-monospace row-total-cell" style="vertical-align: middle;">0.00</td>
+                                </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                `;
+            });
+        } else {
+            html += `<div class="alert alert-secondary p-1">No unofficial orders found with this product for this customer.</div>`;
+        }
+
+        // Summary Card at the bottom
+        html += `
+            <div class="card mb-2 shadow-none border mt-2">
+                <div class="card-body py-1 bg-light-primary d-flex justify-content-between align-items-center" style="background-color: #f0f4fd; padding: 10px;">
+                    <h5 class="mb-0 text-primary"><strong>Grand Total:</strong></h5>
+                    <h5 class="mb-0 text-primary font-monospace" id="order_grand_total"><strong>0.00</strong></h5>
+                </div>
             </div>
         `;
 
@@ -339,13 +399,11 @@
 
     function updateRowTotal(input) {
         var $row = $(input).closest('tr');
-        var rate = parseFloat($row.data('rate')) || 0;
-        var gst = parseFloat($row.data('gst')) || 0;
-        var returnQty = parseFloat($(input).val()) || 0;
-        var maxQty = parseFloat($(input).attr('max')) || 0;
+        var returnQty = parseFloat($row.find('.qty-input').val()) || 0;
+        var maxQty = parseFloat($row.find('.qty-input').attr('max')) || 0;
 
         if (returnQty < 0) {
-            $(input).val(0);
+            $row.find('.qty-input').val(0);
             returnQty = 0;
         }
         if (returnQty > maxQty) {
@@ -354,8 +412,17 @@
                 text: "Return quantity cannot exceed " + maxQty,
                 icon: "warning"
             });
-            $(input).val(maxQty);
+            $row.find('.qty-input').val(maxQty);
             returnQty = maxQty;
+        }
+
+        var rate = parseFloat($row.find('.rate-input').val()) || 0;
+        var gst = parseFloat($row.find('.gst-input').val()) || 0;
+
+        $row.find('.submit-qty-input').val(returnQty);
+        $row.find('.rate-hidden-input').val(rate);
+        if ($row.find('.gst-hidden-input').length) {
+            $row.find('.gst-hidden-input').val(gst);
         }
 
         var total = returnQty * rate;
@@ -363,7 +430,6 @@
             total = total * (1 + gst / 100);
         }
 
-        $row.find('.submit-qty-input').val(returnQty);
         $row.find('.row-total-cell').text(total.toFixed(2));
         calculateGrandTotals();
     }
@@ -377,14 +443,17 @@
             grandTotal += rowTotal;
         });
 
-        $('#order_grand_total').text(grandTotal.toFixed(2));
+        $('#order_grand_total').html('<strong>' + grandTotal.toFixed(2) + '</strong>');
 
         if (type === 'official') {
             $('#white_total').val(grandTotal.toFixed(2));
             $('#black_total').val('0.00');
-        } else {
+        } else if (type === 'unofficial') {
             $('#white_total').val('0.00');
             $('#black_total').val(grandTotal.toFixed(2));
+        } else {
+            $('#white_total').val('0.00');
+            $('#black_total').val('0.00');
         }
         $('#final_total').val(grandTotal.toFixed(2));
     }

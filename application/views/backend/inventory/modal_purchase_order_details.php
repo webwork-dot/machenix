@@ -202,6 +202,11 @@
     color: #5a79c0;
     font-size: 14px;
   }
+  
+  .replaced-product-cell {
+    background-color: #fff3cd !important;
+    font-weight: 500;
+  }
 </style>
 
 <div class="row">
@@ -283,7 +288,7 @@
           ?>
           <tr>
             <td class="text-center"><?php echo $sr_no++; ?></td>
-            <td><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
+            <td<?php echo (isset($product['is_replace']) && $product['is_replace'] == 1) ? ' class="replaced-product-cell"' : ''; ?>><?php echo htmlspecialchars($product['product_name'] ?? 'N/A'); ?></td>
             <td><?php echo htmlspecialchars($product['item_code'] ?? 'N/A'); ?></td>
             <td class="text-center">
               <?php if ($is_ready) { ?>

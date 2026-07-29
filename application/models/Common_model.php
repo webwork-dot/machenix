@@ -855,7 +855,146 @@ class Common_model extends CI_Model{
             $this->db->where('id', $id)->update('sales_order', array('is_generated' => '1'));
         }
     }
-    
+
+    public function update_replace_product($status, $po_id, $product_id, $quantity) {
+        $quantity = (int)$quantity;
+        if ($quantity <= 0) {
+            return null;
+        }
+
+        $next_status = '';
+        if ($status === 'pending') {
+            $next_status = 'po';
+        } elseif ($status === 'po') {
+            $next_status = 'loading';
+        } elseif ($status === 'loading') {
+            $next_status = 'received';
+        } else {
+            return null;
+        }
+
+        $this->db->trans_start();
+
+        // Fetch all matching entries that are not deleted, sorted by id ascending (FIFO)
+        $query = $this->db->query(
+            "SELECT * FROM replace_products WHERE product_id = ? AND type = ? AND is_deleted = 0 ORDER BY id ASC",
+            array($product_id, $status)
+        );
+        $entries = $query->result_array();
+
+        if (empty($entries)) {
+            $this->db->trans_complete();
+            return true;
+        }
+
+        $remaining_qty = $quantity;
+        $current_user_id = $this->session->userdata('super_user_id');
+        $added_by = !empty($current_user_id) ? $current_user_id : null;
+
+        foreach ($entries as $entry) {
+            if ($remaining_qty <= 0) {
+                break;
+            }
+
+            $entry_qty = (int)$entry['qty'];
+
+            if ($entry_qty <= $remaining_qty) {
+                // Completely consume this entry
+                $remaining_qty -= $entry_qty;
+
+                // Mark the old entry as deleted and set qty to 0
+                $this->db->where('id', $entry['id'])->update('replace_products', array('qty' => 0, 'is_deleted' => 1));
+
+                // Insert a new entry with the next status
+                $new_entry = array(
+                    'order_id'      => $entry['order_id'],
+                    'order_prod_id' => $entry['order_prod_id'],
+                    'prev_id'       => $entry['id'],
+                    'po_id'         => $po_id,
+                    'type'          => $next_status,
+                    'product_id'    => $entry['product_id'],
+                    'product_name'  => $entry['product_name'],
+                    'item_code'     => $entry['item_code'],
+                    'qty'           => $entry_qty,
+                    'added_by'      => !empty($added_by) ? $added_by : $entry['added_by'],
+                    'is_deleted'    => 0
+                );
+                $this->db->insert('replace_products', $new_entry);
+
+            } else {
+                // Partially consume this entry
+                $consumed_qty = $remaining_qty;
+                $leftover_qty = $entry_qty - $consumed_qty;
+
+                // Update the old entry with the leftover quantity
+                $this->db->where('id', $entry['id'])->update('replace_products', array('qty' => $leftover_qty));
+
+                // Insert a new entry with the next status and consumed quantity
+                $new_entry = array(
+                    'order_id'      => $entry['order_id'],
+                    'order_prod_id' => $entry['order_prod_id'],
+                    'prev_id'       => $entry['id'],
+                    'po_id'         => $po_id,
+                    'type'          => $next_status,
+                    'product_id'    => $entry['product_id'],
+                    'product_name'  => $entry['product_name'],
+                    'item_code'     => $entry['item_code'],
+                    'qty'           => $consumed_qty,
+                    'added_by'      => !empty($added_by) ? $added_by : $entry['added_by'],
+                    'is_deleted'    => 0
+                );
+                $this->db->insert('replace_products', $new_entry);
+
+                // Set remaining quantity to 0 as we've satisfied the requested quantity
+                $remaining_qty = 0;
+            }
+        }
+
+        $this->db->trans_complete();
+
+        return true;
+    }
+
+    public function revert_replace_products($po_id, $product_id, $type = 'po') {
+        $po_id = intval($po_id);
+        $product_id = intval($product_id);
+        
+        $this->db->trans_start();
+        
+        // Fetch all replace products entries with type = $type and po_id = $po_id for this product
+        $query = $this->db->get_where('replace_products', array(
+            'po_id' => $po_id,
+            'product_id' => $product_id,
+            'type' => $type
+        ));
+        $entries = $query->result_array();
+        
+        foreach ($entries as $entry) {
+            $prev_id = $entry['prev_id'];
+            $qty = intval($entry['qty']);
+            
+            if (!empty($prev_id)) {
+                // Get the original entry
+                $prev_query = $this->db->get_where('replace_products', array('id' => $prev_id));
+                if ($prev_query->num_rows() > 0) {
+                    $prev_entry = $prev_query->row_array();
+                    $new_qty = intval($prev_entry['qty']) + $qty;
+                    
+                    // Restore original quantity and mark is_deleted = 0
+                    $this->db->where('id', $prev_id)->update('replace_products', array(
+                        'qty' => $new_qty,
+                        'is_deleted' => 0
+                    ));
+                }
+            }
+            
+            // Delete this entry
+            $this->db->where('id', $entry['id'])->delete('replace_products');
+        }
+        
+        $this->db->trans_complete();
+        return true;
+    }
 }
 
 if (!function_exists('clean_and_escape')) {

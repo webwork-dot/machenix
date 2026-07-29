@@ -663,7 +663,7 @@
 
                                         $rowspan = max(1, count($variations));
                                     ?>
-                                    <tr id="loading_row_<?php echo $product['id']; ?>" class="main-product-row" data-row-id="<?php echo $product['id']; ?>" data-product-id="<?php echo $product['product_id']; ?>">
+                                    <tr id="loading_row_<?php echo $product['id']; ?>" class="main-product-row<?php echo (isset($product['is_replace']) && $product['is_replace'] == 1) ? ' table-warning' : ''; ?>" data-row-id="<?php echo $product['id']; ?>" data-product-id="<?php echo $product['product_id']; ?>">
                                         <td rowspan="<?php echo $rowspan; ?>">
                                             <?php echo $sr_no++; ?>
                                             <input type="hidden" name="sort[<?php echo $product['id']; ?>]" value="<?php echo $global_sort_counter++; ?>" class="sort-input">
@@ -853,7 +853,7 @@
                                             $var_total_gw_val = $var_lt_data ? number_format($var_lt_data['total_gw_kg'], 2, '.', '') : '';
                                             $var_total_cbm_val = $var_lt_data ? number_format($var_lt_data['total_cbm_value'], 6, '.', '') : '';
                                         ?>
-                                            <tr class="variation-row" data-row-id="<?php echo $product['id']; ?>" data-product-id="<?php echo $product['product_id']; ?>">
+                                            <tr class="variation-row<?php echo (isset($product['is_replace']) && $product['is_replace'] == 1) ? ' table-warning' : ''; ?>" data-row-id="<?php echo $product['id']; ?>" data-product-id="<?php echo $product['product_id']; ?>">
                                                 <td class="metric-cell">
                                                     <input type="number" step="0.01" class="form-control form-control-sm pkg-ctn" 
                                                         id="pkg_ctn_<?php echo $product['id']; ?>"

@@ -33,6 +33,7 @@ CREATE TABLE `loading_po_product` (
   `supplier_id` int(11) NOT NULL,
   `product_type` enum('ready','spare','') NOT NULL DEFAULT '',
   `product_id` int(11) NOT NULL,
+  `is_replace` TINYINT(1) NOT NULL DEFAULT 0,
   `categories` varchar(255) DEFAULT NULL,
   `sizes` varchar(255) DEFAULT NULL,
   `group_id` varchar(255) DEFAULT NULL,

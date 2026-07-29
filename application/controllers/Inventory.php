@@ -1253,10 +1253,6 @@ class Inventory extends CI_Controller
             $page_data['navigation'] = 'import_purchase_order';
             $page_data['type'] = 'import';
             
-            // Get warehouse and supplier lists
-            $page_data['warehouse_list'] = $this->common_model->selectWhere('warehouse', $where, 'ASC', 'name');
-            $page_data['supplier_list'] = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id), 'ASC', 'name');
-            
             // Get PO products grouped by supplier
             $page_data['po_products'] = $this->inventory_model->get_purchase_order_products_for_edit($po_id);
             
@@ -3635,6 +3631,7 @@ class Inventory extends CI_Controller
         $page_data['warehouse_list']     = $this->common_model->getSessionWarehouse();
         $page_data['customer_list']     = $this->common_model->getSessionCustomers();
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
+        $page_data['product_list']     = $this->common_model->selectWhere('raw_products', $where, 'ASC', 'name');
 
         if ($param1 == 'add') {
             $page_data['page_name']  = 'goods_return_add';
@@ -3820,6 +3817,93 @@ class Inventory extends CI_Controller
                     'products' => array_values($grouped)
                 ));
             }
+        }
+    }
+
+    public function get_customer_product_returns()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(array('status' => 'error', 'message' => 'Unauthorized'));
+            return;
+        }
+
+        if ($this->input->is_ajax_request()) {
+            $customer_id = (int)$this->input->post('customer_id');
+            $product_id = (int)$this->input->post('product_id');
+            $company_id = (int)$this->session->userdata('company_id');
+
+            if (empty($customer_id) || empty($product_id)) {
+                echo json_encode(array('status' => 'success', 'white' => [], 'black' => []));
+                return;
+            }
+
+            // 1. Fetch Invoices (White)
+            $sql_white = "
+                SELECT 
+                    io.id AS order_id,
+                    io.invoice_no,
+                    io.order_no,
+                    io.date,
+                    io.customer_id,
+                    c.company_name AS customer_name,
+                    iop.id AS product_batch_id,
+                    iop.product_id,
+                    iop.product_name,
+                    iop.item_code,
+                    iop.qty,
+                    iop.return_qty,
+                    iop.amount,
+                    iop.gst,
+                    iop.gst_amount,
+                    iop.final_total,
+                    iop.batch_id,
+                    (SELECT batch_no FROM sales_order_product_batch WHERE id = iop.batch_id) AS batch_no
+                FROM invoice_order io
+                INNER JOIN invoice_order_products iop ON iop.parent_id = io.id
+                LEFT JOIN customer c ON c.id = io.customer_id
+                WHERE io.customer_id = ? 
+                  AND iop.product_id = ?
+                  AND io.company_id = ?
+                  AND io.is_deleted = 0
+                  AND iop.qty > iop.return_qty
+                ORDER BY io.id DESC
+            ";
+            $white_results = $this->db->query($sql_white, array($customer_id, $product_id, $company_id))->result_array();
+
+            // 2. Fetch Orders (Black)
+            $sql_black = "
+                SELECT 
+                    so.id AS order_id,
+                    so.order_no,
+                    so.date,
+                    so.customer_id,
+                    c.company_name AS customer_name,
+                    sob.id AS product_batch_id,
+                    sop.product_id,
+                    sop.product_name,
+                    sop.item_code,
+                    sob.black_qty AS qty,
+                    sob.return_black_qty AS return_qty,
+                    sob.black_amount AS amount,
+                    sob.batch_no
+                FROM sales_order so
+                INNER JOIN sales_order_product sop ON sop.order_id = so.id
+                INNER JOIN sales_order_product_batch sob ON sob.order_product_id = sop.id
+                LEFT JOIN customer c ON c.id = so.customer_id
+                WHERE so.customer_id = ?
+                  AND sop.product_id = ?
+                  AND so.company_id = ?
+                  AND so.is_deleted = 0
+                  AND sob.black_qty > sob.return_black_qty
+                ORDER BY so.id DESC
+            ";
+            $black_results = $this->db->query($sql_black, array($customer_id, $product_id, $company_id))->result_array();
+
+            echo json_encode(array(
+                'status' => 'success',
+                'white' => $white_results,
+                'black' => $black_results
+            ));
         }
     }
 

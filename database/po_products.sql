@@ -3,6 +3,7 @@ CREATE TABLE `po_products` (
   `parent_id` int(11) NOT NULL,
   `supplier_id` int(11) NOT NULL,
   `product_type` enum('ready','spare','') NOT NULL DEFAULT '',
+  `is_replace` TINYINT(1) NOT NULL DEFAULT 0,
   `product_id` int(11) NOT NULL,
   `categories` varchar(255) DEFAULT NULL,
   `sizes` varchar(255) DEFAULT NULL,

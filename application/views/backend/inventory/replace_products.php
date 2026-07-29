@@ -110,29 +110,29 @@
                 { "data": "item_code" },
                 { "data": "qty" },
                 { "data": "salesperson" }
-             ],
-             "buttons": [
-                 {
-                     "extend": 'excel',
-                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-                     "exportOptions": {
-                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8]
-                     }
-                 },
-                 {
-                     "extend": 'pdfHtml5',
-                     "orientation": 'landscape',
-                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                     "exportOptions": {
-                        "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8]
-                     }
-                 }
-             ], 
-             "infoCallback": function( settings, start, end, max, total, pre ) {
-                 $(".loader").fadeOut("slow"); 
-                 $('#total_count').html('('+total+')');
-                 return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
-             }
+            ],
+            "buttons": [
+                {
+                    "extend": 'excel',
+                    "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
+                    "exportOptions": {
+                    "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                    }
+                },
+                {
+                    "extend": 'pdfHtml5',
+                    "orientation": 'landscape',
+                    "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
+                    "exportOptions": {
+                    "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                    }
+                }
+            ], 
+            "infoCallback": function( settings, start, end, max, total, pre ) {
+                $(".loader").fadeOut("slow"); 
+                $('#total_count').html('('+total+')');
+                return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
+            }
         });
     });
 </script>

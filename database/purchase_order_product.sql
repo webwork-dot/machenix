@@ -2,6 +2,7 @@ CREATE TABLE `purchase_order_product` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL,
   `supplier_id` int(11) NOT NULL,
+  `is_replace` TINYINT(1) NOT NULL DEFAULT 0,
   `product_type` enum('ready','spare','') NOT NULL DEFAULT '',
   `product_id` int(11) NOT NULL,
   `categories` varchar(255) DEFAULT NULL,

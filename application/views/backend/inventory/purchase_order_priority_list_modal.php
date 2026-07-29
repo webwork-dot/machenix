@@ -98,7 +98,7 @@
             foreach ($products_query as $product): 
                 $type_label = ($product['product_type'] == 'ready') ? 'Ready Goods' : (($product['product_type'] == 'spare') ? 'Spare Parts' : '');
             ?>
-          <tr id="row_<?php echo $product['id']; ?>" data-product-id="<?php echo $product['id']; ?>">
+          <tr id="row_<?php echo $product['id']; ?>" data-product-id="<?php echo $product['id']; ?>"<?php echo (isset($product['is_replace']) && $product['is_replace'] == 1) ? ' class="table-warning"' : ''; ?>>
             <td>
               <?php echo $sr_no++; ?>
               <input type="hidden" name="old_product_id[<?php echo $product['id']; ?>]"
@@ -136,6 +136,8 @@
                 value="<?php echo $product['product_id']; ?>">
               <input type="hidden" name="product_name[<?php echo $product['id']; ?>]"
                 value="<?php echo htmlspecialchars($product['product_name']); ?>">
+              <input type="hidden" name="is_replace[<?php echo $product['id']; ?>]"
+                value="<?php echo $product['is_replace']; ?>" class="is-replace-input">
             </td>
             <td>
               <input type="text" class="form-control form-control-sm" name="item_code[<?php echo $product['id']; ?>]"
@@ -387,9 +389,12 @@ function checkQuantityChange(rowId) {
       updateLoadingRowNumbers();
     }
 
+    // Get is_replace value from the priority row
+    var isReplace = row.find('.is-replace-input').val() || 0;
+
     // Now add/create a new row in Loading Products
     addToLoadingProducts(loadingRowId, rowId, supplierId, supplierName, productType, typeLabel, productId,
-      productName, itemCode, removedQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock);
+      productName, itemCode, removedQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace);
 
     // If quantity is 0, hide the row
     if (currentQty == 0) {
@@ -409,16 +414,17 @@ function checkQuantityChange(rowId) {
 
 // Add to Loading Products table
 function addToLoadingProducts(loadingRowId, originalRowId, supplierId, supplierName, productType, typeLabel, productId,
-  productName, itemCode, quantity, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock) {
+  productName, itemCode, quantity, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace) {
   var loadingSrNo = $('#loading_products_tbody tr').length + 1;
   var totalCBM = quantity * cbm;
 
   var loadingRow = `
-        <tr id="loading_row_${loadingRowId}" data-original-row-id="${originalRowId}">
+        <tr id="loading_row_${loadingRowId}" data-original-row-id="${originalRowId}" class="${isReplace == 1 ? 'table-warning' : ''}">
             <td>
                 ${loadingSrNo}
                 <input type="hidden" name="loading_old_product_id[${loadingRowId}]" value="${originalRowId}">
                 <input type="hidden" name="loading_sort[${loadingRowId}]" value="${loadingSrNo}" class="loading-sort-input">
+                <input type="hidden" name="loading_is_replace[${loadingRowId}]" value="${isReplace || 0}" class="loading-is-replace-input">
             </td>
             <td>
                 <select class="form-control form-control-sm loading-supplier-select" name="loading_supplier_id[${loadingRowId}]" required>
@@ -969,6 +975,7 @@ function addNewRow() {
                   <option value="">Select Product</option>
               </select>
               <input type="hidden" name="product_name[${newRowId}]" id="product_name_${newRowId}">
+              <input type="hidden" name="is_replace[${newRowId}]" id="is_replace_${newRowId}" value="0" class="is-replace-input">
           </td>
           <td>
               <input type="text" class="form-control form-control-sm" name="item_code[${newRowId}]" 

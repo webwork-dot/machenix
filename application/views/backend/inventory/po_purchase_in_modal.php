@@ -40,6 +40,31 @@ $products_raw = $this->db
     ")
     ->result_array();
 
+// Fetch replace products
+$replace_products = $this->db->query("
+    SELECT * 
+    FROM replace_products 
+    WHERE po_id = '$po_id' 
+      AND type IN ('loading', 'received') 
+      AND is_deleted = 0
+")->result_array();
+
+$rp_total_qty = [];
+$rp_received_qty = [];
+foreach ($replace_products as $rp) {
+    $pid = $rp['product_id'];
+    if (!isset($rp_total_qty[$pid])) {
+        $rp_total_qty[$pid] = 0;
+        $rp_received_qty[$pid] = 0;
+    }
+    $rp_total_qty[$pid] += $rp['qty'];
+    if ($rp['type'] == 'received') {
+        $rp_received_qty[$pid] += $rp['qty'];
+    }
+}
+
+$shown_replace_products = [];
+
 $supplier_products = [];
 foreach ($products_raw as $product) {
     $supplier_id = isset($product['supplier_id']) ? $product['supplier_id'] : 0;
@@ -156,13 +181,15 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                             </span>
                         </h5>
                         <div class="table-responsive supplier-table-container">
-                            <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
+                            <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
                                 <thead>
                                     <tr>
                                         <th style="width: 50px;">Sr No.</th>
                                         <th style="width: 250px;">Product Name</th>
                                         <th style="width: 150px;">Model No.</th>
                                         <th style="width: 100px;">Actual Qty</th>
+                                        <th style="width: 100px;">Received Qty</th>
+                                        <th style="width: 120px;">Qty to Receive</th>
                                         <th style="width: 100px;">Actual RMB</th>
                                         <th style="width: 100px;">Total RMB</th>
                                         <th style="width: 100px;">Actual USD</th>
@@ -319,8 +346,11 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                         $g_gst_amt             += $gst_amt;
                                         $g_total_amt           += $total_amt;
                                     ?>
-                                    <?php $row_id = (int)($product['id'] ?? 0); ?>
-                                    <tr data-product-id="<?php echo $product['product_id']; ?>">
+                                    <?php 
+                                    $row_id = (int)($product['id'] ?? 0); 
+                                    $is_row_replace = (isset($product['is_replace']) && $product['is_replace'] == 1);
+                                    ?>
+                                    <tr data-product-id="<?php echo $product['product_id']; ?>" <?php echo $is_row_replace ? 'class="table-warning"' : ''; ?>>
                                         <td class="text-center">
                                             <?php echo $sr_no++; ?>
                                             <input type="hidden" name="invoice_no[]" value="<?php echo $product['invoice_no'] ?? 1; ?>">
@@ -355,6 +385,57 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                             value="<?php echo $actual_qty !== 0.0 ? number_format($actual_qty, 0) : ''; ?>"
                                             onkeyup="calculateActual(this)"
                                             <?php echo $is_locked ? 'readonly title="'.$lock_reason.'"' : ''; ?>>
+                                        </td>
+
+                                        <td>
+                                            <?php 
+                                            $show_rp = false;
+                                            $rep_total = 0;
+                                            $rep_recv = 0;
+                                            $pid = $product['product_id'];
+                                            
+                                            if ($po_raw['delivery_status'] == 'purchase_in') {
+                                                if ($is_row_replace) {
+                                                    if (!in_array($pid, $shown_replace_products)) {
+                                                        $show_rp = true;
+                                                        $rep_total = (int)($product['receivable_qty'] ?? 0);
+                                                        $rep_recv = (int)($product['received_qty'] ?? 0);
+                                                        $shown_replace_products[] = $pid;
+                                                    }
+                                                }
+                                            } else {
+                                                $has_replace = $is_row_replace || (isset($rp_total_qty[$pid]) && $rp_total_qty[$pid] > 0);
+                                                if ($has_replace) {
+                                                    if (!in_array($pid, $shown_replace_products)) {
+                                                        $show_rp = true;
+                                                        $rep_total = isset($rp_total_qty[$pid]) ? $rp_total_qty[$pid] : 0;
+                                                        $rep_recv = isset($rp_received_qty[$pid]) ? $rp_received_qty[$pid] : 0;
+                                                        $shown_replace_products[] = $pid;
+                                                    }
+                                                }
+                                            }
+                                            ?>
+                                            <?php if ($show_rp): ?>
+                                                <input type="number"
+                                                class="form-control form-control-sm text-right replace-total-qty"
+                                                name="replace_qty[]"
+                                                value="<?php echo $rep_total; ?>"
+                                                readonly>
+                                            <?php else: ?>
+                                                <input type="hidden" name="replace_qty[]" value="0">
+                                            <?php endif; ?>
+                                        </td>
+
+                                        <td>
+                                            <?php if ($show_rp): ?>
+                                                <input type="number"
+                                                class="form-control form-control-sm text-right replace-recv-qty"
+                                                name="replace_recv_qty[]"
+                                                value="<?php echo $rep_recv; ?>"
+                                                onkeyup="validateReplaceRecv(this)">
+                                            <?php else: ?>
+                                                <input type="hidden" name="replace_recv_qty[]" value="0">
+                                            <?php endif; ?>
                                         </td>
 
                                         <td>
@@ -501,6 +582,8 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     <tr class="font-weight-bold js-totals-row">
                                          <td colspan="3" class="text-right">TOTAL</td>
                                          <td class="text-right"><span class="js-sum-actual-qty"><?php echo number_format($t_actual_qty, 0); ?></span></td>
+                                         <td class="text-right">-</td>
+                                         <td class="text-right">-</td>
                                          <td class="text-right"><span class="js-sum-actual-rmb"><?php // echo $t_actual_rmb; ?>-</span></td>
                                          <td class="text-right"><span class="js-sum-total-rmb"><?php echo $t_total_rmb; ?></span></td>
                                          <td class="text-right"><span class="js-sum-actual-usd"><?php // echo $t_actual_usd; ?>-</span></td>
@@ -534,11 +617,13 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                 <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                     <h5>Grand Total</h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
+                        <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
                             <thead>
                                 <tr>
                                     <th colspan="3" style="width: 450px;">#</th>
                                     <th style="width: 100px;">Actual Qty</th>
+                                    <th style="width: 100px;">Received Qty</th>
+                                    <th style="width: 120px;">Qty to Receive</th>
                                     <th style="width: 100px;">Actual RMB</th>
                                     <th style="width: 100px;">Total RMB</th>
                                     <th style="width: 100px;">Actual USD</th>
@@ -561,6 +646,8 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                 <tr class="font-weight-bold js-totals-row">
                                     <td colspan="3" class="text-right fw-bold">Total</td>
                                     <td class="text-right"><span id="grand-sum-actual-qty"><?php echo number_format($g_actual_qty, 0); ?></span></td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
                                     <td class="text-right"><span id="grand-sum-actual-rmb">-</span></td>
                                     <!-- <td class="text-right"><span id="grand-sum-actual-rmb"><?php echo number_format($g_actual_rmb, 2, '.', ''); ?></span></td> -->
                                     <td class="text-right"><span id="grand-sum-total-rmb"><?php echo number_format($g_total_rmb, 2, '.', ''); ?></span></td>
@@ -707,6 +794,32 @@ function fmtQty(n) {
 
 function fmtAmt(n) {
   return toNum(n).toFixed(2); // matches your PHP number_format(..., 2, '.', '')
+}
+
+function validateReplaceRecv(el) {
+  var $row = getRow(el);
+  var actualQty = toNum($row.find('.actual-qty').val());
+  var replaceTotal = toNum($row.find('.replace-total-qty').val());
+  var val = toNum($(el).val());
+  
+  if (val < 0) {
+    $(el).val(0);
+    val = 0;
+  }
+  
+  var maxAllowed = Math.min(actualQty, replaceTotal);
+  if (val > maxAllowed) {
+    Swal.fire({
+      title: "Warning!",
+      text: "Quantity to receive cannot be greater than the Actual Qty (" + actualQty + ") or Received Qty (" + replaceTotal + ").",
+      icon: "warning",
+      customClass: {
+        confirmButton: "btn btn-primary"
+      },
+      buttonsStyling: false
+    });
+    $(el).val(maxAllowed);
+  }
 }
 
 function updateTableTotals($table) {
@@ -874,6 +987,12 @@ function calculateActual(el) {
   var unitInr = toNum($row.find('.actual-inr').val());
   $row.find('.total-inr').val(toNum(qty * unitInr));
 
+  // Validate replace-recv-qty if present
+  var $replaceRecv = $row.find('.replace-recv-qty');
+  if ($replaceRecv.length && $replaceRecv.val() !== "") {
+    validateReplaceRecv($replaceRecv[0]);
+  }
+
   updateTableTotals($row.closest('table'));
 }
 
@@ -1025,13 +1144,15 @@ function createSupplierSection(supplierId, supplierName) {
             </span>
         </h5>
         <div class="table-responsive supplier-table-container">
-            <table class="table table-bordered table-striped table-sm" style="min-width: 2250px;">
+            <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
                 <thead>
                     <tr>
                         <th style="width: 50px;">Sr No.</th>
                         <th style="width: 250px;">Product Name</th>
                         <th style="width: 150px;">Model No.</th>
                         <th style="width: 100px;">Actual Qty</th>
+                        <th style="width: 100px;">Received Qty</th>
+                        <th style="width: 120px;">Qty to Receive</th>
                         <th style="width: 100px;">Actual RMB</th>
                         <th style="width: 100px;">Total RMB</th>
                         <th style="width: 100px;">Actual USD</th>
@@ -1057,6 +1178,8 @@ function createSupplierSection(supplierId, supplierName) {
                     <tr class="font-weight-bold js-totals-row">
                         <td colspan="3" class="text-right">TOTAL</td>
                         <td class="text-right"><span class="js-sum-actual-qty">0</span></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
                         <td class="text-right"><span class="js-sum-actual-rmb">-</span></td>
                         <td class="text-right"><span class="js-sum-total-rmb">0</span></td>
                         <td class="text-right"><span class="js-sum-actual-usd">-</span></td>
@@ -1288,8 +1411,11 @@ function appendPurchaseInProductRow($section, p) {
     var officialUsdRate = parseFloat(p.usd_rate) || 0;
     var officialRateInr = officialUsdRate * inrRate;
 
+    var isReplace = parseInt(p.is_replace) === 1;
+    var rowClass = isReplace ? 'class="table-warning"' : '';
+
     var html = `
-    <tr data-product-id="${p.id}" data-new-row="true">
+    <tr data-product-id="${p.id}" data-new-row="true" ${rowClass}>
         <td class="text-center">
             0
             <input type="hidden" name="invoice_no[]" value="1">
@@ -1300,6 +1426,8 @@ function appendPurchaseInProductRow($section, p) {
         <td><input type="text" class="form-control form-control-sm" name="product_name[]" value="${p.name}" readonly></td>
         <td><input type="text" class="form-control form-control-sm" name="item_code[]" value="${p.item_code}" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-qty" name="actual_qty[]" value="0" onkeyup="calculateActual(this)"></td>
+        <td><input type="hidden" name="replace_qty[]" value="0"></td>
+        <td><input type="hidden" name="replace_recv_qty[]" value="0"></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-rmb" name="actual_rmb[]" value="${parseFloat(p.rate || 0)}" onkeyup="calculateActual(this)"></td>
         <td><input type="text" class="form-control form-control-sm text-right total-rmb" name="total_rmb[]" value="0" readonly></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-usd" name="actual_usd[]" value="${actualUsdRate}" onkeyup="calculateActual(this)"></td>
