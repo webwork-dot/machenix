@@ -250,8 +250,12 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
 
                                         // Prices - handles different field names between tables
                                         if ($delivery_status != 'purchase_in') {
-                                            $actual_rmb = (float)($product['unit_price_rmb'] ?? 0);
-                                            $actual_usd = (float)($product['rp_actual_usd_rate'] ?? 0);
+                                            $pv_pricing = $this->db->get_where('product_variations', [
+                                                'product_id' => $product['product_id'],
+                                                'supplier_id' => $supplier_id
+                                            ])->row_array();
+                                            $actual_rmb = $pv_pricing ? (float)($pv_pricing['rate'] ?? 0) : 0.0;
+                                            $actual_usd = $pv_pricing ? (float)($pv_pricing['actual_usd_rate'] ?? 0) : 0.0;
                                             $actual_inr = (float)($actual_usd * $inr_rate);
                                         } else {
                                             $actual_rmb = (float)($product['actual_rmb'] ?? 0);

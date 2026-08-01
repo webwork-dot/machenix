@@ -688,6 +688,8 @@
                                                 value="<?php echo htmlspecialchars($product['item_code']); ?>" name="item_code[<?php echo $product['id']; ?>]" readonly>
                                             <input type="hidden" name="product_id[<?php echo $product['id']; ?>]" 
                                                 value="<?php echo $product['product_id']; ?>">
+                                            <input type="hidden" name="supplier_id[<?php echo $product['id']; ?>]" 
+                                                value="<?php echo $supplier_id; ?>">
                                         </td>
                                         <td rowspan="<?php echo $rowspan; ?>">
                                             <input type="text" class="form-control form-control-sm" 
@@ -1215,6 +1217,7 @@ function initLoadingListSortable() {
 function appendLoadingListProductRow($section, productData) {
     loadingListRowCounter++;
     var rowKey = 'new_' + loadingListRowCounter;
+    var supplierId = $section.data('supplier-id');
     var productId = (productData.id || '').toString();
     var productName = $('<div>').text(productData.name || '').html();
     var itemCode = $('<div>').text(productData.item_code || '').html();
@@ -1263,6 +1266,7 @@ function appendLoadingListProductRow($section, productData) {
             <td rowspan="${rowSpan}">
                 <input type="text" class="form-control form-control-sm" value="${itemCode}" name="item_code[${rowKey}]" readonly >
                 <input type="hidden" name="product_id[${rowKey}]" value="${productId}">
+                <input type="hidden" name="supplier_id[${rowKey}]" value="${supplierId}">
             </td>
 
             <td rowspan="${rowSpan}">

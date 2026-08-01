@@ -1774,6 +1774,10 @@ class Inventory extends CI_Controller
         // Format products with additional details
         $ready_products_data = array();
         foreach ($ready_products as $product) {
+            $pv_pricing = $this->db->get_where('product_variations', [
+                'product_id' => $product->id,
+                'supplier_id' => $supplier_id
+            ])->row_array();
 
             $variations = $this->db->where('product_id', $product->id)->get('product_variation');
             $variations = ($variations->num_rows() > 0) ? $variations->result_array() : [];
@@ -1793,15 +1797,31 @@ class Inventory extends CI_Controller
                 $pending_po_qty = intval($result->total_qty ?? 0);
             }
 
+            // Check if this product is low stock for this supplier
+            $is_low_stock = 0;
+            $low_stock_query = $this->db->query("
+                SELECT SUM(i.quantity) as total_qty 
+                FROM inventory i
+                INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
+                WHERE i.product_id = ? AND i.supplier_id = ?
+                GROUP BY i.product_id, i.supplier_id, pv.intimation
+                HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
+                LIMIT 1
+            ", array($product->id, $supplier_id));
+
+            if ($low_stock_query->num_rows() > 0) {
+                $is_low_stock = 1;
+            }
+
             $ready_products_data[] = array(
                 'id' => $product->id,
                 'name' => $product->name,
                 'type' => $product->type,
                 'item_code' => $product->item_code ?? '',
                 'category_name' => $product->category_name ?? '-',
-                'rate' => ($product->rate > 0) ? $product->rate : 0,
-                'usd_rate' => ($product->usd_rate > 0) ? $product->usd_rate : 0,
-                'actual_usd_rate' => ($product->actual_usd_rate > 0) ? $product->actual_usd_rate : 0,
+                'rate' => $pv_pricing ? (float)$pv_pricing['rate'] : 0,
+                'usd_rate' => $pv_pricing ? (float)$pv_pricing['usd_rate'] : 0,
+                'actual_usd_rate' => $pv_pricing ? (float)$pv_pricing['actual_usd_rate'] : 0,
                 'duty_charge' => ($product->duty_charge > 0) ? $product->duty_charge : 0,
                 'cartoon_qty' => $product->cartoon_qty ?? 0,
                 'cbm' => $product->cbm ?? 0,
@@ -1810,11 +1830,17 @@ class Inventory extends CI_Controller
                 'in_stock_qty' => 0,
                 'company_stock' => 0,
                 'variations' => $variations,
+                'is_low_stock' => $is_low_stock,
             );
         }
 
         $spare_products_data = array();
         foreach ($spare_products as $product) {
+            $pv_pricing = $this->db->get_where('product_variations', [
+                'product_id' => $product->id,
+                'supplier_id' => $supplier_id
+            ])->row_array();
+
             $variations = $this->db->where('product_id', $product->id)->get('product_variation');
             $variations = ($variations->num_rows() > 0) ? $variations->result_array() : [];
             
@@ -1833,15 +1859,31 @@ class Inventory extends CI_Controller
                 $pending_po_qty = intval($result->total_qty ?? 0);
             }
 
+            // Check if this product is low stock for this supplier
+            $is_low_stock = 0;
+            $low_stock_query = $this->db->query("
+                SELECT SUM(i.quantity) as total_qty 
+                FROM inventory i
+                INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
+                WHERE i.product_id = ? AND i.supplier_id = ?
+                GROUP BY i.product_id, i.supplier_id, pv.intimation
+                HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
+                LIMIT 1
+            ", array($product->id, $supplier_id));
+
+            if ($low_stock_query->num_rows() > 0) {
+                $is_low_stock = 1;
+            }
+
             $spare_products_data[] = array(
                 'id' => $product->id,
                 'name' => $product->name,
                 'type' => $product->type,
                 'item_code' => $product->item_code ?? '',
                 'category_name' => $product->category_name ?? '-',
-                'rate' => ($product->rate > 0) ? $product->rate : 0,
-                'usd_rate' => ($product->usd_rate > 0) ? $product->usd_rate : 0,
-                'actual_usd_rate' => ($product->actual_usd_rate > 0) ? $product->actual_usd_rate : 0,
+                'rate' => $pv_pricing ? (float)$pv_pricing['rate'] : 0,
+                'usd_rate' => $pv_pricing ? (float)$pv_pricing['usd_rate'] : 0,
+                'actual_usd_rate' => $pv_pricing ? (float)$pv_pricing['actual_usd_rate'] : 0,
                 'duty_charge' => ($product->duty_charge > 0) ? $product->duty_charge : 0,
                 'cartoon_qty' => $product->cartoon_qty ?? 0,
                 'cbm' => $product->cbm ?? 0,
@@ -1850,6 +1892,7 @@ class Inventory extends CI_Controller
                 'in_stock_qty' => 0,
                 'company_stock' => 0,
                 'variations' => $variations,
+                'is_low_stock' => $is_low_stock,
             );
         }
 
@@ -2442,6 +2485,28 @@ class Inventory extends CI_Controller
 
             // echo $name; exit();
             $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function low_stock()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['page_name']  = 'low_stock';
+            $page_data['page_title'] = get_phrase('low_stock');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_low_stock()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_low_stock();
         }
     }
 
@@ -3078,6 +3143,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->approve_sales_order($param2);
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_sales_order($param2);
+        } elseif ($param1 == "edit_salesman_post") {
+            $this->inventory_model->edit_sales_order_salesman($param2);
         } elseif ($param1 == "invoice") {
             // $this->inventory_model->create_sales_invoice($param2);
 
@@ -3281,7 +3348,8 @@ class Inventory extends CI_Controller
                 $staff_access = (int)($usr_det->staff_access ?? 0);
             }
 
-            $page_data['page_name']  = 'sales_edit_approved_order';
+            // $page_data['page_name']  = 'sales_edit_approved_order';
+            $page_data['page_name']  = 'sales_order_edit_salesman';
             $page_data['navigation']  = 'sales_order';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Sales Order';

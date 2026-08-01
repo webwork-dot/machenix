@@ -25,6 +25,14 @@ CREATE TABLE `inventory` (
   `taxable_value` decimal(15,2) NOT NULL DEFAULT 0.00,
   `gst_amt` decimal(15,2) NOT NULL DEFAULT 0.00,
   `total_amt` decimal(15,2) NOT NULL DEFAULT 0.00,
+
+  `expense` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `total_expense` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `official_expense` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `total_official_expense` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `official_exp_per_pc` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `actual_cost_with_exp` decimal(15,2) NOT NULL DEFAULT 0.00,
+
   `batch_no` varchar(250) DEFAULT NULL,
   `barcode_no` varchar(255) DEFAULT NULL,
   `barcode_url` varchar(255) DEFAULT NULL,

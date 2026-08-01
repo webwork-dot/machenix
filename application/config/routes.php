@@ -196,6 +196,8 @@ $route[$r_inventory . '/my-stock-company/(:num)'] = 'inventory/my_stock_company/
 $route[$r_inventory . '/my-stock-batch/(:any)/(:any)'] = 'inventory/my_stock_batch/$1/$2';
 $route[$r_inventory . '/my-stock-history/(:any)'] = 'inventory/my_stock_history/$1';
 $route[$r_inventory . '/qc-pending'] = 'inventory/qc_pending';
+$route[$r_inventory . '/low-stock'] = 'inventory/low_stock';
+$route[$r_inventory . '/get-low-stock'] = 'inventory/get_low_stock';
 
 $route[$r_inventory . '/stock-transfer'] = 'inventory/stock_transfer';
 $route[$r_inventory . '/stock-transfer-list'] = 'inventory/stock_transfer_list';

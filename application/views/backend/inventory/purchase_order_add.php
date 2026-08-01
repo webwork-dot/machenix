@@ -391,7 +391,7 @@ function applyReplacementProduct(replaceId) {
     var qtyInput = row.find('input[name^="' + sectionPrefix + '_qty"]');
     qtyInput.val(product.replace_qty).trigger('keyup');
     // Highlight row
-    row.addClass('table-warning');
+    row.removeClass('table-danger').addClass('table-warning');
   } else {
     // If not exists, check if there's "No product selected" placeholder row
     var tbody = $('#' + sectionPrefix + '_products_' + supplierRowId);
@@ -406,7 +406,7 @@ function applyReplacementProduct(replaceId) {
     newRow.find('.is-applied-input').val('1');
     newRow.find('input[name^="' + sectionPrefix + '_qty"]').val(product.replace_qty).trigger('keyup');
     // Highlight row
-    newRow.addClass('table-warning');
+    newRow.removeClass('table-danger').addClass('table-warning');
   }
 
   // Update button in modal
@@ -437,12 +437,18 @@ $(document).on('keyup change input', 'input[name^="ready_qty"], input[name^="spa
       isAppliedInput.val('0');
       row.removeClass('table-warning');
       row.removeAttr('data-replace-qty');
+      if (row.attr('data-low-stock') === '1') {
+        row.addClass('table-danger');
+      }
     } else {
       if (isAppliedVal === '1') {
         isAppliedInput.val('1');
-        row.addClass('table-warning');
+        row.removeClass('table-danger').addClass('table-warning');
       } else {
         row.removeClass('table-warning');
+        if (row.attr('data-low-stock') === '1') {
+          row.addClass('table-danger');
+        }
       }
     }
     
@@ -1043,8 +1049,16 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
   var productName = $('<div>').text(productData.name || '').html();
   var displayName = productName;
 
+  var rowClass = '';
+  if (productData.is_replace == 1) {
+    rowClass = 'table-warning';
+  } else if (productData.is_low_stock == 1) {
+    rowClass = 'table-danger';
+  }
+  var lowStockAttr = productData.is_low_stock == 1 ? 'data-low-stock="1"' : '';
+
   var productRowHtml = `
-    <tr class="product-row ${sectionType}-product" id="${sectionPrefix}_product_${supplierRowId}_${productRowId}" data-product-id="${productData.id}">
+    <tr class="product-row ${sectionType}-product ${rowClass}" id="${sectionPrefix}_product_${supplierRowId}_${productRowId}" data-product-id="${productData.id}" ${lowStockAttr}>
       <td>
         <input type="hidden" name="${sectionPrefix}_product_id[${supplierRowId}][]" value="${productData.id}">
         <input type="hidden" class="is-applied-input" name="${sectionPrefix}_is_applied[${supplierRowId}][]" value="0">

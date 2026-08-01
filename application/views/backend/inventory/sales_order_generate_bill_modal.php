@@ -242,10 +242,10 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
                       <input type="number" step="any" min="0" max="<?= $qty; ?>" name="batch_qty[<?= $batch['id']; ?>]" value="<?= $qty; ?>" class="form-control form-control-sm text-center row-qty-input row-qty-val" onkeyup="recalculateBill();" onchange="recalculateBill();" required style="width: 90px;">
                     </td>
                     <td>
-                      <input type="number" step="any" min="0" name="batch_rate[<?= $batch['id']; ?>]" value="<?= number_format($batch['bill_amount'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-price-input" readonly required style="width: 100px;">
+                      <input type="number" step="any" min="0" name="batch_rate[<?= $batch['id']; ?>]" value="<?= number_format($batch['bill_amount'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-price-input" onkeyup="recalculateBill();" onchange="recalculateBill();" required style="width: 100px;">
                     </td>
                     <td>
-                      <input type="number" step="any" min="0" name="batch_gst[<?= $batch['id']; ?>]" value="<?= number_format($batch['gst'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-gst-input" readonly required style="width: 80px;">
+                      <input type="number" step="any" min="0" name="batch_gst[<?= $batch['id']; ?>]" value="<?= number_format($batch['gst'], 2, '.', ''); ?>" class="form-control form-control-sm text-center row-gst-input" onkeyup="recalculateBill();" onchange="recalculateBill();" required style="width: 80px;">
                     </td>
                     <td class="text-end fw-semibold row-basic-val-text">0.00</td>
                     <td class="text-end row-gst-val-text">0.00</td>

@@ -392,6 +392,7 @@
                     <th style="min-width:200px;">Product <span class="text-danger">*</span></th>
                     <th style="min-width:50px;">Qty <span class="text-danger">*</span></th>
                     <th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
+                    <th style="min-width:170px;">Remark</th>
                     <th style="min-width:100px;">Total Amt</th>
                     <th style="min-width:120px;">Per Qty Bill <span class="text-danger">*</span></th>
                     <th style="min-width:100px;">Total Bill</th>
@@ -424,6 +425,7 @@
                     <td>
                       <input type="hidden" id="master_amount_1" name="master_amount[]" value="">
                     </td>
+                    <td></td>
                     <td><input type="hidden" id="total_amount_1" name="total_amount[]" value="0"></td>
                     <td><input type="hidden" id="bill_amount_1" name="bill_amount[]" value="0" data-manual="false"></td>
                     <td><input type="hidden" id="bill_total_1" name="bill_total[]" value="0"></td>
@@ -1470,6 +1472,7 @@ function appendRequirement() {
     row.find('.batch_black_total_amt').val(black_total_amt.toFixed(2));
     row.find('.batch_final_total').val(final_total.toFixed(2));
 
+    checkBatchRemarkRequirement(element);
     rollup_product_totals(index);
     recalculate();
   }
@@ -1540,7 +1543,7 @@ function appendRequirement() {
     });
 
     var batch_row = `
-      <tr class="batch-row batch-row-${index}">
+      <tr class="batch-row batch-row-${index}" data-min-price="0">
         <td></td>
         <td style="padding-left: 20px !important;">
           <select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
@@ -1565,6 +1568,15 @@ function appendRequirement() {
           <div class="input-group">
             <input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
             <span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="${index}" data-batch-index="${batch_index}" onclick="showPriceHistory('${index}', '${batch_index}')"><i class="fa fa-history px-1"></i></span>
+          </div>
+        </td>
+        <td style="min-width: 170px;">
+          <div class="d-flex flex-column gap-25">
+            <input type="text" class="form-control batch_remark" name="batch_remark[${index}][]" id="batch_remark_${index}_${batch_index}" placeholder="Remark">
+            <span class="badge bg-light-danger text-danger border border-danger batch_remark_indicator d-none mt-25" id="batch_remark_indicator_${index}_${batch_index}" style="font-size: 10px; padding: 3px 5px; font-weight: bold; text-align: left; align-items: center; gap: 4px;" title="Product amount is lower than required minimum selling price!">
+              <i class="fa fa-exclamation-triangle text-danger" style="font-size: 11px;"></i>
+              <span>Price Alert: Below Min Price (<span class="min-price-val">0</span>)</span>
+            </span>
           </div>
         </td>
         <td>
@@ -1641,11 +1653,30 @@ function appendRequirement() {
     recalculate();
   }
 
+  function checkBatchRemarkRequirement(element) {
+    var row = $(element).closest('.batch-row');
+    var min_price = parseFloat(row.attr('data-min-price')) || 0;
+    var rate = parseFloat(row.find('.batch_rate').val()) || 0;
+    var remark_input = row.find('.batch_remark');
+    var indicator = row.find('.batch_remark_indicator');
+    var min_price_span = row.find('.min-price-val');
+
+    if (min_price > 0 && rate < min_price) {
+      indicator.removeClass('d-none').addClass('d-inline-flex');
+      min_price_span.text(min_price.toFixed(2));
+      remark_input.attr('required', 'required').addClass('border-danger');
+    } else {
+      indicator.addClass('d-none').removeClass('d-inline-flex');
+      remark_input.removeAttr('required').removeClass('border-danger');
+    }
+  }
+
   function getBatchDetails(element, index) {
     var batch_id = $(element).val();
     var row = $(element).closest('.batch-row');
 
     if (batch_id == '') {
+      row.attr('data-min-price', 0);
       row.find('.available_white_qty').val(0);
       row.find('.available_black_qty').val(0);
       row.find('.avail-white-text').text(0);
@@ -1662,6 +1693,8 @@ function appendRequirement() {
       row.find('.batch_black_total_amt').val(0);
       row.find('.batch_final_total').val(0);
       row.find('.batch_total_amount').val(0);
+      row.find('.batch_remark').val('');
+      checkBatchRemarkRequirement(element);
       rollup_product_totals(index);
       recalculate();
       return;
@@ -1682,6 +1715,7 @@ function appendRequirement() {
         icon: "error"
       });
       $(element).val('').trigger('change.select2');
+      row.attr('data-min-price', 0);
       row.find('.available_white_qty').val(0);
       row.find('.available_black_qty').val(0);
       row.find('.avail-white-text').text(0);
@@ -1698,6 +1732,8 @@ function appendRequirement() {
       row.find('.batch_black_total_amt').val(0);
       row.find('.batch_final_total').val(0);
       row.find('.batch_total_amount').val(0);
+      row.find('.batch_remark').val('');
+      checkBatchRemarkRequirement(element);
       rollup_product_totals(index);
       recalculate();
       return;
@@ -1715,6 +1751,7 @@ function appendRequirement() {
         row.find('.available_black_qty').val(res.black_qty);
         row.find('.avail-white-text').text(res.official_qty);
         row.find('.avail-black-text').text(res.black_qty);
+        row.attr('data-min-price', res.min_selling_price || 0);
         
         var main_rate = $('#master_amount_' + index).val();
         var main_gst = $('#gst_' + index).val();

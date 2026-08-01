@@ -42,8 +42,7 @@
 
             <div class="col-12 col-sm-3 mb-1">
               <label class="form-label" for="product_id_select">Product <span class="required">*</span></label>
-              <select class="form-select select2" name="product_id_select" id="product_id_select" required>
-                <option value="">Select Product</option>
+              <select class="form-select select2" name="product_id_select[]" id="product_id_select" multiple="multiple" data-placeholder="Select Products" required>
                 <?php foreach($product_list as $item){?>
  					<option value="<?php echo $item->id;?>"><?php echo htmlspecialchars($item->name . ' (' . $item->item_code . ')');?></option>
                 <?php }?>
@@ -85,10 +84,11 @@
 <script>
     function checkForm(form) {
         var selectedSource = $('.order-source-radio:checked').length;
-        if (selectedSource === 0) {
+        var currentType = $('#type').val();
+        if (!currentType && selectedSource === 0) {
             Swal.fire({
                 title: "Error!",
-                text: "Please select an Invoice or Order to return from!",
+                text: "Please select an Invoice or enter return quantity for an Order!",
                 icon: "error"
             });
             return false;
@@ -113,6 +113,10 @@
     }
 
     $(document).ready(function() {
+        $('#product_id_select').select2({
+            placeholder: "Select Products"
+        });
+
         $('#customer_id, #product_id_select').on('change', function() {
             loadProductReturns();
         });
@@ -120,82 +124,99 @@
 
     function loadProductReturns() {
         var customerId = $('#customer_id').val();
-        var productId = $('#product_id_select').val();
+        var selectedProductIds = $('#product_id_select').val();
+        if (typeof selectedProductIds === 'string') {
+            selectedProductIds = selectedProductIds ? [selectedProductIds] : [];
+        }
         var $detailsContainer = $('#order_details_container');
 
         $detailsContainer.hide().find('#order_details_content').html('');
         $('#type').val('');
         $('#order_no').val('');
 
-        if (!customerId || !productId) {
+        if (!customerId || !selectedProductIds || selectedProductIds.length === 0) {
             return;
         }
 
         $(".loader").show();
 
-        $.ajax({
-            url: '<?php echo base_url("inventory/goods-return/get-customer-product-returns"); ?>',
-            type: 'POST',
-            dataType: 'JSON',
-            data: {
-                customer_id: customerId,
-                product_id: productId
-            },
-            success: function(res) {
-                $(".loader").fadeOut("slow");
-                if (res.status === 'success') {
-                    var html = renderReturnSections(res.white, res.black);
-                    $('#order_details_content').html(html);
-                    $detailsContainer.show();
-                    calculateGrandTotals();
+        var ajaxRequests = selectedProductIds.map(function(pId) {
+            return $.ajax({
+                url: '<?php echo base_url("inventory/goods-return/get-customer-product-returns"); ?>',
+                type: 'POST',
+                dataType: 'JSON',
+                data: {
+                    customer_id: customerId,
+                    product_id: pId
+                }
+            });
+        });
 
-                    // Add listener to radio button changes
-                    $('.order-source-radio').on('change', function() {
-                        var isChecked = $(this).is(':checked');
-                        if (isChecked) {
-                            var type = $(this).data('type');
-                            var orderNo = $(this).data('order-no');
+        $.when.apply($, ajaxRequests).done(function() {
+            $(".loader").fadeOut("slow");
 
-                            // Set form hidden fields
-                            $('#type').val(type);
-                            $('#order_no').val(orderNo);
+            var responses = (selectedProductIds.length === 1) ? [arguments] : Array.prototype.slice.call(arguments);
+            var allWhite = [];
+            var allBlack = [];
 
-                            // Enable inputs in the selected card
-                            var $currentCard = $(this).closest('.card');
-                            $currentCard.find('input, select').not('.order-source-radio').prop('disabled', false);
+            responses.forEach(function(resp) {
+                var resData = resp[0] || resp;
+                if (resData && resData.status === 'success') {
+                    if (resData.white && resData.white.length > 0) {
+                        allWhite = allWhite.concat(resData.white);
+                    }
+                    if (resData.black && resData.black.length > 0) {
+                        allBlack = allBlack.concat(resData.black);
+                    }
+                }
+            });
 
-                            // Disable inputs in all other cards and reset their values
-                            $('#order_details_content .card').not($currentCard).each(function() {
-                                $(this).find('.qty-input').val(0);
-                                $(this).find('.submit-qty-input').val(0);
-                                $(this).find('.row-total-cell').text('0.00');
-                                $(this).find('input, select').not('.order-source-radio').prop('disabled', true);
-                            });
+            var html = renderReturnSections(allWhite, allBlack, selectedProductIds);
+            $('#order_details_content').html(html);
+            $detailsContainer.show();
+            calculateGrandTotals();
 
-                            calculateGrandTotals();
+            // Add listener to radio button changes
+            $('.order-source-radio').on('change', function() {
+                var isChecked = $(this).is(':checked');
+                if (isChecked) {
+                    var type = $(this).data('type');
+                    var orderNo = $(this).data('order-no');
+
+                    // Set form hidden fields
+                    $('#type').val(type);
+                    $('#order_no').val(orderNo);
+
+                    // Enable inputs in the selected White card
+                    var $currentCard = $(this).closest('.card');
+                    $currentCard.find('input, select').not('.order-source-radio').prop('disabled', false);
+
+                    // Reset and disable inputs in all other White cards and reset Black section quantities
+                    $('#order_details_content .card').not($currentCard).each(function() {
+                        $(this).find('.qty-input').val(0);
+                        $(this).find('.submit-qty-input').val(0);
+                        $(this).find('.row-total-cell').text('0.00');
+                        if ($(this).hasClass('white-invoice-card')) {
+                            $(this).find('input, select').not('.order-source-radio').prop('disabled', true);
                         }
                     });
-                } else {
-                    Swal.fire({
-                        title: "Error!",
-                        text: res.message || "Failed to load details.",
-                        icon: "error"
-                    });
+
+                    calculateGrandTotals();
                 }
-            },
-            error: function() {
-                $(".loader").fadeOut("slow");
-                Swal.fire({
-                    title: "Error!",
-                    text: "An error occurred while loading details.",
-                    icon: "error"
-                });
-            }
+            });
+        }).fail(function() {
+            $(".loader").fadeOut("slow");
+            Swal.fire({
+                title: "Error!",
+                text: "An error occurred while loading details.",
+                icon: "error"
+            });
         });
     }
 
-    function renderReturnSections(whiteList, blackList) {
+    function renderReturnSections(whiteList, blackList, selectedProductIds) {
         var html = '';
+        var numSelectedProducts = selectedProductIds ? selectedProductIds.length : 1;
 
         // Group White Section by order_id
         var groupedWhite = {};
@@ -209,10 +230,12 @@
                         order_no: item.order_no,
                         date: item.date,
                         customer_name: item.customer_name,
-                        batches: []
+                        batches: [],
+                        product_ids: {}
                     };
                 }
                 groupedWhite[key].batches.push(item);
+                groupedWhite[key].product_ids[String(item.product_id)] = true;
             });
         }
 
@@ -227,12 +250,48 @@
                         order_no: item.order_no,
                         date: item.date,
                         customer_name: item.customer_name,
-                        batches: []
+                        batches: [],
+                        product_ids: {}
                     };
                 }
                 groupedBlack[key].batches.push(item);
+                groupedBlack[key].product_ids[String(item.product_id)] = true;
             });
         }
+
+        // Filter groupedWhite to only include orders/invoices that contain ALL selected products
+        var filteredWhite = {};
+        Object.keys(groupedWhite).forEach(function(key) {
+            var group = groupedWhite[key];
+            var count = 0;
+            if (selectedProductIds && selectedProductIds.length > 0) {
+                selectedProductIds.forEach(function(pid) {
+                    if (group.product_ids[String(pid)]) {
+                        count++;
+                    }
+                });
+            }
+            if (count === numSelectedProducts) {
+                filteredWhite[key] = group;
+            }
+        });
+
+        // Filter groupedBlack to include orders that contain AT LEAST ONE of the selected products
+        var filteredBlack = {};
+        Object.keys(groupedBlack).forEach(function(key) {
+            var group = groupedBlack[key];
+            var count = 0;
+            if (selectedProductIds && selectedProductIds.length > 0) {
+                selectedProductIds.forEach(function(pid) {
+                    if (group.product_ids[String(pid)]) {
+                        count++;
+                    }
+                });
+            }
+            if (count > 0) {
+                filteredBlack[key] = group;
+            }
+        });
 
         // White Section Rendering
         html += `
@@ -240,10 +299,10 @@
                 <div class="divider-text text-primary font-weight-bold"><i class="feather icon-file-text"></i> White Section (Invoices)</div>
             </div>
         `;
-        if (Object.keys(groupedWhite).length > 0) {
-            Object.values(groupedWhite).forEach(function(group) {
+        if (Object.keys(filteredWhite).length > 0) {
+            Object.values(filteredWhite).forEach(function(group) {
                 html += `
-                <div class="card mb-2 shadow-none border">
+                <div class="card mb-2 shadow-none border white-invoice-card">
                     <div class="card-header bg-light-primary py-50 d-flex justify-content-between align-items-center" style="background-color: #f0f4fd; padding: 10px;">
                         <div>
                             <strong>Invoice No:</strong> ${group.invoice_no || '-'} | <strong>Date:</strong> ${group.date}
@@ -273,8 +332,9 @@
                     var maxQty = item.qty - item.return_qty;
                     html += `
                                 <tr class="batch-row" id="batch_row_${item.product_batch_id}" data-id="${item.product_batch_id}">
-                                    <td style="text-align: left; padding-left: 20px; vertical-align: middle;">
-                                        <i class="feather icon-package text-muted me-25"></i> Batch: <strong>${item.batch_no || '-'}</strong>
+                                    <td style="text-align: left; padding-left: 15px; vertical-align: middle;">
+                                        <strong>${item.product_name || ''}</strong> ${item.item_code ? '<small class="text-muted">(' + item.item_code + ')</small>' : ''}<br>
+                                        <small class="text-muted"><i class="feather icon-package me-25"></i> Batch: <strong>${item.batch_no || '-'}</strong></small>
                                         <input type="hidden" name="product_id[]" value="${item.product_id}" disabled>
                                         <input type="hidden" name="product_batch_id[]" value="${item.product_batch_id}" disabled>
                                         <input type="hidden" name="batch_no[]" value="${item.batch_no || '-'}" disabled>
@@ -308,7 +368,7 @@
                 `;
             });
         } else {
-            html += `<div class="alert alert-secondary p-1">No official invoices found with this product for this customer.</div>`;
+            html += `<div class="alert alert-secondary p-1">No official invoices found containing all selected products for this customer.</div>`;
         }
 
         // Black Section Rendering
@@ -317,17 +377,13 @@
                 <div class="divider-text text-dark font-weight-bold"><i class="feather icon-file-text"></i> Black Section (Orders)</div>
             </div>
         `;
-        if (Object.keys(groupedBlack).length > 0) {
-            Object.values(groupedBlack).forEach(function(group) {
+        if (Object.keys(filteredBlack).length > 0) {
+            Object.values(filteredBlack).forEach(function(group) {
                 html += `
-                <div class="card mb-2 shadow-none border">
+                <div class="card mb-2 shadow-none border black-order-card" data-order-no="${group.order_no}">
                     <div class="card-header bg-light-secondary py-50 d-flex justify-content-between align-items-center" style="background-color: #f7f7f7; padding: 10px;">
                         <div>
                             <strong>Order No:</strong> ${group.order_no || '-'} | <strong>Date:</strong> ${group.date}
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input type="radio" name="selected_order_source" class="form-check-input order-source-radio" data-type="unofficial" data-order-no="${group.order_no}" id="select_black_${group.order_id}">
-                            <label class="form-check-label font-weight-bold text-dark" for="select_black_${group.order_id}">Select this Order to return</label>
                         </div>
                     </div>
                     <div class="table-responsive border-top">
@@ -349,24 +405,25 @@
                     var maxQty = item.qty - item.return_qty;
                     html += `
                                 <tr class="batch-row" id="batch_row_${item.product_batch_id}" data-id="${item.product_batch_id}">
-                                    <td style="text-align: left; padding-left: 20px; vertical-align: middle;">
-                                        <i class="feather icon-package text-muted me-25"></i> Batch: <strong>${item.batch_no || '-'}</strong>
-                                        <input type="hidden" name="product_id[]" value="${item.product_id}" disabled>
-                                        <input type="hidden" name="product_batch_id[]" value="${item.product_batch_id}" disabled>
-                                        <input type="hidden" name="batch_no[]" value="${item.batch_no || '-'}" disabled>
-                                        <input type="hidden" name="white_qty[]" value="0" disabled>
-                                        <input type="hidden" name="black_qty[]" class="submit-qty-input" value="0" disabled>
-                                        <input type="hidden" name="white_amt[]" value="0" disabled>
-                                        <input type="hidden" name="black_amt[]" class="rate-hidden-input" value="${item.amount}" disabled>
-                                        <input type="hidden" name="gst[]" value="0" disabled>
+                                    <td style="text-align: left; padding-left: 15px; vertical-align: middle;">
+                                        <strong>${item.product_name || ''}</strong> ${item.item_code ? '<small class="text-muted">(' + item.item_code + ')</small>' : ''}<br>
+                                        <small class="text-muted"><i class="feather icon-package me-25"></i> Batch: <strong>${item.batch_no || '-'}</strong></small>
+                                        <input type="hidden" name="product_id[]" value="${item.product_id}">
+                                        <input type="hidden" name="product_batch_id[]" value="${item.product_batch_id}">
+                                        <input type="hidden" name="batch_no[]" value="${item.batch_no || '-'}">
+                                        <input type="hidden" name="white_qty[]" value="0">
+                                        <input type="hidden" name="black_qty[]" class="submit-qty-input" value="0">
+                                        <input type="hidden" name="white_amt[]" value="0">
+                                        <input type="hidden" name="black_amt[]" class="rate-hidden-input" value="${item.amount}">
+                                        <input type="hidden" name="gst[]" value="0">
                                     </td>
                                     <td class="text-center font-monospace" style="vertical-align: middle;">${item.qty}</td>
                                     <td class="text-center font-monospace" style="vertical-align: middle;">${item.return_qty}</td>
                                     <td style="vertical-align: middle;">
-                                        <input type="number" value="0" min="0" max="${maxQty}" class="form-control form-control-sm text-center qty-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                        <input type="number" value="0" min="0" max="${maxQty}" class="form-control form-control-sm text-center qty-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
                                     </td>
                                     <td style="vertical-align: middle;">
-                                        <input type="number" value="${parseFloat(item.amount).toFixed(2)}" step="0.01" class="form-control form-control-sm text-end rate-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)" disabled>
+                                        <input type="number" value="${parseFloat(item.amount).toFixed(2)}" step="0.01" class="form-control form-control-sm text-end rate-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
                                     </td>
                                     <td class="text-end font-monospace row-total-cell" style="vertical-align: middle;">0.00</td>
                                 </tr>
@@ -381,7 +438,7 @@
                 `;
             });
         } else {
-            html += `<div class="alert alert-secondary p-1">No unofficial orders found with this product for this customer.</div>`;
+            html += `<div class="alert alert-secondary p-1">No unofficial orders found containing any of the selected products for this customer.</div>`;
         }
 
         // Summary Card at the bottom
@@ -399,6 +456,9 @@
 
     function updateRowTotal(input) {
         var $row = $(input).closest('tr');
+        var $card = $(input).closest('.card');
+        var isBlack = $card.hasClass('black-order-card');
+
         var returnQty = parseFloat($row.find('.qty-input').val()) || 0;
         var maxQty = parseFloat($row.find('.qty-input').attr('max')) || 0;
 
@@ -414,6 +474,24 @@
             });
             $row.find('.qty-input').val(maxQty);
             returnQty = maxQty;
+        }
+
+        if (isBlack && returnQty > 0) {
+            // Uncheck any White section radio button
+            $('.order-source-radio').prop('checked', false);
+
+            // Disable White section inputs and reset their values
+            $('#order_details_content .white-invoice-card').each(function() {
+                $(this).find('.qty-input').val(0);
+                $(this).find('.submit-qty-input').val(0);
+                $(this).find('.row-total-cell').text('0.00');
+                $(this).find('input, select').not('.order-source-radio').prop('disabled', true);
+            });
+
+            // Set form hidden fields for Black order
+            var orderNo = $card.data('order-no');
+            $('#type').val('unofficial');
+            $('#order_no').val(orderNo);
         }
 
         var rate = parseFloat($row.find('.rate-input').val()) || 0;
