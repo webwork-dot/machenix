@@ -10,6 +10,7 @@ CREATE TABLE `goods_return` (
   `company_id` int(11) NOT NULL,
   `company_name` varchar(150) NOT NULL,
   `white_total` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `gst_total_amt` decimal(16,2) NOT NULL DEFAULT 0.00,
   `black_total` decimal(16,2) NOT NULL DEFAULT 0.00,
   `final_total` decimal(16,2) NOT NULL DEFAULT 0.00,
   `order_no` varchar(250) DEFAULT NULL,

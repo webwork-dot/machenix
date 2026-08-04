@@ -7,6 +7,7 @@ CREATE TABLE `goods_return_product` (
   `product_name` varchar(250) NOT NULL,
   `white_qty` int(11) NOT NULL DEFAULT 0,
   `black_qty` int(11) NOT NULL DEFAULT 0,
+  `amount` decimal(16,2) NOT NULL DEFAULT 0.00000,
   `white_amt` decimal(16,2) NOT NULL DEFAULT 0.00000,
   `white_total` decimal(16,2) NOT NULL DEFAULT 0.00000,
   `black_amt` decimal(16,2) NOT NULL DEFAULT 0.00000,

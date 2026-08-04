@@ -3700,6 +3700,7 @@ class Inventory extends CI_Controller
         $page_data['customer_list']     = $this->common_model->getSessionCustomers();
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
         $page_data['product_list']     = $this->common_model->selectWhere('raw_products', $where, 'ASC', 'name');
+        $page_data['other_charges']    = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
 
         if ($param1 == 'add') {
             $page_data['page_name']  = 'goods_return_add';
@@ -3921,6 +3922,7 @@ class Inventory extends CI_Controller
                     iop.qty,
                     iop.return_qty,
                     iop.amount,
+                    iop.bill_amount,
                     iop.gst,
                     iop.gst_amount,
                     iop.final_total,
@@ -3952,7 +3954,9 @@ class Inventory extends CI_Controller
                     sop.item_code,
                     sob.black_qty AS qty,
                     sob.return_black_qty AS return_qty,
-                    sob.black_amount AS amount,
+                    sob.amount AS amount,
+                    sob.bill_amount,
+                    sob.black_amount,
                     sob.batch_no
                 FROM sales_order so
                 INNER JOIN sales_order_product sop ON sop.order_id = so.id

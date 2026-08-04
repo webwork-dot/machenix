@@ -421,27 +421,30 @@
       </div>
 
       <!-- Products Section -->
-      <h4 class="section-heading"><i class="fa fa-cubes"></i> Ordered Products</h4>
+      <h4 class="section-heading"><i class="fa fa-cubes"></i> Ordered Products & Batch Commission Breakdown</h4>
       <div class="table-responsive-container">
         <div class="table-responsive">
           <table class="table table-bordered premium-table">
             <thead>
               <tr>
-                <th style="width: 60px;">Sr No.</th>
-                <th style="width: 250px; text-align: left;">Product</th>
-                <th style="width: 80px;">Qty</th>
-                <th style="width: 120px;">Per Qty Amt</th>
-                <th style="width: 120px;">Total Amt</th>
-                <th style="width: 120px;">Per Qty Bill</th>
-                <th style="width: 120px;">Total Bill</th>
-                <th style="width: 80px;">GST %</th>
-                <th style="width: 120px;">GST Amt</th>
-                <th style="width: 140px;">Total Bill GST</th>
-                <th style="width: 120px;">Per Qty Black</th>
-                <th style="width: 120px;">Total Black</th>
-                <th style="width: 140px;">Final Total</th>
-                <th style="width: 140px;">Total Commission</th>
-                <th style="width: 140px;">Sale Commission</th>
+                <th style="width: 50px;">#</th>
+                <th style="width: 220px; text-align: left;">Product / Batch Details</th>
+                <th style="width: 70px;">Qty</th>
+                <th style="width: 100px;">Per Qty Amt</th>
+                <th style="width: 110px;">Total Amt</th>
+                <th style="width: 100px;">Per Qty Bill</th>
+                <th style="width: 110px;">Total Bill</th>
+                <th style="width: 70px;">GST %</th>
+                <th style="width: 100px;">GST Amt</th>
+                <th style="width: 110px;">Total Bill GST</th>
+                <th style="width: 100px;">Per Qty Black</th>
+                <th style="width: 110px;">Total Black</th>
+                <th style="width: 120px;">Final Total</th>
+                <th style="width: 100px;">Cost / Unit</th>
+                <th style="width: 110px;">Profit %</th>
+                <th style="width: 120px;">Prod Comm</th>
+                <th style="width: 100px;">Sale Comm %</th>
+                <th style="width: 130px;">Sale Comm Amt</th>
               </tr>
             </thead>
             <tbody>
@@ -451,6 +454,187 @@
                   $order_product_id = $p['id'];
                   $product_batches = $batches_by_product[$order_product_id] ?? [];
                   $has_batches = !empty($product_batches);
+
+                  $p_total_prod_comm = 0.00;
+                  $p_total_sale_comm = 0.00;
+
+                  // Pre-calculate batch commissions for this product
+                  $calculated_batches = [];
+                  if ($has_batches) {
+                    foreach ($product_batches as $b) {
+                      $b_id = (int)$b['id'];
+                      $saved_comm = $commissions_by_batch[$b_id] ?? null;
+
+                      $inventory = $this->db->where('product_id', (int)$p['product_id'])
+                                            ->where('batch_no', $b['batch_no'])
+                                            ->get('inventory')
+                                            ->row_array();
+                      $actual_cost_with_exp = isset($inventory['actual_cost_with_exp']) ? floatval($inventory['actual_cost_with_exp']) : 0.00;
+                      $sale_product_price = floatval($b['amount']);
+                      $b_qty = floatval($b['white_qty'] + $b['black_qty']);
+                      if ($b_qty <= 0) {
+                        $b_qty = floatval($b['qty'] ?? 0);
+                      }
+
+                      $profit_pct = 0.00;
+                      $customer_range = '';
+                      if ($saved_comm && !empty($saved_comm['customer_range'])) {
+                        $customer_range = $saved_comm['customer_range'];
+                      }
+                      if ($actual_cost_with_exp > 0 && $sale_product_price >= $actual_cost_with_exp) {
+                        $profit_pct = ($sale_product_price / $actual_cost_with_exp) * 100;
+                        if (empty($customer_range)) {
+                          $profit_slab = $this->db->where('is_deleted', '0')
+                                                  ->where('comm_from <=', $profit_pct)
+                                                  ->where('comm_to >=', $profit_pct)
+                                                  ->get('profit_commission_slab')
+                                                  ->row_array();
+                          if (!empty($profit_slab)) {
+                            $customer_range = $profit_slab['name'];
+                          }
+                        }
+                      }
+
+                      $product_comm = 0.00;
+                      $product_comm_amt = 0.00;
+                      if ($saved_comm) {
+                        $product_comm = floatval($saved_comm['product_comm']);
+                        $product_comm_amt = floatval($saved_comm['product_comm_amt']);
+                      } else {
+                        $raw_prod = $this->db->select('commission_id')->where('id', (int)$p['product_id'])->get('raw_products')->row_array();
+                        $commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
+                        if ($commission_id > 0) {
+                          $prod_slab = $this->db->where('id', $commission_id)->get('product_commission_slab')->row_array();
+                          if (!empty($prod_slab)) {
+                            $product_comm = floatval($prod_slab['commission']);
+                            if ($product_comm > 0) {
+                              $product_comm_amt = ($sale_product_price * $b_qty) / (1 + ($product_comm / 100));
+                            }
+                          }
+                        }
+                      }
+
+                      $staff_comm_pct = 0.00;
+                      $commission_amount = 0.00;
+                      $my_commission_pct = 100.00;
+                      $shared_commission_pct = 0.00;
+
+                      if ($saved_comm) {
+                        $staff_comm_pct = ($is_distributor == 1) ? floatval($saved_comm['distributer_comm']) : floatval($saved_comm['customer_comm']);
+                        $commission_amount = floatval($saved_comm['commission_amount']);
+                        $my_commission_pct = floatval($saved_comm['my_commission'] ?? 100);
+                        $shared_commission_pct = floatval($saved_comm['shared_commission'] ?? 0);
+                      } else {
+                        if ($profit_pct > 0) {
+                          $raw_prod = $this->db->select('commission_id')->where('id', (int)$p['product_id'])->get('raw_products')->row_array();
+                          $commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
+                          if ($commission_id > 0) {
+                            $profit_slab = $this->db->where('is_deleted', '0')
+                                                    ->where('comm_from <=', $profit_pct)
+                                                    ->where('comm_to >=', $profit_pct)
+                                                    ->get('profit_commission_slab')
+                                                    ->row_array();
+                            if (!empty($profit_slab)) {
+                              $profit_id = (int)$profit_slab['id'];
+                              $staff_comm = $this->db->where('staff_id', $sale_person_id)
+                                                     ->where('profit_id', $profit_id)
+                                                     ->where('commission_id', $commission_id)
+                                                     ->get('staff_commission')
+                                                     ->row_array();
+                              if (!empty($staff_comm)) {
+                                $staff_customer_comm = floatval($staff_comm['customer_comm']);
+                                $staff_distributer_comm = floatval($staff_comm['distributer_comm']);
+                                $staff_comm_pct = ($is_distributor == 1) ? $staff_distributer_comm : $staff_customer_comm;
+                                $commission_amount = ($sale_product_price * $b_qty) * ($staff_comm_pct / (100 + $staff_comm_pct));
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      $p_total_prod_comm += $product_comm_amt;
+                      $p_total_sale_comm += $commission_amount;
+                      $grand_total_commission += $product_comm_amt;
+                      $grand_total_sale_commission += $commission_amount;
+
+                      $calculated_batches[] = [
+                        'batch' => $b,
+                        'b_qty' => $b_qty,
+                        'actual_cost' => $actual_cost_with_exp,
+                        'profit_pct' => $profit_pct,
+                        'customer_range' => $customer_range,
+                        'product_comm' => $product_comm,
+                        'product_comm_amt' => $product_comm_amt,
+                        'staff_comm_pct' => $staff_comm_pct,
+                        'commission_amount' => $commission_amount,
+                        'my_commission_pct' => $my_commission_pct,
+                        'shared_commission_pct' => $shared_commission_pct
+                      ];
+                    }
+                  } else {
+                    // No batches - calculate at product level
+                    $inventory = $this->db->where('product_id', (int)$p['product_id'])->get('inventory')->row_array();
+                    $actual_cost_with_exp = isset($inventory['actual_cost_with_exp']) ? floatval($inventory['actual_cost_with_exp']) : 0.00;
+                    $sale_product_price = floatval($p['amount']);
+                    $p_qty = floatval($p['qty']);
+
+                    $profit_pct = 0.00;
+                    $customer_range = '';
+                    if ($actual_cost_with_exp > 0 && $sale_product_price >= $actual_cost_with_exp) {
+                      $profit_pct = ($sale_product_price / $actual_cost_with_exp) * 100;
+                      $profit_slab = $this->db->where('is_deleted', '0')
+                                              ->where('comm_from <=', $profit_pct)
+                                              ->where('comm_to >=', $profit_pct)
+                                              ->get('profit_commission_slab')
+                                              ->row_array();
+                      if (!empty($profit_slab)) {
+                        $customer_range = $profit_slab['name'];
+                      }
+                    }
+
+                    $raw_prod = $this->db->select('commission_id')->where('id', (int)$p['product_id'])->get('raw_products')->row_array();
+                    $commission_id = isset($raw_prod['commission_id']) ? (int)$raw_prod['commission_id'] : 0;
+                    $product_comm = 0.00;
+                    $product_comm_amt = 0.00;
+                    if ($commission_id > 0) {
+                      $prod_slab = $this->db->where('id', $commission_id)->get('product_commission_slab')->row_array();
+                      if (!empty($prod_slab)) {
+                        $product_comm = floatval($prod_slab['commission']);
+                        if ($product_comm > 0) {
+                          $product_comm_amt = ($sale_product_price * $p_qty) / (1 + ($product_comm / 100));
+                        }
+                      }
+                    }
+
+                    $staff_comm_pct = 0.00;
+                    $commission_amount = 0.00;
+                    if ($profit_pct > 0 && $commission_id > 0) {
+                      $profit_slab = $this->db->where('is_deleted', '0')
+                                              ->where('comm_from <=', $profit_pct)
+                                              ->where('comm_to >=', $profit_pct)
+                                              ->get('profit_commission_slab')
+                                              ->row_array();
+                      if (!empty($profit_slab)) {
+                        $profit_id = (int)$profit_slab['id'];
+                        $staff_comm = $this->db->where('staff_id', $sale_person_id)
+                                               ->where('profit_id', $profit_id)
+                                               ->where('commission_id', $commission_id)
+                                               ->get('staff_commission')
+                                               ->row_array();
+                        if (!empty($staff_comm)) {
+                          $staff_customer_comm = floatval($staff_comm['customer_comm']);
+                          $staff_distributer_comm = floatval($staff_comm['distributer_comm']);
+                          $staff_comm_pct = ($is_distributor == 1) ? $staff_distributer_comm : $staff_customer_comm;
+                          $commission_amount = ($sale_product_price * $p_qty) * ($staff_comm_pct / (100 + $staff_comm_pct));
+                        }
+                      }
+                    }
+
+                    $p_total_prod_comm = $product_comm_amt;
+                    $p_total_sale_comm = $commission_amount;
+                    $grand_total_commission += $product_comm_amt;
+                    $grand_total_sale_commission += $commission_amount;
+                  }
               ?>
                 <!-- Main Product Row -->
                 <tr>
@@ -463,72 +647,75 @@
                   </td>
                   <td class="text-center"><?php echo number_format($p['qty'], 2); ?></td>
                   <td class="text-right"><?php echo number_format($p['amount'], 2); ?></td>
+                  <td class="text-right"><?php echo number_format($p['total_amount'], 2); ?></td>
                   
                   <?php if ($has_batches) { ?>
                     <td class="text-center text-secondary">&mdash;</td>
                     <td class="text-center text-secondary">&mdash;</td>
                     <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
+                    <td class="text-center text-secondary">&mdash;</td>
                   <?php } else { ?>
-                    <td class="text-right"><?php echo number_format($p['total_amount'], 2); ?></td>
                     <td class="text-right"><?php echo number_format($p['bill_amount'], 2); ?></td>
                     <td class="text-right"><?php echo number_format($p['bill_total'], 2); ?></td>
-                  <?php } ?>
-
-                  <td class="text-center"><?php echo number_format($p['gst'], 2); ?>%</td>
-
-                  <?php if ($has_batches) { ?>
-                    <td class="text-center text-secondary">&mdash;</td>
-                    <td class="text-center text-secondary">&mdash;</td>
-                    <td class="text-center text-secondary">&mdash;</td>
-                    <td class="text-center text-secondary">&mdash;</td>
-                    <td class="text-center text-secondary">&mdash;</td>
-                    <td class="text-center text-secondary">&mdash;</td>
-                    <td class="text-center text-secondary">&mdash;</td>
-                  <?php } else { ?>
+                    <td class="text-center"><?php echo number_format($p['gst'], 2); ?>%</td>
                     <td class="text-right"><?php echo number_format($p['gst_amount'], 2); ?></td>
                     <td class="text-right"><?php echo number_format($p['total_bill_gst_amount'], 2); ?></td>
                     <td class="text-right"><?php echo number_format($p['black_amount'], 2); ?></td>
                     <td class="text-right"><?php echo number_format($p['black_total'], 2); ?></td>
                     <td class="text-right" style="font-weight: 600;"><?php echo number_format($p['final_total'], 2); ?></td>
-                    <?php 
-                      $p_comm = null;
-                      $sale_comm_pct = 0.00;
-                      if (isset($commission_map['order_product_' . $p['id']])) {
-                          $p_comm = $commission_map['order_product_' . $p['id']]['product_comm'];
-                          $sale_comm_pct = $commission_map['order_product_' . $p['id']]['sale_comm_pct'];
-                      } elseif (isset($commission_map['product_' . $p['product_id']])) {
-                          $p_comm = $commission_map['product_' . $p['product_id']]['product_comm'];
-                          $sale_comm_pct = $commission_map['product_' . $p['product_id']]['sale_comm_pct'];
-                      }
-                      $p_comm_val = 0.00;
-                      if ($p_comm !== null && $p_comm > 0) {
-                          $p_qty = floatval($p['qty']);
-                          $p_amount = floatval($p['amount']);
-                          $p_comm_val = ($p_amount * $p_qty) / (1 + ($p_comm / 100));
-                      }
-                      $grand_total_commission += $p_comm_val;
-                      $p_sale_comm_val = $p_comm_val * $sale_comm_pct / 100;
-                      $grand_total_sale_commission += $p_sale_comm_val;
-                    ?>
-                    <td class="text-right"><?php echo number_format($p_comm_val, 2); ?></td>
-                    <td class="text-right"><?php echo number_format($p_sale_comm_val, 2); ?></td>
+                    <td class="text-right">
+                      <?php echo ($actual_cost_with_exp > 0) ? number_format($actual_cost_with_exp, 2) : '<span class="text-secondary">&mdash;</span>'; ?>
+                    </td>
+                    <td class="text-center">
+                      <?php if ($profit_pct > 0) { ?>
+                        <strong><?php echo number_format($profit_pct, 1); ?>%</strong>
+                        <?php if (!empty($customer_range)) { ?>
+                          <br><span class="badge bg-light-info text-info" style="font-size: 0.68rem; padding: 2px 5px;"><?php echo htmlspecialchars($customer_range); ?></span>
+                        <?php } ?>
+                      <?php } else { ?>
+                        <span class="text-secondary">&mdash;</span>
+                      <?php } ?>
+                    </td>
                   <?php } ?>
+
+                  <!-- Summary Commissions for Product -->
+                  <td class="text-right" style="font-weight: 600;"><?php echo number_format($p_total_prod_comm, 2); ?></td>
+                  <td class="text-center text-secondary"><?php echo (!$has_batches && $staff_comm_pct > 0) ? number_format($staff_comm_pct, 2) . '%' : '&mdash;'; ?></td>
+                  <td class="text-right" style="font-weight: 600;"><?php echo number_format($p_total_sale_comm, 2); ?></td>
                 </tr>
 
-                <!-- Nested Batch Allocation Rows -->
-                <?php if (!empty($product_batches)) { ?>
-                  <?php foreach ($product_batches as $b) { ?>
+                <!-- Nested Batch Allocation Rows with Batch-wise Profit & Commission -->
+                <?php if ($has_batches) { ?>
+                  <?php foreach ($calculated_batches as $cb) { 
+                    $b = $cb['batch'];
+                    $b_qty = $cb['b_qty'];
+                    $b_actual_cost = $cb['actual_cost'];
+                    $b_profit_pct = $cb['profit_pct'];
+                    $b_customer_range = $cb['customer_range'];
+                    $b_product_comm = $cb['product_comm'];
+                    $b_product_comm_amt = $cb['product_comm_amt'];
+                    $b_staff_comm_pct = $cb['staff_comm_pct'];
+                    $b_commission_amount = $cb['commission_amount'];
+                    $b_my_comm_pct = $cb['my_commission_pct'];
+                    $b_shared_comm_pct = $cb['shared_commission_pct'];
+                  ?>
                     <tr class="batch-row">
                       <td class="batch-indicator"></td>
                       <td style="text-align: left; font-style: italic;">
                         <i class="fa fa-barcode text-secondary me-1"></i> Batch: <strong><?php echo htmlspecialchars($b['batch_no']); ?></strong>
                       </td>
                       <td class="text-center">
-                        <?php echo number_format($b['white_qty'] + $b['black_qty'], 2); ?>
+                        <?php echo number_format($b_qty, 2); ?>
                         <br><small class="text-secondary">(W: <?php echo number_format($b['white_qty'], 2); ?>, B: <?php echo number_format($b['black_qty'], 2); ?>)</small>
                       </td>
                       <td class="text-right"><?php echo number_format($b['amount'], 2); ?></td>
-                      <td class="text-right"><?php echo number_format(($b['white_qty'] + $b['black_qty']) * $b['amount'], 2); ?></td>
+                      <td class="text-right"><?php echo number_format($b_qty * $b['amount'], 2); ?></td>
                       <td class="text-right"><?php echo number_format($b['bill_amount'], 2); ?></td>
                       <td class="text-right"><?php echo number_format($b['bill_total'], 2); ?></td>
                       <td class="text-center"><?php echo number_format($b['gst'], 2); ?>%</td>
@@ -537,28 +724,48 @@
                       <td class="text-right"><?php echo number_format($b['black_amount'], 2); ?></td>
                       <td class="text-right"><?php echo number_format($b['black_total'], 2); ?></td>
                       <td class="text-right" style="font-weight: 600;"><?php echo number_format($b['final_total'], 2); ?></td>
-                      <?php
-                        $p_comm = null;
-                        $sale_comm_pct = 0.00;
-                        if (isset($commission_map['order_product_' . $p['id']])) {
-                            $p_comm = $commission_map['order_product_' . $p['id']]['product_comm'];
-                            $sale_comm_pct = $commission_map['order_product_' . $p['id']]['sale_comm_pct'];
-                        } elseif (isset($commission_map['product_' . $p['product_id']])) {
-                            $p_comm = $commission_map['product_' . $p['product_id']]['product_comm'];
-                            $sale_comm_pct = $commission_map['product_' . $p['product_id']]['sale_comm_pct'];
-                        }
-                        $b_comm_val = 0.00;
-                        if ($p_comm !== null && $p_comm > 0) {
-                            $b_qty = floatval($b['white_qty'] + $b['black_qty']);
-                            $b_amt = floatval($b['amount']);
-                            $b_comm_val = ($b_amt * $b_qty) * ($p_comm / ($p_comm + 100));
-                        }
-                        $grand_total_commission += $b_comm_val;
-                        $b_sale_comm_val = $b_comm_val * $sale_comm_pct / 100;
-                        $grand_total_sale_commission += $b_sale_comm_val;
-                      ?>
-                      <td class="text-right"><?php echo number_format($b_comm_val, 2); ?></td>
-                      <td class="text-right"><?php echo number_format($b_sale_comm_val, 2); ?></td>
+                      
+                      <!-- Batch Cost Price -->
+                      <td class="text-right">
+                        <?php echo ($b_actual_cost > 0) ? number_format($b_actual_cost, 2) : '<span class="text-secondary">&mdash;</span>'; ?>
+                      </td>
+
+                      <!-- Batch Profit % & Slab -->
+                      <td class="text-center">
+                        <?php if ($b_profit_pct > 0) { ?>
+                          <strong><?php echo number_format($b_profit_pct, 1); ?>%</strong>
+                          <?php if (!empty($b_customer_range)) { ?>
+                            <br><span class="badge bg-light-info text-info" style="font-size: 0.68rem; padding: 2px 5px;"><?php echo htmlspecialchars($b_customer_range); ?></span>
+                          <?php } ?>
+                        <?php } else { ?>
+                          <span class="text-secondary">&mdash;</span>
+                        <?php } ?>
+                      </td>
+
+                      <!-- Batch Product Commission -->
+                      <td class="text-right">
+                        <?php echo number_format($b_product_comm_amt, 2); ?>
+                        <?php if ($b_product_comm > 0) { ?>
+                          <br><small class="text-muted">(<?php echo number_format($b_product_comm, 1); ?>%)</small>
+                        <?php } ?>
+                      </td>
+
+                      <!-- Batch Sale Staff Commission % -->
+                      <td class="text-center">
+                        <?php echo ($b_staff_comm_pct > 0) ? number_format($b_staff_comm_pct, 2) . '%' : '0.00%'; ?>
+                      </td>
+
+                      <!-- Batch Sale Staff Commission Amt -->
+                      <td class="text-right">
+                        <strong><?php echo number_format($b_commission_amount, 2); ?></strong>
+                        <?php if ($b_shared_comm_pct > 0) { 
+                          $my_val = $b_commission_amount * ($b_my_comm_pct / 100);
+                          $share_val = $b_commission_amount * ($b_shared_comm_pct / 100);
+                        ?>
+                          <br><small class="text-success">Mine: <?php echo number_format($my_val, 2); ?> (<?php echo number_format($b_my_comm_pct, 0); ?>%)</small>
+                          <br><small class="text-info">Share: <?php echo number_format($share_val, 2); ?> (<?php echo number_format($b_shared_comm_pct, 0); ?>%)</small>
+                        <?php } ?>
+                      </td>
                     </tr>
                   <?php } ?>
                 <?php } ?>
@@ -578,7 +785,10 @@
                 <td></td>
                 <td class="text-right"><?php echo number_format($total_black, 2); ?></td>
                 <td class="text-right"><?php echo number_format($total_final, 2); ?></td>
+                <td class="text-center text-secondary">&mdash;</td>
+                <td class="text-center text-secondary">&mdash;</td>
                 <td class="text-right"><?php echo number_format($grand_total_commission, 2); ?></td>
+                <td class="text-center text-secondary">&mdash;</td>
                 <td class="text-right"><?php echo number_format($grand_total_sale_commission, 2); ?></td>
               </tr>
             </tbody>

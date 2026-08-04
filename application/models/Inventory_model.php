@@ -16401,13 +16401,19 @@ class Inventory_model extends CI_Model
 		$batch_nos = $this->input->post('batch_no', true);
 		$product_ids = $this->input->post('product_id', true);
 		$product_batch_ids = $this->input->post('product_batch_id', true);
+		$amounts = $this->input->post('amount', true);
 		$gsts = $this->input->post('gst', true);
+		$gst_amts = $this->input->post('gst_amt', true);
 		$white_qtys = $this->input->post('white_qty', true);
 		$black_qtys = $this->input->post('black_qty', true);
 		$white_amts = $this->input->post('white_amt', true);
+		$white_totals = $this->input->post('white_total_row', true);
 		$black_amts = $this->input->post('black_amt', true);
+		$black_totals = $this->input->post('black_total_row', true);
+		$final_totals = $this->input->post('final_total_row', true);
 
 		$white_total = $this->input->post('white_total', true);
+		$gst_total_amt = $this->input->post('gst_total_amt', true);
 		$black_total = $this->input->post('black_total', true);
 		$final_total = $this->input->post('final_total', true);
 
@@ -16454,9 +16460,10 @@ class Inventory_model extends CI_Model
 		$data['order_no']    		= $order_no;
 		$data['date']    			= date('Y-m-d', strtotime($date));
 		$data['reason']    			= $reason;
-		$data['white_total']    	= !empty($white_total) ? $white_total : 0.00;
-		$data['black_total']    	= !empty($black_total) ? $black_total : 0.00;
-		$data['final_total']    	= !empty($final_total) ? $final_total : 0.00;
+		$data['white_total']    	= !empty($white_total) ? (float)$white_total : 0.00;
+		$data['gst_total_amt']    	= !empty($gst_total_amt) ? (float)$gst_total_amt : 0.00;
+		$data['black_total']    	= !empty($black_total) ? (float)$black_total : 0.00;
+		$data['final_total']    	= !empty($final_total) ? (float)$final_total : 0.00;
 		$data['added_by_id']    	= $this->session->userdata('super_user_id');
 		$data['added_by_name']    	= $this->session->userdata('super_name');
 		$data['added_date']     	= date("Y-m-d H:i:s");
@@ -16470,10 +16477,15 @@ class Inventory_model extends CI_Model
 				$b_no = $batch_nos[$i];
 				$w_qty = (int)$white_qtys[$i];
 				$b_qty = (int)$black_qtys[$i];
+				$amt = isset($amounts[$i]) ? (float)$amounts[$i] : 0.00;
 				$w_amt = (float)$white_amts[$i];
+				$w_total = isset($white_totals[$i]) ? (float)$white_totals[$i] : ($w_qty * $w_amt);
 				$b_amt = (float)$black_amts[$i];
+				$b_total = isset($black_totals[$i]) ? (float)$black_totals[$i] : ($b_qty * $b_amt);
 				$batch_prod_id = isset($product_batch_ids[$i]) ? (int)$product_batch_ids[$i] : 0;
 				$gst = isset($gsts[$i]) ? (float)$gsts[$i] : 0.00;
+				$gst_amt = isset($gst_amts[$i]) ? (float)$gst_amts[$i] : ($type === 'official' ? ($w_total * ($gst / 100)) : 0.00);
+				$final_row_total = isset($final_totals[$i]) ? (float)$final_totals[$i] : ($w_total + $b_total + $gst_amt);
 				$tot_qty = $w_qty + $b_qty;
 
 				if ($tot_qty > 0 && !empty($prod_id)) {
@@ -16506,17 +16518,6 @@ class Inventory_model extends CI_Model
 						}
 					}
 
-					$w_total = $w_qty * $w_amt;
-					$b_total = $b_qty * $b_amt;
-					
-					// gst allocation based on type
-					$gst_amt = 0;
-					if ($type === 'official') {
-						$gst_amt = $w_total * ($gst / 100);
-					}
-					
-					$final_row_total = $w_total + $b_total + $gst_amt;
-
 					$data_p = array(
 						'parent_id' => $parent_id,
 						'order_id' => $order_db_id,
@@ -16525,6 +16526,7 @@ class Inventory_model extends CI_Model
 						'product_name' => $product_name,
 						'white_qty' => $w_qty,
 						'black_qty' => $b_qty,
+						'amount' => $amt,
 						'white_amt' => $w_amt,
 						'white_total' => $w_total,
 						'black_amt' => $b_amt,
