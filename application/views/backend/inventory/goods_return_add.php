@@ -443,7 +443,7 @@
                             </tr>
                             <tr>
                                 <td colspan="4" class="text-right">
-                                    <label>Items Final Total</label>
+                                    <label>Final Total</label>
                                 </td>
                                 <td colspan="1">
                                     <p class="td-blank"><input type="number" step="any" name="net_sales_value_2" id="net_sales_value_2" value="0.00" placeholder="Final Total" class="form-control text-end font-monospace" readonly></p>
@@ -572,6 +572,10 @@
                 <div>
                     <strong>Invoice No:</strong> ${group.invoice_no || '-'} | <strong>Date:</strong> ${group.date}
                 </div>
+                <div class="form-check form-check-inline ms-auto me-1">
+                    <input type="checkbox" name="is_white_to_black" id="is_white_to_black" class="form-check-input" value="1" onchange="toggleReturnAsBlack(this)">
+                    <label class="form-check-label font-weight-bold text-danger" for="is_white_to_black"><i class="feather icon-repeat me-25"></i> Return As Black</label>
+                </div>
                 <div class="form-check form-check-inline" style="display:none;">
                     <input type="radio" name="selected_order_source" class="form-check-input order-source-radio" data-type="official" data-order-no="${group.invoice_no}" id="select_white_${group.order_id}" checked>
                     <label class="form-check-label font-weight-bold text-primary" for="select_white_${group.order_id}">Selected Invoice</label>
@@ -586,11 +590,12 @@
                             <th style="width: 100px;">Received Qty</th>
                             <th style="width: 100px;">Return Qty</th>
                             <th style="width: 100px;">Amount</th>
-                            <th style="width: 100px;">Bill Amt</th>
-                            <th style="width: 110px;">Bill Total</th>
-                            <th style="width: 80px;">GST %</th>
-                            <th style="width: 100px;">GST Amt</th>
-                            <th style="width: 110px;">Black Amt Total</th>
+                            <th style="width: 100px;" class="col-white-field">Bill Amt</th>
+                            <th style="width: 110px;" class="col-white-field">Bill Total</th>
+                            <th style="width: 80px;" class="col-white-field">GST %</th>
+                            <th style="width: 100px;" class="col-white-field">GST Amt</th>
+                            <th style="width: 120px; display: none;" class="col-black-field">Black Amt</th>
+                            <th style="width: 110px;" class="col-white-field">Black Amt Total</th>
                             <th style="width: 120px;">Total Amt</th>
                         </tr>
                     </thead>
@@ -610,12 +615,12 @@
                         <input type="hidden" name="product_id[]" value="${item.product_id}">
                         <input type="hidden" name="product_batch_id[]" value="${item.product_batch_id}">
                         <input type="hidden" name="batch_no[]" value="${item.batch_no || '-'}">
-                        <input type="hidden" name="white_qty[]" class="submit-qty-input" value="0">
-                        <input type="hidden" name="black_qty[]" value="0">
+                        <input type="hidden" name="white_qty[]" class="white-qty-hidden-input submit-qty-input" value="0">
+                        <input type="hidden" name="black_qty[]" class="black-qty-hidden-input" value="0">
                         <input type="hidden" name="amount[]" class="amount-hidden-input" value="${item.amount}">
                         <input type="hidden" name="white_amt[]" class="white-amt-hidden-input" value="${billAmtVal}">
                         <input type="hidden" name="white_total_row[]" class="white-total-hidden-input" value="0.00">
-                        <input type="hidden" name="black_amt[]" value="0.00">
+                        <input type="hidden" name="black_amt[]" class="black-amt-hidden-input" value="0.00">
                         <input type="hidden" name="black_total_row[]" class="black-total-hidden-input" value="0.00">
                         <input type="hidden" name="gst[]" class="gst-hidden-input" value="${gstVal}">
                         <input type="hidden" name="gst_amt[]" class="gst-amt-hidden-input" value="0.00">
@@ -629,15 +634,18 @@
                     <td style="vertical-align: middle;">
                         <input type="number" value="${parseFloat(item.amount).toFixed(2)}" class="form-control form-control-sm text-end amount-input" readonly>
                     </td>
-                    <td style="vertical-align: middle;">
+                    <td class="col-white-field" style="vertical-align: middle;">
                         <input type="number" value="${billAmtVal}" step="0.01" class="form-control form-control-sm text-end bill-amt-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
                     </td>
-                    <td class="text-end font-monospace bill-total-cell" style="vertical-align: middle;">0.00</td>
-                    <td style="vertical-align: middle;">
+                    <td class="text-end font-monospace bill-total-cell col-white-field" style="vertical-align: middle;">0.00</td>
+                    <td class="col-white-field" style="vertical-align: middle;">
                         <input type="number" value="${gstVal}" step="0.01" class="form-control form-control-sm text-center gst-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
                     </td>
-                    <td class="text-end font-monospace gst-amt-cell" style="vertical-align: middle;">0.00</td>
-                    <td style="vertical-align: middle;">
+                    <td class="text-end font-monospace gst-amt-cell col-white-field" style="vertical-align: middle;">0.00</td>
+                    <td class="col-black-field" style="vertical-align: middle; display: none;">
+                        <input type="number" value="${billAmtVal}" step="0.01" class="form-control form-control-sm text-end black-amt-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
+                    </td>
+                    <td class="col-white-field" style="vertical-align: middle;">
                         <input type="number" value="0.00" step="0.01" class="form-control form-control-sm text-end black-total-input" onkeyup="updateRowTotal(this)" onchange="updateRowTotal(this)">
                     </td>
                     <td class="text-end font-monospace row-total-cell" style="vertical-align: middle;">0.00</td>
@@ -652,6 +660,21 @@
         </div>
         `;
         return html;
+    }
+
+    function toggleReturnAsBlack(chkElem) {
+        var isChecked = $(chkElem).is(':checked');
+        if (isChecked) {
+            $('.col-white-field').hide();
+            $('.col-black-field').show();
+        } else {
+            $('.col-white-field').show();
+            $('.col-black-field').hide();
+        }
+        $('.white-invoice-card .batch-row').each(function() {
+            var qtyInput = $(this).find('.qty-input');
+            updateRowTotal(qtyInput);
+        });
     }
 
     function renderSingleOrderTable(group) {
@@ -753,32 +776,53 @@
         }
 
         var amount = parseFloat($row.find('.amount-input').val()) || 0;
-        $row.find('.submit-qty-input').val(returnQty);
         $row.find('.amount-hidden-input').val(amount);
 
         if (isWhite) {
-            var billAmt = parseFloat($row.find('.bill-amt-input').val()) || 0;
-            var gst = parseFloat($row.find('.gst-input').val()) || 0;
-            var manualBlackTotal = parseFloat($row.find('.black-total-input').val()) || 0;
+            var isWhiteToBlack = $('#is_white_to_black').is(':checked');
+            if (isWhiteToBlack) {
+                var blackAmt = parseFloat($row.find('.black-amt-input').val()) || 0;
+                var blackTotal = returnQty * blackAmt;
 
-            var billTotal = returnQty * billAmt;
-            var gstAmt = (billTotal * gst) / 100;
-            var finalTotal = billTotal + gstAmt + manualBlackTotal;
+                $row.find('.row-total-cell').text(blackTotal.toFixed(2));
 
-            $row.find('.bill-total-cell').text(billTotal.toFixed(2));
-            $row.find('.gst-amt-cell').text(gstAmt.toFixed(2));
-            $row.find('.row-total-cell').text(finalTotal.toFixed(2));
+                $row.find('.white-qty-hidden-input').val(0);
+                $row.find('.black-qty-hidden-input').val(returnQty);
+                $row.find('.white-amt-hidden-input').val(0);
+                $row.find('.white-total-hidden-input').val('0.00');
+                $row.find('.gst-hidden-input').val(0);
+                $row.find('.gst-amt-hidden-input').val('0.00');
+                $row.find('.black-amt-hidden-input').val(blackAmt.toFixed(2));
+                $row.find('.black-total-hidden-input').val(blackTotal.toFixed(2));
+                $row.find('.final-total-hidden-input').val(blackTotal.toFixed(2));
+            } else {
+                var billAmt = parseFloat($row.find('.bill-amt-input').val()) || 0;
+                var gst = parseFloat($row.find('.gst-input').val()) || 0;
+                var manualBlackTotal = parseFloat($row.find('.black-total-input').val()) || 0;
 
-            $row.find('.white-amt-hidden-input').val(billAmt);
-            $row.find('.white-total-hidden-input').val(billTotal.toFixed(2));
-            $row.find('.gst-hidden-input').val(gst);
-            $row.find('.gst-amt-hidden-input').val(gstAmt.toFixed(2));
-            $row.find('.black-total-hidden-input').val(manualBlackTotal.toFixed(2));
-            $row.find('.final-total-hidden-input').val(finalTotal.toFixed(2));
+                var billTotal = returnQty * billAmt;
+                var gstAmt = (billTotal * gst) / 100;
+                var finalTotal = billTotal + gstAmt + manualBlackTotal;
+
+                $row.find('.bill-total-cell').text(billTotal.toFixed(2));
+                $row.find('.gst-amt-cell').text(gstAmt.toFixed(2));
+                $row.find('.row-total-cell').text(finalTotal.toFixed(2));
+
+                $row.find('.white-qty-hidden-input').val(returnQty);
+                $row.find('.black-qty-hidden-input').val(0);
+                $row.find('.white-amt-hidden-input').val(billAmt);
+                $row.find('.white-total-hidden-input').val(billTotal.toFixed(2));
+                $row.find('.gst-hidden-input').val(gst);
+                $row.find('.gst-amt-hidden-input').val(gstAmt.toFixed(2));
+                $row.find('.black-amt-hidden-input').val('0.00');
+                $row.find('.black-total-hidden-input').val(manualBlackTotal.toFixed(2));
+                $row.find('.final-total-hidden-input').val(finalTotal.toFixed(2));
+            }
         } else if (isBlack) {
             var blackAmt = parseFloat($row.find('.black-amt-input').val()) || 0;
             var blackTotal = returnQty * blackAmt;
 
+            $row.find('.submit-qty-input').val(returnQty);
             $row.find('.black-total-cell').text(blackTotal.toFixed(2));
             $row.find('.row-total-cell').text(blackTotal.toFixed(2));
 

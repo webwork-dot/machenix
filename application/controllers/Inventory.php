@@ -77,10 +77,7 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $filter_data['date_range'] = date('Y-m-d') . ' - ' . date('Y-m-d');
-        // $page_data['stats'] = $this->inventory_model->get_ajax_dashboard_stats($filter_data);
-        // $page_data['most_lowest'] = $this->inventory_model->get_ajax_ranked_products();
-        // $page_data['no_stock'] = $this->inventory_model->get_no_stock_products();
+        $page_data['dashboard_stats'] = $this->inventory_model->get_dashboard_stats();
 
         $page_data['page_name']  = 'dashboard';
         $page_data['page_title'] = get_phrase('dashboard');
@@ -3057,9 +3054,15 @@ class Inventory extends CI_Controller
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'leads';
-            $page_data['status']        = ($param1 == '') ? 'all' : $param1;
+            $page_data['status']      = ($param1 == '') ? 'all' : $param1;
+            if ($param1 == 'add') {
+                $this->leads_form('leads_add');
+                return;
+            } elseif ($param1 == 'import') {
+                $this->leads_form('leads_import');
+                return;
+            }
             $page_data['page_name']     = 'leads_data';
-            // $page_data['page_name']  = 'leads';
             $page_data['page_title'] = get_phrase('leads');
             $this->load->view('backend/index', $page_data);
         }
@@ -3078,6 +3081,10 @@ class Inventory extends CI_Controller
         if ($param1 == 'leads_add') {
             $page_data['page_name']  = 'customer_add';
             $page_data['page_title'] = 'Add Leads';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'leads_import') {
+            $page_data['page_name']  = 'leads_import';
+            $page_data['page_title'] = 'Import Leads';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'leads_edit') {
             $data               = $this->inventory_model->get_customer_by_id($param2)->row_array();
@@ -3109,7 +3116,85 @@ class Inventory extends CI_Controller
         }
     }
 
-    
+    public function customer_calls($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'leads';
+            $page_data['status']      = 'customer_calls';
+            $page_data['page_name']   = 'customer_calls_data';
+            $page_data['page_title']  = 'Customer Calls';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function add_customer_call_post()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->add_customer_call();
+    }
+
+    public function get_customer_calls()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_customer_calls();
+        }
+    }
+
+    public function get_customer_history_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_customer_history_ajax();
+        }
+    }
+
+    public function customer_report($report_type = "orders", $duration = "0_30")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']   = 'dashboard';
+            $page_data['report_type']  = $report_type;
+            $page_data['duration']     = $duration;
+            $page_data['page_name']    = 'customer_report';
+            
+            $type_label = ($report_type == 'calls') ? 'Customer Calls & Leads' : 'Sales Orders';
+            $dur_label  = '';
+            switch ($duration) {
+                case '0_30': $dur_label = '0 to 30 Days'; break;
+                case '31_60': $dur_label = '31 to 60 Days'; break;
+                case '61_90': $dur_label = '61 to 90 Days'; break;
+                case '90_plus': $dur_label = '90+ Days'; break;
+                case 'no_orders': $dur_label = 'No Orders'; break;
+                case 'no_calls': $dur_label = 'No Calls'; break;
+                default: $dur_label = str_replace('_', ' ', $duration); break;
+            }
+            $page_data['page_title']   = 'Customer Report - ' . $type_label . ' (' . $dur_label . ')';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_customer_report()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_customer_report();
+        }
+    }
+
     /* Leads End */
 
     /* Sales Order End */

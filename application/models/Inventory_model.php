@@ -10214,12 +10214,33 @@ class Inventory_model extends CI_Model
 		$updated = $this->db->update('customer', $data);
 
 		if ($updated) {
+			$customer_row = $this->db->where('id', $customer_id)->get('customer')->row_array();
+			$customer_name = $customer_row ? $customer_row['company_name'] : '';
+			$is_distributor = $customer_row ? (int)$customer_row['is_distributor'] : 0;
+			$status_label_val = isset($status[1]) ? $status[1] : '';
+
+			$call_date_val = ($status[0] == 'lost') ? date("Y-m-d") : date('Y-m-d', strtotime($status_date));
+
+			$call_data = array(
+				'customer_id'    => $customer_id,
+				'customer_name'  => $customer_name,
+				'is_distributor' => $is_distributor,
+				'is_lead'        => 1,
+				'status'         => $status_label_val,
+				'date'           => $call_date_val,
+				'remark'         => $remark,
+				'added_by'       => $user_id,
+				'added_by_name'  => $user_name,
+				'created_at'     => date("Y-m-d H:i:s")
+			);
+			$this->db->insert('customer_calls', $call_data);
+
 			$action = $status[0];
 			$message = "Leads Moved To " . get_phrase($status[0]) . " by {$user_name}";
 			$json_data = [
 				'status_date' => ($status[0] == 'lost') ? date("Y-m-d H:i:s") : $status_date,
 				'status' => $status[0],
-				'status_label' => $status[1],
+				'status_label' => isset($status[1]) ? $status[1] : '',
 				'remark' => $remark,
 			];
 
@@ -16445,31 +16466,78 @@ class Inventory_model extends CI_Model
 
 		$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
 
+		$is_white_to_black = $this->input->post('is_white_to_black', true) ? 1 : 0;
+		$gst_type          = $this->input->post('gst_type', true);
+		$central_gst       = $this->input->post('central_gst', true);
+		$state_gst         = $this->input->post('state_gst', true);
+		$igst              = $this->input->post('igst', true);
+		$other_charges_amt = $this->input->post('other_charges_amount', true);
+		$round_of          = $this->input->post('round_of', true);
+		$grand_total       = $this->input->post('grand_total', true);
+
 		$data = array();
 		$excel_id = $this->input->post('excel_id');
 		$method = $type; // "store the type here goods_return.sql:L3 [method]"
 
-		$data['method']      		= $method;
-		$data['excel_id']      		= $excel_id;
-		$data['warehouse_id']    	= NULL; // "keep warehouse empty goods_return.sql:L6-L7"
-		$data['warehouse_name']    	= '';
-		$data['customer_id']    	= $customer_id;
-		$data['company_id']    		= $company_id;
-		$data['customer_name']    	= $customer_name;
-		$data['company_name']    	= $company_name;
-		$data['order_no']    		= $order_no;
-		$data['date']    			= date('Y-m-d', strtotime($date));
-		$data['reason']    			= $reason;
-		$data['white_total']    	= !empty($white_total) ? (float)$white_total : 0.00;
-		$data['gst_total_amt']    	= !empty($gst_total_amt) ? (float)$gst_total_amt : 0.00;
-		$data['black_total']    	= !empty($black_total) ? (float)$black_total : 0.00;
-		$data['final_total']    	= !empty($final_total) ? (float)$final_total : 0.00;
-		$data['added_by_id']    	= $this->session->userdata('super_user_id');
-		$data['added_by_name']    	= $this->session->userdata('super_name');
-		$data['added_date']     	= date("Y-m-d H:i:s");
+		$data['method']            = $method;
+		$data['excel_id']          = $excel_id;
+		$data['is_white_to_black'] = $is_white_to_black;
+		$data['warehouse_id']      = NULL; // "keep warehouse empty goods_return.sql:L6-L7"
+		$data['warehouse_name']    = '';
+		$data['customer_id']       = $customer_id;
+		$data['company_id']        = $company_id;
+		$data['customer_name']     = $customer_name;
+		$data['company_name']      = $company_name;
+		$data['order_no']          = $order_no;
+		$data['date']              = date('Y-m-d', strtotime($date));
+		$data['reason']            = $reason;
+		$data['white_total']       = !empty($white_total) ? (float)$white_total : 0.00;
+		$data['gst_type']          = !empty($gst_type) ? $gst_type : '';
+		$data['cgst_amt']          = !empty($central_gst) ? (float)$central_gst : 0.00;
+		$data['sgst_amt']          = !empty($state_gst) ? (float)$state_gst : 0.00;
+		$data['igst_amt']          = !empty($igst) ? (float)$igst : 0.00;
+		$data['gst_total_amt']     = !empty($gst_total_amt) ? (float)$gst_total_amt : 0.00;
+		$data['black_total']       = !empty($black_total) ? (float)$black_total : 0.00;
+		$data['final_total']       = !empty($final_total) ? (float)$final_total : 0.00;
+		$data['other_charges']     = !empty($other_charges_amt) ? (float)$other_charges_amt : 0.00;
+		$data['round_of']          = !empty($round_of) ? (float)$round_of : 0.00;
+		$data['grand_total']       = !empty($grand_total) ? (float)$grand_total : 0.00;
+		$data['added_by_id']       = $this->session->userdata('super_user_id');
+		$data['added_by_name']     = $this->session->userdata('super_name');
+		$data['added_date']        = date("Y-m-d H:i:s");
 		
 		$insert = $this->db->insert('goods_return', $data);
 		$parent_id = $this->db->insert_id();
+
+		// Insert Other Charges into goods_return_charges table
+		$charge_ids    = $this->input->post('charge_id', true);
+		$charge_gsts   = $this->input->post('charge_gst', true);
+		$charge_prices = $this->input->post('charge_price', true);
+		$charge_totals = $this->input->post('charge_total', true);
+
+		if (!empty($charge_ids) && is_array($charge_ids)) {
+			for ($c = 0; $c < count($charge_ids); $c++) {
+				$chg_id = (int)$charge_ids[$c];
+				if ($chg_id > 0) {
+					$chg_row  = $this->db->where('id', $chg_id)->get('other_charges')->row_array();
+					$chg_name = $chg_row ? $chg_row['name'] : '';
+					$chg_gst   = isset($charge_gsts[$c]) ? (float)$charge_gsts[$c] : 0.00;
+					$chg_price = isset($charge_prices[$c]) ? (float)$charge_prices[$c] : 0.00;
+					$chg_total = isset($charge_totals[$c]) ? (float)$charge_totals[$c] : 0.00;
+
+					$data_charge = array(
+						'order_id'   => $parent_id,
+						'type_id'    => $chg_id,
+						'type'       => $chg_name,
+						'gst'        => $chg_gst,
+						'amount'     => $chg_price,
+						'total_amt'  => $chg_total,
+						'created_at' => date("Y-m-d H:i:s")
+					);
+					$this->db->insert('goods_return_charges', $data_charge);
+				}
+			}
+		}
 
 		if (!empty($product_ids) && is_array($product_ids)) {
 			for ($i = 0; $i < count($product_ids); $i++) {
@@ -16651,7 +16719,7 @@ class Inventory_model extends CI_Model
 							$this->db->update('sales_order_product_batch');
 						} else if ($type === 'official' && $batch_prod_id > 0) {
 							// update return_qty in invoice_order_products
-							$this->db->set('return_qty', 'return_qty + ' . $w_qty, FALSE);
+							$this->db->set('return_qty', 'return_qty + ' . $tot_qty, FALSE);
 							$this->db->where('id', $batch_prod_id);
 							$this->db->update('invoice_order_products');
 
@@ -16661,7 +16729,7 @@ class Inventory_model extends CI_Model
 							
 							if ($batch_id > 0) {
 								// update return_qty in sales_order_product_batch based on batch_id
-								$this->db->set('return_qty', 'return_qty + ' . $w_qty, FALSE);
+								$this->db->set('return_qty', 'return_qty + ' . $tot_qty, FALSE);
 								$this->db->where('id', $batch_id);
 								$this->db->update('sales_order_product_batch');
 							}
@@ -22682,6 +22750,391 @@ public function get_sales_return_reports()
 
 			$this->db->insert('sales_commission', $sales_comm_data);
 		}
+	}
+
+	public function add_customer_call()
+	{
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Customer Call Added Successfully",
+			"url" => $this->session->userdata('previous_url') ? $this->session->userdata('previous_url') : site_url('inventory/customer_calls'),
+		);
+
+		$customer_id = $this->input->post('customer_id', true);
+		$date        = $this->input->post('date', true);
+		$remark      = $this->input->post('remark', true);
+
+		if (empty($customer_id) || empty($date)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Please select customer and follow up date.";
+			echo json_encode($resultpost);
+			exit;
+		}
+
+		$customer_row = $this->db->where('id', $customer_id)->get('customer')->row_array();
+		$customer_name = $customer_row ? $customer_row['company_name'] : '';
+		$is_distributor = $customer_row ? (int)$customer_row['is_distributor'] : 0;
+
+		$data = array(
+			'customer_id'    => $customer_id,
+			'customer_name'  => $customer_name,
+			'is_distributor' => $is_distributor,
+			'is_lead'        => 0,
+			'date'           => date('Y-m-d', strtotime($date)),
+			'remark'         => $remark,
+			'added_by'       => $this->session->userdata('super_user_id'),
+			'added_by_name'  => $this->session->userdata('super_name'),
+			'created_at'     => date("Y-m-d H:i:s")
+		);
+
+		$this->db->insert('customer_calls', $data);
+
+		$this->session->set_flashdata('flash_message', "Customer Call Added Successfully !!");
+		echo json_encode($resultpost);
+		exit;
+	}
+
+	public function get_customer_calls()
+	{
+		$draw   = isset($_REQUEST['draw']) ? (int)$_REQUEST['draw'] : 1;
+		$start  = isset($_REQUEST['start']) ? (int)$_REQUEST['start'] : 0;
+		$length = isset($_REQUEST['length']) ? (int)$_REQUEST['length'] : 10;
+
+		$search_value = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
+		$filter_date  = isset($_REQUEST['date']) ? clean_and_escape($_REQUEST['date']) : '';
+
+		if (!empty($filter_date) && strtotime($filter_date) !== false) {
+			$date_formatted = date('Y-m-d', strtotime($filter_date));
+			$where_sql = "WHERE DATE(cc.date) = '" . $date_formatted . "'";
+		} else {
+			$where_sql = "WHERE DATE(cc.date) = CURDATE()";
+		}
+
+		$user_id = $this->session->userdata('super_user_id');
+		$staff_access = (int)$this->session->userdata('super_type_id');
+		if ($staff_access == 7) {
+			$where_sql .= " AND cc.added_by = '" . $user_id . "'";
+		}
+
+		if (!empty($search_value)) {
+			$where_sql .= " AND (cc.customer_name LIKE '%" . $search_value . "%' OR cc.remark LIKE '%" . $search_value . "%' OR cc.status LIKE '%" . $search_value . "%' OR cc.added_by_name LIKE '%" . $search_value . "%')";
+		}
+
+		$total_count = $this->db->query("SELECT id FROM customer_calls AS cc $where_sql")->num_rows();
+
+		$limit_sql = "";
+		if ($length != -1) {
+			$limit_sql = " LIMIT $start, $length";
+		}
+
+		$query = $this->db->query("SELECT cc.* FROM customer_calls AS cc $where_sql ORDER BY cc.id DESC $limit_sql");
+		$result = $query->result_array();
+
+		$data = array();
+		foreach ($result as $row) {
+			$type_badge = ($row['is_distributor'] == 1) 
+				? '<span class="badge bg-light-info text-info">Distributor</span>' 
+				: '<span class="badge bg-light-primary text-primary">Customer</span>';
+
+			$nested_data = array();
+			$nested_data['added_by_name'] = !empty($row['added_by_name']) ? htmlspecialchars($row['added_by_name']) : '-';
+			$nested_data['customer_name'] = htmlspecialchars($row['customer_name']);
+			$nested_data['type']          = $type_badge;
+			$nested_data['status']        = !empty($row['status']) ? htmlspecialchars($row['status']) : '-';
+			$nested_data['remark']        = !empty($row['remark']) ? nl2br(htmlspecialchars($row['remark'])) : '-';
+			$nested_data['date']          = !empty($row['date']) ? date('d M, Y', strtotime($row['date'])) : '-';
+			$data[] = $nested_data;
+		}
+
+		$json_data = array(
+			"draw"            => intval($draw),
+			"recordsTotal"    => intval($total_count),
+			"recordsFiltered" => intval($total_count),
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+		exit;
+	}
+
+	public function get_dashboard_stats()
+	{
+		$user_id      = $this->session->userdata('super_user_id');
+		$type         = $this->session->userdata('super_type');
+		$company_id   = $this->session->userdata('company_id');
+		$staff_access = (int)$this->session->userdata('super_type_id');
+
+		$staff_where = "";
+		if ($company_id && $type == 'staff') {
+			$staff_where = " AND FIND_IN_SET('" . $company_id . "', c.company_id) AND c.added_by_id = '" . $user_id . "'";
+		} elseif ($staff_access == 7) {
+			$staff_where = " AND c.added_by_id = '" . $user_id . "'";
+		}
+
+		// Orders stats based on latest sales_order date per customer
+		$order_sql = "SELECT 
+			COUNT(CASE WHEN days IS NOT NULL AND days BETWEEN 0 AND 30 THEN 1 END) as orders_0_30,
+			COUNT(CASE WHEN days IS NOT NULL AND days BETWEEN 31 AND 60 THEN 1 END) as orders_31_60,
+			COUNT(CASE WHEN days IS NOT NULL AND days BETWEEN 61 AND 90 THEN 1 END) as orders_61_90,
+			COUNT(CASE WHEN days IS NOT NULL AND days > 90 THEN 1 END) as orders_90_plus,
+			COUNT(CASE WHEN days IS NULL THEN 1 END) as no_orders
+		FROM (
+			SELECT 
+				c.id,
+				DATEDIFF(CURDATE(), MAX(DATE(so.date))) as days
+			FROM customer c
+			LEFT JOIN sales_order so ON so.customer_id = c.id AND (so.is_deleted = '0' OR so.is_deleted IS NULL)
+			WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL) AND c.type = 'customer' $staff_where
+			GROUP BY c.id
+		) as customer_orders";
+
+		$orders_res = $this->db->query($order_sql)->row_array();
+
+		// Calls stats based on latest customer_calls date per customer
+		$call_sql = "SELECT 
+			COUNT(CASE WHEN days IS NOT NULL AND days BETWEEN 0 AND 30 THEN 1 END) as calls_0_30,
+			COUNT(CASE WHEN days IS NOT NULL AND days BETWEEN 31 AND 60 THEN 1 END) as calls_31_60,
+			COUNT(CASE WHEN days IS NOT NULL AND days BETWEEN 61 AND 90 THEN 1 END) as calls_61_90,
+			COUNT(CASE WHEN days IS NOT NULL AND days > 90 THEN 1 END) as calls_90_plus,
+			COUNT(CASE WHEN days IS NULL THEN 1 END) as no_calls
+		FROM (
+			SELECT 
+				c.id,
+				DATEDIFF(CURDATE(), MAX(DATE(cc.date))) as days
+			FROM customer c
+			LEFT JOIN customer_calls cc ON cc.customer_id = c.id
+			WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL) AND c.type = 'customer' $staff_where
+			GROUP BY c.id
+		) as customer_calls_summary";
+
+		$calls_res = $this->db->query($call_sql)->row_array();
+
+		return array(
+			'orders_0_30'   => isset($orders_res['orders_0_30']) ? (int)$orders_res['orders_0_30'] : 0,
+			'orders_31_60'  => isset($orders_res['orders_31_60']) ? (int)$orders_res['orders_31_60'] : 0,
+			'orders_61_90'  => isset($orders_res['orders_61_90']) ? (int)$orders_res['orders_61_90'] : 0,
+			'orders_90_plus' => isset($orders_res['orders_90_plus']) ? (int)$orders_res['orders_90_plus'] : 0,
+			'no_orders'     => isset($orders_res['no_orders']) ? (int)$orders_res['no_orders'] : 0,
+			'calls_0_30'    => isset($calls_res['calls_0_30']) ? (int)$calls_res['calls_0_30'] : 0,
+			'calls_31_60'   => isset($calls_res['calls_31_60']) ? (int)$calls_res['calls_31_60'] : 0,
+			'calls_61_90'   => isset($calls_res['calls_61_90']) ? (int)$calls_res['calls_61_90'] : 0,
+			'calls_90_plus'  => isset($calls_res['calls_90_plus']) ? (int)$calls_res['calls_90_plus'] : 0,
+			'no_calls'      => isset($calls_res['no_calls']) ? (int)$calls_res['no_calls'] : 0,
+		);
+	}
+
+	public function get_customer_history_ajax()
+	{
+		$customer_id = (int)$this->input->post('customer_id');
+		if (empty($customer_id)) {
+			echo '';
+			exit;
+		}
+
+		$customer_history = $this->db->where('customer_id', $customer_id)
+			->order_by('id', 'DESC')
+			->limit(50)
+			->get('customer_log')
+			->result_array();
+
+		if (empty($customer_history)) {
+			echo '<div class="text-center text-muted p-1"><small>No history records found.</small></div>';
+			exit;
+		}
+
+		$output = '<style>
+		  .history-item:last-child{ margin-bottom: 0; }
+		  .history-card{
+			border: 1px solid #edf0f2;
+			border-radius: 6px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+			overflow: hidden;
+			margin-bottom: 8px !important;
+		  }
+		  .history-card .card-body{ padding: 10px 12px; }
+		  .history-meta{ font-size: 11px; color: #6c757d; }
+		  .history-title{ font-weight: 600; color: #111827; font-size: 12px; margin: 2px 0 4px; }
+		  .history-pill{ font-size: 10px; padding: 3px 7px; border-radius: 999px; }
+		</style>';
+
+		foreach ($customer_history as $history) {
+			$json = [];
+			$label = [];
+			if ($history['json']) {
+				$json = json_decode($history['json'], true);
+			}
+			if ($history['label']) {
+				$label = json_decode($history['label'], true);
+			}
+
+			$badge = isset($label['badge']) ? $label['badge'] : 'primary';
+			$message = isset($label['message']) ? $label['message'] : '';
+			$time_formatted = function_exists('formatHistoryTime') ? formatHistoryTime($history['added_date']) : $history['added_date'];
+
+			$output .= '<div class="history-item">';
+			$output .= '<div class="card history-card">';
+			$output .= '<div class="card-body">';
+			$output .= '<div class="d-flex justify-content-between align-items-center mb-1">';
+			$output .= '<span class="badge bg-' . $badge . ' history-pill">' . htmlspecialchars($message) . '</span>';
+			$output .= '<small class="history-meta">' . $time_formatted . '</small>';
+			$output .= '</div>';
+
+			if ($history['action'] == "create" || $history['action'] == "follow" || $history['action'] == "lost") {
+				$output .= '<div class="history-title">Added By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			} elseif ($history['action'] == "reassign" || $history['action'] == "update") {
+				$output .= '<div class="history-title">Updated By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			} elseif ($history['action'] == "assign") {
+				$assigned_name = isset($json['added_by_name']) ? $json['added_by_name'] : '';
+				$output .= '<div class="history-title">Assigned To: <span class="text-primary">' . htmlspecialchars($assigned_name) . '</span></div>';
+			} elseif ($history['action'] == "move") {
+				$output .= '<div class="history-title">Moved By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			}
+
+			$output .= '</div>';
+			$output .= '</div>';
+			$output .= '</div>';
+		}
+
+		echo $output;
+		exit;
+	}
+
+	public function get_customer_report()
+	{
+		$draw        = isset($_REQUEST['draw']) ? (int)$_REQUEST['draw'] : 1;
+		$start       = isset($_REQUEST['start']) ? (int)$_REQUEST['start'] : 0;
+		$length      = isset($_REQUEST['length']) ? (int)$_REQUEST['length'] : 10;
+		$search_val  = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
+
+		$report_type = isset($_REQUEST['report_type']) ? clean_and_escape($_REQUEST['report_type']) : 'orders';
+		$duration    = isset($_REQUEST['duration']) ? clean_and_escape($_REQUEST['duration']) : '0_30';
+
+		$user_id      = $this->session->userdata('super_user_id');
+		$type         = $this->session->userdata('super_type');
+		$company_id   = $this->session->userdata('company_id');
+		$staff_access = (int)$this->session->userdata('super_type_id');
+
+		$staff_where = "";
+		if ($company_id && $type == 'staff') {
+			$staff_where = " AND FIND_IN_SET('" . $company_id . "', c.company_id) AND c.added_by_id = '" . $user_id . "'";
+		} elseif ($staff_access == 7) {
+			$staff_where = " AND c.added_by_id = '" . $user_id . "'";
+		}
+
+		if ($report_type == 'calls') {
+			$having_clause = "";
+			switch ($duration) {
+				case '0_30':
+					$having_clause = "HAVING days IS NOT NULL AND days BETWEEN 0 AND 30";
+					break;
+				case '31_60':
+					$having_clause = "HAVING days IS NOT NULL AND days BETWEEN 31 AND 60";
+					break;
+				case '61_90':
+					$having_clause = "HAVING days IS NOT NULL AND days BETWEEN 61 AND 90";
+					break;
+				case '90_plus':
+					$having_clause = "HAVING days IS NOT NULL AND days > 90";
+					break;
+				case 'no_calls':
+				default:
+					$having_clause = "HAVING days IS NULL";
+					break;
+			}
+
+			$search_where = "";
+			if (!empty($search_val)) {
+				$search_where = " AND (c.company_name LIKE '%{$search_val}%' OR c.owner_name LIKE '%{$search_val}%' OR c.owner_mobile LIKE '%{$search_val}%' OR c.gst_name LIKE '%{$search_val}%' OR c.pincode LIKE '%{$search_val}%')";
+			}
+
+			$base_sql = "FROM (
+				SELECT 
+					c.id, c.company_name, c.owner_name, c.owner_mobile, c.owner_email, c.gst_name, c.gst_no, c.pincode, c.added_by_name,
+					MAX(DATE(cc.date)) as last_date,
+					DATEDIFF(CURDATE(), MAX(DATE(cc.date))) as days
+				FROM customer c
+				LEFT JOIN customer_calls cc ON cc.customer_id = c.id
+				WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL) AND c.type = 'customer' {$staff_where} {$search_where}
+				GROUP BY c.id
+				{$having_clause}
+			) as report_data";
+		} else {
+			// Orders
+			$having_clause = "";
+			switch ($duration) {
+				case '0_30':
+					$having_clause = "HAVING days IS NOT NULL AND days BETWEEN 0 AND 30";
+					break;
+				case '31_60':
+					$having_clause = "HAVING days IS NOT NULL AND days BETWEEN 31 AND 60";
+					break;
+				case '61_90':
+					$having_clause = "HAVING days IS NOT NULL AND days BETWEEN 61 AND 90";
+					break;
+				case '90_plus':
+					$having_clause = "HAVING days IS NOT NULL AND days > 90";
+					break;
+				case 'no_orders':
+				default:
+					$having_clause = "HAVING days IS NULL";
+					break;
+			}
+
+			$search_where = "";
+			if (!empty($search_val)) {
+				$search_where = " AND (c.company_name LIKE '%{$search_val}%' OR c.owner_name LIKE '%{$search_val}%' OR c.owner_mobile LIKE '%{$search_val}%' OR c.gst_name LIKE '%{$search_val}%' OR c.pincode LIKE '%{$search_val}%')";
+			}
+
+			$base_sql = "FROM (
+				SELECT 
+					c.id, c.company_name, c.owner_name, c.owner_mobile, c.owner_email, c.gst_name, c.gst_no, c.pincode, c.added_by_name,
+					MAX(DATE(so.date)) as last_date,
+					DATEDIFF(CURDATE(), MAX(DATE(so.date))) as days
+				FROM customer c
+				LEFT JOIN sales_order so ON so.customer_id = c.id AND (so.is_deleted = '0' OR so.is_deleted IS NULL)
+				WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL) AND c.type = 'customer' {$staff_where} {$search_where}
+				GROUP BY c.id
+				{$having_clause}
+			) as report_data";
+		}
+
+		$total_count_res = $this->db->query("SELECT COUNT(*) as cnt {$base_sql}")->row_array();
+		$total_count     = isset($total_count_res['cnt']) ? (int)$total_count_res['cnt'] : 0;
+
+		$limit_sql = "";
+		if ($length != -1) {
+			$limit_sql = " LIMIT {$start}, {$length}";
+		}
+
+		$query  = $this->db->query("SELECT * {$base_sql} ORDER BY id DESC {$limit_sql}");
+		$result = $query->result_array();
+
+		$data = array();
+		$sr   = $start + 1;
+		foreach ($result as $row) {
+			$nested_data = array();
+			$nested_data['sr_no']          = $sr++;
+			$nested_data['company_name']   = htmlspecialchars($row['company_name']);
+			$nested_data['contact_person'] = !empty($row['owner_name']) ? htmlspecialchars($row['owner_name']) : '-';
+			$nested_data['mobile']         = !empty($row['owner_mobile']) ? htmlspecialchars($row['owner_mobile']) : '-';
+			$nested_data['last_date']      = !empty($row['last_date']) ? date('d M, Y', strtotime($row['last_date'])) : '-';
+			$nested_data['days']           = ($row['days'] !== null) ? $row['days'] . ' Days' : '-';
+			$nested_data['gst_name']       = !empty($row['gst_name']) ? htmlspecialchars($row['gst_name']) : '-';
+			$nested_data['pincode']        = !empty($row['pincode']) ? htmlspecialchars($row['pincode']) : '-';
+			$nested_data['added_by_name']  = !empty($row['added_by_name']) ? htmlspecialchars($row['added_by_name']) : '-';
+			
+			$data[] = $nested_data;
+		}
+
+		$json_data = array(
+			"draw"            => intval($draw),
+			"recordsTotal"    => intval($total_count),
+			"recordsFiltered" => intval($total_count),
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+		exit;
 	}
 
 }

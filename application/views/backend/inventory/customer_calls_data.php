@@ -39,50 +39,42 @@
 </div>
 
 <div class="row" id="table-bordered">
-   <div class="col-12">
+    <?php include('filter/customer_calls_filter.php'); ?>
+    <div class="col-12">
       <div class="card" style="border-top-left-radius: 0px;">
         <div class="card-body">
           <div class="row">
               <div class="col-md-12 mt-10">
-                <h5 class="mb-0"><b>Total Leads <span id="total_count"> (0)</span></b></h5>
+                <h5 class="mb-0"><b>Customer Calls <span id="total_count"> (0)</span></b></h5>
               </div>
           </div>
         </div>
+<?php 
+  $staff_access = (int)$this->session->userdata('super_type_id'); 
+?>
         <div class="card-datatable d-report mb-2">
-        <?php if($status == 'all'){ ?>
-		      <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>          
-		      <a href="<?php echo site_url('inventory/leads/import'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-outline-primary" style="margin-left: 6px;" tabindex="0"><span><i class="feather icon-file-text"></i> <?= get_phrase('import_excel');?></span></a>
-        <?php } ?>
-          <table class="table leads-table" id="report-datatable">
+          <table class="table customer-calls-table" id="customer-calls-datatable">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Company Name</th>
-                <th>Name</th>
-                <th>Number</th>
-                <?php if($status != 'all' && $status != 'moved'){ ?>
-                  <th>Status</th>
-                <?php } ?>
-                <?php if($status == 'moved'){ ?>
-                  <th>Move Date</th>
-                <?php } ?>
-                <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                <?php if ($staff_access != 7) { ?>
                   <th>Staff</th>
-                  <th>Added By</th>
                 <?php } ?>
-                <th>Actions</th>
+                <th>Customer Name</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Remark</th>
+                <th>Follow Up Date</th>
               </tr>
             </thead>
           </table>
         </div>
       </div>
-   </div>
+    </div>
 </div>
-
 
 <script type="text/javascript">       
     $(document).ready(function($) {
-    	var dataTable = $('#report-datatable').DataTable({ 
+    	dataTable = $('#customer-calls-datatable').DataTable({ 
     	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
             "sDom": 'rt<"dtPagination"lp><"clear">',
@@ -100,13 +92,11 @@
             },
       
             "ajax":{
-                "url": "<?php echo base_url('inventory/get_customer'); ?>",
+                "url": "<?php echo base_url('inventory/get_customer_calls'); ?>",
                 "dataType": "json",
                 "type": "POST",
-                "data": function(data){
-                  var date_range="";			
-                  data.type = "leads";
-                  data.status = "<?php echo $status; ?>";
+                "data": function(d) {
+                    d.date = $('#filter_date').val();
                 },
                 "beforeSend": function() {
                   $('.loader').show();
@@ -117,37 +107,30 @@
             },   
                      
             "columns": [
-                { "data": "sr_no" },
-                { "data": "name" },
-                { "data": "owner_name" },
-                { "data": "owner_no" },
-                <?php if($status != 'all' && $status != 'moved'){ ?>
-                  { "data": "status" },
+                <?php if ($staff_access != 7) { ?>
+                { "data": "added_by_name" },
                 <?php } ?>
-                <?php if($status == 'moved'){ ?>
-                  { "data": "move_date" },
-                <?php } ?>
-                <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-                    { "data": "staff" },
-                    { "data": "added_by_name" },
-                <?php } ?>
-                { "data": "action" },
+                { "data": "customer_name" },
+                { "data": "type" },
+                { "data": "status" },
+                { "data": "remark" },
+                { "data": "date" }
             ], 
            
             "buttons": [
                 {
                     "extend": 'excel',
-                    "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
+                    "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5]' : '[0,1,2,3,4]'; ?>
                     }
                 },
                 {
                     "extend": 'pdfHtml5',
-                    "orientation": 'landscape',
+                    "orientation": 'portrait',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5]' : '[0,1,2,3,4]'; ?>
                     }
                 }
             ], 
@@ -156,14 +139,7 @@
                 $(".loader").fadeOut("slow"); 
                 $('#total_count').html('('+total+')');
                 return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
-            }, 
-           
-            'columnDefs': [
-                {
-                    "targets": 0, // your case first column
-                    "className": "text-center",
-                },
-            ] 
+            }
             
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 

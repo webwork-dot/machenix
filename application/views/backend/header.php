@@ -22,29 +22,6 @@
     width: 250px;
   }
 
-  /* 
-  .select2-selection.select2-selection--single {
-    padding-top: 0;
-    padding-bottom: 0;
-  } 
-
-  .company-dropdown select {
-    padding: 5px 10px;
-    border: 1px solid #d8d6de;
-    border-radius: 4px;
-    background-color: #fff;
-    color: #5e5873;
-    font-size: 14px;
-    cursor: pointer;
-    min-width: 150px;
-  }
-  
-  .company-dropdown select:focus {
-    outline: none;
-    border-color: #7367f0;
-  } 
-  */
-
   .header-navbar .navbar-container ul.navbar-nav li {
     line-height: 2.5;
   }
@@ -90,7 +67,6 @@
         <div class="company-dropdown position-relative">
           <p class="mb-0 position-absolute" style="left: -43%; top: 23%;"><small>Select Company</small></p>
           <select id="company-select-desktop" class="form-select select2 " onchange="handleCompanyChange(this.value)">
-            <!-- <option value="" <?php echo (empty($selected_company_id) || $selected_company_id == 0) ? 'selected' : ''; ?>>Select Company</option> -->
             <?php foreach($companies as $company): ?>
             <option value="<?php echo $company['id']; ?>" <?php echo ($selected_company_id == $company['id']) ? 'selected' : ''; ?>><?php echo $company['name']; ?></option>
             <?php endforeach; ?>
@@ -98,8 +74,16 @@
         </div>
       </li>
 
-      <li class="nav-item d-none d-lg-block hidden"><a class="nav-link nav-link-style"><i class="ficon"
-            data-feather="moon"></i></a></li>
+      <?php if ($this->session->userdata('super_type_id') == 7): ?>
+        <li class="nav-item mx-1">
+          <button type="button" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_customer_call_add'); ?>', 'Add Call')" class="btn btn-primary btn-sm waves-effect waves-float waves-light">
+            <i class="feather icon-phone-call me-50"></i> Add Call
+          </button>
+        </li>
+      <?php endif; ?>
+
+      <!-- <li class="nav-item d-none d-lg-block hidden"><a class="nav-link nav-link-style"><i class="ficon"
+            data-feather="moon"></i></a></li> -->
 
       <li class="nav-item dropdown dropdown-user">
         <a class="nav-link dropdown-toggle dropdown-user-link" id="dropdown-user" href="#" data-bs-toggle="dropdown"

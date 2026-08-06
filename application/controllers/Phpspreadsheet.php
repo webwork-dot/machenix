@@ -1802,6 +1802,242 @@ class Phpspreadsheet extends CI_Controller{
         }
     }
 
+    public function sample_leads_excel()
+    {
+        $this->load->helper('download');
+        $file = FCPATH . 'assets/sample_leads_format.xlsx';
+        $filename = 'sample_leads_format.xlsx';
+        if (file_exists($file)){        
+            $data = file_get_contents($file);         
+            force_download($filename, $data);
+        } else {
+            $this->session->set_flashdata('errors', 'Sample file not found!');
+            redirect($this->agent->referrer());
+        }
+    }
+
+    public function upload_leads()
+    {
+        $user_id = (int) $this->session->userdata('super_user_id');
+        $user_name = (string) $this->session->userdata('super_name');
+
+        if (!empty($_FILES['fileURL']['name'])) {
+            $extension = strtolower(pathinfo($_FILES['fileURL']['name'], PATHINFO_EXTENSION));
+            if ($extension == 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } else if ($extension == 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            } else if ($extension == 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+            } else {
+                echo '<script>Swal.fire({title: "Error!",text: "Invalid file format!",icon: "error"});</script>';
+                return;
+            }
+
+            $spreadsheet    = $reader->load($_FILES['fileURL']['tmp_name']);
+            $allDataInSheet = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+            $inserted_count = 0;
+            $uneligibleData = array();
+            $sheet_mobiles  = array();
+
+            // Fetch all existing mobile & whatsapp numbers in database to check duplicates
+            $db_mobiles_raw = $this->db->select('owner_mobile, owner_whatsapp, pm_mobile, pm_whatsapp, other_mobile, other_whatsapp')
+                ->from('customer')
+                ->where('is_deleted', 0)
+                ->get()
+                ->result_array();
+
+            $existing_db_mobiles = array();
+            foreach ($db_mobiles_raw as $crow) {
+                foreach (['owner_mobile', 'owner_whatsapp', 'pm_mobile', 'pm_whatsapp', 'other_mobile', 'other_whatsapp'] as $col) {
+                    if (!empty($crow[$col])) {
+                        $clean_num = preg_replace('/[^0-9]/', '', $crow[$col]);
+                        if (!empty($clean_num)) {
+                            $existing_db_mobiles[$clean_num] = true;
+                        }
+                    }
+                }
+            }
+
+            $rowCount = count($allDataInSheet);
+
+            for ($i = 2; $i <= $rowCount; $i++) {
+                $company_name   = isset($allDataInSheet[$i]['A']) ? clean_and_escape(trim($allDataInSheet[$i]['A'])) : '';
+                $contact_person = isset($allDataInSheet[$i]['B']) ? clean_and_escape(trim($allDataInSheet[$i]['B'])) : '';
+                $mobile_number  = isset($allDataInSheet[$i]['C']) ? clean_and_escape(trim($allDataInSheet[$i]['C'])) : '';
+                $email          = isset($allDataInSheet[$i]['D']) ? clean_and_escape(trim($allDataInSheet[$i]['D'])) : '';
+                $gst_name       = isset($allDataInSheet[$i]['E']) ? clean_and_escape(trim($allDataInSheet[$i]['E'])) : '';
+                $gst_no         = isset($allDataInSheet[$i]['F']) ? clean_and_escape(trim($allDataInSheet[$i]['F'])) : '';
+                $address        = isset($allDataInSheet[$i]['G']) ? clean_and_escape(trim($allDataInSheet[$i]['G'])) : '';
+                $pincode        = isset($allDataInSheet[$i]['H']) ? clean_and_escape(trim($allDataInSheet[$i]['H'])) : '';
+
+                $mobile_digits  = preg_replace('/[^0-9]/', '', $mobile_number);
+                $pincode_digits = preg_replace('/[^0-9]/', '', $pincode);
+
+                // If completely empty row, skip without logging
+                if (empty($company_name) && empty($contact_person) && empty($mobile_number) && empty($email) && empty($address)) {
+                    continue;
+                }
+
+                // Check Mandatory Fields: Contact Person & Mobile Number
+                if (empty($contact_person) || empty($mobile_number)) {
+                    $uneligibleData[] = array(
+                        'row'            => $i,
+                        'company_name'   => !empty($company_name) ? $company_name : '-',
+                        'contact_person' => !empty($contact_person) ? $contact_person : '-',
+                        'mobile_number'  => !empty($mobile_number) ? $mobile_number : '-',
+                        'reason'         => 'Missing mandatory fields (Contact Person or Mobile Number)'
+                    );
+                    continue;
+                }
+
+                // Check Mobile Digits Validity
+                if (strlen($mobile_digits) < 10) {
+                    $uneligibleData[] = array(
+                        'row'            => $i,
+                        'company_name'   => !empty($company_name) ? $company_name : '-',
+                        'contact_person' => $contact_person,
+                        'mobile_number'  => $mobile_number,
+                        'reason'         => 'Invalid Mobile Number (must be at least 10 digits)'
+                    );
+                    continue;
+                }
+
+                // Check duplicate within the uploaded sheet
+                if (in_array($mobile_digits, $sheet_mobiles)) {
+                    $uneligibleData[] = array(
+                        'row'            => $i,
+                        'company_name'   => !empty($company_name) ? $company_name : '-',
+                        'contact_person' => $contact_person,
+                        'mobile_number'  => $mobile_number,
+                        'reason'         => 'Duplicate Mobile Number in Excel sheet'
+                    );
+                    continue;
+                }
+
+                // Check duplicate in database
+                if (isset($existing_db_mobiles[$mobile_digits])) {
+                    $uneligibleData[] = array(
+                        'row'            => $i,
+                        'company_name'   => !empty($company_name) ? $company_name : '-',
+                        'contact_person' => $contact_person,
+                        'mobile_number'  => $mobile_number,
+                        'reason'         => 'Mobile Number already exists in database'
+                    );
+                    continue;
+                }
+
+                // Valid row -> insert into database following customer_add logic
+                $data = array(
+                    'type'            => 'leads',
+                    'company_name'    => !empty($company_name) ? $company_name : $contact_person,
+                    'name'            => !empty($company_name) ? $company_name : $contact_person,
+                    'owner_name'      => $contact_person,
+                    'contact_name'    => $contact_person,
+                    'owner_mobile'    => $mobile_digits,
+                    'owner_whatsapp'  => $mobile_digits,
+                    'owner_email'     => $email,
+                    'gst_name'        => $gst_name,
+                    'gst_no'          => $gst_no,
+                    'address'         => $address,
+                    'pincode'         => $pincode_digits,
+                    'status'          => 'fresh',
+                    'status_label'    => 'Fresh Lead',
+                    'added_by'        => $user_id,
+                    'added_by_id'     => $user_id,
+                    'added_by_name'   => $user_name,
+                    'added_date'      => date("Y-m-d H:i:s"),
+                    'is_deleted'      => '0'
+                );
+
+                $this->db->insert('customer', $data);
+                $inserted_count++;
+                $sheet_mobiles[] = $mobile_digits;
+                $existing_db_mobiles[$mobile_digits] = true;
+            }
+
+            // Output response table for uneligible / ignored data if any
+            $output = '';
+            if (count($uneligibleData) > 0) {
+                $output .= '<div class="row mt-2">';
+                $output .= '<div class="col-md-12">';
+                $output .= '<div class="card">';
+                $output .= '<div class="card-body p-2">';
+                $output .= '<h5 class="text-danger mb-1"><i class="feather icon-alert-triangle"></i> Ignored / Uneligible Lead Records (' . count($uneligibleData) . ')</h5>';
+                $output .= '<div class="table-responsive">';
+                $output .= '<table id="uneligible_leads_table" class="table table-bordered table-striped">';
+                $output .= '<thead>';
+                $output .= '<tr>';
+                $output .= '<th># Row</th>';
+                $output .= '<th>Company Name</th>';
+                $output .= '<th>Contact Person</th>';
+                $output .= '<th>Mobile Number</th>';
+                $output .= '<th>Reason / Status</th>';
+                $output .= '</tr>';
+                $output .= '</thead>';
+                $output .= '<tbody>';
+                foreach ($uneligibleData as $row) {
+                    $output .= '<tr>';
+                    $output .= '<td>Row ' . $row['row'] . '</td>';
+                    $output .= '<td>' . htmlspecialchars($row['company_name']) . '</td>';
+                    $output .= '<td>' . htmlspecialchars($row['contact_person']) . '</td>';
+                    $output .= '<td>' . htmlspecialchars($row['mobile_number']) . '</td>';
+                    $output .= '<td><span class="badge bg-light-danger text-danger">' . htmlspecialchars($row['reason']) . '</span></td>';
+                    $output .= '</tr>';
+                }
+                $output .= '</tbody>';
+                $output .= '</table>';
+                $output .= '</div>';
+                $output .= '</div>';
+                $output .= '</div>';
+                $output .= '</div></div>';
+
+                $output .= '<script>
+                    $(document).ready(function() {
+                        if ($.fn.DataTable.isDataTable("#uneligible_leads_table")) {
+                            $("#uneligible_leads_table").DataTable().destroy();
+                        }
+                        $("#uneligible_leads_table").DataTable({
+                            "ordering": false,
+                            "paging": true,
+                            "info": true
+                        });
+                        Swal.fire({
+                            title: "Import Finished",
+                            text: "' . $inserted_count . ' Leads added successfully! ' . count($uneligibleData) . ' rows ignored.",
+                            icon: "warning"
+                        });
+                    });
+                </script>';
+
+                echo $output;
+            } else {
+                if ($inserted_count > 0) {
+                    echo '<script>
+                        Swal.fire({
+                            title: "Success!",
+                            text: "' . $inserted_count . ' Leads Added Successfully!",
+                            icon: "success"
+                        }).then(() => {
+                            window.location.href = "' . base_url('inventory/leads/all') . '";
+                        });
+                    </script>';
+                } else {
+                    echo '<script>
+                        Swal.fire({
+                            title: "Error!",
+                            text: "No valid lead records found in the uploaded file!",
+                            icon: "error"
+                        });
+                    </script>';
+                }
+            }
+        } else {
+            echo 'false';
+        }
+    }
+
 }
 
 ?>
