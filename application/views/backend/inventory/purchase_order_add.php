@@ -1,4 +1,15 @@
 <link rel="stylesheet" href="<?php echo base_url('assets/css/po.css'); ?>">
+<style>
+  .qty-detail-link {
+    color: #0d6efd;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .qty-detail-link:hover {
+    color: #0a58ca;
+  }
+</style>
 <div class="row">
   <div class="col-12">
     <!-- profile -->
@@ -151,6 +162,7 @@
                                 <th style="width: 8%;">CBM</th>
                                 <th style="width: 8%;">Total CBM</th>
                                 <th style="width: 8%;">Pending PO Qty</th>
+                                <th style="width: 8%;">Priority Qty</th>
                                 <th style="width: 8%;">Loading List Qty</th>
                                 <th style="width: 8%;">In Stock Qty</th>
                                 <th style="width: 8%;">Company Stock</th>
@@ -158,7 +170,7 @@
                             </thead>
                             <tbody id="ready_products_1">
                               <tr>
-                                <td colspan="9" class="text-center p-2 text-muted">
+                                <td colspan="10" class="text-center p-2 text-muted">
                                   <i class="fa fa-info-circle"></i> Select a supplier to get Ready Goods
                                 </td>
                               </tr>
@@ -183,6 +195,7 @@
                                 <th style="width: 8%;">CBM</th>
                                 <th style="width: 8%;">Total CBM</th>
                                 <th style="width: 8%;">Pending PO Qty</th>
+                                <th style="width: 8%;">Priority Qty</th>
                                 <th style="width: 8%;">Loading List Qty</th>
                                 <th style="width: 8%;">In Stock Qty</th>
                                 <th style="width: 8%;">Company Stock</th>
@@ -190,7 +203,7 @@
                             </thead>
                             <tbody id="spare_products_1">
                               <tr>
-                                <td colspan="9" class="text-center p-2 text-muted">
+                                <td colspan="10" class="text-center p-2 text-muted">
                                   <i class="fa fa-info-circle"></i> Select a supplier to get Spare Parts
                                 </td>
                               </tr>
@@ -543,6 +556,7 @@ function addSupplierRow() {
                 <th style="width: 8%;">CBM</th>
                 <th style="width: 8%;">Total CBM</th>
                 <th style="width: 8%;">Pending PO Qty</th>
+                <th style="width: 8%;">Priority Qty</th>
                 <th style="width: 8%;">Loading List Qty</th>
                 <th style="width: 8%;">In Stock Qty</th>
                 <th style="width: 8%;">Company Stock</th>
@@ -550,7 +564,7 @@ function addSupplierRow() {
             </thead>
             <tbody id="ready_products_${supplierRowId}">
               <tr>
-                <td colspan="9" class="text-center p-2 text-muted">
+                <td colspan="10" class="text-center p-2 text-muted">
                   <i class="fa fa-info-circle"></i> Select a supplier to get Ready Goods
                 </td>
               </tr>
@@ -575,6 +589,7 @@ function addSupplierRow() {
                 <th style="width: 8%;">CBM</th>
                 <th style="width: 8%;">Total CBM</th>
                 <th style="width: 8%;">Pending PO Qty</th>
+                <th style="width: 8%;">Priority Qty</th>
                 <th style="width: 8%;">Loading List Qty</th>
                 <th style="width: 8%;">In Stock Qty</th>
                 <th style="width: 8%;">Company Stock</th>
@@ -582,7 +597,7 @@ function addSupplierRow() {
             </thead>
             <tbody id="spare_products_${supplierRowId}">
               <tr>
-                <td colspan="9" class="text-center p-2 text-muted">
+                <td colspan="10" class="text-center p-2 text-muted">
                   <i class="fa fa-info-circle"></i> Select a supplier to get Spare Parts
                 </td>
               </tr>
@@ -670,8 +685,8 @@ function handleSupplierChange(selectElement, supplierRowId) {
         productRowCounts['spare'][supplierRowId] = 0;
         
         // Show initial message
-        $('#ready_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Ready Goods</td></tr>');
-        $('#spare_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Spare Parts</td></tr>');
+        $('#ready_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Ready Goods</td></tr>');
+        $('#spare_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Spare Parts</td></tr>');
         
         // Hide refresh button
         $('#refresh_supplier_' + supplierRowId).hide();
@@ -697,8 +712,8 @@ function handleSupplierChange(selectElement, supplierRowId) {
     productRowCounts['spare'][supplierRowId] = 0;
 
     // Show loading indicator
-    $('#ready_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2"><i class="fa fa-spinner fa-spin"></i> Loading products...</td></tr>');
-    $('#spare_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2"><i class="fa fa-spinner fa-spin"></i> Loading products...</td></tr>');
+    $('#ready_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2"><i class="fa fa-spinner fa-spin"></i> Loading products...</td></tr>');
+    $('#spare_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2"><i class="fa fa-spinner fa-spin"></i> Loading products...</td></tr>');
 
     // Fetch products by supplier
     $.ajax({
@@ -722,7 +737,7 @@ function handleSupplierChange(selectElement, supplierRowId) {
             });
           } else {
             // Show no data found for ready products
-            $('#ready_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2 text-muted">No Ready Goods found</td></tr>');
+            $('#ready_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2 text-muted">No Ready Goods found</td></tr>');
           }
 
           // Populate spare products
@@ -732,7 +747,7 @@ function handleSupplierChange(selectElement, supplierRowId) {
             });
           } else {
             // Show no data found for spare products
-            $('#spare_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2 text-muted">No Spare Parts found</td></tr>');
+            $('#spare_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2 text-muted">No Spare Parts found</td></tr>');
           }
 
           // Initialize select2 and feather icons
@@ -744,19 +759,19 @@ function handleSupplierChange(selectElement, supplierRowId) {
           // Recalculate totals
           calculateGrandTotalCBM();
         } else {
-          $('#ready_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-3 text-muted">No products found</td></tr>');
-          $('#spare_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-3 text-muted">No products found</td></tr>');
+          $('#ready_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-3 text-muted">No products found</td></tr>');
+          $('#spare_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-3 text-muted">No products found</td></tr>');
         }
       },
       error: function() {
-        $('#ready_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-3 text-danger">Error loading products</td></tr>');
-        $('#spare_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-3 text-danger">Error loading products</td></tr>');
+        $('#ready_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-3 text-danger">Error loading products</td></tr>');
+        $('#spare_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-3 text-danger">Error loading products</td></tr>');
       }
     });
   } else {
     // Clear products if supplier is deselected - show initial message
-    $('#ready_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Ready Goods</td></tr>');
-    $('#spare_products_' + supplierRowId).html('<tr><td colspan="9" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Spare Parts</td></tr>');
+    $('#ready_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Ready Goods</td></tr>');
+    $('#spare_products_' + supplierRowId).html('<tr><td colspan="10" class="text-center p-2 text-muted"><i class="fa fa-info-circle"></i> Select a supplier to get Spare Parts</td></tr>');
     productRowCounts['ready'][supplierRowId] = 0;
     productRowCounts['spare'][supplierRowId] = 0;
     // Hide refresh button when supplier is deselected
@@ -991,6 +1006,10 @@ function addProductRow(sectionType, supplierRowId) {
         <span class="pending-po-qty-display">0</span>
       </td>
       <td>
+        <input type="hidden" name="${sectionPrefix}_priority_qty[${supplierRowId}][]" id="${sectionPrefix}_priority_qty_${supplierRowId}_${productRowId}" value="0">
+        <span class="priority-qty-display">0</span>
+      </td>
+      <td>
         <input type="hidden" name="${sectionPrefix}_loading_list_qty[${supplierRowId}][]" id="${sectionPrefix}_loading_list_qty_${supplierRowId}_${productRowId}" value="0">
         <span class="loading-list-qty-display">0</span>
       </td>
@@ -1022,7 +1041,7 @@ function createNoProductRow(sectionType, supplierRowId) {
   
   var noProductRowHtml = `
     <tr class="no-product-row">
-      <td colspan="9" class="text-center p-2 text-muted">
+      <td colspan="10" class="text-center p-2 text-muted">
         <i class="fa fa-info-circle"></i> No product selected
       </td>
     </tr>
@@ -1057,8 +1076,14 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
   }
   var lowStockAttr = productData.is_low_stock == 1 ? 'data-low-stock="1"' : '';
 
+  var pendingQty = parseInt(productData.pending_po_qty || 0, 10);
+  var priorityQty = parseInt(productData.priority_qty || 0, 10);
+  var loadingQty = parseInt(productData.loading_list_qty || 0, 10);
+  var inStockQty = parseInt(productData.in_stock_qty || 0, 10);
+  var companyStock = parseInt(productData.company_stock || 0, 10);
+
   var productRowHtml = `
-    <tr class="product-row ${sectionType}-product ${rowClass}" id="${sectionPrefix}_product_${supplierRowId}_${productRowId}" data-product-id="${productData.id}" ${lowStockAttr}>
+    <tr class="product-row ${sectionType}-product ${rowClass}" id="${sectionPrefix}_product_${supplierRowId}_${productRowId}" data-product-id="${productData.id}" data-supplier-row-id="${supplierRowId}" ${lowStockAttr}>
       <td>
         <input type="hidden" name="${sectionPrefix}_product_id[${supplierRowId}][]" value="${productData.id}">
         <input type="hidden" class="is-applied-input" name="${sectionPrefix}_is_applied[${supplierRowId}][]" value="0">
@@ -1080,28 +1105,67 @@ function createProductRowWithData(sectionType, supplierRowId, productData) {
         <input type="hidden" name="${sectionPrefix}_total_cbm[${supplierRowId}][]" id="${sectionPrefix}_total_cbm_${supplierRowId}_${productRowId}" value="0">
         <span class="total-cbm-display" id="${sectionPrefix}_total_cbm_display_${supplierRowId}_${productRowId}">0</span>
       </td>
-      <td>
-        <input type="hidden" name="${sectionPrefix}_pending_po_qty[${supplierRowId}][]" id="${sectionPrefix}_pending_po_qty_${supplierRowId}_${productRowId}" value="${productData.pending_po_qty || 0}">
-        <span class="pending-po-qty-display">${productData.pending_po_qty || 0}</span>
+      <td class="text-center">
+        <input type="hidden" name="${sectionPrefix}_pending_po_qty[${supplierRowId}][]" id="${sectionPrefix}_pending_po_qty_${supplierRowId}_${productRowId}" value="${pendingQty}">
+        ${renderQtyCell(pendingQty, 'pending', productData.id, supplierRowId, productData.name || '')}
       </td>
-      <td>
-        <input type="hidden" name="${sectionPrefix}_loading_list_qty[${supplierRowId}][]" id="${sectionPrefix}_loading_list_qty_${supplierRowId}_${productRowId}" value="${productData.loading_list_qty || 0}">
-        <span class="loading-list-qty-display">${productData.loading_list_qty || 0}</span>
+      <td class="text-center">
+        <input type="hidden" name="${sectionPrefix}_priority_qty[${supplierRowId}][]" id="${sectionPrefix}_priority_qty_${supplierRowId}_${productRowId}" value="${priorityQty}">
+        ${renderQtyCell(priorityQty, 'priority', productData.id, supplierRowId, productData.name || '')}
       </td>
-      <td>
-        <input type="hidden" name="${sectionPrefix}_in_stock_qty[${supplierRowId}][]" id="${sectionPrefix}_in_stock_qty_${supplierRowId}_${productRowId}" value="${productData.in_stock_qty || 0}">
-        <span class="in-stock-qty-display">${productData.in_stock_qty || 0}</span>
+      <td class="text-center">
+        <input type="hidden" name="${sectionPrefix}_loading_list_qty[${supplierRowId}][]" id="${sectionPrefix}_loading_list_qty_${supplierRowId}_${productRowId}" value="${loadingQty}">
+        ${renderQtyCell(loadingQty, 'loading', productData.id, supplierRowId, productData.name || '')}
       </td>
-      <td>
-        <input type="hidden" name="${sectionPrefix}_company_stock[${supplierRowId}][]" id="${sectionPrefix}_company_stock_${supplierRowId}_${productRowId}" value="${productData.company_stock || 0}">
-        <span class="company-stock-display">${productData.company_stock || 0}</span>
+      <td class="text-center">
+        <input type="hidden" name="${sectionPrefix}_in_stock_qty[${supplierRowId}][]" id="${sectionPrefix}_in_stock_qty_${supplierRowId}_${productRowId}" value="${inStockQty}">
+        ${renderQtyCell(inStockQty, 'in_stock', productData.id, supplierRowId, productData.name || '')}
+      </td>
+      <td class="text-center">
+        <input type="hidden" name="${sectionPrefix}_company_stock[${supplierRowId}][]" id="${sectionPrefix}_company_stock_${supplierRowId}_${productRowId}" value="${companyStock}">
+        ${renderQtyCell(companyStock, 'company_stock', productData.id, supplierRowId, productData.name || '')}
       </td>
     </tr>
   `;
 
-  console.log('#' + sectionPrefix + '_products_' + supplierRowId)
-
   $('#' + sectionPrefix + '_products_' + supplierRowId).append(productRowHtml);
+}
+
+function renderQtyCell(qty, type, productId, supplierRowId, productName) {
+  qty = parseInt(qty || 0, 10);
+  if (qty > 0) {
+    var safeName = String(productName || '').replace(/'/g, "\\'");
+    return `<a href="javascript:void(0);" class="qty-detail-link" onclick="showProductQtyDetails('${type}', ${productId}, ${supplierRowId}, '${safeName}')">${qty}</a>`;
+  }
+  return `<span class="text-muted">${qty}</span>`;
+}
+
+function showProductQtyDetails(type, productId, supplierRowId, productName) {
+  var supplierId = $('#supplier_id_' + supplierRowId).val() || 0;
+  var method = '<?php echo $type; ?>';
+  var title = productName || 'Product Details';
+  var url = '';
+
+  if (type === 'pending' || type === 'priority' || type === 'loading') {
+    var statusLabel = 'Pending PO Qty';
+    if (type === 'loading') {
+      statusLabel = 'Loading List Qty';
+    } else if (type === 'priority') {
+      statusLabel = 'Priority Qty';
+    }
+    title = statusLabel + ' - ' + title;
+    url = "<?php echo base_url('modal/popup_inventory/modal_po_product_qty_details'); ?>/" + productId + "/" + supplierId + "/" + type + "/" + method;
+  } else if (type === 'in_stock') {
+    title = 'In Stock Qty - ' + title;
+    url = "<?php echo base_url('modal/popup_inventory/modal_product_stock_qty_details'); ?>/" + productId + "/all";
+  } else if (type === 'company_stock') {
+    title = 'Company Stock - ' + title;
+    url = "<?php echo base_url('modal/popup_inventory/modal_product_stock_qty_details'); ?>/" + productId + "/company";
+  }
+
+  if (url) {
+    showAjaxModal(url, title);
+  }
 }
 
 // Remove product row

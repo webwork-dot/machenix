@@ -1200,7 +1200,7 @@ class Inventory extends CI_Controller
         $company_id = $this->session->userdata('company_id');
 
         $where = array('is_deleted' => '0');
-        $page_data['warehouse_list']     = $this->common_model->selectWhere('warehouse', $where, 'ASC', 'name');
+        $page_data['warehouse_list']     = $this->common_model->selectWhere('warehouse', array('is_deleted' => '0', 'company_id' => $company_id), 'ASC', 'name');
         $page_data['supplier_list']     = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id, 'type' => 'import'), 'ASC', 'name');
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
         
@@ -1666,6 +1666,7 @@ class Inventory extends CI_Controller
     {
         $product_id = $this->input->post('product_id');
         $type = $this->input->post('type');
+        $supplier_id = $this->input->post('supplier_id');
         $res = $this->inventory_model->get_raw_products_by_id($product_id)->row_array();
         if ($res) {
             // Get category name
@@ -1692,6 +1693,8 @@ class Inventory extends CI_Controller
                 $result = $query->row();
                 $pending_po_qty = intval($result->total_qty ?? 0);
             }
+
+            $is_low_stock = $this->inventory_model->is_product_low_stock($product_id, $supplier_id);
             
             header('Content-Type: application/json');
             echo json_encode(array(
@@ -1703,6 +1706,7 @@ class Inventory extends CI_Controller
                 "loading_list_qty" => 0,
                 "in_stock_qty" => 0,
                 "company_stock" => 0,
+                "is_low_stock" => $is_low_stock,
             ));
         } else {
             header('Content-Type: application/json');
@@ -1779,22 +1783,11 @@ class Inventory extends CI_Controller
             $variations = $this->db->where('product_id', $product->id)->get('product_variation');
             $variations = ($variations->num_rows() > 0) ? $variations->result_array() : [];
 
-            // Calculate pending PO quantity
-            $pending_po_qty = 0;
-            $query = $this->db->query("
-                SELECT SUM(pop.quantity) AS total_qty
-                FROM purchase_order_product pop
-                INNER JOIN purchase_order po ON po.id = pop.parent_id
-                WHERE po.delivery_status = 'pending' AND po.method = ?
-                AND po.is_deleted = 0
-                AND pop.product_id = ?
-            ", array($type, $product->id));
-            if ($query->num_rows() > 0) {
-                $result = $query->row();
-                $pending_po_qty = intval($result->total_qty ?? 0);
-            }
+            // Calculate pending PO / loading / stock quantities
+            $qty_info = $this->inventory_model->get_po_product_qty_info($product->id, $supplier_id, $type);
 
             // Check if this product is low stock for this supplier
+            // Available qty = inventory qty - booked qty from unapproved normal sales orders
             $is_low_stock = 0;
             $low_stock_query = $this->db->query("
                 SELECT SUM(i.quantity) as total_qty 
@@ -1802,9 +1795,18 @@ class Inventory extends CI_Controller
                 INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
                 WHERE i.product_id = ? AND i.supplier_id = ?
                 GROUP BY i.product_id, i.supplier_id, pv.intimation
-                HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
+                HAVING SUM(i.quantity) > 0
+                  AND (SUM(i.quantity) - COALESCE((
+                        SELECT SUM(sop.qty)
+                        FROM sales_order_product sop
+                        INNER JOIN sales_order so ON so.id = sop.order_id
+                        WHERE sop.product_id = ?
+                          AND so.type = 'normal'
+                          AND so.is_approved = 0
+                          AND so.is_deleted = 0
+                      ), 0)) <= pv.intimation
                 LIMIT 1
-            ", array($product->id, $supplier_id));
+            ", array($product->id, $supplier_id, $product->id));
 
             if ($low_stock_query->num_rows() > 0) {
                 $is_low_stock = 1;
@@ -1822,10 +1824,11 @@ class Inventory extends CI_Controller
                 'duty_charge' => ($product->duty_charge > 0) ? $product->duty_charge : 0,
                 'cartoon_qty' => $product->cartoon_qty ?? 0,
                 'cbm' => $product->cbm ?? 0,
-                'pending_po_qty' => $pending_po_qty,
-                'loading_list_qty' => 0,
-                'in_stock_qty' => 0,
-                'company_stock' => 0,
+                'pending_po_qty' => $qty_info['pending_po_qty'],
+                'priority_qty' => $qty_info['priority_qty'],
+                'loading_list_qty' => $qty_info['loading_list_qty'],
+                'in_stock_qty' => $qty_info['in_stock_qty'],
+                'company_stock' => $qty_info['company_stock'],
                 'variations' => $variations,
                 'is_low_stock' => $is_low_stock,
             );
@@ -1841,22 +1844,11 @@ class Inventory extends CI_Controller
             $variations = $this->db->where('product_id', $product->id)->get('product_variation');
             $variations = ($variations->num_rows() > 0) ? $variations->result_array() : [];
             
-            // Calculate pending PO quantity
-            $pending_po_qty = 0;
-            $query = $this->db->query("
-                SELECT SUM(pop.quantity) AS total_qty
-                FROM purchase_order_product pop
-                INNER JOIN purchase_order po ON po.id = pop.parent_id
-                WHERE po.delivery_status = 'pending' AND po.method = ?
-                AND po.is_deleted = 0
-                AND pop.product_id = ?
-            ", array($type, $product->id));
-            if ($query->num_rows() > 0) {
-                $result = $query->row();
-                $pending_po_qty = intval($result->total_qty ?? 0);
-            }
+            // Calculate pending PO / loading / stock quantities
+            $qty_info = $this->inventory_model->get_po_product_qty_info($product->id, $supplier_id, $type);
 
             // Check if this product is low stock for this supplier
+            // Available qty = inventory qty - booked qty from unapproved normal sales orders
             $is_low_stock = 0;
             $low_stock_query = $this->db->query("
                 SELECT SUM(i.quantity) as total_qty 
@@ -1864,9 +1856,18 @@ class Inventory extends CI_Controller
                 INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
                 WHERE i.product_id = ? AND i.supplier_id = ?
                 GROUP BY i.product_id, i.supplier_id, pv.intimation
-                HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
+                HAVING SUM(i.quantity) > 0
+                  AND (SUM(i.quantity) - COALESCE((
+                        SELECT SUM(sop.qty)
+                        FROM sales_order_product sop
+                        INNER JOIN sales_order so ON so.id = sop.order_id
+                        WHERE sop.product_id = ?
+                          AND so.type = 'normal'
+                          AND so.is_approved = 0
+                          AND so.is_deleted = 0
+                      ), 0)) <= pv.intimation
                 LIMIT 1
-            ", array($product->id, $supplier_id));
+            ", array($product->id, $supplier_id, $product->id));
 
             if ($low_stock_query->num_rows() > 0) {
                 $is_low_stock = 1;
@@ -1884,10 +1885,11 @@ class Inventory extends CI_Controller
                 'duty_charge' => ($product->duty_charge > 0) ? $product->duty_charge : 0,
                 'cartoon_qty' => $product->cartoon_qty ?? 0,
                 'cbm' => $product->cbm ?? 0,
-                'pending_po_qty' => $pending_po_qty,
-                'loading_list_qty' => 0,
-                'in_stock_qty' => 0,
-                'company_stock' => 0,
+                'pending_po_qty' => $qty_info['pending_po_qty'],
+                'priority_qty' => $qty_info['priority_qty'],
+                'loading_list_qty' => $qty_info['loading_list_qty'],
+                'in_stock_qty' => $qty_info['in_stock_qty'],
+                'company_stock' => $qty_info['company_stock'],
                 'variations' => $variations,
                 'is_low_stock' => $is_low_stock,
             );

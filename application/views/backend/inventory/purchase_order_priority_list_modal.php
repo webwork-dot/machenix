@@ -97,8 +97,16 @@
             $sr_no = 1;
             foreach ($products_query as $product): 
                 $type_label = ($product['product_type'] == 'ready') ? 'Ready Goods' : (($product['product_type'] == 'spare') ? 'Spare Parts' : '');
+                $is_low_stock = $this->inventory_model->is_product_low_stock($product['product_id'], $product['supplier_id']);
+                $row_class = '';
+                if (isset($product['is_replace']) && $product['is_replace'] == 1) {
+                  $row_class = 'table-warning';
+                } elseif ($is_low_stock == 1) {
+                  $row_class = 'table-danger';
+                }
+                $low_stock_attr = ($is_low_stock == 1) ? ' data-low-stock="1"' : '';
             ?>
-          <tr id="row_<?php echo $product['id']; ?>" data-product-id="<?php echo $product['id']; ?>"<?php echo (isset($product['is_replace']) && $product['is_replace'] == 1) ? ' class="table-warning"' : ''; ?>>
+          <tr id="row_<?php echo $product['id']; ?>" data-product-id="<?php echo $product['id']; ?>"<?php echo $row_class ? ' class="' . $row_class . '"' : ''; ?><?php echo $low_stock_attr; ?>>
             <td>
               <?php echo $sr_no++; ?>
               <input type="hidden" name="old_product_id[<?php echo $product['id']; ?>]"
@@ -391,10 +399,11 @@ function checkQuantityChange(rowId) {
 
     // Get is_replace value from the priority row
     var isReplace = row.find('.is-replace-input').val() || 0;
+    var isLowStock = row.attr('data-low-stock') === '1' ? 1 : 0;
 
     // Now add/create a new row in Loading Products
     addToLoadingProducts(loadingRowId, rowId, supplierId, supplierName, productType, typeLabel, productId,
-      productName, itemCode, removedQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace);
+      productName, itemCode, removedQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace, isLowStock);
 
     // If quantity is 0, hide the row
     if (currentQty == 0) {
@@ -414,12 +423,19 @@ function checkQuantityChange(rowId) {
 
 // Add to Loading Products table
 function addToLoadingProducts(loadingRowId, originalRowId, supplierId, supplierName, productType, typeLabel, productId,
-  productName, itemCode, quantity, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace) {
+  productName, itemCode, quantity, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace, isLowStock) {
   var loadingSrNo = $('#loading_products_tbody tr').length + 1;
   var totalCBM = quantity * cbm;
+  var rowClass = '';
+  if (isReplace == 1) {
+    rowClass = 'table-warning';
+  } else if (isLowStock == 1) {
+    rowClass = 'table-danger';
+  }
+  var lowStockAttr = isLowStock == 1 ? 'data-low-stock="1"' : '';
 
   var loadingRow = `
-        <tr id="loading_row_${loadingRowId}" data-original-row-id="${originalRowId}" class="${isReplace == 1 ? 'table-warning' : ''}">
+        <tr id="loading_row_${loadingRowId}" data-original-row-id="${originalRowId}" class="${rowClass}" ${lowStockAttr}>
             <td>
                 ${loadingSrNo}
                 <input type="hidden" name="loading_old_product_id[${loadingRowId}]" value="${originalRowId}">
@@ -673,10 +689,19 @@ function restoreToPriorityList(loadingRowId, quantity) {
     // Row doesn't exist, need to recreate it
     // Get the original quantity from originalQuantities if available
     var originalQty = originalQuantities[originalRowId] || quantity;
+    var isReplace = loadingRow.find('.loading-is-replace-input').val() || 0;
+    var isLowStock = loadingRow.attr('data-low-stock') === '1' ? 1 : 0;
+    var rowClass = '';
+    if (isReplace == 1) {
+      rowClass = 'table-warning';
+    } else if (isLowStock == 1) {
+      rowClass = 'table-danger';
+    }
+    var lowStockAttr = isLowStock == 1 ? 'data-low-stock="1"' : '';
     
     // Create the row HTML
     var priorityRowHtml = `
-      <tr id="row_${originalRowId}" data-product-id="${originalRowId}">
+      <tr id="row_${originalRowId}" data-product-id="${originalRowId}" class="${rowClass}" ${lowStockAttr}>
         <td>
           ${$('#priority_tbody tr').length + 1}
           <input type="hidden" name="old_product_id[${originalRowId}]" value="${originalRowId}">
@@ -700,6 +725,7 @@ function restoreToPriorityList(loadingRowId, quantity) {
           <input type="text" class="form-control form-control-sm" value="${productName.replace(/"/g, '&quot;')}" readonly>
           <input type="hidden" name="product_id[${originalRowId}]" value="${productId}">
           <input type="hidden" name="product_name[${originalRowId}]" value="${productName.replace(/"/g, '&quot;')}">
+          <input type="hidden" name="is_replace[${originalRowId}]" value="${isReplace || 0}" class="is-replace-input">
         </td>
         <td>
           <input type="text" class="form-control form-control-sm" name="item_code[${originalRowId}]" value="${itemCode.replace(/"/g, '&quot;')}" readonly>
@@ -881,8 +907,10 @@ function removeRow(rowId) {
 
           // Now add/create a new row in Loading Products with full original quantity
           var loadingRowId = 'loading_' + rowId;
+          var isReplace = row.find('.is-replace-input').val() || 0;
+          var isLowStock = row.attr('data-low-stock') === '1' ? 1 : 0;
           addToLoadingProducts(loadingRowId, rowId, supplierId, supplierName, productType, typeLabel, productId,
-            productName, itemCode, originalQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock);
+            productName, itemCode, originalQty, cbm, pendingPoQty, loadingListQty, inStockQty, companyStock, isReplace, isLowStock);
         }
       }
 
@@ -1332,6 +1360,7 @@ function handleProductChange(selectElement, rowId) {
       url: "<?php echo base_url(); ?>inventory/get_purchase_order_product_details",
       data: {
         product_id: productId,
+        supplier_id: supplierId,
         type: '<?php echo isset($po_data['method']) ? $po_data['method'] : 'local'; ?>'
       },
       dataType: 'json',
@@ -1349,6 +1378,19 @@ function handleProductChange(selectElement, rowId) {
           $('#in_stock_qty_' + rowId).val(res.in_stock_qty || 0);
           $('#company_stock_' + rowId).val(res.company_stock || 0);
 
+          // Apply low stock highlight (replace takes priority)
+          var $row = $('#row_' + rowId);
+          var isReplace = parseInt($row.find('.is-replace-input').val()) || 0;
+          $row.removeClass('table-danger');
+          if (res.is_low_stock == 1) {
+            $row.attr('data-low-stock', '1');
+            if (isReplace != 1) {
+              $row.addClass('table-danger');
+            }
+          } else {
+            $row.removeAttr('data-low-stock');
+          }
+
           // Recalculate total CBM
           updateTotalCBM(rowId);
         } else {
@@ -1360,6 +1402,7 @@ function handleProductChange(selectElement, rowId) {
           $('#loading_list_qty_' + rowId).val(0);
           $('#in_stock_qty_' + rowId).val(0);
           $('#company_stock_' + rowId).val(0);
+          $('#row_' + rowId).removeClass('table-danger').removeAttr('data-low-stock');
         }
       },
       error: function() {
@@ -1741,6 +1784,7 @@ function handleLoadingProductChange(selectElement, rowId) {
       url: "<?php echo base_url(); ?>inventory/get_purchase_order_product_details",
       data: {
         product_id: productId,
+        supplier_id: supplierId,
         type: '<?php echo isset($po_data['method']) ? $po_data['method'] : 'local'; ?>'
       },
       dataType: 'json',
@@ -1761,6 +1805,20 @@ function handleLoadingProductChange(selectElement, rowId) {
           $('#loading_loading_list_qty_' + rowId).val(res.loading_list_qty || 0);
           $('#loading_in_stock_qty_' + rowId).val(res.in_stock_qty || 0);
           $('#loading_company_stock_' + rowId).val(res.company_stock || 0);
+
+          // Apply low stock highlight
+          var $row = $('#loading_row_' + rowId);
+          var isReplace = parseInt($row.find('.loading-is-replace-input').val()) || 0;
+          $row.removeClass('table-danger');
+          if (res.is_low_stock == 1) {
+            $row.attr('data-low-stock', '1');
+            if (isReplace != 1) {
+              $row.addClass('table-danger');
+            }
+          } else {
+            $row.removeAttr('data-low-stock');
+          }
+
           updateLoadingTotalCBM(rowId);
         }
       }
@@ -1774,6 +1832,7 @@ function handleLoadingProductChange(selectElement, rowId) {
     $('#loading_in_stock_qty_' + rowId).val(0);
     $('#loading_company_stock_' + rowId).val(0);
     $('#loading_product_name_' + rowId).val('');
+    $('#loading_row_' + rowId).removeClass('table-danger').removeAttr('data-low-stock');
   }
 }
 

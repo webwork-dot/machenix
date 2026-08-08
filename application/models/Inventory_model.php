@@ -1892,6 +1892,285 @@ class Inventory_model extends CI_Model
 		return $raw_product;
 	}
 
+	public function get_complete_purchase_order_log_data($po_id)
+	{
+		$purchase_order = $this->db->where('id', $po_id)->get('purchase_order')->row_array();
+		if (empty($purchase_order)) {
+			return null;
+		}
+		$purchase_order['products'] = $this->db->where('parent_id', $po_id)->get('purchase_order_product')->result_array();
+		return $purchase_order;
+	}
+
+	public function is_product_low_stock($product_id, $supplier_id)
+	{
+		if (empty($product_id) || empty($supplier_id)) {
+			return 0;
+		}
+
+		$low_stock_query = $this->db->query("
+			SELECT SUM(i.quantity) as total_qty
+			FROM inventory i
+			INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
+			WHERE i.product_id = ? AND i.supplier_id = ?
+			GROUP BY i.product_id, i.supplier_id, pv.intimation
+			HAVING SUM(i.quantity) > 0
+			  AND (SUM(i.quantity) - COALESCE((
+					SELECT SUM(sop.qty)
+					FROM sales_order_product sop
+					INNER JOIN sales_order so ON so.id = sop.order_id
+					WHERE sop.product_id = ?
+					  AND so.type = 'normal'
+					  AND so.is_approved = 0
+					  AND so.is_deleted = 0
+				  ), 0)) <= pv.intimation
+			LIMIT 1
+		", array($product_id, $supplier_id, $product_id));
+
+		return ($low_stock_query->num_rows() > 0) ? 1 : 0;
+	}
+
+	public function get_po_product_qty_info($product_id, $supplier_id, $method = '', $company_id = null)
+	{
+		$product_id = intval($product_id);
+		$supplier_id = intval($supplier_id);
+		if ($company_id === null) {
+			$company_id = $this->session->userdata('company_id');
+		}
+		$company_id = intval($company_id);
+
+		$pending_sql = "
+			SELECT COALESCE(SUM(pop.quantity), 0) AS total_qty
+			FROM purchase_order_product pop
+			INNER JOIN purchase_order po ON po.id = pop.parent_id
+			WHERE po.delivery_status = 'pending'
+			  AND po.is_deleted = 0
+			  AND pop.product_id = ?
+			  AND pop.supplier_id = ?
+		";
+		$pending_params = array($product_id, $supplier_id);
+		if ($method != '') {
+			$pending_sql .= " AND po.method = ?";
+			$pending_params[] = $method;
+		}
+		$pending_po_qty = intval($this->db->query($pending_sql, $pending_params)->row()->total_qty ?? 0);
+
+		$priority_sql = "
+			SELECT COALESCE(SUM(pp.quantity), 0) AS total_qty
+			FROM po_products pp
+			INNER JOIN purchase_order po ON po.id = pp.parent_id
+			WHERE po.delivery_status = 'priority'
+			  AND po.is_deleted = 0
+			  AND pp.is_deleted = 0
+			  AND pp.is_priority = 1
+			  AND pp.product_id = ?
+			  AND pp.supplier_id = ?
+		";
+		$priority_params = array($product_id, $supplier_id);
+		if ($method != '') {
+			$priority_sql .= " AND po.method = ?";
+			$priority_params[] = $method;
+		}
+		$priority_qty = intval($this->db->query($priority_sql, $priority_params)->row()->total_qty ?? 0);
+
+		$loading_sql = "
+			SELECT COALESCE(SUM(lpp.loading_qty), 0) AS total_qty
+			FROM loading_po_product lpp
+			INNER JOIN purchase_order po ON po.id = lpp.parent_id
+			WHERE po.delivery_status = 'loading'
+			  AND po.is_deleted = 0
+			  AND lpp.is_deleted = 0
+			  AND lpp.product_id = ?
+			  AND lpp.supplier_id = ?
+		";
+		$loading_params = array($product_id, $supplier_id);
+		if ($method != '') {
+			$loading_sql .= " AND po.method = ?";
+			$loading_params[] = $method;
+		}
+		$loading_list_qty = intval($this->db->query($loading_sql, $loading_params)->row()->total_qty ?? 0);
+
+		$in_stock_qty = intval($this->db->query("
+			SELECT COALESCE(SUM(quantity), 0) AS total_qty
+			FROM inventory
+			WHERE product_id = ?
+		", array($product_id))->row()->total_qty ?? 0);
+
+		$company_stock = intval($this->db->query("
+			SELECT COALESCE(SUM(quantity), 0) AS total_qty
+			FROM inventory
+			WHERE product_id = ? AND company_id = ?
+		", array($product_id, $company_id))->row()->total_qty ?? 0);
+
+		return array(
+			'pending_po_qty' => $pending_po_qty,
+			'priority_qty' => $priority_qty,
+			'loading_list_qty' => $loading_list_qty,
+			'in_stock_qty' => $in_stock_qty,
+			'company_stock' => $company_stock,
+		);
+	}
+
+	public function get_po_product_qty_details($product_id, $supplier_id, $status, $method = '')
+	{
+		$product_id = intval($product_id);
+		$supplier_id = intval($supplier_id);
+		if (!in_array($status, array('pending', 'priority', 'loading'), true)) {
+			$status = 'pending';
+		}
+
+		if ($status === 'loading') {
+			$sql = "
+				SELECT
+					po.id,
+					po.voucher_no,
+					po.date,
+					s.name AS supplier_name,
+					SUM(lpp.loading_qty) AS quantity
+				FROM loading_po_product lpp
+				INNER JOIN purchase_order po ON po.id = lpp.parent_id
+				LEFT JOIN supplier s ON s.id = lpp.supplier_id
+				WHERE po.delivery_status = 'loading'
+				  AND po.is_deleted = 0
+				  AND lpp.is_deleted = 0
+				  AND lpp.product_id = ?
+				  AND lpp.supplier_id = ?
+			";
+			$params = array($product_id, $supplier_id);
+			if ($method != '') {
+				$sql .= " AND po.method = ?";
+				$params[] = $method;
+			}
+			$sql .= " GROUP BY po.id, po.voucher_no, po.date, s.name
+				HAVING SUM(lpp.loading_qty) > 0
+				ORDER BY po.date DESC, po.id DESC";
+			return $this->db->query($sql, $params)->result_array();
+		}
+
+		if ($status === 'priority') {
+			$sql = "
+				SELECT
+					po.id,
+					po.voucher_no,
+					po.date,
+					s.name AS supplier_name,
+					SUM(pp.quantity) AS quantity
+				FROM po_products pp
+				INNER JOIN purchase_order po ON po.id = pp.parent_id
+				LEFT JOIN supplier s ON s.id = pp.supplier_id
+				WHERE po.delivery_status = 'priority'
+				  AND po.is_deleted = 0
+				  AND pp.is_deleted = 0
+				  AND pp.is_priority = 1
+				  AND pp.product_id = ?
+				  AND pp.supplier_id = ?
+			";
+			$params = array($product_id, $supplier_id);
+			if ($method != '') {
+				$sql .= " AND po.method = ?";
+				$params[] = $method;
+			}
+			$sql .= " GROUP BY po.id, po.voucher_no, po.date, s.name
+				HAVING SUM(pp.quantity) > 0
+				ORDER BY po.date DESC, po.id DESC";
+			return $this->db->query($sql, $params)->result_array();
+		}
+
+		$sql = "
+			SELECT
+				po.id,
+				po.voucher_no,
+				po.date,
+				s.name AS supplier_name,
+				SUM(pop.quantity) AS quantity
+			FROM purchase_order_product pop
+			INNER JOIN purchase_order po ON po.id = pop.parent_id
+			LEFT JOIN supplier s ON s.id = pop.supplier_id
+			WHERE po.delivery_status = 'pending'
+			  AND po.is_deleted = 0
+			  AND pop.product_id = ?
+			  AND pop.supplier_id = ?
+		";
+		$params = array($product_id, $supplier_id);
+		if ($method != '') {
+			$sql .= " AND po.method = ?";
+			$params[] = $method;
+		}
+		$sql .= " GROUP BY po.id, po.voucher_no, po.date, s.name
+			HAVING SUM(pop.quantity) > 0
+			ORDER BY po.date DESC, po.id DESC";
+		return $this->db->query($sql, $params)->result_array();
+	}
+
+	public function get_product_stock_qty_details($product_id, $company_id = null)
+	{
+		$product_id = intval($product_id);
+		$sql = "
+			SELECT
+				i.batch_no,
+				i.quantity,
+				i.official_qty,
+				i.black_qty,
+				i.warehouse_name,
+				s.name AS supplier_name,
+				c.name AS company_name,
+				i.company_id,
+				i.supplier_id
+			FROM inventory i
+			LEFT JOIN supplier s ON s.id = i.supplier_id
+			LEFT JOIN company c ON c.id = i.company_id
+			WHERE i.product_id = ?
+			  AND i.quantity > 0
+		";
+		$params = array($product_id);
+		if ($company_id !== null && $company_id !== '' && $company_id !== 'all') {
+			$sql .= " AND i.company_id = ?";
+			$params[] = intval($company_id);
+		}
+		$sql .= " ORDER BY c.name ASC, s.name ASC, i.batch_no ASC, i.id DESC";
+		return $this->db->query($sql, $params)->result_array();
+	}
+
+	public function get_complete_priority_list_log_data($po_id)
+	{
+		$purchase_order = $this->db->where('id', $po_id)->get('purchase_order')->row_array();
+		if (empty($purchase_order)) {
+			return null;
+		}
+		$purchase_order['products'] = $this->db->where('parent_id', $po_id)->get('po_products')->result_array();
+		return $purchase_order;
+	}
+
+	public function get_complete_loading_list_log_data($po_id)
+	{
+		$purchase_order = $this->db->where('id', $po_id)->get('purchase_order')->row_array();
+		if (empty($purchase_order)) {
+			return null;
+		}
+		$products = $this->db->where('parent_id', $po_id)->get('loading_po_product')->result_array();
+		foreach ($products as &$product) {
+			$product['variations'] = $this->db->where('parent_id', $product['id'])->get('loading_product_total')->result_array();
+		}
+		unset($product);
+		$purchase_order['products'] = $products;
+		return $purchase_order;
+	}
+
+	public function get_complete_purchase_in_log_data($po_id)
+	{
+		$purchase_order = $this->db->where('id', $po_id)->get('purchase_order')->row_array();
+		if (empty($purchase_order)) {
+			return null;
+		}
+		$products = $this->db->where('parent_id', $po_id)->get('purchase_in_product')->result_array();
+		foreach ($products as &$product) {
+			$product['overflow'] = $this->db->where('parent_id', $product['id'])->get('purchase_overflow_product')->row_array();
+		}
+		unset($product);
+		$purchase_order['products'] = $products;
+		return $purchase_order;
+	}
+
 	public function add_raw_products()
 	{
 		$this->db->trans_begin();
@@ -3109,6 +3388,24 @@ class Inventory_model extends CI_Model
 			);
 		} else {
 			$this->db->trans_commit();
+
+			// Insert audit log
+			$po_log_data = $this->get_complete_purchase_order_log_data($insert_id);
+			$log_data = array(
+				'parent_id'      => $insert_id,
+				'ref_id'         => NULL,
+				'module'         => 'purchase_order',
+				'action'         => 'add',
+				'message'        => 'Purchase Order added by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($po_log_data),
+				'table_name'     => 'purchase_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			$this->session->set_flashdata('flash_message', get_phrase('purchase_order_added_successfully'));
 		}
 
@@ -3523,6 +3820,7 @@ class Inventory_model extends CI_Model
 			$product_type = $product['product_type'] ?? 'ready';
 			
 			// Check if this product is low stock for this supplier
+			// Available qty = inventory qty - booked qty from unapproved normal sales orders
 			$is_low_stock = 0;
 			$low_stock_query = $this->db->query("
 				SELECT SUM(i.quantity) as total_qty
@@ -3530,9 +3828,18 @@ class Inventory_model extends CI_Model
 				INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
 				WHERE i.product_id = ? AND i.supplier_id = ?
 				GROUP BY i.product_id, i.supplier_id, pv.intimation
-				HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
+				HAVING SUM(i.quantity) > 0
+				  AND (SUM(i.quantity) - COALESCE((
+						SELECT SUM(sop.qty)
+						FROM sales_order_product sop
+						INNER JOIN sales_order so ON so.id = sop.order_id
+						WHERE sop.product_id = ?
+						  AND so.type = 'normal'
+						  AND so.is_approved = 0
+						  AND so.is_deleted = 0
+					  ), 0)) <= pv.intimation
 				LIMIT 1
-			", array($product['product_id'], $supplier_id));
+			", array($product['product_id'], $supplier_id, $product['product_id']));
 
 			if ($low_stock_query->num_rows() > 0) {
 				$is_low_stock = 1;
@@ -3584,6 +3891,8 @@ class Inventory_model extends CI_Model
 			);
 			return simple_json_output($resultpost);
 		}
+
+		$old_po_log_data = $this->get_complete_purchase_order_log_data($po_id);
 
 		$voucher_no = clean_and_escape($this->input->post('voucher_no'));
 		if ($voucher_no != '') {
@@ -3862,6 +4171,28 @@ class Inventory_model extends CI_Model
 			);
 		} else {
 			$this->db->trans_commit();
+
+			// Insert audit log
+			$new_po_log_data = $this->get_complete_purchase_order_log_data($po_id);
+			$log_json = array(
+				'old_data' => $old_po_log_data,
+				'new_data' => $new_po_log_data
+			);
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'purchase_order',
+				'action'         => 'edit',
+				'message'        => 'Purchase Order edited by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($log_json),
+				'table_name'     => 'purchase_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			$this->session->set_flashdata('flash_message', get_phrase('purchase_order_updated_successfully'));
 		}
 
@@ -3901,6 +4232,9 @@ class Inventory_model extends CI_Model
 			"url" => $this->session->userdata('previous_url'),
 		);
 
+		// Capture data before soft delete for audit log
+		$po_log_data = $this->get_complete_purchase_order_log_data($id);
+
 		// Find any replaced products and revert them before deletion
 		$replaced_products = $this->db->get_where('purchase_order_product', array(
 			'parent_id' => $id,
@@ -3914,6 +4248,22 @@ class Inventory_model extends CI_Model
 		$data['is_deleted'] = '1';
 		$this->db->where('id', $id);
 		$this->db->update('purchase_order', $data);
+
+		// Insert audit log
+		$log_data = array(
+			'parent_id'      => $id,
+			'ref_id'         => NULL,
+			'module'         => 'purchase_order',
+			'action'         => 'delete',
+			'message'        => 'Purchase Order deleted by ' . $this->session->userdata('super_name'),
+			'json'           => json_encode($po_log_data),
+			'table_name'     => 'purchase_order',
+			'added_by'       => $this->session->userdata('super_user_id'),
+			'added_by_email' => $this->session->userdata('super_email'),
+			'added_by_name'  => $this->session->userdata('super_name'),
+			'added_by_type'  => $this->session->userdata('super_type')
+		);
+		$this->db->insert('sys_logs', $log_data);
 
 		return simple_json_output($resultpost);
 	}
@@ -6059,6 +6409,7 @@ class Inventory_model extends CI_Model
 		$boe_date = $this->input->post('boe_date');
 
 		$is_edit = ($po_row['delivery_status'] == 'purchase_in');
+		$old_log_data = $is_edit ? $this->get_complete_purchase_in_log_data($po_id) : null;
 		
 		$po = [
 			"inr_rate" => $inr_rate,
@@ -6403,6 +6754,36 @@ class Inventory_model extends CI_Model
 			return simple_json_output($resultpost);
 		} else {
 			$this->db->trans_complete();
+
+			// Insert audit log
+			$new_log_data = $this->get_complete_purchase_in_log_data($po_id);
+			if ($is_edit) {
+				$log_json = array(
+					'old_data' => $old_log_data,
+					'new_data' => $new_log_data
+				);
+				$action = 'edit';
+				$message = 'Purchase In edited by ' . $this->session->userdata('super_name');
+			} else {
+				$log_json = $new_log_data;
+				$action = 'add';
+				$message = 'Purchase In added by ' . $this->session->userdata('super_name');
+			}
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'purchase_in',
+				'action'         => $action,
+				'message'        => $message,
+				'json'           => json_encode($log_json),
+				'table_name'     => 'purchase_in_product',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			return simple_json_output($resultpost);
 		}
 	}
@@ -6414,6 +6795,9 @@ class Inventory_model extends CI_Model
 		if (!$po || $po['delivery_status'] != 'purchase_in') {
 			return ['status' => 400, 'message' => 'Invalid PO or PO is not in Stock In status.'];
 		}
+
+		// Capture data before revert for audit log
+		$purchase_in_log_data = $this->get_complete_purchase_in_log_data($po_id);
 
 		$batch_no = $po['voucher_no'];
 		$warehouse_id = $po['warehouse_id'];
@@ -6537,6 +6921,22 @@ class Inventory_model extends CI_Model
 		if ($this->db->trans_status() === FALSE) {
 			return ['status' => 400, 'message' => 'Transaction failed during reversal.'];
 		} else {
+			// Insert audit log
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'purchase_in',
+				'action'         => 'delete',
+				'message'        => 'Purchase In deleted by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($purchase_in_log_data),
+				'table_name'     => 'purchase_in_product',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			return ['status' => 200, 'message' => 'Purchase Order successfully moved back to Loading List and Inventory cleared.'];
 		}
 	}
@@ -6554,6 +6954,10 @@ class Inventory_model extends CI_Model
 				echo json_encode(['status' => 400, 'message' => 'Purchase Order ID is required']);
 				return;
 		}
+
+		$po_row = $this->db->where('id', $po_id)->get('purchase_order')->row_array();
+		$is_edit = (!empty($po_row) && $po_row['delivery_status'] == 'priority');
+		$old_log_data = $is_edit ? $this->get_complete_priority_list_log_data($po_id) : null;
 
 		// Start transaction
 		$this->db->trans_start();
@@ -6806,6 +7210,35 @@ class Inventory_model extends CI_Model
 		if ($this->db->trans_status() === FALSE) {
 			echo json_encode(['status' => 400, 'message' => 'Error updating priority list']);
 		} else {
+			// Insert audit log
+			$new_log_data = $this->get_complete_priority_list_log_data($po_id);
+			if ($is_edit) {
+				$log_json = array(
+					'old_data' => $old_log_data,
+					'new_data' => $new_log_data
+				);
+				$action = 'edit';
+				$message = 'Priority List edited by ' . $this->session->userdata('super_name');
+			} else {
+				$log_json = $new_log_data;
+				$action = 'add';
+				$message = 'Priority List added by ' . $this->session->userdata('super_name');
+			}
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'priority_list',
+				'action'         => $action,
+				'message'        => $message,
+				'json'           => json_encode($log_json),
+				'table_name'     => 'po_products',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			echo json_encode(['status' => 200, 'message' => 'Priority list updated successfully!']);
 		}
 	}
@@ -6820,6 +7253,9 @@ class Inventory_model extends CI_Model
 			echo json_encode(['status' => 400, 'message' => 'Purchase Order ID is required']);
 			return;
 		}
+
+		// Capture data before delete for audit log
+		$priority_log_data = $this->get_complete_priority_list_log_data($po_id);
 
 		// Start transaction
 		$this->db->trans_start();
@@ -6844,6 +7280,22 @@ class Inventory_model extends CI_Model
 				'url' => $this->session->userdata('previous_url')
 			];
 		} else {
+			// Insert audit log
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'priority_list',
+				'action'         => 'delete',
+				'message'        => 'Priority List deleted by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($priority_log_data),
+				'table_name'     => 'po_products',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			$resultpost = [
 				'status' => 200,
 				'message' => 'Priority list deleted successfully!',
@@ -6864,6 +7316,9 @@ class Inventory_model extends CI_Model
 			echo json_encode(['status' => 400, 'message' => 'Purchase Order ID is required']);
 			return;
 		}
+
+		// Capture data before delete for audit log
+		$loading_log_data = $this->get_complete_loading_list_log_data($po_id);
 
 		// Start transaction
 		$this->db->trans_start();
@@ -6888,6 +7343,22 @@ class Inventory_model extends CI_Model
 				'url' => $this->session->userdata('previous_url')
 			];
 		} else {
+			// Insert audit log
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'loading_list',
+				'action'         => 'delete',
+				'message'        => 'Loading List deleted by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($loading_log_data),
+				'table_name'     => 'loading_po_product',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			$resultpost = [
 				'status' => 200,
 				'message' => 'Loading list deleted successfully!',
@@ -7850,6 +8321,10 @@ class Inventory_model extends CI_Model
 			return;
 		}
 
+		$po_row = $this->db->where('id', $po_id)->get('purchase_order')->row_array();
+		$is_edit = (!empty($po_row) && $po_row['delivery_status'] == 'loading');
+		$old_log_data = $is_edit ? $this->get_complete_loading_list_log_data($po_id) : null;
+
 		// Start transaction
 		$this->db->trans_start();
 
@@ -8096,6 +8571,35 @@ class Inventory_model extends CI_Model
 		if ($this->db->trans_status() === FALSE) {
 			echo json_encode(['status' => 400, 'message' => 'Error updating loading list']);
 		} else {
+			// Insert audit log
+			$new_log_data = $this->get_complete_loading_list_log_data($po_id);
+			if ($is_edit) {
+				$log_json = array(
+					'old_data' => $old_log_data,
+					'new_data' => $new_log_data
+				);
+				$action = 'edit';
+				$message = 'Loading List edited by ' . $this->session->userdata('super_name');
+			} else {
+				$log_json = $new_log_data;
+				$action = 'add';
+				$message = 'Loading List added by ' . $this->session->userdata('super_name');
+			}
+			$log_data = array(
+				'parent_id'      => $po_id,
+				'ref_id'         => NULL,
+				'module'         => 'loading_list',
+				'action'         => $action,
+				'message'        => $message,
+				'json'           => json_encode($log_json),
+				'table_name'     => 'loading_po_product',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
 			$redirect_url = $this->agent->referrer();
 			echo json_encode([
 				'status' => 200, 

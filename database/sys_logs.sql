@@ -31,7 +31,7 @@ CREATE TABLE `sys_logs` (
   `id` int(11) NOT NULL,
   `parent_id` int(11) DEFAULT NULL,
   `ref_id` int(11) DEFAULT NULL,
-  `module` enum('sales','product','') NOT NULL DEFAULT '',
+  `module` enum('','product','purchase_order','priority_list','loading_list','purchase_in','sales') NOT NULL DEFAULT '',
   `action` varchar(255) DEFAULT NULL,
   `message` text DEFAULT NULL,
   `json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`json`)),
