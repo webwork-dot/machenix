@@ -11138,6 +11138,7 @@ class Inventory_model extends CI_Model
 			$batch_rate               = $this->input->post('batch_rate');
 			$batch_remark             = $this->input->post('batch_remark');
 			$batch_bill_amount        = $this->input->post('batch_bill_amount');
+			$batch_bill_remark        = $this->input->post('batch_bill_remark');
 			$batch_bill_total         = $this->input->post('batch_bill_total');
 			$batch_gst_per            = $this->input->post('batch_gst_per');
 			$batch_gst_amt            = $this->input->post('batch_gst_amt');
@@ -11183,6 +11184,7 @@ class Inventory_model extends CI_Model
 						'amount'						=> $batch_rate[$i][$index],
 						'remark'						=> isset($batch_remark[$i][$index]) ? clean_and_escape($batch_remark[$i][$index]) : null,
 						'bill_amount'				=> $batch_bill_amount[$i][$index],
+						'bill_remark'				=> isset($batch_bill_remark[$i][$index]) ? clean_and_escape($batch_bill_remark[$i][$index]) : null,
 						'bill_total'				=> $batch_bill_total[$i][$index],
 						'gst'								=> $batch_gst_per[$i][$index],
 						'gst_amount'				=> $batch_gst_amt[$i][$index],
@@ -11790,6 +11792,7 @@ class Inventory_model extends CI_Model
 			$batch_rate               = $this->input->post('batch_rate');
 			$batch_remark             = $this->input->post('batch_remark');
 			$batch_bill_amount        = $this->input->post('batch_bill_amount');
+			$batch_bill_remark        = $this->input->post('batch_bill_remark');
 			$batch_bill_total         = $this->input->post('batch_bill_total');
 			$batch_gst_per            = $this->input->post('batch_gst_per');
 			$batch_gst_amt            = $this->input->post('batch_gst_amt');
@@ -11882,6 +11885,7 @@ class Inventory_model extends CI_Model
 								'amount'						=> (float) $batch_rate[$row_index][$index],
 								'remark'						=> isset($batch_remark[$row_index][$index]) ? clean_and_escape($batch_remark[$row_index][$index]) : null,
 								'bill_amount'				=> (float) $batch_bill_amount[$row_index][$index],
+								'bill_remark'				=> isset($batch_bill_remark[$row_index][$index]) ? clean_and_escape($batch_bill_remark[$row_index][$index]) : null,
 								'bill_total'				=> (float) $batch_bill_total[$row_index][$index],
 								'gst'								=> (float) $batch_gst_per[$row_index][$index],
 								'gst_amount'				=> (float) $batch_gst_amt[$row_index][$index],
@@ -12455,6 +12459,7 @@ class Inventory_model extends CI_Model
 					$batch_rate               = $this->input->post('batch_rate');
 					$batch_remark             = $this->input->post('batch_remark');
 					$batch_bill_amount        = $this->input->post('batch_bill_amount');
+					$batch_bill_remark        = $this->input->post('batch_bill_remark');
 					$batch_bill_total         = $this->input->post('batch_bill_total');
 					$batch_gst_per            = $this->input->post('batch_gst_per');
 					$batch_gst_amt            = $this->input->post('batch_gst_amt');
@@ -12553,6 +12558,7 @@ class Inventory_model extends CI_Model
 										'amount'						=> (float) $batch_rate[$row_index][$index],
 										'remark'						=> isset($batch_remark[$row_index][$index]) ? clean_and_escape($batch_remark[$row_index][$index]) : null,
 										'bill_amount'				=> (float) $batch_bill_amount[$row_index][$index],
+										'bill_remark'				=> isset($batch_bill_remark[$row_index][$index]) ? clean_and_escape($batch_bill_remark[$row_index][$index]) : null,
 										'bill_total'				=> (float) $batch_bill_total[$row_index][$index],
 										'gst'								=> (float) $batch_gst_per[$row_index][$index],
 										'gst_amount'				=> (float) $batch_gst_amt[$row_index][$index],
@@ -14531,13 +14537,14 @@ class Inventory_model extends CI_Model
 	{
 		$batch_id = $this->input->post('batch_id');
 		$query = $this->db->query("SELECT id, supplier_id, product_id, quantity, official_qty, black_qty FROM inventory WHERE id = '$batch_id'");
-		$res = array('quantity' => 0, 'official_qty' => 0, 'black_qty' => 0, 'supplier_id' => null, 'product_id' => 0, 'min_selling_price' => 0);
+		$res = array('quantity' => 0, 'official_qty' => 0, 'black_qty' => 0, 'supplier_id' => null, 'product_id' => 0, 'min_selling_price' => 0, 'min_billing_price' => 0);
 		if ($query->num_rows() > 0) {
 			$res = $query->row_array();
 			$supplier_id = !empty($res['supplier_id']) ? intval($res['supplier_id']) : 0;
 			$product_id = !empty($res['product_id']) ? intval($res['product_id']) : 0;
 
 			$min_selling_price = 0;
+			$min_billing_price = 0;
 			$found_variation = false;
 
 			if ($supplier_id > 0 && $product_id > 0) {
@@ -14546,8 +14553,13 @@ class Inventory_model extends CI_Model
 					'supplier_id' => $supplier_id
 				])->row_array();
 
-				if ($pv_row && isset($pv_row['costing_price'])) {
-					$min_selling_price = (float)$pv_row['costing_price'];
+				if ($pv_row) {
+					if (isset($pv_row['costing_price'])) {
+						$min_selling_price = (float)$pv_row['costing_price'];
+					}
+					if (isset($pv_row['product_mrp'])) {
+						$min_billing_price = (float)$pv_row['product_mrp'];
+					}
 					$found_variation = true;
 				}
 			}
@@ -14557,12 +14569,18 @@ class Inventory_model extends CI_Model
 					'id' => $product_id
 				])->row_array();
 
-				if ($rp_row && isset($rp_row['costing_price'])) {
-					$min_selling_price = (float)$rp_row['costing_price'];
+				if ($rp_row) {
+					if (isset($rp_row['costing_price'])) {
+						$min_selling_price = (float)$rp_row['costing_price'];
+					}
+					if (isset($rp_row['product_mrp'])) {
+						$min_billing_price = (float)$rp_row['product_mrp'];
+					}
 				}
 			}
 
 			$res['min_selling_price'] = $min_selling_price;
+			$res['min_billing_price'] = $min_billing_price;
 		}
 		echo json_encode($res);
 	}

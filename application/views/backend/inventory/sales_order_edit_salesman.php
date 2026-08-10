@@ -357,6 +357,7 @@
                     <th style="min-width:170px;">Remark</th>
                     <th style="min-width:100px;">Total Amt</th>
                     <th style="min-width:120px;">Per Qty Bill <span class="text-danger">*</span></th>
+                    <th style="min-width:170px;">Bill Remark</th>
                     <th style="min-width:100px;">Total Bill</th>
                     <th style="min-width:60px;">GST % <span class="text-danger">*</span></th>
                     <th style="min-width:100px;">GST Amt</th>
@@ -397,6 +398,7 @@
                     <td></td>
                     <td><input type="hidden" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo $product['total_amount']; ?>"></td>
                     <td><input type="hidden" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" value="<?php echo $product['bill_amount']; ?>" data-manual="false"></td>
+                    <td></td>
                     <td><input type="hidden" id="bill_total_<?php echo $k; ?>" name="bill_total[]" value="<?php echo $product['bill_total']; ?>"></td>
                     <td><input type="hidden" id="gst_<?php echo $k; ?>" name="gst[]" value="<?php echo $product['gst']; ?>"></td>
                     <td><input type="hidden" id="gst_amount_<?php echo $k; ?>" name="gst_amount[]" value="<?php echo $product['gst_amount']; ?>"></td>
@@ -439,22 +441,33 @@
                       $selected_batch_id = $inventory_batch ? $inventory_batch['id'] : '';
 
                       $min_selling_price = 0;
+                      $min_billing_price = 0;
                       $supplier_id = !empty($inventory_batch['supplier_id']) ? (int)$inventory_batch['supplier_id'] : 0;
                       $product_id_val = (int)$product['product_id'];
                       if ($supplier_id > 0 && $product_id_val > 0) {
                         $pv_row = $this->db->get_where('product_variations', ['product_id' => $product_id_val, 'supplier_id' => $supplier_id])->row_array();
-                        if ($pv_row && isset($pv_row['costing_price'])) {
-                          $min_selling_price = (float)$pv_row['costing_price'];
+                        if ($pv_row) {
+                          if (isset($pv_row['costing_price'])) {
+                            $min_selling_price = (float)$pv_row['costing_price'];
+                          }
+                          if (isset($pv_row['product_mrp'])) {
+                            $min_billing_price = (float)$pv_row['product_mrp'];
+                          }
                         }
                       }
-                      if ($min_selling_price == 0 && $product_id_val > 0) {
+                      if ($product_id_val > 0) {
                         $rp_row = $this->db->get_where('raw_products', ['id' => $product_id_val])->row_array();
-                        if ($rp_row && isset($rp_row['costing_price'])) {
-                          $min_selling_price = (float)$rp_row['costing_price'];
+                        if ($rp_row) {
+                          if ($min_selling_price == 0 && isset($rp_row['costing_price'])) {
+                            $min_selling_price = (float)$rp_row['costing_price'];
+                          }
+                          if ($min_billing_price == 0 && isset($rp_row['product_mrp'])) {
+                            $min_billing_price = (float)$rp_row['product_mrp'];
+                          }
                         }
                       }
                   ?>
-                    <tr class="batch-row batch-row-<?php echo $k; ?>" data-min-price="<?php echo $min_selling_price; ?>">
+                    <tr class="batch-row batch-row-<?php echo $k; ?>" data-min-price="<?php echo $min_selling_price; ?>" data-min-billing-price="<?php echo $min_billing_price; ?>">
                       <td></td>
                       <td style="padding-left: 20px !important;">
                         <select class="form-control select2 batch_id" id="batch_id_<?php echo $k; ?>_<?php echo $batch_index; ?>" disabled>
@@ -499,6 +512,15 @@
                       </td>
                       <td>
                         <input type="number" step="any" class="form-control batch_bill_amount text-center" name="batch_bill_amount[<?php echo $k; ?>][]" id="batch_bill_amount_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="markBatchManual(this); calculate_batch_amt(this, '<?php echo $k; ?>')" data-manual="<?php echo ($batch['amount'] != $batch['bill_amount']) ? 'true' : 'false'; ?>" value="<?php echo number_format($batch['bill_amount'], 2, '.', ''); ?>">
+                      </td>
+                      <td style="min-width: 170px;">
+                        <div class="d-flex flex-column gap-25">
+                          <input type="text" class="form-control batch_bill_remark" name="batch_bill_remark[<?php echo $k; ?>][]" id="batch_bill_remark_<?php echo $k; ?>_<?php echo $batch_index; ?>" placeholder="Bill Remark" value="<?php echo htmlspecialchars($batch['bill_remark'] ?? ''); ?>">
+                          <span class="badge bg-light-danger text-danger border border-danger batch_bill_remark_indicator d-none mt-25" id="batch_bill_remark_indicator_<?php echo $k; ?>_<?php echo $batch_index; ?>" style="font-size: 10px; padding: 3px 5px; font-weight: bold; text-align: left; align-items: center; gap: 4px;" title="Billing amount is lower than required minimum billing price!">
+                            <i class="fa fa-exclamation-triangle text-danger" style="font-size: 11px;"></i>
+                            <span>Bill Alert: Below Min Billing (<span class="min-billing-price-val">0</span>)</span>
+                          </span>
+                        </div>
                       </td>
                       <td>
                         <input type="number" step="any" class="form-control batch_bill_total text-center" name="batch_bill_total[<?php echo $k; ?>][]" id="batch_bill_total_<?php echo $k; ?>_<?php echo $batch_index; ?>" onkeyup="calculate_batch_amt_reverse(this, '<?php echo $k; ?>')" value="<?php echo number_format($batch['bill_total'], 2, '.', ''); ?>">
@@ -1134,6 +1156,7 @@ function calculate_batch_amt(element, index) {
   row.find('.batch_final_total').val(final_total.toFixed(2));
 
   checkBatchRemarkRequirement(element);
+  checkBatchBillRemarkRequirement(element);
   rollup_product_totals(index);
   recalculate();
 }
@@ -1198,6 +1221,24 @@ function checkBatchRemarkRequirement(element) {
   }
 }
 
+function checkBatchBillRemarkRequirement(element) {
+  var row = $(element).closest('.batch-row');
+  var min_billing_price = parseFloat(row.attr('data-min-billing-price')) || 0;
+  var bill_amt = parseFloat(row.find('.batch_bill_amount').val()) || 0;
+  var remark_input = row.find('.batch_bill_remark');
+  var indicator = row.find('.batch_bill_remark_indicator');
+  var min_billing_span = row.find('.min-billing-price-val');
+
+  if (min_billing_price > 0 && bill_amt < min_billing_price) {
+    indicator.removeClass('d-none').addClass('d-inline-flex');
+    min_billing_span.text(min_billing_price.toFixed(2));
+    remark_input.attr('required', 'required').addClass('border-danger');
+  } else {
+    indicator.addClass('d-none').removeClass('d-inline-flex');
+    remark_input.removeAttr('required').removeClass('border-danger');
+  }
+}
+
 $(document).ready(function() {
   $('.product_id').select2({ dropdownParent: $('body') });
   $('.batch_id').select2({ dropdownParent: $('body') });
@@ -1205,6 +1246,7 @@ $(document).ready(function() {
 
   $('.batch-row').each(function() {
     checkBatchRemarkRequirement(this);
+    checkBatchBillRemarkRequirement(this);
   });
 
   var s_state_id = "<?php echo $data['shipping_state_id'] ?? ''; ?>";

@@ -395,6 +395,7 @@
                     <th style="min-width:170px;">Remark</th>
                     <th style="min-width:100px;">Total Amt</th>
                     <th style="min-width:120px;">Per Qty Bill <span class="text-danger">*</span></th>
+                    <th style="min-width:170px;">Bill Remark</th>
                     <th style="min-width:100px;">Total Bill</th>
                     <th style="min-width:60px;">GST % <span class="text-danger">*</span></th>
                     <th style="min-width:100px;">GST Amt</th>
@@ -428,6 +429,7 @@
                     <td></td>
                     <td><input type="hidden" id="total_amount_1" name="total_amount[]" value="0"></td>
                     <td><input type="hidden" id="bill_amount_1" name="bill_amount[]" value="0" data-manual="false"></td>
+                    <td></td>
                     <td><input type="hidden" id="bill_total_1" name="bill_total[]" value="0"></td>
                     <td><input type="hidden" id="gst_1" name="gst[]" value=""></td>
                     <td><input type="hidden" id="gst_amount_1" name="gst_amount[]" value="0"></td>
@@ -756,8 +758,10 @@ function appendRequirement() {
         <td>
           <input type="hidden" id="master_amount_${nextindex}" name="master_amount[]">
         </td>
+        <td></td>
         <td><input type="hidden" id="total_amount_${nextindex}" name="total_amount[]" value="0"></td>
         <td><input type="hidden" id="bill_amount_${nextindex}" name="bill_amount[]" value="0" data-manual="false"></td>
+        <td></td>
         <td><input type="hidden" id="bill_total_${nextindex}" name="bill_total[]" value="0"></td>
         <td><input type="hidden" id="gst_${nextindex}" name="gst[]"></td>
         <td><input type="hidden" id="gst_amount_${nextindex}" name="gst_amount[]" value="0"></td>
@@ -1473,6 +1477,7 @@ function appendRequirement() {
     row.find('.batch_final_total').val(final_total.toFixed(2));
 
     checkBatchRemarkRequirement(element);
+    checkBatchBillRemarkRequirement(element);
     rollup_product_totals(index);
     recalculate();
   }
@@ -1543,7 +1548,7 @@ function appendRequirement() {
     });
 
     var batch_row = `
-      <tr class="batch-row batch-row-${index}" data-min-price="0">
+      <tr class="batch-row batch-row-${index}" data-min-price="0" data-min-billing-price="0">
         <td></td>
         <td style="padding-left: 20px !important;">
           <select class="form-control select2 batch_id" name="batch_id[${index}][]" id="batch_id_${index}_${batch_index}" onchange="getBatchDetails(this, '${index}')">
@@ -1584,6 +1589,15 @@ function appendRequirement() {
         </td>
         <td>
           <input type="number" step="any" class="form-control batch_bill_amount text-center" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" data-manual="false">
+        </td>
+        <td style="min-width: 170px;">
+          <div class="d-flex flex-column gap-25">
+            <input type="text" class="form-control batch_bill_remark" name="batch_bill_remark[${index}][]" id="batch_bill_remark_${index}_${batch_index}" placeholder="Bill Remark">
+            <span class="badge bg-light-danger text-danger border border-danger batch_bill_remark_indicator d-none mt-25" id="batch_bill_remark_indicator_${index}_${batch_index}" style="font-size: 10px; padding: 3px 5px; font-weight: bold; text-align: left; align-items: center; gap: 4px;" title="Billing amount is lower than required minimum billing price!">
+              <i class="fa fa-exclamation-triangle text-danger" style="font-size: 11px;"></i>
+              <span>Bill Alert: Below Min Billing (<span class="min-billing-price-val">0</span>)</span>
+            </span>
+          </div>
         </td>
         <td>
           <input type="number" step="any" class="form-control batch_bill_total text-center" name="batch_bill_total[${index}][]" id="batch_bill_total_${index}_${batch_index}" onkeyup="calculate_batch_amt_reverse(this, '${index}')">
@@ -1671,12 +1685,31 @@ function appendRequirement() {
     }
   }
 
+  function checkBatchBillRemarkRequirement(element) {
+    var row = $(element).closest('.batch-row');
+    var min_billing_price = parseFloat(row.attr('data-min-billing-price')) || 0;
+    var bill_amt = parseFloat(row.find('.batch_bill_amount').val()) || 0;
+    var remark_input = row.find('.batch_bill_remark');
+    var indicator = row.find('.batch_bill_remark_indicator');
+    var min_billing_span = row.find('.min-billing-price-val');
+
+    if (min_billing_price > 0 && bill_amt < min_billing_price) {
+      indicator.removeClass('d-none').addClass('d-inline-flex');
+      min_billing_span.text(min_billing_price.toFixed(2));
+      remark_input.attr('required', 'required').addClass('border-danger');
+    } else {
+      indicator.addClass('d-none').removeClass('d-inline-flex');
+      remark_input.removeAttr('required').removeClass('border-danger');
+    }
+  }
+
   function getBatchDetails(element, index) {
     var batch_id = $(element).val();
     var row = $(element).closest('.batch-row');
 
     if (batch_id == '') {
       row.attr('data-min-price', 0);
+      row.attr('data-min-billing-price', 0);
       row.find('.available_white_qty').val(0);
       row.find('.available_black_qty').val(0);
       row.find('.avail-white-text').text(0);
@@ -1694,7 +1727,9 @@ function appendRequirement() {
       row.find('.batch_final_total').val(0);
       row.find('.batch_total_amount').val(0);
       row.find('.batch_remark').val('');
+      row.find('.batch_bill_remark').val('');
       checkBatchRemarkRequirement(element);
+      checkBatchBillRemarkRequirement(element);
       rollup_product_totals(index);
       recalculate();
       return;
@@ -1716,6 +1751,7 @@ function appendRequirement() {
       });
       $(element).val('').trigger('change.select2');
       row.attr('data-min-price', 0);
+      row.attr('data-min-billing-price', 0);
       row.find('.available_white_qty').val(0);
       row.find('.available_black_qty').val(0);
       row.find('.avail-white-text').text(0);
@@ -1733,7 +1769,9 @@ function appendRequirement() {
       row.find('.batch_final_total').val(0);
       row.find('.batch_total_amount').val(0);
       row.find('.batch_remark').val('');
+      row.find('.batch_bill_remark').val('');
       checkBatchRemarkRequirement(element);
+      checkBatchBillRemarkRequirement(element);
       rollup_product_totals(index);
       recalculate();
       return;
@@ -1752,6 +1790,7 @@ function appendRequirement() {
         row.find('.avail-white-text').text(res.official_qty);
         row.find('.avail-black-text').text(res.black_qty);
         row.attr('data-min-price', res.min_selling_price || 0);
+        row.attr('data-min-billing-price', res.min_billing_price || 0);
         
         var main_rate = $('#master_amount_' + index).val();
         var main_gst = $('#gst_' + index).val();
