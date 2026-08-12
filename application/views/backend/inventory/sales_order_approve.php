@@ -1032,7 +1032,7 @@ function addBatch(index) {
 			</td>
 			<td style="min-width: 170px;">
 				<div class="d-flex flex-column gap-25">
-					<input type="text" class="form-control batch_remark" name="batch_remark[${index}][]" id="batch_remark_${index}_${batch_index}" placeholder="Remark">
+					<input type="text" class="form-control batch_remark" name="batch_remark[${index}][]" id="batch_remark_${index}_${batch_index}" placeholder="Remark" readonly>
 					<span class="badge bg-light-danger text-danger border border-danger batch_remark_indicator d-none mt-25" id="batch_remark_indicator_${index}_${batch_index}" style="font-size: 10px; padding: 3px 5px; font-weight: bold; text-align: left; align-items: center; gap: 4px;" title="Product amount is lower than required minimum selling price!">
 						<i class="fa fa-exclamation-triangle text-danger" style="font-size: 11px;"></i>
 						<span>Price Alert: Below Min Price (<span class="min-price-val">0</span>)</span>
@@ -1047,7 +1047,7 @@ function addBatch(index) {
 			</td>
 			<td style="min-width: 170px;">
 				<div class="d-flex flex-column gap-25">
-					<input type="text" class="form-control batch_bill_remark" name="batch_bill_remark[${index}][]" id="batch_bill_remark_${index}_${batch_index}" placeholder="Bill Remark">
+					<input type="text" class="form-control batch_bill_remark" name="batch_bill_remark[${index}][]" id="batch_bill_remark_${index}_${batch_index}" placeholder="Bill Remark" readonly>
 					<span class="badge bg-light-danger text-danger border border-danger batch_bill_remark_indicator d-none mt-25" id="batch_bill_remark_indicator_${index}_${batch_index}" style="font-size: 10px; padding: 3px 5px; font-weight: bold; text-align: left; align-items: center; gap: 4px;" title="Billing amount is lower than required minimum billing price!">
 						<i class="fa fa-exclamation-triangle text-danger" style="font-size: 11px;"></i>
 						<span>Bill Alert: Below Min Billing (<span class="min-billing-price-val">0</span>)</span>
@@ -1132,10 +1132,10 @@ function checkBatchRemarkRequirement(element) {
 	if (min_price > 0 && rate < min_price) {
 		indicator.removeClass('d-none').addClass('d-inline-flex');
 		min_price_span.text(min_price.toFixed(2));
-		remark_input.attr('required', 'required').addClass('border-danger');
+		remark_input.prop('readonly', false).attr('required', 'required').addClass('border-danger');
 	} else {
 		indicator.addClass('d-none').removeClass('d-inline-flex');
-		remark_input.removeAttr('required').removeClass('border-danger');
+		remark_input.val('').prop('readonly', true).removeAttr('required').removeClass('border-danger');
 	}
 }
 
@@ -1150,10 +1150,10 @@ function checkBatchBillRemarkRequirement(element) {
 	if (min_billing_price > 0 && bill_amt < min_billing_price) {
 		indicator.removeClass('d-none').addClass('d-inline-flex');
 		min_billing_span.text(min_billing_price.toFixed(2));
-		remark_input.attr('required', 'required').addClass('border-danger');
+		remark_input.prop('readonly', false).attr('required', 'required').addClass('border-danger');
 	} else {
 		indicator.addClass('d-none').removeClass('d-inline-flex');
-		remark_input.removeAttr('required').removeClass('border-danger');
+		remark_input.val('').prop('readonly', true).removeAttr('required').removeClass('border-danger');
 	}
 }
 
