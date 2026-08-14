@@ -53,6 +53,7 @@ CREATE TABLE `purchase_order` (
   `boe_no` varchar(255) DEFAULT NULL,
   `boe_date` datetime DEFAULT NULL,
   `source` varchar(255) NOT NULL DEFAULT 'po',
+  `is_locked` tinyint(1) NOT NULL DEFAULT 0,
   `added_by_id` int(11) NOT NULL,
   `added_by_name` varchar(250) NOT NULL,
   PRIMARY KEY (`id`)

@@ -701,7 +701,7 @@ class Inventory extends CI_Controller
         $company_info = $this->common_model->getRowById('company', 'state_id', ['id' => $company_id]);
         $page_data['company_state_id'] = $company_info ? (int)$company_info['state_id'] : 0;
 
-        $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id, 'delivery_status' => 'purchase_in']);
+        $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['is_locked' => '0', 'is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id, 'delivery_status' => 'purchase_in']);
         $page_data['po'] = ($pos != '') ? $pos : [];
         
         $expenses = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);
@@ -719,6 +719,11 @@ class Inventory extends CI_Controller
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'edit') {
             $data = $this->common_model->getRowById('po_expense', '*', ['is_delete' => '0', 'id' => $param2]);
+            if (!empty($data['batch_no']) && $this->inventory_model->is_purchase_order_locked_by_batch($data['batch_no'], $company_id)) {
+                $this->session->set_flashdata('error_message', 'This PO is locked and cannot be edited.');
+                redirect(site_url('inventory/po-expense'));
+                return;
+            }
             $page_data['data'] = ($data != '') ? $data : [];
             $data = $this->common_model->getResultById('po_expense_details', '*', ['parent_id' => $param2]);
             $page_data['lists'] = ($data != '') ? $data : [];
@@ -1162,6 +1167,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->delete_loading_list($param2);
         } elseif ($param1 == "move_to_purchase_in") {
             $this->inventory_model->move_to_purchase_in($param2);
+        } elseif ($param1 == "lock_po") {
+            $this->inventory_model->lock_purchase_order($param2);
         } elseif ($param1 == "local") {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'purchase_order';

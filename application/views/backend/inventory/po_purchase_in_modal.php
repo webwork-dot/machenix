@@ -162,7 +162,18 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                     $g_taxable_value     = 0;
                     $g_gst_amt           = 0;
                     $g_total_amt         = 0;
-                    foreach ($supplier_products as $supplier_id => $supplier_data): ?>
+                    foreach ($supplier_products as $supplier_id => $supplier_data):
+                      $sup_currency_type = 'usd';
+                      $sup_rmb_usd_con_rate = 0;
+                      $sup_inr_con_rate = 0;
+                      if ($po_raw['delivery_status'] == 'purchase_in' && !empty($supplier_data['products'][0])) {
+                          $first_prod = $supplier_data['products'][0];
+                          $sup_currency_type = !empty($first_prod['currency_type']) ? $first_prod['currency_type'] : 'usd';
+                          $sup_rmb_usd_con_rate = (float)($first_prod['rmb_usd_con_rate'] ?? 0);
+                          $sup_inr_con_rate = (float)($first_prod['inr_con_rate'] ?? 0);
+                      }
+                      $sup_con_rate_label = ($sup_currency_type === 'rmb') ? 'USD Rate' : 'RMB Rate';
+                    ?>
                     <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                         <h5>
                             Supplier: <?php echo htmlspecialchars($supplier_data['supplier_name']); ?>
@@ -180,6 +191,23 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                 </button>
                             </span>
                         </h5>
+                        <div class="supplier-rate-controls row align-items-end mb-1">
+                            <div class="col-md-3 col-sm-4 mb-50">
+                                <label class="mb-25">Currency</label>
+                                <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[<?php echo $supplier_id; ?>]">
+                                    <option value="usd" <?php echo ($sup_currency_type === 'usd') ? 'selected' : ''; ?>>USD to RMB</option>
+                                    <option value="rmb" <?php echo ($sup_currency_type === 'rmb') ? 'selected' : ''; ?>>RMB to USD</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-sm-4 mb-50">
+                                <label class="mb-25 supplier-con-rate-label"><?php echo $sup_con_rate_label; ?></label>
+                                <input type="number" step="any" class="form-control form-control-sm text-right supplier-con-rate" name="supplier_rmb_usd_con_rate[<?php echo $supplier_id; ?>]" value="<?php echo number_format($sup_rmb_usd_con_rate, 5, '.', ''); ?>" placeholder="0">
+                            </div>
+                            <div class="col-md-3 col-sm-4 mb-50">
+                                <label class="mb-25">INR Rate</label>
+                                <input type="number" step="any" class="form-control form-control-sm text-right supplier-local-inr-rate" name="supplier_inr_con_rate[<?php echo $supplier_id; ?>]" value="<?php echo number_format($sup_inr_con_rate, 5, '.', ''); ?>" placeholder="0">
+                            </div>
+                        </div>
                         <div class="table-responsive supplier-table-container">
                             <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
                                 <thead>
@@ -1012,6 +1040,49 @@ function calculateActualINR(el) {
   updateTableTotals($row.closest('table'));
 }
 
+function updateSupplierConRateLabel($section) {
+  var type = $section.find('.supplier-currency-type').val() || 'usd';
+  $section.find('.supplier-con-rate-label').text(type === 'rmb' ? 'USD Rate' : 'RMB Rate');
+}
+
+function applySupplierConversionRates($section) {
+  if (!$section || !$section.length) return;
+
+  var type = $section.find('.supplier-currency-type').val() || 'usd';
+  var conRate = toNum($section.find('.supplier-con-rate').val());
+  var inrRate = toNum($section.find('.supplier-local-inr-rate').val());
+
+  $section.find('tbody tr').each(function () {
+    var $row = $(this);
+    if (!$row.find('.actual-usd').length && !$row.find('.actual-rmb').length) return;
+
+    if (type === 'usd') {
+      var unitUsd = toNum($row.find('.actual-usd').val());
+      if (conRate > 0) {
+        $row.find('.actual-rmb').val((unitUsd * conRate).toFixed(5));
+      }
+      if (inrRate > 0) {
+        $row.find('.actual-inr').val((unitUsd * inrRate).toFixed(2));
+      }
+    } else {
+      var unitRmb = toNum($row.find('.actual-rmb').val());
+      if (conRate > 0) {
+        $row.find('.actual-usd').val(fmtUsd(unitRmb * conRate));
+      }
+      if (inrRate > 0) {
+        $row.find('.actual-inr').val((unitRmb * inrRate).toFixed(2));
+      }
+    }
+
+    var triggerEl = $row.find('.actual-qty')[0] || $row.find('.actual-rmb')[0] || $row.find('.actual-usd')[0];
+    if (triggerEl) {
+      calculateActual(triggerEl);
+    }
+  });
+
+  updateTableTotals($section.find('table'));
+}
+
 // Duty % changed -> recompute duty, surcharge, taxable, gst, total (full chain)
 function calculateDuty(el) {
   var $row = getRow(el);
@@ -1080,6 +1151,16 @@ $(document).ready(function () {
     });
 
     updateAllSupplierTotals();
+  });
+
+  $(document).on('change', '.supplier-currency-type', function () {
+    var $section = $(this).closest('.supplier-section');
+    updateSupplierConRateLabel($section);
+    applySupplierConversionRates($section);
+  });
+
+  $(document).on('keyup change', '.supplier-con-rate, .supplier-local-inr-rate', function () {
+    applySupplierConversionRates($(this).closest('.supplier-section'));
   });
 
   $(document).on('click', '#add_supplier_btn', function() {
@@ -1151,6 +1232,23 @@ function createSupplierSection(supplierId, supplierName) {
                 </button>
             </span>
         </h5>
+        <div class="supplier-rate-controls row align-items-end mb-1">
+            <div class="col-md-3 col-sm-4 mb-50">
+                <label class="mb-25">Currency</label>
+                <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[${supplierId}]">
+                    <option value="usd" selected>USD to RMB</option>
+                    <option value="rmb">RMB to USD</option>
+                </select>
+            </div>
+            <div class="col-md-3 col-sm-4 mb-50">
+                <label class="mb-25 supplier-con-rate-label">RMB Rate</label>
+                <input type="number" step="any" class="form-control form-control-sm text-right supplier-con-rate" name="supplier_rmb_usd_con_rate[${supplierId}]" value="0" placeholder="0">
+            </div>
+            <div class="col-md-3 col-sm-4 mb-50">
+                <label class="mb-25">INR Rate</label>
+                <input type="number" step="any" class="form-control form-control-sm text-right supplier-local-inr-rate" name="supplier_inr_con_rate[${supplierId}]" value="0" placeholder="0">
+            </div>
+        </div>
         <div class="table-responsive supplier-table-container">
             <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
                 <thead>
@@ -1369,6 +1467,7 @@ function processReloadSupplierProducts(buttonEl, loadProducts, existingProductId
                         if (product) appendPurchaseInProductRow($section, product);
                     });
                     updateSupplierRowNumbers($section);
+                    applySupplierConversionRates($section);
                     updateAllSupplierTotals();
                 }
             }
@@ -1459,6 +1558,7 @@ function appendPurchaseInProductRow($section, p) {
         </td>
     </tr>`;
     $section.find('tbody').append(html);
+    applySupplierConversionRates($section);
 }
 
 function removePurchaseInRow(btn, rowId) {

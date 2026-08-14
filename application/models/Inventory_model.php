@@ -4595,7 +4595,7 @@ class Inventory_model extends CI_Model
 		}
 
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date, arrival_date, expected_date FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date, arrival_date, expected_date, is_locked FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -4807,6 +4807,7 @@ class Inventory_model extends CI_Model
 				$delete_loading_list_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_loading_list/" . $id . "','Are you sure want to delete the loading list!')";
 				$move_to_purchase_in_url = "confirm_modal('" . base_url() . "inventory/purchase_order/move_to_purchase_in/" . $id . "','Are you sure want to this PO to Purchase In & Customs!')";
 				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs - " . $item['voucher_no'] . "')";
+				$purchase_in_view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_view_modal/" . $id . "','View Purchase In - " . $item['voucher_no'] . "')";
 				if ($delivery_status == 'loading') {
 					$loading_list_action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
@@ -4833,13 +4834,25 @@ class Inventory_model extends CI_Model
 
 				// Purchase In Action
 				$purchase_in_action ='-';
-				if ($delivery_status == 'purchase_in') {
+				$is_locked = !empty($item['is_locked']);
+				$lock_po_url = "confirm_modal('" . base_url() . "inventory/purchase_order/lock_po/" . $id . "','Are you sure want to lock this PO!')";
+				if ($delivery_status == 'purchase_in' && !$is_locked) {
 					$purchase_in_action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Purchase In</a>
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Purchase In</a>
 							<a href="javascript:void(0)" class="dropdown-item" onclick="revertPurchaseIn(' . $id . ')"><i class="fa fa-undo" aria-hidden="true"></i> Revert Stock In</a>
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $lock_po_url . '"><i class="fa fa-lock" aria-hidden="true"></i> Lock PO</a>
+						</div>
+					</div>';
+				} elseif ($delivery_status == 'purchase_in' && $is_locked) {
+					$purchase_in_action ='<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Purchase In</a>
 						</div>
 					</div>';
 				} else {
@@ -6404,6 +6417,15 @@ class Inventory_model extends CI_Model
 		$po_id = $this->input->post('po_id');
 		$po_row = $this->common_model->getRowById('purchase_order', '*', ['id' => $po_id]);
 
+		if (!empty($po_row['is_locked'])) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => 'This PO is locked and cannot be edited.',
+				"url" => $this->session->userdata('previous_url'),
+			);
+			return simple_json_output($resultpost);
+		}
+
 		$inr_rate = $this->input->post('inr_rate');
 		$boe_no = $this->input->post('boe_no');
 		$boe_date = $this->input->post('boe_date');
@@ -6449,6 +6471,10 @@ class Inventory_model extends CI_Model
 
 		$product_ids       = $this->input->post('product_id');
 		$supplier_ids      = $this->input->post('supplier_id_row');
+
+		$supplier_currency_type    = $this->input->post('supplier_currency_type');
+		$supplier_rmb_usd_con_rate = $this->input->post('supplier_rmb_usd_con_rate');
+		$supplier_inr_con_rate     = $this->input->post('supplier_inr_con_rate');
 
 		$replace_qty       = $this->input->post('replace_qty');
 		$replace_recv_qty  = $this->input->post('replace_recv_qty');
@@ -6515,9 +6541,24 @@ class Inventory_model extends CI_Model
 							$rep_recv_q = 0;
 						}
 
+						$row_supplier_id = (int) ($supplier_ids[$i] ?? ($po_prod_row['supplier_id'] ?? 0));
+						$row_currency_type = 'usd';
+						if (is_array($supplier_currency_type) && isset($supplier_currency_type[$row_supplier_id]) && in_array($supplier_currency_type[$row_supplier_id], ['usd', 'rmb'], true)) {
+							$row_currency_type = $supplier_currency_type[$row_supplier_id];
+						}
+						$row_rmb_usd_con_rate = (is_array($supplier_rmb_usd_con_rate) && isset($supplier_rmb_usd_con_rate[$row_supplier_id]))
+							? (float) $supplier_rmb_usd_con_rate[$row_supplier_id]
+							: 0;
+						$row_inr_con_rate = (is_array($supplier_inr_con_rate) && isset($supplier_inr_con_rate[$row_supplier_id]))
+							? (float) $supplier_inr_con_rate[$row_supplier_id]
+							: 0;
+
 						// PO Prod Update
 						$po_prods = [
 								'actual_qty'        => $act_q,
+								'currency_type'     => $row_currency_type,
+								'rmb_usd_con_rate'  => $row_rmb_usd_con_rate,
+								'inr_con_rate'      => $row_inr_con_rate,
 								'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
 								'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
 								'actual_usd'        => (float) ($actual_usd[$i] ?? 0),
@@ -6788,12 +6829,78 @@ class Inventory_model extends CI_Model
 		}
 	}
 
+	public function lock_purchase_order($id)
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			echo json_encode(['status' => 400, 'message' => 'Unauthorized']);
+			return;
+		}
+
+		if (empty($id)) {
+			$resultpost = [
+				'status' => 400,
+				'message' => 'Purchase Order ID is required',
+				'url' => $this->session->userdata('previous_url')
+			];
+			return simple_json_output($resultpost);
+		}
+
+		$po = $this->db->get_where('purchase_order', ['id' => $id, 'is_deleted' => 0])->row_array();
+		if (!$po) {
+			$resultpost = [
+				'status' => 400,
+				'message' => 'Purchase Order not found',
+				'url' => $this->session->userdata('previous_url')
+			];
+			return simple_json_output($resultpost);
+		}
+
+		if (!empty($po['is_locked'])) {
+			$resultpost = [
+				'status' => 400,
+				'message' => 'Purchase Order is already locked',
+				'url' => $this->session->userdata('previous_url')
+			];
+			return simple_json_output($resultpost);
+		}
+
+		$this->db->where('id', $id);
+		$this->db->update('purchase_order', ['is_locked' => 1]);
+
+		$log_data = array(
+			'parent_id'      => $id,
+			'ref_id'         => NULL,
+			'module'         => 'purchase_order',
+			'action'         => 'lock',
+			'message'        => 'Purchase Order locked by ' . $this->session->userdata('super_name'),
+			'json'           => json_encode($po),
+			'table_name'     => 'purchase_order',
+			'added_by'       => $this->session->userdata('super_user_id'),
+			'added_by_email' => $this->session->userdata('super_email'),
+			'added_by_name'  => $this->session->userdata('super_name'),
+			'added_by_type'  => $this->session->userdata('super_type')
+		);
+		$this->db->insert('sys_logs', $log_data);
+
+		$resultpost = [
+			'status' => 200,
+			'message' => 'Purchase Order locked successfully!',
+			'url' => $this->session->userdata('previous_url')
+		];
+
+		return simple_json_output($resultpost);
+	}
+
 	public function revert_purchase_order_in($po_id) {
 		$this->db->trans_start();
 		
 		$po = $this->db->get_where('purchase_order', ['id' => $po_id])->row_array();
 		if (!$po || $po['delivery_status'] != 'purchase_in') {
 			return ['status' => 400, 'message' => 'Invalid PO or PO is not in Stock In status.'];
+		}
+
+		if (!empty($po['is_locked'])) {
+			return ['status' => 400, 'message' => 'This PO is locked and cannot be reverted.'];
 		}
 
 		// Capture data before revert for audit log
@@ -18762,6 +18869,12 @@ class Inventory_model extends CI_Model
 				return simple_json_output($resultpost);
 		}
 
+		if ($this->is_purchase_order_locked_by_batch($existing['batch_no'], $session_company_id)) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "This PO is locked and cannot be edited.";
+				return simple_json_output($resultpost);
+		}
+
 		// ---- Build child rows FIRST (so we don't delete old rows if new is invalid) ----
 		$charges_ids   = (array) $this->input->post('charges_id');
 		$expense_names = (array) $this->input->post('expense_name');
@@ -18859,6 +18972,19 @@ class Inventory_model extends CI_Model
 	public function delete_po_expense($id) {
 		$resultpost = array("status" => 200, "message" => "Expense deleted successfully", "url" => site_url('inventory/po-expense'));
 
+		$existing = $this->common_model->getRowById('po_expense', '*', ['is_delete' => '0', 'id' => $id]);
+		if (empty($existing)) {
+			$resultpost['status']  = 400;
+			$resultpost['message'] = "Expense not found.";
+			return simple_json_output($resultpost);
+		}
+
+		if ($this->is_purchase_order_locked_by_batch($existing['batch_no'])) {
+			$resultpost['status']  = 400;
+			$resultpost['message'] = "This PO is locked and cannot be deleted.";
+			return simple_json_output($resultpost);
+		}
+
 		$this->db->trans_begin();
 
 		$this->db->where('id', $id);
@@ -18876,6 +19002,25 @@ class Inventory_model extends CI_Model
 
 		$this->session->set_flashdata('flash_message', "Expense deleted successfully");
 		return simple_json_output($resultpost);
+	}
+
+	public function is_purchase_order_locked_by_batch($batch_no, $company_id = null)
+	{
+		if (empty($batch_no)) {
+			return false;
+		}
+
+		if ($company_id === null) {
+			$company_id = $this->session->userdata('company_id');
+		}
+
+		$po = $this->db->get_where('purchase_order', [
+			'voucher_no' => $batch_no,
+			'company_id' => $company_id,
+			'is_deleted' => 0
+		])->row_array();
+
+		return !empty($po['is_locked']);
 	}
 
 	public function get_po_expense()
@@ -18913,7 +19058,7 @@ class Inventory_model extends CI_Model
 		$is_filtered = (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") || (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "");
 		$limit_clause = $is_filtered ? "" : " LIMIT $start, $length";
 
-		$query = $this->db->query("SELECT id, batch_no, type, expense_type, vendor_id, sub_total, gst_total, grand_total, expense_date FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter . " ORDER BY id DESC" . $limit_clause);
+		$query = $this->db->query("SELECT e.id, e.batch_no, e.type, e.expense_type, e.vendor_id, e.sub_total, e.gst_total, e.grand_total, e.expense_date, po.is_locked FROM po_expense e LEFT JOIN purchase_order po ON po.voucher_no = e.batch_no AND po.company_id = e.company_id AND po.is_deleted = '0' WHERE e.company_id='" . $company_id . "' AND e.is_delete = '0' " . $keyword_filter . " ORDER BY e.id DESC" . $limit_clause);
 
 		if (!empty($query)) {
 			$sr_no = $start;
@@ -18931,8 +19076,10 @@ class Inventory_model extends CI_Model
 				$total_gst_total += (float)$item['gst_total'];
 
 				$actions = '';
-				$actions .= '<a href="' . base_url() . 'inventory/po-expense/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
-				$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/po_expense/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				if (empty($item['is_locked'])) {
+					$actions .= '<a href="' . base_url() . 'inventory/po-expense/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
+					$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/po_expense/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
 
 				$data[] = array(
 					"sr_no"         	=> ++$sr_no,
