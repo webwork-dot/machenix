@@ -21658,6 +21658,10 @@ public function get_sales_return_reports()
 										SUM(pp.actual_qty * pp.unit_price_rmb) as total_actual_rmb,
 										SUM(pp.actual_qty * pp.actual_usd) as total_actual_usd,
 										SUM(pp.actual_qty * pp.actual_inr) as total_actual_inr,
+										SUM(pp.total_amount_usd) as official_usd,
+										SUM(pp.official_total_rs) as official_inr,
+										(SUM(pp.actual_qty * pp.actual_usd) - SUM(pp.total_amount_usd)) as unofficial_usd,
+										(SUM(pp.actual_qty * pp.actual_inr) - SUM(pp.official_total_rs)) as unofficial_inr,
 										(SELECT COALESCE(CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')), h.added_by_name)
 										 FROM inventory_history h
 										 LEFT JOIN sys_users u ON h.added_by_id = u.id
@@ -21673,8 +21677,13 @@ public function get_sales_return_reports()
 		return $query->result_array();
 	}
 
-	public function get_supplier_payments($supplier_id)
+	public function get_supplier_payments($supplier_id, $payment_type = null)
 	{
+		$typeWhere = '';
+		if ($payment_type !== null && $payment_type !== '') {
+			$typeWhere = "AND p.payment_type = " . $this->db->escape($payment_type);
+		}
+
 		$query = $this->db->query("SELECT 
 										p.*,
 										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
@@ -21682,6 +21691,7 @@ public function get_sales_return_reports()
 									LEFT JOIN sys_users u ON p.added_by = u.id
 									WHERE p.supplier_id = '$supplier_id'
 									AND p.is_delete = 0
+									$typeWhere
 									ORDER BY p.payment_date DESC, p.id DESC");
 		return $query->result_array();
 	}

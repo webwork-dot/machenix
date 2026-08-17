@@ -335,6 +335,8 @@ class Inventory extends CI_Controller
             $page_data['id']         = $param2;
             $page_data['outstanding'] = $this->inventory_model->get_supplier_outstanding($param2);
             $page_data['payments'] = $this->inventory_model->get_supplier_payments($param2);
+            $page_data['official_payments'] = $this->inventory_model->get_supplier_payments($param2, 'official');
+            $page_data['unofficial_payments'] = $this->inventory_model->get_supplier_payments($param2, 'unofficial');
             $page_data['page_name']  = 'supplier_ledger';
             $page_data['page_title'] = 'Supplier Ledger';
             $this->load->view('backend/index', $page_data);
