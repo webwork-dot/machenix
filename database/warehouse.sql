@@ -14,11 +14,11 @@ CREATE TABLE `warehouse` (
   `city_id` int(11) DEFAULT NULL,
   `city_name` varchar(50) DEFAULT NULL,
   `state_code` varchar(10) DEFAULT NULL,
-  `company_id` int(255) NOT NULL,
+  `company_id` int(11) NOT NULL,
   `added_by_id` int(11) DEFAULT NULL,
   `added_by_name` varchar(100) DEFAULT NULL,
   `added_date` datetime NOT NULL,
   `is_deleted` tinyint(1) DEFAULT 0,
   `sort` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

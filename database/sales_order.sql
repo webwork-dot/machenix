@@ -1,42 +1,13 @@
--- phpMyAdmin SQL Dump
--- version 5.2.0
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: May 27, 2026 at 10:24 AM
--- Server version: 10.4.27-MariaDB
--- PHP Version: 7.4.33
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
-
---
--- Database: `machenix_dbc`
---
-
--- --------------------------------------------------------
-
---
--- Table structure for table `sales_order`
---
-
 CREATE TABLE `sales_order` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sale_person_id` varchar(255) DEFAULT NULL,
   `type` enum('normal','bill','conversion') NOT NULL DEFAULT 'normal',
-  `sale_person_id` varchar(250) NOT NULL,
-  `unique_id` varchar(250) DEFAULT NULL,
-  `order_type` enum('normal','excel','') NOT NULL DEFAULT 'normal',
   `is_distributor` tinyint(1) NOT NULL DEFAULT 0,
+  `unique_id` varchar(250) DEFAULT NULL,
+  `invoice_no` varchar(255) DEFAULT NULL,
+  `invoice_date` date DEFAULT NULL,
+  `order_type` enum('normal','excel','') NOT NULL DEFAULT 'normal',
   `order_no` varchar(250) NOT NULL,
-  `invoice_no` varchar(250) NOT NULL,
-  `invoice_date` date NOT NULL,
   `refrence_no` varchar(250) DEFAULT NULL,
   `date` date NOT NULL,
   `customer_id` int(11) NOT NULL,
@@ -88,30 +59,6 @@ CREATE TABLE `sales_order` (
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `added_by_id` int(11) NOT NULL,
   `added_by_name` varchar(250) NOT NULL,
-  `added_date` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `sales_order`
---
-ALTER TABLE `sales_order`
-  ADD PRIMARY KEY (`id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `sales_order`
---
-ALTER TABLE `sales_order`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+  `added_date` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

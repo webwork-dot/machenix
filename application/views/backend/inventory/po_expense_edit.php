@@ -95,12 +95,7 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
             </div>
           </div>
 
-          <div class="col-12 col-sm-4 mb-1">
-            <div class="form-group">
-              <label>Dollar USD</label>
-              <input type="number" class="form-control" name="usd" id="usd" placeholder="0.00" step="0.01" min="0" value="<?php echo html_escape($po_exp['usd'] ?? ''); ?>">
-            </div>
-          </div>
+
 
           <div class="col-md-4 mb-1">
             <div class="form-group">
@@ -167,6 +162,8 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                   <tr>
                     <th style="width:70px">Sr No</th>
                     <th>Name <span class="required">*</span></th>
+                    <th style="width:100px">USD</th>
+                    <th style="width:100px">RMB</th>
                     <th style="width:100px">Amount</th>
                     <th style="width:100px" class="gst-column">GST (In %)</th>
                     <th style="width:100px" class="gst-column">GST Amount</th>
@@ -191,6 +188,16 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                             <?php endforeach; ?>
                           </select>
                           <input type="hidden" name="expense_name[]" class="expense_name" value="<?php echo html_escape($row['expense_name'] ?? ''); ?>">
+                        </td>
+
+                        <td>
+                          <input type="number" name="usd_amt[]" class="form-control usd_amt" min="0" step="0.00001" placeholder="0.00"
+                                 value="<?php echo (isset($row['usd']) && (float)$row['usd'] > 0) ? number_format((float)$row['usd'], 5, '.', '') : ''; ?>">
+                        </td>
+
+                        <td>
+                          <input type="number" name="rmb_amt[]" class="form-control rmb_amt" min="0" step="0.00001" placeholder="0.00"
+                                 value="<?php echo (isset($row['rmb']) && (float)$row['rmb'] > 0) ? number_format((float)$row['rmb'], 5, '.', '') : ''; ?>">
                         </td>
 
                         <td>
@@ -228,6 +235,8 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                         </select>
                         <input type="hidden" name="expense_name[]" class="expense_name">
                       </td>
+                      <td><input type="number" name="usd_amt[]" class="form-control usd_amt" min="0" step="0.00001" placeholder="0.00"></td>
+                      <td><input type="number" name="rmb_amt[]" class="form-control rmb_amt" min="0" step="0.00001" placeholder="0.00"></td>
                       <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
                       <td class="gst-column"><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0"></td>
                       <td class="gst-column"><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
@@ -261,6 +270,14 @@ $input_method_val = $po_exp['input_method'] ?? ($type ?? '');
                       <input type="text" name="grand_total" id="grand_total" class="form-control" readonly value="<?php echo html_escape($grand_total); ?>">
                       <input type="hidden" name="final_amount" id="final_amount_hidden" value="<?php echo html_escape($grand_total); ?>">
                     </td>
+                  </tr>
+                  <tr>
+                    <td class="text-right"><label>Total USD</label></td>
+                    <td><input type="text" name="usd" id="total_usd" class="form-control" readonly value="<?php echo isset($po_exp['usd']) ? number_format((float)$po_exp['usd'], 5, '.', '') : ''; ?>"></td>
+                  </tr>
+                  <tr>
+                    <td class="text-right"><label>Total RMB</label></td>
+                    <td><input type="text" name="rmb" id="total_rmb" class="form-control" readonly value="<?php echo isset($po_exp['rmb']) ? number_format((float)$po_exp['rmb'], 5, '.', '') : ''; ?>"></td>
                   </tr>
                 </tbody>
               </table>
@@ -368,17 +385,23 @@ $(function () {
     let subTotal = 0;
     let gstTotal = 0;
     let grandTotal = 0;
+    let totalUsd = 0;
+    let totalRmb = 0;
 
     $tbody.find('tr.expense-row').each(function () {
       const res = updateRow($(this));
       subTotal += res.amt;
       gstTotal += res.gstAmt;
       grandTotal += res.total;
+      totalUsd += toNum($(this).find('.usd_amt').val());
+      totalRmb += toNum($(this).find('.rmb_amt').val());
     });
 
     $('#sub_total').val(money(subTotal));
     $('#gst_total').val(money(gstTotal));
     $('#grand_total').val(money(grandTotal));
+    $('#total_usd').val(money(totalUsd));
+    $('#total_rmb').val(money(totalRmb));
 
     $('#final_amount_hidden').val(money(grandTotal));
   }
@@ -391,6 +414,10 @@ $(function () {
 
   $(document).on('input', '#expenseTable .total_amt', function () {
     setMode($(this).closest('tr'), 'total');
+    updateTotals();
+  });
+
+  $(document).on('input', '#expenseTable .usd_amt, #expenseTable .rmb_amt', function () {
     updateTotals();
   });
 
@@ -516,6 +543,8 @@ $(function () {
           </select>
           <input type="hidden" name="expense_name[]" class="expense_name">
         </td>
+        <td><input type="number" name="usd_amt[]" class="form-control usd_amt" min="0" step="0.00001" placeholder="0.00"></td>
+        <td><input type="number" name="rmb_amt[]" class="form-control rmb_amt" min="0" step="0.00001" placeholder="0.00"></td>
         <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
         <td class="gst-column" ${displayStyle}><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="0"></td>
         <td class="gst-column" ${displayStyle}><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>

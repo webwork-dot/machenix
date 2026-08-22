@@ -7,7 +7,8 @@ $po_raw = $this->db
             inr_rate,
             boe_no,
             boe_date,
-            delivery_status
+            delivery_status,
+            voucher_no
         FROM purchase_order
         WHERE id = '$po_id'
     ")
@@ -173,6 +174,29 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                           $sup_inr_con_rate = (float)($first_prod['inr_con_rate'] ?? 0);
                       }
                       $sup_con_rate_label = ($sup_currency_type === 'rmb') ? 'USD Rate' : 'RMB Rate';
+
+                      $batch_no_modal = $po_raw['voucher_no'] ?? '';
+                      $existing_exp = $this->db->get_where('po_expense', [
+                          'type'        => 'extras',
+                          'batch_no'    => $batch_no_modal,
+                          'supplier_id' => $supplier_id,
+                          'is_delete'   => 0
+                      ])->row_array();
+
+                      $existing_pay = $this->db->get_where('payments', [
+                          'payment_type' => 'extras',
+                          'batch_no'     => $batch_no_modal,
+                          'supplier_id'  => $supplier_id,
+                          'is_delete'    => 0
+                      ])->row_array();
+
+                      $exp_rmb_val   = ($existing_exp && (float)$existing_exp['rmb'] != 0) ? (float)$existing_exp['rmb'] : '';
+                      $exp_usd_val   = ($existing_exp && (float)$existing_exp['usd'] != 0) ? (float)$existing_exp['usd'] : '';
+                      $exp_inr_val   = ($existing_exp && (float)$existing_exp['sub_total'] != 0) ? (float)$existing_exp['sub_total'] : (($existing_exp && (float)$existing_exp['grand_total'] != 0) ? (float)$existing_exp['grand_total'] : '');
+
+                      $extra_rmb_val = ($existing_pay && (float)$existing_pay['amount_rmb'] != 0) ? (float)$existing_pay['amount_rmb'] : '';
+                      $extra_usd_val = ($existing_pay && (float)$existing_pay['amount_dollar'] != 0) ? (float)$existing_pay['amount_dollar'] : '';
+                      $extra_inr_val = ($existing_pay && (float)$existing_pay['amount_rs'] != 0) ? (float)$existing_pay['amount_rs'] : '';
                     ?>
                     <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                         <h5>
@@ -611,6 +635,64 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     <?php endforeach; ?>
                                 </tbody>
                                 <tfoot>
+                                     <tr class="expense-row-tfoot">
+                                          <td colspan="3" class="text-right font-weight-bold">Expense</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">
+                                             <input type="number" step="any" class="form-control form-control-sm text-right supplier-expense-rmb" name="supplier_expense_rmb[<?php echo $supplier_id; ?>]" value="<?php echo $exp_rmb_val; ?>" placeholder="0.00">
+                                          </td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">
+                                             <input type="number" step="any" class="form-control form-control-sm text-right supplier-expense-usd" name="supplier_expense_usd[<?php echo $supplier_id; ?>]" value="<?php echo $exp_usd_val; ?>" placeholder="0.00">
+                                          </td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">
+                                             <input type="number" step="any" class="form-control form-control-sm text-right supplier-expense-inr" name="supplier_expense_inr[<?php echo $supplier_id; ?>]" value="<?php echo $exp_inr_val; ?>" placeholder="0.00">
+                                          </td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                     </tr>
+                                     <tr class="extra-row-tfoot">
+                                          <td colspan="3" class="text-right font-weight-bold">Extra Amount</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">
+                                             <input type="number" step="any" class="form-control form-control-sm text-right supplier-extra-rmb" name="supplier_extra_rmb[<?php echo $supplier_id; ?>]" value="<?php echo $extra_rmb_val; ?>" placeholder="0.00">
+                                          </td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">
+                                             <input type="number" step="any" class="form-control form-control-sm text-right supplier-extra-usd" name="supplier_extra_usd[<?php echo $supplier_id; ?>]" value="<?php echo $extra_usd_val; ?>" placeholder="0.00">
+                                          </td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">
+                                             <input type="number" step="any" class="form-control form-control-sm text-right supplier-extra-inr" name="supplier_extra_inr[<?php echo $supplier_id; ?>]" value="<?php echo $extra_inr_val; ?>" placeholder="0.00">
+                                          </td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                          <td class="text-right">-</td>
+                                     </tr>
                                     <tr class="font-weight-bold js-totals-row">
                                          <td colspan="3" class="text-right">TOTAL</td>
                                          <td class="text-right"><span class="js-sum-actual-qty"><?php echo number_format($t_actual_qty, 0); ?></span></td>
@@ -622,17 +704,17 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                          <td class="text-right"><span class="js-sum-total-usd"><?php echo number_format($t_total_usd, 5, '.', ''); ?></span></td>
                                          <td class="text-right"><span class="js-sum-actual-inr"><?php // echo $t_actual_inr; ?>-</span></td>
                                          <td class="text-right"><span class="js-sum-total-inr"><?php echo $t_total_inr; ?></span></td>
-                                        <td class="text-right"><span class="js-sum-official-qty"><?php echo number_format($t_official_qty, 0); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-official-rate-usd"><?php // echo number_format($t_official_rate_usd, 2, '.', ''); ?>-</span></td>
-                                        <td class="text-right"><span class="js-sum-official-rate-rs"><?php // echo number_format($t_official_rate_rs, 2, '.', ''); ?>-</span></td>
-                                        <td class="text-right"><span class="js-sum-official-total"><?php echo number_format($t_official_total_rs, 2, '.', ''); ?></span></td>
-                                        <td class="text-right">-</td>
-                                        <td class="text-right"><span class="js-sum-duty-amt"><?php echo number_format($t_duty_amt, 2, '.', ''); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-duty-surcharge"><?php echo number_format($t_duty_surcharge, 2, '.', ''); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-taxable"><?php echo number_format($t_taxable_value, 2, '.', ''); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-gst"><?php echo number_format($t_gst_amt, 2, '.', ''); ?></span></td>
-                                        <td class="text-right"><span class="js-sum-total-amt"><?php echo number_format($t_total_amt, 2, '.', ''); ?></span></td>
-                                        <td class="text-right">-</td>
+                                         <td class="text-right"><span class="js-sum-official-qty"><?php echo number_format($t_official_qty, 0); ?></span></td>
+                                         <td class="text-right"><span class="js-sum-official-rate-usd"><?php // echo number_format($t_official_rate_usd, 2, '.', ''); ?>-</span></td>
+                                         <td class="text-right"><span class="js-sum-official-rate-rs"><?php // echo number_format($t_official_rate_rs, 2, '.', ''); ?>-</span></td>
+                                         <td class="text-right"><span class="js-sum-official-total"><?php echo number_format($t_official_total_rs, 2, '.', ''); ?></span></td>
+                                         <td class="text-right">-</td>
+                                         <td class="text-right"><span class="js-sum-duty-amt"><?php echo number_format($t_duty_amt, 2, '.', ''); ?></span></td>
+                                         <td class="text-right"><span class="js-sum-duty-surcharge"><?php echo number_format($t_duty_surcharge, 2, '.', ''); ?></span></td>
+                                         <td class="text-right"><span class="js-sum-taxable"><?php echo number_format($t_taxable_value, 2, '.', ''); ?></span></td>
+                                         <td class="text-right"><span class="js-sum-gst"><?php echo number_format($t_gst_amt, 2, '.', ''); ?></span></td>
+                                         <td class="text-right"><span class="js-sum-total-amt"><?php echo number_format($t_total_amt, 2, '.', ''); ?></span></td>
+                                         <td class="text-right">-</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -901,13 +983,22 @@ function updateTableTotals($table) {
     sum.total_amt      += toNum($r.find('.total-amt').val());
   });
 
+  // Add Extra Amount to supplier table total (Expense row is ignored per requirements)
+  var extraRmb = toNum($table.find('.supplier-extra-rmb').val());
+  var extraUsd = toNum($table.find('.supplier-extra-usd').val());
+  var extraInr = toNum($table.find('.supplier-extra-inr').val());
+
+  var supplierTotalRmb = sum.total_rmb + extraRmb;
+  var supplierTotalUsd = sum.total_usd + extraUsd;
+  var supplierTotalInr = sum.total_inr + extraInr;
+
   $table.find('.js-sum-actual-qty').text(fmtQty(sum.actual_qty));
 //   $table.find('.js-sum-actual-rmb').text(sum.actual_rmb);
-  $table.find('.js-sum-total-rmb').text(toNum(sum.total_rmb));
+  $table.find('.js-sum-total-rmb').text(toNum(supplierTotalRmb));
 //   $table.find('.js-sum-actual-usd').text(sum.actual_usd);
-  $table.find('.js-sum-total-usd').text(fmtUsd(sum.total_usd));
+  $table.find('.js-sum-total-usd').text(fmtUsd(supplierTotalUsd));
 //   $table.find('.js-sum-actual-inr').text(sum.actual_inr);
-  $table.find('.js-sum-total-inr').text(toNum(sum.total_inr));
+  $table.find('.js-sum-total-inr').text(toNum(supplierTotalInr));
   $table.find('.js-sum-official-qty').text(fmtQty(sum.official_qty));
 //   $table.find('.js-sum-official-rate-usd').text(fmtUsd(sum.official_rate_usd));
 //   $table.find('.js-sum-official-rate-rs').text(fmtAmt(sum.official_rate_rs));
@@ -926,6 +1017,15 @@ function updateTableTotals($table) {
   const totalUsd = [...document.querySelectorAll('.total-usd')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalActualInr = [...document.querySelectorAll('.actual-inr')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalInr = [...document.querySelectorAll('.total-inr')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+
+  const totalExtraRmb = [...document.querySelectorAll('.supplier-extra-rmb')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalExtraUsd = [...document.querySelectorAll('.supplier-extra-usd')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+  const totalExtraInr = [...document.querySelectorAll('.supplier-extra-inr')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+
+  const grandTotalRmb = totalRmb + totalExtraRmb;
+  const grandTotalUsd = totalUsd + totalExtraUsd;
+  const grandTotalInr = totalInr + totalExtraInr;
+
   const totalOfficialQty = [...document.querySelectorAll('.official-qty')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalOfficialRateUsd = [...document.querySelectorAll('.official-rate-usd')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const totalOfficialRateRs = [...document.querySelectorAll('.official-rate')].reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
@@ -938,11 +1038,11 @@ function updateTableTotals($table) {
 
   $('#grand-sum-actual-qty').text(totalActualQty);
 //   $('#grand-sum-actual-rmb').text(totalActualRmb.toFixed(2));
-  $('#grand-sum-total-rmb').text(totalRmb.toFixed(2));
+  $('#grand-sum-total-rmb').text(grandTotalRmb.toFixed(2));
 //   $('#grand-sum-actual-usd').text(fmtUsd(totalActualUsd));
-  $('#grand-sum-total-usd').text(fmtUsd(totalUsd));
+  $('#grand-sum-total-usd').text(fmtUsd(grandTotalUsd));
 //   $('#grand-sum-actual-inr').text(totalActualInr.toFixed(2));
-  $('#grand-sum-total-inr').text(totalInr.toFixed(2));
+  $('#grand-sum-total-inr').text(grandTotalInr.toFixed(2));
   $('#grand-sum-official-qty').text(totalOfficialQty);
 //   $('#grand-sum-official-rate-usd').text(fmtUsd(totalOfficialRateUsd));
 //   $('#grand-sum-official-rate-rs').text(totalOfficialRateRs.toFixed(2));
@@ -1080,8 +1180,96 @@ function applySupplierConversionRates($section) {
     }
   });
 
+  // Re-apply rates to Expense & Extra rows if they have values
+  $section.find('tfoot tr.expense-row-tfoot, tfoot tr.extra-row-tfoot').each(function () {
+    var $row = $(this);
+    var $usd = $row.find('.supplier-expense-usd, .supplier-extra-usd');
+    var $rmb = $row.find('.supplier-expense-rmb, .supplier-extra-rmb');
+    var $inr = $row.find('.supplier-expense-inr, .supplier-extra-inr');
+
+    if ($usd.val() !== '') {
+      handleExpenseExtraConversion($usd[0]);
+    } else if ($rmb.val() !== '') {
+      handleExpenseExtraConversion($rmb[0]);
+    } else if ($inr.val() !== '') {
+      handleExpenseExtraConversion($inr[0]);
+    }
+  });
+
   updateTableTotals($section.find('table'));
 }
+
+function handleExpenseExtraConversion(inputEl) {
+  var $input = $(inputEl);
+  var $row = $input.closest('tr');
+  var $section = $input.closest('.supplier-section');
+
+  var currencyType = $section.find('.supplier-currency-type').val() || 'usd';
+  var conRate = toNum($section.find('.supplier-con-rate').val());
+  var inrRate = toNum($section.find('.supplier-local-inr-rate').val());
+
+  var $rmbInput = $row.find('.supplier-expense-rmb, .supplier-extra-rmb');
+  var $usdInput = $row.find('.supplier-expense-usd, .supplier-extra-usd');
+  var $inrInput = $row.find('.supplier-expense-inr, .supplier-extra-inr');
+
+  var rawVal = $input.val();
+  if (rawVal === '' || rawVal === null) {
+    $rmbInput.val('');
+    $usdInput.val('');
+    $inrInput.val('');
+    updateTableTotals($section.find('table'));
+    return;
+  }
+
+  var val = toNum(rawVal);
+
+  if ($input.hasClass('supplier-expense-usd') || $input.hasClass('supplier-extra-usd')) {
+    var usd = val;
+    var rmb = 0;
+    var inr = 0;
+    if (currencyType === 'usd') {
+      rmb = (conRate > 0) ? (usd * conRate) : 0;
+      inr = (inrRate > 0) ? (usd * inrRate) : 0;
+    } else {
+      rmb = (conRate > 0) ? (usd / conRate) : 0;
+      inr = (inrRate > 0) ? (rmb * inrRate) : 0;
+    }
+    $rmbInput.val(rmb > 0 ? rmb.toFixed(2) : '');
+    $inrInput.val(inr > 0 ? inr.toFixed(2) : '');
+  } else if ($input.hasClass('supplier-expense-rmb') || $input.hasClass('supplier-extra-rmb')) {
+    var rmb = val;
+    var usd = 0;
+    var inr = 0;
+    if (currencyType === 'usd') {
+      usd = (conRate > 0) ? (rmb / conRate) : 0;
+      inr = (inrRate > 0) ? (usd * inrRate) : 0;
+    } else {
+      usd = (conRate > 0) ? (rmb * conRate) : 0;
+      inr = (inrRate > 0) ? (rmb * inrRate) : 0;
+    }
+    $usdInput.val(usd > 0 ? fmtUsd(usd) : '');
+    $inrInput.val(inr > 0 ? inr.toFixed(2) : '');
+  } else if ($input.hasClass('supplier-expense-inr') || $input.hasClass('supplier-extra-inr')) {
+    var inr = val;
+    var usd = 0;
+    var rmb = 0;
+    if (currencyType === 'usd') {
+      usd = (inrRate > 0) ? (inr / inrRate) : 0;
+      rmb = (conRate > 0) ? (usd * conRate) : 0;
+    } else {
+      rmb = (inrRate > 0) ? (inr / inrRate) : 0;
+      usd = (conRate > 0) ? (rmb * conRate) : 0;
+    }
+    $usdInput.val(usd > 0 ? fmtUsd(usd) : '');
+    $rmbInput.val(rmb > 0 ? rmb.toFixed(2) : '');
+  }
+
+  updateTableTotals($section.find('table'));
+}
+
+$(document).on('keyup change input', '.supplier-expense-rmb, .supplier-expense-usd, .supplier-expense-inr, .supplier-extra-rmb, .supplier-extra-usd, .supplier-extra-inr', function () {
+  handleExpenseExtraConversion(this);
+});
 
 // Duty % changed -> recompute duty, surcharge, taxable, gst, total (full chain)
 function calculateDuty(el) {
@@ -1281,6 +1469,52 @@ function createSupplierSection(supplierId, supplierName) {
                 <tbody class="supplier_products_tbody">
                 </tbody>
                 <tfoot>
+                    <tr class="expense-row-tfoot">
+                        <td colspan="3" class="text-right font-weight-bold">Expense</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><input type="number" step="any" class="form-control form-control-sm text-right supplier-expense-rmb" name="supplier_expense_rmb[${supplierId}]" placeholder="0.00"></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><input type="number" step="any" class="form-control form-control-sm text-right supplier-expense-usd" name="supplier_expense_usd[${supplierId}]" placeholder="0.00"></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><input type="number" step="any" class="form-control form-control-sm text-right supplier-expense-inr" name="supplier_expense_inr[${supplierId}]" placeholder="0.00"></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                    </tr>
+                    <tr class="extra-row-tfoot">
+                        <td colspan="3" class="text-right font-weight-bold">Extra Amount</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><input type="number" step="any" class="form-control form-control-sm text-right supplier-extra-rmb" name="supplier_extra_rmb[${supplierId}]" placeholder="0.00"></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><input type="number" step="any" class="form-control form-control-sm text-right supplier-extra-usd" name="supplier_extra_usd[${supplierId}]" placeholder="0.00"></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right"><input type="number" step="any" class="form-control form-control-sm text-right supplier-extra-inr" name="supplier_extra_inr[${supplierId}]" placeholder="0.00"></td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                        <td class="text-right">-</td>
+                    </tr>
                     <tr class="font-weight-bold js-totals-row">
                         <td colspan="3" class="text-right">TOTAL</td>
                         <td class="text-right"><span class="js-sum-actual-qty">0</span></td>

@@ -22,8 +22,8 @@ CREATE TABLE `inventory_history` (
   `actual_inr` decimal(15,2) DEFAULT 0.00,
   `black_qty` int(11) NOT NULL DEFAULT 0,
   `pending_qty` int(11) NOT NULL DEFAULT 0,
-  `black_rate_rs` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `black_total_rs` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `black_rate_rs` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `black_total_rs` decimal(16,2) NOT NULL DEFAULT 0.00,
   `duty_percent` decimal(5,2) NOT NULL DEFAULT 0.00,
   `duty_amt` decimal(15,2) NOT NULL DEFAULT 0.00,
   `duty_surcharge` decimal(15,2) NOT NULL DEFAULT 0.00,
@@ -34,9 +34,9 @@ CREATE TABLE `inventory_history` (
   `batch_no` varchar(250) DEFAULT NULL,
   `expiry_date` date DEFAULT NULL,
   `invoice_no` varchar(250) DEFAULT NULL,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `added_date` datetime NOT NULL,
   `added_by_id` int(11) NOT NULL,
   `added_by_name` varchar(250) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=236 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

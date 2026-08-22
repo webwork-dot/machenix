@@ -10,7 +10,7 @@ CREATE TABLE `goods_return` (
   `customer_name` varchar(250) NOT NULL,
   `company_id` int(11) NOT NULL,
   `company_name` varchar(150) NOT NULL,
-  `order_no` varchar(250) DEFAULT NULL,
+  `order_no` text DEFAULT NULL,
   `white_total` decimal(16,2) NOT NULL DEFAULT 0.00,
   `gst_type` enum('Central GST / State GST','IGST','') NOT NULL DEFAULT '',
   `cgst_amt` decimal(16,2) NOT NULL DEFAULT 0.00,

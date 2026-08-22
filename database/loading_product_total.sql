@@ -13,4 +13,4 @@ CREATE TABLE `loading_product_total` (
   `total_cbm_value` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=213 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=508 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

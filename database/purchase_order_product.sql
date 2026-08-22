@@ -2,7 +2,7 @@ CREATE TABLE `purchase_order_product` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL,
   `supplier_id` int(11) NOT NULL,
-  `is_replace` TINYINT(1) NOT NULL DEFAULT 0,
+  `is_replace` tinyint(1) NOT NULL DEFAULT 0,
   `product_type` enum('ready','spare','') NOT NULL DEFAULT '',
   `product_id` int(11) NOT NULL,
   `categories` varchar(255) DEFAULT NULL,
@@ -40,4 +40,4 @@ CREATE TABLE `purchase_order_product` (
   `invoice_no` varchar(250) DEFAULT NULL,
   `is_complete` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=992 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1161 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

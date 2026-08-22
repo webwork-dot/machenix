@@ -8,7 +8,7 @@ CREATE TABLE `payments` (
   `amount_dollar` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `amount_rs` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `amount_rmb` decimal(16,5) NOT NULL DEFAULT 0.00000,
-  `payment_type` enum('official','unofficial','') NOT NULL,
+  `payment_type` enum('official','unofficial','extras','') NOT NULL,
   `bank_account` int(11) NOT NULL DEFAULT 0,
   `bank_account_name` varchar(255) DEFAULT NULL,
   `payment_date` date DEFAULT NULL,
@@ -17,4 +17,4 @@ CREATE TABLE `payments` (
   `added_by` int(11) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

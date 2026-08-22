@@ -11,17 +11,17 @@ CREATE TABLE `my_companies` (
   `address_2` mediumtext DEFAULT NULL,
   `address_3` mediumtext DEFAULT NULL,
   `pincode` varchar(250) DEFAULT NULL,
-  `country_id` varchar(250) DEFAULT NULL,
-  `country_name` varchar(250) DEFAULT NULL,
+  `country_id` varchar(255) DEFAULT NULL,
+  `country_name` varchar(255) DEFAULT NULL,
   `state_id` int(11) DEFAULT NULL,
   `state_name` varchar(50) DEFAULT NULL,
   `city_id` int(11) DEFAULT NULL,
   `city_name` varchar(50) DEFAULT NULL,
   `state_code` varchar(10) DEFAULT NULL,
-  `outstanding` DECIMAL(16,2) NOT NULL DEFAULT 0.00,
+  `outstanding` decimal(16,2) NOT NULL DEFAULT 0.00,
   `added_by_id` int(11) DEFAULT NULL,
   `added_by_name` varchar(100) DEFAULT NULL,
   `added_date` datetime NOT NULL,
   `is_deleted` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

@@ -6785,6 +6785,118 @@ class Inventory_model extends CI_Model
 				}
 		}
 
+		// Process supplier expense and extra amount (payments)
+		$session_company_id = $this->session->userdata('company_id');
+		$session_user_id    = $this->session->userdata('super_user_id');
+		$batch_no           = $po_row['voucher_no'] ?? '';
+
+		$supplier_expense_usd = (array) $this->input->post('supplier_expense_usd');
+		$supplier_expense_rmb = (array) $this->input->post('supplier_expense_rmb');
+		$supplier_expense_inr = (array) $this->input->post('supplier_expense_inr');
+
+		$supplier_extra_usd   = (array) $this->input->post('supplier_extra_usd');
+		$supplier_extra_rmb   = (array) $this->input->post('supplier_extra_rmb');
+		$supplier_extra_inr   = (array) $this->input->post('supplier_extra_inr');
+
+		$all_suppliers = array_unique(array_filter(array_merge(
+			array_keys($supplier_expense_usd),
+			array_keys($supplier_expense_rmb),
+			array_keys($supplier_expense_inr),
+			array_keys($supplier_extra_usd),
+			array_keys($supplier_extra_rmb),
+			array_keys($supplier_extra_inr)
+		)));
+
+		foreach ($all_suppliers as $supplier_id) {
+			if (empty($supplier_id)) continue;
+
+			$exp_usd = (float) ($supplier_expense_usd[$supplier_id] ?? 0);
+			$exp_rmb = (float) ($supplier_expense_rmb[$supplier_id] ?? 0);
+			$exp_inr = (float) ($supplier_expense_inr[$supplier_id] ?? 0);
+
+			$extra_usd = (float) ($supplier_extra_usd[$supplier_id] ?? 0);
+			$extra_rmb = (float) ($supplier_extra_rmb[$supplier_id] ?? 0);
+			$extra_inr = (float) ($supplier_extra_inr[$supplier_id] ?? 0);
+
+			// 1. Handle po_expense table
+			$existing_exp = $this->db->get_where('po_expense', [
+				'type'        => 'extras',
+				'batch_no'    => $batch_no,
+				'supplier_id' => $supplier_id,
+				'is_delete'   => 0
+			])->row_array();
+
+			if ($existing_exp) {
+				$exp_update_data = [
+					'usd'          => $exp_usd,
+					'rmb'          => $exp_rmb,
+					'sub_total'    => $exp_inr,
+					'grand_total'  => $exp_inr,
+					'expense_date' => date('Y-m-d'),
+				];
+				$this->db->where('id', $existing_exp['id'])->update('po_expense', $exp_update_data);
+			} else {
+				if ($exp_usd != 0 || $exp_rmb != 0 || $exp_inr != 0) {
+					$exp_insert_data = [
+						'input_method'  => 'import',
+						'company_id'    => $session_company_id,
+						'type'          => 'extras',
+						'expense_type'  => 0,
+						'vendor_id'     => 0,
+						'supplier_id'   => $supplier_id,
+						'purchase_date' => date('Y-m-d H:i:s'),
+						'usd'           => $exp_usd,
+						'rmb'           => $exp_rmb,
+						'batch_no'      => $batch_no,
+						'expense_date'  => date('Y-m-d'),
+						'gst_type'      => '',
+						'sub_total'     => $exp_inr,
+						'grand_total'   => $exp_inr,
+						'added_by_id'   => $session_user_id,
+					];
+					$this->db->insert('po_expense', $exp_insert_data);
+				}
+			}
+
+			// 2. Handle payments table
+			$existing_pay = $this->db->get_where('payments', [
+				'payment_type' => 'extras',
+				'batch_no'     => $batch_no,
+				'supplier_id'  => $supplier_id,
+				'is_delete'    => 0
+			])->row_array();
+
+			if ($existing_pay) {
+				$pay_update_data = [
+					'amount_dollar' => $extra_usd,
+					'amount_rs'     => $extra_inr,
+					'amount_rmb'    => $extra_rmb,
+					'payment_date'  => date('Y-m-d'),
+				];
+				$this->db->where('id', $existing_pay['id'])->update('payments', $pay_update_data);
+			} else {
+				if ($extra_usd != 0 || $extra_rmb != 0 || $extra_inr != 0) {
+					$sup_row = $this->db->get_where('supplier', ['id' => $supplier_id])->row_array();
+					$supplier_name = $sup_row['name'] ?? '';
+
+					$pay_insert_data = [
+						'company_id'    => $session_company_id,
+						'supplier_id'   => $supplier_id,
+						'supplier_name' => $supplier_name,
+						'invoice_no'    => 'extra income',
+						'batch_no'      => $batch_no,
+						'amount_dollar' => $extra_usd,
+						'amount_rs'     => $extra_inr,
+						'amount_rmb'    => $extra_rmb,
+						'payment_type'  => 'extras',
+						'payment_date'  => date('Y-m-d'),
+						'added_by'      => $session_user_id,
+					];
+					$this->db->insert('payments', $pay_insert_data);
+				}
+			}
+		}
+
 		$this->db->where('id', $po_id)->update('purchase_order', $po);
 		if ($this->db->trans_status() === FALSE) {
 			$resultpost = array(
@@ -18752,7 +18864,8 @@ class Inventory_model extends CI_Model
 			$data['gst_type']          = clean_and_escape($this->input->post('gst_type')); // '', igst, cgst_sgst
 			$data['purchase_no']       = clean_and_escape($this->input->post('purchase_no'));
 			$data['purchase_date']     = $this->input->post('purchase_date') ? $this->input->post('purchase_date') : null;
-			$data['usd']               = (float) $this->input->post('usd');
+			$data['usd']               = number_format((float) $this->input->post('usd'), 5, '.', '');
+			$data['rmb']               = number_format((float) $this->input->post('rmb'), 5, '.', '');
 
 			$data['narration']   = clean_and_escape($this->input->post('narration'));
 
@@ -18772,6 +18885,8 @@ class Inventory_model extends CI_Model
 			// Detail arrays
 			$charges_ids   = (array) $this->input->post('charges_id');
 			$expense_names = (array) $this->input->post('expense_name');
+			$usd_amts      = (array) $this->input->post('usd_amt');
+			$rmb_amts      = (array) $this->input->post('rmb_amt');
 			$amounts       = (array) $this->input->post('amount');
 			$gsts          = (array) $this->input->post('gst');
 			$gst_amts      = (array) $this->input->post('gst_amt');
@@ -18803,6 +18918,8 @@ class Inventory_model extends CI_Model
 							continue;
 					}
 
+					$usdVal = isset($usd_amts[$i]) ? (float) $usd_amts[$i] : 0;
+					$rmbVal = isset($rmb_amts[$i]) ? (float) $rmb_amts[$i] : 0;
 					$amt    = isset($amounts[$i]) ? (float) $amounts[$i] : 0;
 					$gstP   = isset($gsts[$i]) ? (float) $gsts[$i] : 0;
 					$gstAmt = isset($gst_amts[$i]) ? (float) $gst_amts[$i] : 0;
@@ -18812,6 +18929,8 @@ class Inventory_model extends CI_Model
 							'parent_id'    => $parent_id,
 							'charges_id'   => $charges_id,
 							'expense_name' => clean_and_escape($name),
+							'usd'          => number_format($usdVal, 5, '.', ''),
+							'rmb'          => number_format($rmbVal, 5, '.', ''),
 							'amount'       => number_format($amt, 5, '.', ''),
 							'gst'          => number_format($gstP, 2, '.', ''),
 							'gst_amt'      => number_format($gstAmt, 5, '.', ''),
@@ -18878,6 +18997,8 @@ class Inventory_model extends CI_Model
 		// ---- Build child rows FIRST (so we don't delete old rows if new is invalid) ----
 		$charges_ids   = (array) $this->input->post('charges_id');
 		$expense_names = (array) $this->input->post('expense_name');
+		$usd_amts      = (array) $this->input->post('usd_amt');
+		$rmb_amts      = (array) $this->input->post('rmb_amt');
 		$amounts       = (array) $this->input->post('amount');
 		$gsts          = (array) $this->input->post('gst');
 		$gst_amts      = (array) $this->input->post('gst_amt');
@@ -18893,6 +19014,8 @@ class Inventory_model extends CI_Model
 				// minimum required: name + total
 				if ($name === '' || $totalAmt <= 0) continue;
 
+				$usdVal = isset($usd_amts[$i]) ? (float) $usd_amts[$i] : 0;
+				$rmbVal = isset($rmb_amts[$i]) ? (float) $rmb_amts[$i] : 0;
 				$amt    = isset($amounts[$i]) ? (float) $amounts[$i] : 0;
 				$gstP   = isset($gsts[$i]) ? (float) $gsts[$i] : 0;
 				$gstAmt = isset($gst_amts[$i]) ? (float) $gst_amts[$i] : 0;
@@ -18902,6 +19025,8 @@ class Inventory_model extends CI_Model
 						'parent_id'    => $id,
 						'charges_id'   => $charges_id,
 						'expense_name' => clean_and_escape($name),
+						'usd'          => number_format($usdVal, 5, '.', ''),
+						'rmb'          => number_format($rmbVal, 5, '.', ''),
 						'amount'       => number_format($amt, 5, '.', ''),
 						'gst'          => number_format($gstP, 2, '.', ''),
 						'gst_amt'      => number_format($gstAmt, 5, '.', ''),
@@ -18927,7 +19052,8 @@ class Inventory_model extends CI_Model
 		$data['gst_type']          = clean_and_escape($this->input->post('gst_type'));      // '', igst, cgst_sgst
 		$data['purchase_no']       = clean_and_escape($this->input->post('purchase_no'));
 		$data['purchase_date']     = $this->input->post('purchase_date') ? $this->input->post('purchase_date') : null;
-		$data['usd']               = (float) $this->input->post('usd');
+		$data['usd']               = number_format((float) $this->input->post('usd'), 5, '.', '');
+		$data['rmb']               = number_format((float) $this->input->post('rmb'), 5, '.', '');
 		$data['narration'] = clean_and_escape($this->input->post('narration'));
 
 		$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;

@@ -2,8 +2,8 @@ CREATE TABLE `po_products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL,
   `supplier_id` int(11) NOT NULL,
+  `is_replace` tinyint(1) NOT NULL DEFAULT 0,
   `product_type` enum('ready','spare','') NOT NULL DEFAULT '',
-  `is_replace` TINYINT(1) NOT NULL DEFAULT 0,
   `product_id` int(11) NOT NULL,
   `categories` varchar(255) DEFAULT NULL,
   `sizes` varchar(255) DEFAULT NULL,
@@ -73,4 +73,4 @@ CREATE TABLE `po_products` (
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `sort` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=215 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=464 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

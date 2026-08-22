@@ -1,10 +1,10 @@
 CREATE TABLE `customer` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `type` enum('customer','leads') NOT NULL DEFAULT 'customer',
   `is_distributor` tinyint(1) NOT NULL DEFAULT 0,
   `shared_id` int(11) NOT NULL DEFAULT 0,
+  `type` enum('customer','leads') NOT NULL DEFAULT 'customer',
   `company_id` varchar(255) DEFAULT NULL,
-  `company_name` varchar(250) NOT NULL,
+  `company_name` varchar(250) DEFAULT NULL,
   `address` longtext DEFAULT NULL,
   `address_2` mediumtext DEFAULT NULL,
   `state_id` int(11) DEFAULT NULL,
@@ -32,10 +32,10 @@ CREATE TABLE `customer` (
   `remark` text DEFAULT NULL,
   `is_move` tinyint(1) NOT NULL DEFAULT 0,
   `move_date` datetime DEFAULT NULL,
-  `outstanding` DECIMAL(16,2) NOT NULL DEFAULT 0.00,
+  `outstanding` decimal(16,2) NOT NULL DEFAULT 0.00,
   `added_by_id` int(11) DEFAULT NULL,
   `added_by_name` varchar(100) DEFAULT NULL,
   `added_date` datetime NOT NULL,
   `is_deleted` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

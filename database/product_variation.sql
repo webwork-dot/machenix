@@ -25,4 +25,4 @@ CREATE TABLE `product_variation` (
   KEY `product_id` (`product_id`),
   KEY `sku_code` (`sku_code`),
   KEY `is_other` (`is_other`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=182 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;

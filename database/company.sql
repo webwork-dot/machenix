@@ -5,7 +5,7 @@ CREATE TABLE `company` (
   `gst_name` varchar(250) DEFAULT NULL,
   `gst_no` varchar(250) DEFAULT NULL,
   `contact_name` varchar(250) DEFAULT NULL,
-  `c_code` varchar(250) DEFAULT NULL,
+  `c_code` varchar(255) DEFAULT NULL,
   `contact_no` varchar(250) DEFAULT NULL,
   `t_code` varchar(255) DEFAULT NULL,
   `tel_no` varchar(255) DEFAULT NULL,
@@ -23,4 +23,4 @@ CREATE TABLE `company` (
   `added_date` datetime NOT NULL,
   `is_deleted` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
