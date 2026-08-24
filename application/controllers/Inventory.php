@@ -2990,6 +2990,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->replicate_customer();
         } elseif ($param1 == "follow") {
             $this->inventory_model->follow_customer();
+        } elseif ($param1 == "add_call") {
+            $this->inventory_model->add_customer_direct_call();
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'customer';

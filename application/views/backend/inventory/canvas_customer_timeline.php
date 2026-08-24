@@ -56,7 +56,7 @@ $customer_history = array_reverse($customer_history);
         <small class="history-meta"><?php echo formatHistoryTime($history['added_date']); ?></small>
       </div>
 
-      <?php if($history['action'] == "create" || $history['action'] == "follow" || $history['action'] == "lost"){ ?>
+      <?php if($history['action'] == "create" || $history['action'] == "follow" || $history['action'] == "lost" || $history['action'] == "stalking" || $history['action'] == "call"){ ?>
         <div class="history-title">Added By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
       <?php } elseif($history['action'] == "reassign" || $history['action'] == "update") { ?>
         <div class="history-title">Updated By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>

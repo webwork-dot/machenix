@@ -49,8 +49,10 @@
           </div>
         </div>
         <div class="card-datatable d-report mb-2">
-        <?php if($status == 'all'){ ?>
+        <?php if($status == 'all' || ($status == 'new' && $this->session->userdata('super_type_id') == 7)){ ?>
 		      <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>          
+        <?php } ?>
+        <?php if($status == 'all'){ ?>
 		      <a href="<?php echo site_url('inventory/leads/import'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-outline-primary" style="margin-left: 6px;" tabindex="0"><span><i class="feather icon-file-text"></i> <?= get_phrase('import_excel');?></span></a>
         <?php } ?>
           <table class="table leads-table" id="report-datatable">
@@ -62,6 +64,9 @@
                 <th>Number</th>
                 <?php if($status != 'all' && $status != 'moved'){ ?>
                   <th>Status</th>
+                <?php } ?>
+                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                  <th>Followup Date</th>
                 <?php } ?>
                 <?php if($status == 'moved'){ ?>
                   <th>Move Date</th>
@@ -123,6 +128,9 @@
                 { "data": "owner_no" },
                 <?php if($status != 'all' && $status != 'moved'){ ?>
                   { "data": "status" },
+                <?php } ?>
+                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                  { "data": "status_date" },
                 <?php } ?>
                 <?php if($status == 'moved'){ ?>
                   { "data": "move_date" },

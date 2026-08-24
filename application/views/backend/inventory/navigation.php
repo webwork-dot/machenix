@@ -83,7 +83,7 @@
                 </a>
             </li> -->
 
-            <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'raw_products_add' || $page_name == 'raw_products_edit' || $page_name == 'raw_products_import' || $page_name == 'local_products' || $page_name == 'local_products_add' || $page_name == 'local_products_edit') echo 'active'; ?>">   
+            <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'raw_products_add' || $page_name == 'raw_products_edit' || $page_name == 'raw_products_import' || $page_name == 'local_products' || $page_name == 'local_products_add' || $page_name == 'local_products_edit' || $page_name == 'product_formula' || $page_name == 'product_formula_add' || $page_name == 'product_formula_edit') echo 'active'; ?>">   
                 <a class="d-flex align-items-center" href="#">
                     <i class="feather icon-layers"></i>
                 <span class="menu-title text-truncate" data-i18n="Orders">Product Master</span>
@@ -101,16 +101,15 @@
                             <span class="menu-title text-truncate">Local Products</span>
                         </a>
                     </li>
+                    <li class="nav-item <?php if($page_name == 'product_formula' || $page_name == 'product_formula_add' || $page_name == 'product_formula_edit') echo 'active'; ?>">
+                        <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/product-formula">
+                            <i class="feather icon-circle"></i>
+                            <span class="menu-title text-truncate">Product Formula</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
         <?php } ?>
-
-        <li class="nav-item <?php if($page_name == 'product_formula' || $page_name == 'product_formula_add' || $page_name == 'product_formula_edit') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/product-formula">
-                <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">Product Formula</span>
-            </a>
-        </li>
         
         <?php if($user_id == 4 || in_array('24',$access_array) || in_array('25',$access_array)) { ?>
 		<li class="nav-item <?php if($navigation == 'import_purchase_order' || $navigation == 'purchase_order' || $navigation == 'formula_product_order') echo 'active'; ?>">   
@@ -177,47 +176,54 @@
         </li>
         <?php // } ?>
         
-        <?php if($user_id == 4 || in_array('26',$access_array)) {?>
-	    <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
-           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-order'); ?>">
+        <?php if($user_id == 4 || in_array('26',$access_array) || in_array('27',$access_array)) {?>
+        <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman' || $page_name == 'conversion_order' || $page_name == 'black_order' || $page_name == 'sales_commission' || $page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view' || $page_name == 'replace_products') echo 'active'; ?>">
+           <a class="d-flex align-items-center" href="#">
                <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Booking</span>
+               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales</span>
            </a>
-        </li>
-        <li class="nav-item <?php if($page_name == 'conversion_order') echo 'active'; ?>">
-           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/conversion-order'); ?>">
-               <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Conversion</span>
-           </a>
-        </li>
-        <li class="nav-item <?php if($page_name == 'black_order') echo 'active'; ?>">
-           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/black-order'); ?>">
-               <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Black Order</span>
-           </a>
-        </li>
-        <li class="nav-item <?php if($page_name == 'sales_commission') echo 'active'; ?>">
-           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/sales-commission'); ?>">
-               <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Commission</span>
-           </a>
-        </li>
-		<?php } ?>
-	   
-        <?php if($user_id == 4 || in_array('27',$access_array)) {?>
-		<li class="nav-item <?php if($page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view') echo 'active'; ?>">
-           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/goods-return'); ?>">
-               <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales Return</span>
-           </a>
-        </li>
-        <?php } ?>
-        <?php if($user_id == 4 || in_array('27',$access_array)) {?>
-		<li class="nav-item <?php if($page_name == 'replace_products') echo 'active'; ?>">
-           <a class="d-flex align-items-center " href="<?php echo site_url('inventory/replace-products'); ?>">
-               <i data-feather="align-left"></i>
-               <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Replace Products</span>
-           </a>
+           <ul class="menu-content">
+               <?php if($user_id == 4 || in_array('26',$access_array)) {?>
+                   <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
+                       <a class="d-flex align-items-center" href="<?php echo site_url('inventory/sales-order'); ?>">
+                           <i class="feather icon-circle"></i>
+                           <span class="menu-title text-truncate">Sales Booking</span>
+                       </a>
+                   </li>
+                   <li class="nav-item <?php if($page_name == 'conversion_order') echo 'active'; ?>">
+                       <a class="d-flex align-items-center" href="<?php echo site_url('inventory/conversion-order'); ?>">
+                           <i class="feather icon-circle"></i>
+                           <span class="menu-title text-truncate">Sales Conversion</span>
+                       </a>
+                   </li>
+                   <li class="nav-item <?php if($page_name == 'black_order') echo 'active'; ?>">
+                       <a class="d-flex align-items-center" href="<?php echo site_url('inventory/black-order'); ?>">
+                           <i class="feather icon-circle"></i>
+                           <span class="menu-title text-truncate">Black Order</span>
+                       </a>
+                   </li>
+                   <li class="nav-item <?php if($page_name == 'sales_commission') echo 'active'; ?>">
+                       <a class="d-flex align-items-center" href="<?php echo site_url('inventory/sales-commission'); ?>">
+                           <i class="feather icon-circle"></i>
+                           <span class="menu-title text-truncate">Sales Commission</span>
+                       </a>
+                   </li>
+               <?php } ?>
+               <?php if($user_id == 4 || in_array('27',$access_array)) {?>
+                   <li class="nav-item <?php if($page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view') echo 'active'; ?>">
+                       <a class="d-flex align-items-center" href="<?php echo site_url('inventory/goods-return'); ?>">
+                           <i class="feather icon-circle"></i>
+                           <span class="menu-title text-truncate">Sales Return</span>
+                       </a>
+                   </li>
+                   <li class="nav-item <?php if($page_name == 'replace_products') echo 'active'; ?>">
+                       <a class="d-flex align-items-center" href="<?php echo site_url('inventory/replace-products'); ?>">
+                           <i class="feather icon-circle"></i>
+                           <span class="menu-title text-truncate">Replace Products</span>
+                       </a>
+                   </li>
+               <?php } ?>
+           </ul>
         </li>
         <?php } ?>
         <?php if($user_id == 4 || in_array('28',$access_array)) {?>
@@ -265,6 +271,88 @@
         </li>
         <?php } ?>
         
+        <?php if($user_id == 4 || in_array('33',$access_array)) {?>
+        <li class="nav-item <?php if($page_name == 'warehouse' || $page_name == 'warehouse_add' || $page_name == 'warehouse_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/warehouse">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">Warehouses</span>
+            </a>
+        </li>
+        <?php } ?>
+        
+        <?php if($user_id == 4 || in_array('36',$access_array)) {?>
+        <li class="nav-item <?php if($navigation == 'customer') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/customer">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">Customer</span>
+            </a>
+        </li>
+        <?php } ?>
+
+        <?php if($user_id == 4 || in_array('2',$access_array)) { ?>
+        <li class="nav-item <?php if($navigation == 'leads') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads/<?php echo ($this->session->userdata('super_type') == 'Inventory') ? 'all' : 'new';?>">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">Leads</span>
+            </a>
+        </li>
+        <?php } ?>
+
+        <?php if($user_id == 4) {?>
+        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit' || $page_name == 'commission_slab' || $page_name == 'commission_slab_add' || $page_name == 'commission_slab_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
+                <i class="feather icon-layers"></i>
+                <span class="menu-title text-truncate">My Vendors</span>
+            </a>
+        </li>
+        <?php } ?>
+
+        <?php if($user_id == 4 || in_array('34',$access_array)) {?>
+        <li class="nav-item <?php if($page_name == 'supplier' || $page_name == 'supplier_add' || $page_name == 'supplier_edit' || $page_name == 'local_supplier' || $page_name == 'local_supplier_add' || $page_name == 'local_supplier_edit') echo 'active'; ?>">   
+            <a class="d-flex align-items-center" href="#">
+                <i class="feather icon-layers"></i>
+            <span class="menu-title text-truncate" data-i18n="Orders">Supplier Master</span>
+            </a>
+            <ul class="menu-content">
+                <li class="nav-item <?php if($page_name == 'supplier' || $page_name == 'supplier_add' || $page_name == 'supplier_edit') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/supplier">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Import Supplier</span>
+                    </a>
+                </li>
+                <li class="nav-item <?php if($page_name == 'local_supplier' || $page_name == 'local_supplier_add' || $page_name == 'local_supplier_edit') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/local-supplier">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Local Supplier</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <?php } ?>
+
+		<?php if($user_id == 4) {?>
+        <li class="nav-item <?php if($navigation == 'payments' || $navigation == 'vendor_payments') echo 'active'; ?>">   
+            <a class="d-flex align-items-center" href="#">
+                <i class="feather icon-layers"></i>
+               <span class="menu-title text-truncate" data-i18n="Orders">Payments</span>
+           </a>
+           <ul class="menu-content">
+                <li class="nav-item <?php if($navigation == 'payments') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payments">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Supplier Payments</span>
+                    </a>
+                </li>
+                <li class="nav-item <?php if($navigation == 'vendor_payments') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/vendor-payments">
+                         <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Vendor Payments</span>
+                    </a>
+                </li>
+           </ul>
+        </li>
+        <?php } ?>
+
         <?php if($user_id == 4 || in_array('30',$access_array) || in_array('31',$access_array) || in_array('32',$access_array)) { ?>
 		<li class="nav-item <?php if($page_name == 'purchase_reports') echo 'active'; ?>">   
 		   <a class="d-flex align-items-center" href="#">
@@ -316,88 +404,7 @@
 		   </ul>
 		</li>
         <?php } ?>
-		
-        <?php if($user_id == 4 || in_array('33',$access_array)) {?>
-        <li class="nav-item <?php if($page_name == 'warehouse' || $page_name == 'warehouse_add' || $page_name == 'warehouse_edit') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/warehouse">
-                <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">Warehouses</span>
-            </a>
-        </li>
-        <?php } ?>
-        <?php if($user_id == 4 || in_array('34',$access_array)) {?>
         
-        <li class="nav-item <?php if($page_name == 'supplier' || $page_name == 'supplier_add' || $page_name == 'supplier_edit' || $page_name == 'local_supplier' || $page_name == 'local_supplier_add' || $page_name == 'local_supplier_edit') echo 'active'; ?>">   
-            <a class="d-flex align-items-center" href="#">
-                <i class="feather icon-layers"></i>
-            <span class="menu-title text-truncate" data-i18n="Orders">Supplier Master</span>
-            </a>
-            <ul class="menu-content">
-                <li class="nav-item <?php if($page_name == 'supplier' || $page_name == 'supplier_add' || $page_name == 'supplier_edit') echo 'active'; ?>">
-                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/supplier">
-                        <i class="feather icon-circle"></i>
-                        <span class="menu-title text-truncate">Import Supplier</span>
-                    </a>
-                </li>
-                <li class="nav-item <?php if($page_name == 'local_supplier' || $page_name == 'local_supplier_add' || $page_name == 'local_supplier_edit') echo 'active'; ?>">
-                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/local-supplier">
-                        <i class="feather icon-circle"></i>
-                        <span class="menu-title text-truncate">Local Supplier</span>
-                    </a>
-                </li>
-            </ul>
-        </li>
-        <?php } ?>
-       
-        <?php if($user_id == 4 || in_array('36',$access_array)) {?>
-        <li class="nav-item <?php if($navigation == 'customer') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/customer">
-                <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">Customer</span>
-            </a>
-        </li>
-        <?php } ?>
-
-        <?php if($user_id == 4 || in_array('2',$access_array)) { ?>
-        <li class="nav-item <?php if($navigation == 'leads') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads/<?php echo ($this->session->userdata('super_type') == 'Inventory') ? 'all' : 'new';?>">
-                <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">Leads</span>
-            </a>
-        </li>
-        <?php } ?>
-
-		<?php if($user_id == 4) {?>
-        <li class="nav-item <?php if($navigation == 'payments' || $navigation == 'vendor_payments') echo 'active'; ?>">   
-            <a class="d-flex align-items-center" href="#">
-                <i class="feather icon-layers"></i>
-               <span class="menu-title text-truncate" data-i18n="Orders">Payments</span>
-           </a>
-           <ul class="menu-content">
-                <li class="nav-item <?php if($navigation == 'payments') echo 'active'; ?>">
-                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payments">
-                        <i class="feather icon-circle"></i>
-                        <span class="menu-title text-truncate">Supplier Payments</span>
-                    </a>
-                </li>
-                <li class="nav-item <?php if($navigation == 'vendor_payments') echo 'active'; ?>">
-                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/vendor-payments">
-                         <i class="feather icon-circle"></i>
-                        <span class="menu-title text-truncate">Vendor Payments</span>
-                    </a>
-                </li>
-           </ul>
-        </li>
-        <?php } ?>
-        
-		<?php if($user_id == 4) {?>
-        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit' || $page_name == 'commission_slab' || $page_name == 'commission_slab_add' || $page_name == 'commission_slab_edit') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
-                <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">My Vendors</span>
-            </a>
-        </li>
-        <?php } ?>
 
         <?php if($user_id != 4) {?>
         <li class="nav-item <?php if($page_name == 'payment_receipt' || $page_name == 'payment_receipt_add' || $page_name == 'payment_receipt_edit') echo 'active'; ?>">

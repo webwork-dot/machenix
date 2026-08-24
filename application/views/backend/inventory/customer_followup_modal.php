@@ -9,23 +9,32 @@
       <input type="hidden" name="customer_id" value="<?php echo $param2; ?>">
       <div class="row">
         
-        <div class="col-12 mb-2">
-          <div class="form-group">
-            <label> Priority <span class="required">*</span></label>
-            <select class="form-control " name="status" onchange="decideDate(this.value)" id="status" required>
-              <option value="">Select Priority</option>
-              <option value="follow | Needs Follow Up">Needs Follow Up</option>
-              <option value="follow | Tentative">Tentative</option>
-              <option value="follow | Might Turn Up">Might Turn Up</option>
-              <option value="lost | Lost">Lost</option>
-            </select>
+        <?php if(!empty($customer_data['status']) && ($customer_data['status'] == 'follow' || $customer_data['status'] == 'stalking')){ ?>
+          <?php 
+            $status_hidden_val = ($customer_data['status'] == 'stalking') 
+              ? 'stalking | ' . (!empty($customer_data['status_label']) ? $customer_data['status_label'] : 'Needs Follow Up')
+              : 'follow | Needs Follow Up';
+          ?>
+          <input type="hidden" name="status" id="status" value="<?php echo htmlspecialchars($status_hidden_val); ?>">
+        <?php } else { ?>
+          <div class="col-12 mb-2">
+            <div class="form-group">
+              <label> Priority <span class="required">*</span></label>
+              <select class="form-control " name="status" onchange="decideDate(this.value)" id="status" required>
+                <option value="">Select Priority</option>
+                <option value="follow | Needs Follow Up">Needs Follow Up</option>
+                <option value="follow | Tentative">Tentative</option>
+                <option value="follow | Might Turn Up">Might Turn Up</option>
+                <option value="lost | Lost">Lost</option>
+              </select>
+            </div>
           </div>
-        </div>
+        <?php } ?>
 
         <div class="col-12 mb-2" id="fd-cont">
           <div class="form-group">
             <label> Follow-Up Date <span class="required">*</span></label>
-            <input type="datetime-local" class="form-control" name="status_date" id="fd-inp" required>
+            <input type="datetime-local" class="form-control" name="status_date" id="fd-inp" min="<?php echo date('Y-m-d\TH:i'); ?>" required>
           </div>
         </div>
         

@@ -10007,9 +10007,14 @@ class Inventory_model extends CI_Model
 	public function add_customer()
 	{
 		$company_id 				= $this->input->post('company_id');
-		$company_id 				= isset($company_id) ? $company_id : [];
+		$company_id 				= ($this->session->userdata('super_type_id') == 7) ? [$this->session->userdata('company_id')] : isset($company_id) ? $company_id : [];
 		$type 							= $this->input->post('type');
-		$staff_id 				  = ($type == 'leads') ? 0 : $this->input->post('staff_id');
+
+		if($type == 'leads') {
+			$staff_id 				  = ($this->session->userdata('super_type_id') == 7) ? $this->session->userdata('super_user_id') : 0;
+		} else {
+			$staff_id 				  =  $this->input->post('staff_id');
+		}
 		
 		$user_id            = (int) $this->session->userdata('super_user_id');
 		$user_name          = (string) $this->session->userdata('super_name');
@@ -10188,6 +10193,11 @@ class Inventory_model extends CI_Model
 			"is_deleted"     => 0,
 		);
 
+		if($type == 'leads' && $this->session->userdata('super_type_id') == 7) {
+			$data['status'] = 'fresh';
+			$data['status_label'] = 'Fresh Lead';
+		}
+
 		if($this->db->insert('customer', $data)) {
 			$customer_id = $this->db->insert_id();
 			$logs = [
@@ -10235,8 +10245,13 @@ class Inventory_model extends CI_Model
 
 		// --- inputs (same as add) ---
 		$company_id 				= $this->input->post('company_id');
-		$company_id 				= isset($company_id) ? $company_id : [];
-		$staff_id   = ($type == 'leads') ? 0 : $this->input->post('staff_id');
+		$company_id 				= ($this->session->userdata('super_type_id') == 7) ? [$this->session->userdata('company_id')] : isset($company_id) ? $company_id : [];
+
+		if($type == 'leads') {
+			$staff_id 				  = ($this->session->userdata('super_type_id') == 7) ? $this->session->userdata('super_user_id') : 0;
+		} else {
+			$staff_id 				  =  $this->input->post('staff_id');
+		}
 
 		$company_name = clean_and_escape($this->input->post('company_name'));
 		$address      = clean_and_escape($this->input->post('address'));
@@ -10386,6 +10401,9 @@ class Inventory_model extends CI_Model
 		if($type != 'leads') {
 			$data["added_by_id"] = $staff_id;
 			$data["added_by_name"] = $staff_name;
+		} elseif($type == 'leads' && $this->session->userdata('super_type_id') == 7) {
+			$data['status'] = 'fresh';
+			$data['status_label'] = 'Fresh Lead';
 		}
 
 		// changed fields for logs (only updated fields)
@@ -10921,34 +10939,44 @@ class Inventory_model extends CI_Model
 
 		$customer_id = clean_and_escape($this->input->post('customer_id'));
 		$status_date = clean_and_escape($this->input->post('status_date'));
-		$status = clean_and_escape($this->input->post('status'));
-		$status = explode(' | ', $status);
+		$status_input = clean_and_escape($this->input->post('status'));
+		$status = explode(' | ', $status_input);
 		$remark = clean_and_escape($this->input->post('remark'));
-		
+
+		$existing_customer = $this->db->where('id', $customer_id)->get('customer')->row_array();
+
+		// if (!empty($existing_customer) && $existing_customer['status'] == 'stalking') {
+		// 	$final_status       = 'stalking';
+		// 	$final_status_label = isset($status[1]) ? $status[1] : '';
+		// } else {
+			$final_status       = isset($status[0]) ? $status[0] : '';
+			$final_status_label = isset($status[1]) ? $status[1] : '';
+		// }
+
 		// Update customer company and staff
 		$data = array(
-			'status_date' => ($status[0] == 'lost') ? date("Y-m-d H:i:s") : $status_date,
-			'status' => $status[0],
-			'status_label' => $status[1],
-			'remark' => $remark,
+			'status_date'  => ($final_status == 'lost') ? date("Y-m-d H:i:s") : $status_date,
+			'status'       => $final_status,
+			'status_label' => $final_status_label,
+			'remark'       => $remark,
 		);
 
 		$this->db->where('id', $customer_id);
 		$updated = $this->db->update('customer', $data);
 
 		if ($updated) {
-			$customer_row = $this->db->where('id', $customer_id)->get('customer')->row_array();
-			$customer_name = $customer_row ? $customer_row['company_name'] : '';
+			$customer_row   = $existing_customer ? $existing_customer : $this->db->where('id', $customer_id)->get('customer')->row_array();
+			$customer_name  = $customer_row ? $customer_row['company_name'] : '';
 			$is_distributor = $customer_row ? (int)$customer_row['is_distributor'] : 0;
-			$status_label_val = isset($status[1]) ? $status[1] : '';
+			$status_label_val = $final_status_label;
 
-			$call_date_val = ($status[0] == 'lost') ? date("Y-m-d") : date('Y-m-d', strtotime($status_date));
+			$call_date_val = ($final_status == 'lost') ? date("Y-m-d H:i:s") : date('Y-m-d H:i:s', strtotime($status_date));
 
 			$call_data = array(
 				'customer_id'    => $customer_id,
 				'customer_name'  => $customer_name,
 				'is_distributor' => $is_distributor,
-				'is_lead'        => 1,
+				'is_lead'        => ($final_status == 'stalking') ? 0 : 1,
 				'status'         => $status_label_val,
 				'date'           => $call_date_val,
 				'remark'         => $remark,
@@ -10958,19 +10986,19 @@ class Inventory_model extends CI_Model
 			);
 			$this->db->insert('customer_calls', $call_data);
 
-			$action = $status[0];
-			$message = "Leads Moved To " . get_phrase($status[0]) . " by {$user_name}";
+			$action = $final_status;
+			$message = "Leads Moved To " . get_phrase($final_status) . " by {$user_name}";
 			$json_data = [
-				'status_date' => ($status[0] == 'lost') ? date("Y-m-d H:i:s") : $status_date,
-				'status' => $status[0],
-				'status_label' => isset($status[1]) ? $status[1] : '',
-				'remark' => $remark,
+				'status_date'  => ($final_status == 'lost') ? date("Y-m-d H:i:s") : $status_date,
+				'status'       => $final_status,
+				'status_label' => $final_status_label,
+				'remark'       => $remark,
 			];
 
 			$logs = [
 				"customer_id"     => $customer_id,
 				"action"          => $action,
-				"label"          => json_encode(["badge" => ($status[0] == 'lost') ? "danger" : "warning", "message" => ($status[0] == 'lost') ? "Lead Lost" : "Follow Up Added"]),
+				"label"           => json_encode(["badge" => ($final_status == 'lost') ? "danger" : "warning", "message" => ($final_status == 'lost') ? "Lead Lost" : "Follow Up Added"]),
 				"message"         => $message,
 				"json"            => json_encode($json_data),
 				"added_by"        => $user_id,
@@ -11014,39 +11042,54 @@ class Inventory_model extends CI_Model
 				}
 		}
 		
+		$status = '';
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
 			$status        = $_REQUEST['status'];
 			$date =  date('Y-m-d');
 			if($status == 'new') {
-				$keyword_filter .= " AND status='fresh'";
+				$keyword_filter .= " AND (status='fresh' OR status='follow') AND type='leads'";
 			} elseif($status == 'today') {
-				$keyword_filter .= " AND status='follow' AND (DATE(status_date) = '$date')";
+				$keyword_filter .= " AND ((status='follow' AND type='leads') OR (status='stalking' AND type='customer')) AND (DATE(status_date) = '$date')";
 			} elseif($status == 'upcoming') {
-				$keyword_filter .= " AND status='follow' AND (DATE(status_date) > '$date')";
+				$keyword_filter .= " AND ((status='follow' AND type='leads') OR (status='stalking' AND type='customer')) AND (DATE(status_date) > '$date')";
 			} elseif($status == 'missed') {
-				$keyword_filter .= " AND status='follow' AND (DATE(status_date) < '$date')";
+				$keyword_filter .= " AND ((status='follow' AND type='leads') OR (status='stalking' AND type='customer')) AND (DATE(status_date) < '$date')";
 			} elseif($status == 'lost') {
-				$keyword_filter .= " AND status='lost'";
+				$keyword_filter .= " AND status='lost' AND type='leads'";
 			} elseif($status == 'moved') {
-				$data_type = 'customer';
-				$keyword_filter .= " AND is_move = '1'";
+				$keyword_filter .= " AND is_move = '1' AND type='customer'";
 			} else {
-				$keyword_filter .= " AND (status='' OR status IS NULL)";
+				$keyword_filter .= " AND (status='' OR status IS NULL) AND type='$data_type'";
 			}
 		endif;
 
-		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name, owner_name, owner_mobile, status, status_label, move_date FROM customer WHERE (is_deleted='0') AND type='$data_type' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name, owner_name, owner_mobile, status, status_date, status_label, move_date, is_move, type FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 		// echo $this->db->last_query(); exit();
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
+				$data_type = $item['type'];
+
 				$id = $item['id'];
 				$badge        = '';
 				if($item['status'] == 'fresh') {
 					$badge        = '<span class="badge badge-primary">' . $item['status_label'] . '</span>';
-				} elseif($item['status'] == 'follow') {
-					$badge        = '<span class="badge badge-warning">' . $item['status_label'] . '</span>';
+				} elseif($item['status'] == 'follow' || $item['status'] == 'stalking') {
+					$badge_class = ($item['status'] == 'stalking') ? 'badge-secondary' : 'badge-warning';
+					if(!empty($item['status_date']) && $item['status_date'] != '0000-00-00 00:00:00') {
+						$s_date     = date('Y-m-d', strtotime($item['status_date']));
+						$today_date = date('Y-m-d');
+						if($s_date == $today_date) {
+							$badge_class = 'badge-warning';
+						} elseif($s_date > $today_date) {
+							$badge_class = 'badge-info';
+						} elseif($s_date < $today_date) {
+							$badge_class = 'badge-danger';
+						}
+					}
+					$label_text = !empty($item['status_label']) ? $item['status_label'] : ($item['status'] == 'stalking' ? 'Stalking' : 'Follow Up');
+					$badge      = '<span class="badge ' . $badge_class . '">' . $label_text . '</span>';
 				} elseif($item['status'] == 'lost') {
 					$badge        = '<span class="badge badge-danger">' . $item['status_label'] . '</span>';
 				}
@@ -11057,29 +11100,44 @@ class Inventory_model extends CI_Model
 				$replicate_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_replicate_modal/" . $id . "','Replicate Customer')";
 				$reassign_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_reinitiate_modal/" . $id . "','" . (($data_type == 'leads') ? "Assign" : "Reassign") . " Staff')";
 				$followup_url = "smallAjaxModal('" . base_url() . "modal/popup_inventory/customer_followup_modal/" . $id . "','" . "Add Follow-Up')";
+				$add_call_url = "smallAjaxModal('" . base_url() . "modal/popup_inventory/customer_add_call_modal/" . $id . "','" . "Add Call')";
 				$timeline_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_customer_timeline/" . $id . "','Timeline')";
 				$share_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_share_modal/" . $id . "','Share Customer')";
 
 				$action = '';
 				if($data_type == 'customer') {
-					if($_REQUEST['status'] == 'moved') {
+					if($status == 'moved') {
 						$action .= '
 							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
 						';
 					} else {
-						$action ='<div class="btn-group">
-							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-							<div class="dropdown-menu">
-								<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>
-								<a class="dropdown-item d-none" href="javascript:void(0)" onclick="' . $replicate_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Replicate</a>
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> ' . (($data_type == 'leads') ? "Assign" : "Reassign") . '</a>
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $share_url . '"><i class="fa fa-share" aria-hidden="true"></i> Share Customer</a>
-								<a class="dropdown-item" href="' . base_url() . 'inventory/customer/ledger/' . $id . '"><i class="fa fa-book" aria-hidden="true"></i> Ledger</a>
-							</div>
-						</div>';
+						if(in_array($status, ['today', 'upcoming', 'missed'])) {
+							$action .= '
+								<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
+							';
+
+							$action .= '
+								<a href="javascript:void(0);" onclick="' . $add_call_url . '" data-toggle="tooltip" data-bs-placement="top" title="Add Call"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-phone" aria-hidden="true"></i></button></a>
+							';
+
+							$action .= '
+								<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
+							';
+						} else {
+							$action ='<div class="btn-group">
+								<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+								<i class="mdi mdi-dots-vertical"></i></button>
+								<div class="dropdown-menu">
+									<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>
+									<a class="dropdown-item d-none" href="javascript:void(0)" onclick="' . $replicate_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Replicate</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> ' . (($data_type == 'leads') ? "Assign" : "Reassign") . '</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $share_url . '"><i class="fa fa-share" aria-hidden="true"></i> Share Customer</a>
+									<a class="dropdown-item" href="' . base_url() . 'inventory/customer/ledger/' . $id . '"><i class="fa fa-book" aria-hidden="true"></i> Ledger</a>
+								</div>
+							</div>';
+						}
 					}
 				} else {
 					if($_REQUEST['status'] == 'all') {
@@ -11090,19 +11148,19 @@ class Inventory_model extends CI_Model
 			
 							<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
 						';
-					} else if ($_REQUEST['status'] == 'new') {
+					} else{
 						$action .= '
 							<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
 						';
-					} else if (in_array($_REQUEST['status'], ['today', 'upcoming', 'missed'])) {
+
 						$action .= '
 							<a href="' . $move_url . '" data-toggle="tooltip" data-bs-placement="top" title="Move To Customer"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-chevron-right" aria-hidden="true"></i></button></a>
 						';
-					}
-
-					$action .= '
-						<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
-					';
+						
+						$action .= '
+							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
+						';
+					} 
 				}
 
 				$log = $this->common_model->getRowById('customer_log', 'added_by_name', ['customer_id' => $item['id'], 'action' => 'create']);
@@ -11120,6 +11178,7 @@ class Inventory_model extends CI_Model
 					"pincode"					=> ($item['pincode']) ? $item['pincode'] : '-',
 					"staff"						=> ($item['added_by_name']) ? $item['added_by_name'] : '-',
 					"move_date"				=> date('d-m-Y', strtotime($item['move_date'])),
+					"status_date"				=> (!empty($item['status_date']) && $item['status_date'] != '0000-00-00 00:00:00') ? date('d-m-Y h:i A', strtotime($item['status_date'])) : '-',
 					"status"					=> $badge,
 					"added_by_name"		=> $log['added_by_name'] ?? '-',
 					"action"      		=> $action,
@@ -23580,12 +23639,15 @@ public function get_sales_return_reports()
 		$customer_name = $customer_row ? $customer_row['company_name'] : '';
 		$is_distributor = $customer_row ? (int)$customer_row['is_distributor'] : 0;
 
+		$status_date_val = date('Y-m-d H:i:s', strtotime($date));
+
 		$data = array(
 			'customer_id'    => $customer_id,
 			'customer_name'  => $customer_name,
 			'is_distributor' => $is_distributor,
 			'is_lead'        => 0,
-			'date'           => date('Y-m-d', strtotime($date)),
+			'date'           => $status_date_val,
+			'status'				 => "Needs Follow Up",
 			'remark'         => $remark,
 			'added_by'       => $this->session->userdata('super_user_id'),
 			'added_by_name'  => $this->session->userdata('super_name'),
@@ -23593,6 +23655,38 @@ public function get_sales_return_reports()
 		);
 
 		$this->db->insert('customer_calls', $data);
+
+		// Update customer data
+		$cust_update = array(
+			'status'       => 'stalking',
+			'status_label' => 'Follow up',
+			'status_date'  => $status_date_val,
+			'remark'       => $remark
+		);
+		$this->db->where('id', $customer_id)->update('customer', $cust_update);
+
+		$user_id   = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
+		$json_data = [
+			'status_date'  => $status_date_val,
+			'status'       => 'stalking',
+			'status_label' => 'Follow up',
+			'remark'       => $remark,
+		];
+
+		$logs = [
+			"customer_id"     => $customer_id,
+			"action"          => 'stalking',
+			"label"           => json_encode(["badge" => "warning", "message" => "Follow Up Added"]),
+			"message"         => "Follow Up Added by {$user_name}",
+			"json"            => json_encode($json_data),
+			"added_by"        => $user_id,
+			"added_by_name"   => get_phrase($user_name),
+			"added_date"      => date("Y-m-d H:i:s"),
+		];
+
+		$this->db->insert('customer_log', $logs);
 
 		$this->session->set_flashdata('flash_message', "Customer Call Added Successfully !!");
 		echo json_encode($resultpost);
@@ -23610,9 +23704,9 @@ public function get_sales_return_reports()
 
 		if (!empty($filter_date) && strtotime($filter_date) !== false) {
 			$date_formatted = date('Y-m-d', strtotime($filter_date));
-			$where_sql = "WHERE DATE(cc.date) = '" . $date_formatted . "'";
+			$where_sql = "WHERE DATE(cc.created_at) = '" . $date_formatted . "'";
 		} else {
-			$where_sql = "WHERE DATE(cc.date) = CURDATE()";
+			$where_sql = "WHERE DATE(cc.created_at) = CURDATE()";
 		}
 
 		$user_id = $this->session->userdata('super_user_id');
@@ -23637,8 +23731,8 @@ public function get_sales_return_reports()
 
 		$data = array();
 		foreach ($result as $row) {
-			$type_badge = ($row['is_distributor'] == 1) 
-				? '<span class="badge bg-light-info text-info">Distributor</span>' 
+			$type_badge = ($row['is_lead'] == 1) 
+				? '<span class="badge bg-light-warning text-warning" style="background: #ff9f4330 !important;">Leads</span>' 
 				: '<span class="badge bg-light-primary text-primary">Customer</span>';
 
 			$nested_data = array();
@@ -23647,7 +23741,7 @@ public function get_sales_return_reports()
 			$nested_data['type']          = $type_badge;
 			$nested_data['status']        = !empty($row['status']) ? htmlspecialchars($row['status']) : '-';
 			$nested_data['remark']        = !empty($row['remark']) ? nl2br(htmlspecialchars($row['remark'])) : '-';
-			$nested_data['date']          = !empty($row['date']) ? date('d M, Y', strtotime($row['date'])) : '-';
+			$nested_data['date']          = !empty($row['date']) ? date('d M, Y h:i A', strtotime($row['date'])) : '-';
 			$data[] = $nested_data;
 		}
 
@@ -23940,6 +24034,86 @@ public function get_sales_return_reports()
 
 		echo json_encode($json_data);
 		exit;
+	}
+
+	public function add_customer_direct_call()
+	{
+		$user_id   = (int) $this->session->userdata('super_user_id');
+		$user_name = (string) $this->session->userdata('super_name');
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => get_phrase('call_added_successfully'),
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$customer_id = clean_and_escape($this->input->post('customer_id'));
+		$remark      = clean_and_escape($this->input->post('remark'));
+
+		if (empty($customer_id)) {
+			$resultpost['status']  = 400;
+			$resultpost['message'] = "Invalid customer selected.";
+			echo json_encode($resultpost);
+			exit;
+		}
+
+		$customer_row   = $this->db->where('id', $customer_id)->get('customer')->row_array();
+		$customer_name  = $customer_row ? $customer_row['company_name'] : '';
+		$is_distributor = $customer_row ? (int)$customer_row['is_distributor'] : 0;
+		$is_lead        = ($customer_row && isset($customer_row['type']) && $customer_row['type'] == 'leads') ? 1 : 0;
+
+		$call_data = array(
+			'customer_id'    => $customer_id,
+			'customer_name'  => $customer_name,
+			'is_distributor' => $is_distributor,
+			'is_lead'        => $is_lead,
+			'status'         => 'Call Added',
+			'date'           => date('Y-m-d H:i:s'),
+			'remark'         => $remark,
+			'added_by'       => $user_id,
+			'added_by_name'  => $user_name,
+			'created_at'     => date("Y-m-d H:i:s")
+		);
+
+		$this->db->insert('customer_calls', $call_data);
+
+		// Update customer status to ""
+		$data = array(
+			'status'       => '',
+			'status_label' => '',
+			'status_date'  => NULL,
+			'remark'       => $remark,
+		);
+
+		$this->db->where('id', $customer_id);
+		$updated = $this->db->update('customer', $data);
+
+		if ($updated) {
+			$action  = 'call';
+			$message = "Call Added by {$user_name}";
+			$json_data = [
+				'status_date'  => '',
+				'status'       => '',
+				'status_label' => '',
+				'remark'       => $remark,
+			];
+
+			$logs = [
+				"customer_id"     => $customer_id,
+				"action"          => $action,
+				"label"           => json_encode(["badge" => "info", "message" => "Call Added"]),
+				"message"         => $message,
+				"json"            => json_encode($json_data),
+				"added_by"        => $user_id,
+				"added_by_name"   => get_phrase($user_name),
+				"added_date"      => date("Y-m-d H:i:s"),
+			];
+
+			$this->db->insert('customer_log', $logs);
+		}
+
+		$this->session->set_flashdata('flash_message', get_phrase('call_added_successfully'));
+		return simple_json_output($resultpost);
 	}
 
 }

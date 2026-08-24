@@ -26,7 +26,7 @@ CREATE TABLE `customer` (
   `other_email` varchar(255) DEFAULT NULL,
   `other_mobile` varchar(15) DEFAULT NULL,
   `other_whatsapp` varchar(15) DEFAULT NULL,
-  `status` enum('fresh','lost','follow','') NOT NULL DEFAULT '',
+  `status` enum('fresh','lost','follow','stalking','') NOT NULL DEFAULT '',
   `status_label` varchar(255) DEFAULT NULL,
   `status_date` datetime DEFAULT NULL,
   `remark` text DEFAULT NULL,

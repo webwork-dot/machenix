@@ -32,7 +32,7 @@ $customers = $this->common_model->getSessionCustomers();
         <div class="col-12 mb-1">
           <div class="form-group">
             <label class="form-label" for="modal_follow_up_date">Follow Up Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" name="date" id="modal_follow_up_date" value="<?php echo date('Y-m-d'); ?>" max="<?php echo date('Y-m-d'); ?>" required>
+            <input type="datetime-local" class="form-control" name="date" id="modal_follow_up_date" value="<?php echo date('Y-m-d\TH:i'); ?>" min="<?php echo date('Y-m-d\TH:i'); ?>" required>
           </div>
         </div>
 
@@ -89,6 +89,24 @@ $customers = $this->common_model->getSessionCustomers();
 
   function submitCustomerCallForm(event) {
     event.preventDefault();
+
+    var inpVal = $('#modal_follow_up_date').val();
+    if (inpVal) {
+      var selectedDate = new Date(inpVal);
+      var now = new Date();
+      if (selectedDate < now) {
+        Swal.fire({
+          title: "Invalid Date!",
+          text: "Follow-Up date and time cannot be in the past.",
+          icon: "warning",
+          customClass: {
+            confirmButton: "btn btn-primary"
+          },
+          buttonsStyling: false
+        });
+        return false;
+      }
+    }
    
     var $submitBtn = $('#customer_call_submit_btn');
     var originalText = $submitBtn.html();
