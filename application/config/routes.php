@@ -42,6 +42,22 @@ $route[$r_inventory . '/supplier/add']    = 'inventory/supplier_form/supplier_ad
 $route[$r_inventory . '/supplier/edit/(:num)'] = 'inventory/supplier_form/supplier_edit/$1';
 $route[$r_inventory . '/supplier/ledger/(:num)'] = 'inventory/supplier_form/supplier_ledger/$1';
 
+$route[$r_inventory . '/supplier-adjustment']                      = 'inventory/supplier_adjustment';
+$route['supplier-adjustment']                                      = 'inventory/supplier_adjustment';
+$route[$r_inventory . '/supplier-adjustment/add_post']             = 'inventory/supplier_adjustment/add_post';
+$route[$r_inventory . '/supplier-adjustment/edit_post/(:num)']     = 'inventory/supplier_adjustment/edit_post/$1';
+$route[$r_inventory . '/supplier-adjustment/delete/(:num)']        = 'inventory/supplier_adjustment/delete/$1';
+$route[$r_inventory . '/add-supplier-adjustment']                  = 'inventory/supplier_adjustment_form/add';
+$route['add-supplier-adjustment']                                  = 'inventory/supplier_adjustment_form/add';
+$route[$r_inventory . '/edit-supplier-adjustment/(:num)']          = 'inventory/supplier_adjustment_form/edit/$1';
+$route['edit-supplier-adjustment/(:num)']                          = 'inventory/supplier_adjustment_form/edit/$1';
+$route[$r_inventory . '/get_supplier_adjustment']                  = 'inventory/get_supplier_adjustment';
+$route['get_supplier_adjustment']                                  = 'inventory/get_supplier_adjustment';
+$route[$r_inventory . '/get_batches_by_supplier_ajax']             = 'inventory/get_batches_by_supplier_ajax';
+$route['get_batches_by_supplier_ajax']                             = 'inventory/get_batches_by_supplier_ajax';
+$route[$r_inventory . '/get_supplier_batch_adjustment_info']      = 'inventory/get_supplier_batch_adjustment_info';
+$route['get_supplier_batch_adjustment_info']                      = 'inventory/get_supplier_batch_adjustment_info';
+
 $route[$r_inventory . '/local-supplier']                      = 'local_supplier/index';
 $route[$r_inventory . '/local-supplier/add']                  = 'local_supplier/add';
 $route[$r_inventory . '/local-supplier/edit/(:num)']          = 'local_supplier/edit/$1';

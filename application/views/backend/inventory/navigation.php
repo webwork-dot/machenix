@@ -308,7 +308,7 @@
         <?php } ?>
 
         <?php if($user_id == 4 || in_array('34',$access_array)) {?>
-        <li class="nav-item <?php if($page_name == 'supplier' || $page_name == 'supplier_add' || $page_name == 'supplier_edit' || $page_name == 'local_supplier' || $page_name == 'local_supplier_add' || $page_name == 'local_supplier_edit') echo 'active'; ?>">   
+        <li class="nav-item <?php if($page_name == 'supplier' || $page_name == 'supplier_add' || $page_name == 'supplier_edit' || $page_name == 'local_supplier' || $page_name == 'local_supplier_add' || $page_name == 'local_supplier_edit' || $page_name == 'supplier_adjustment' || $page_name == 'supplier_adjustment_add' || $page_name == 'supplier_adjustment_edit') echo 'active'; ?>">   
             <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
             <span class="menu-title text-truncate" data-i18n="Orders">Supplier Master</span>
@@ -324,6 +324,12 @@
                     <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/local-supplier">
                         <i class="feather icon-circle"></i>
                         <span class="menu-title text-truncate">Local Supplier</span>
+                    </a>
+                </li>
+                <li class="nav-item <?php if($page_name == 'supplier_adjustment' || $page_name == 'supplier_adjustment_add' || $page_name == 'supplier_adjustment_edit') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/supplier-adjustment">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Adjustment</span>
                     </a>
                 </li>
             </ul>

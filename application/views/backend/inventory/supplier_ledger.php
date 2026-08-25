@@ -20,12 +20,14 @@ $opening = [
 ];
 
 $kinds = [
-  'opening'  => ['row' => 'ledger-row-opening',  'badge' => 'type-badge-opening',  'label' => 'Opening',         'amt' => 'supplier-soft-text', 'sign' => ''],
-  'payment'  => ['row' => 'ledger-row-payment',  'badge' => 'type-badge-payment',  'label' => 'Payment',         'amt' => 'amount-negative',    'sign' => '−'],
-  'purchase' => ['row' => 'ledger-row-purchase', 'badge' => 'type-badge-po',       'label' => 'Purchase Order',  'amt' => 'amount-positive',    'sign' => '+'],
+  'opening'   => ['row' => 'ledger-row-opening',   'badge' => 'type-badge-opening',   'label' => 'Opening',          'amt' => 'supplier-soft-text', 'sign' => ''],
+  'payment'   => ['row' => 'ledger-row-payment',   'badge' => 'type-badge-payment',   'label' => 'Payment',          'amt' => 'amount-negative',    'sign' => '−'],
+  'purchase'  => ['row' => 'ledger-row-purchase',  'badge' => 'type-badge-po',        'label' => 'Purchase Order',   'amt' => 'amount-positive',    'sign' => '+'],
+  'adj_plus'  => ['row' => 'ledger-row-adj-plus',  'badge' => 'type-badge-adj-plus',  'label' => 'Adjustment (+)',   'amt' => 'amount-positive',    'sign' => '+'],
+  'adj_minus' => ['row' => 'ledger-row-adj-minus', 'badge' => 'type-badge-adj-minus', 'label' => 'Adjustment (-)',   'amt' => 'amount-negative',    'sign' => '−'],
 ];
 
-$build_ledger = function ($purchases, $payments, $usd_key, $inr_key, $rmb_key = null, $opening_bal = null) use ($supplier) {
+$build_ledger = function ($purchases, $payments, $adjustments, $usd_key, $inr_key, $rmb_key = null, $opening_bal = null) use ($supplier) {
   $ledger = [];
   foreach ($purchases ?? [] as $row) {
     $ledger[] = [
@@ -35,7 +37,7 @@ $build_ledger = function ($purchases, $payments, $usd_key, $inr_key, $rmb_key = 
       'rmb'      => $rmb_key ? (float) $row[$rmb_key] : 0,
       'usd'      => (float) $row[$usd_key],
       'inr'      => (float) $row[$inr_key],
-      'added_by' => $row['added_by_name'],
+      'added_by' => $row['added_by_name'] ?? '—',
     ];
   }
   foreach ($payments ?? [] as $pay) {
@@ -46,16 +48,36 @@ $build_ledger = function ($purchases, $payments, $usd_key, $inr_key, $rmb_key = 
       'rmb'      => (float) $pay['amount_rmb'],
       'usd'      => (float) $pay['amount_dollar'],
       'inr'      => (float) $pay['amount_rs'],
-      'added_by' => $pay['added_by_name'],
+      'added_by' => $pay['added_by_name'] ?? '—',
+      'remark'   => $pay['invoice_no'] ? ('Inv: ' . $pay['invoice_no']) : '',
     ];
   }
+  foreach ($adjustments ?? [] as $adj) {
+    $kind = ($adj['amt_type'] === 'plus') ? 'adj_plus' : 'adj_minus';
+    $batchText = !empty($adj['batch_no']) ? $adj['batch_no'] : 'General Adjustment';
+    if (!empty($adj['remark'])) {
+      $batchText .= ' (' . $adj['remark'] . ')';
+    }
+    $ledger[] = [
+      'date'     => $adj['date'],
+      'batch'    => $batchText,
+      'kind'     => $kind,
+      'rmb'      => (float) $adj['rmb'],
+      'usd'      => (float) $adj['usd'],
+      'inr'      => (float) $adj['inr'],
+      'added_by' => !empty($adj['added_by_name']) ? $adj['added_by_name'] : (!empty($adj['added_by']) ? $adj['added_by'] : '—'),
+    ];
+  }
+
   usort($ledger, function ($a, $b) {
     return strtotime($a['date']) - strtotime($b['date']);
   });
 
   $totals = [
-    'purchase' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
-    'payment'  => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+    'purchase'  => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+    'payment'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+    'adj_plus'  => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+    'adj_minus' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
   ];
   foreach ($ledger as $item) {
     $totals[$item['kind']]['rmb'] += $item['rmb'];
@@ -65,9 +87,9 @@ $build_ledger = function ($purchases, $payments, $usd_key, $inr_key, $rmb_key = 
 
   $open = $opening_bal ?? ['rmb' => 0, 'usd' => 0, 'inr' => 0];
   $balance = [
-    'rmb' => $open['rmb'] + $totals['purchase']['rmb'] - $totals['payment']['rmb'],
-    'usd' => $open['usd'] + $totals['purchase']['usd'] - $totals['payment']['usd'],
-    'inr' => $open['inr'] + $totals['purchase']['inr'] - $totals['payment']['inr'],
+    'rmb' => $open['rmb'] + $totals['purchase']['rmb'] - $totals['payment']['rmb'] + $totals['adj_plus']['rmb'] - $totals['adj_minus']['rmb'],
+    'usd' => $open['usd'] + $totals['purchase']['usd'] - $totals['payment']['usd'] + $totals['adj_plus']['usd'] - $totals['adj_minus']['usd'],
+    'inr' => $open['inr'] + $totals['purchase']['inr'] - $totals['payment']['inr'] + $totals['adj_plus']['inr'] - $totals['adj_minus']['inr'],
   ];
 
   $rows = $ledger;
@@ -83,17 +105,20 @@ $build_ledger = function ($purchases, $payments, $usd_key, $inr_key, $rmb_key = 
     ]);
   }
 
+  $net_adj_inr = $totals['adj_plus']['inr'] - $totals['adj_minus']['inr'];
+
   return [
-    'rows'    => $rows,
-    'totals'  => $totals,
-    'balance' => $balance,
-    'isDue'   => $balance['inr'] > 0,
+    'rows'        => $rows,
+    'totals'      => $totals,
+    'net_adj_inr' => $net_adj_inr,
+    'balance'     => $balance,
+    'isDue'       => $balance['inr'] > 0,
   ];
 };
 
-$all = $build_ledger($outstanding ?? [], $payments ?? [], 'total_actual_usd', 'total_actual_inr', 'total_actual_rmb', $opening);
-$official = $build_ledger($outstanding ?? [], $official_payments ?? [], 'official_usd', 'official_inr');
-$unofficial = $build_ledger($outstanding ?? [], $unofficial_payments ?? [], 'unofficial_usd', 'unofficial_inr');
+$all = $build_ledger($outstanding ?? [], $payments ?? [], $adjustments ?? [], 'total_actual_usd', 'total_actual_inr', 'total_actual_rmb', $opening);
+$official = $build_ledger($outstanding ?? [], $official_payments ?? [], $official_adjustments ?? [], 'official_usd', 'official_inr');
+$unofficial = $build_ledger($outstanding ?? [], $unofficial_payments ?? [], $unofficial_adjustments ?? [], 'unofficial_usd', 'unofficial_inr');
 
 $render_table = function ($ledger, $show_rmb) use ($kinds) {
   $rows = $ledger['rows'];
@@ -107,7 +132,7 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
         <tr>
           <th class="text-start px-3 py-2 text-muted fw-semibold">Date</th>
           <th class="text-start px-2 py-2 text-muted fw-semibold">Type</th>
-          <th class="text-start px-2 py-2 text-muted fw-semibold">Batch</th>
+          <th class="text-start px-2 py-2 text-muted fw-semibold">Batch / Remark</th>
           <?php if ($show_rmb): ?>
             <th class="text-end px-2 py-2 text-muted fw-semibold">RMB</th>
           <?php endif; ?>
@@ -212,6 +237,10 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
   .ledger-row-purchase:hover { background: #f9fafb; }
   .ledger-row-opening { background: #fafbfc; }
   .ledger-row-opening:hover { background: #f3f4f6; }
+  .ledger-row-adj-plus { background: #eff6ff; }
+  .ledger-row-adj-plus:hover { background: #dbeafe; }
+  .ledger-row-adj-minus { background: #fff5f5; }
+  .ledger-row-adj-minus:hover { background: #fee2e2; }
   .type-badge {
     display: inline-block;
     font-size: 9px;
@@ -224,6 +253,8 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
   .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
   .type-badge-po { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
   .type-badge-opening { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
+  .type-badge-adj-plus { color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; }
+  .type-badge-adj-minus { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
   .amount-positive { color: #dc2626; font-weight: 600; }
   .amount-negative { color: #16a34a; font-weight: 600; }
   .tfoot-border-top { border-top: 2px solid #e8eaed; }
@@ -312,16 +343,19 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
       <div class="summary-pill">Opening Balance &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($opening['inr'], 2) ?></strong></div>
       <div class="summary-pill">Purchases &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($all['totals']['purchase']['inr'], 2) ?></strong></div>
       <div class="summary-pill">Payments &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($all['totals']['payment']['inr'], 2) ?></strong></div>
+      <div class="summary-pill">Adjustments &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($all['net_adj_inr'], 2) ?></strong></div>
       <div class="balance-pill <?= $all['isDue'] ? 'balance-pill-due' : 'balance-pill-credit' ?>">Balance &nbsp;₹ <?= number_format($all['balance']['inr'], 2) ?></div>
     </div>
     <div class="d-flex align-items-center flex-wrap gap-2 d-none" data-tab-panel="official">
       <div class="summary-pill">Purchases &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($official['totals']['purchase']['inr'], 2) ?></strong></div>
       <div class="summary-pill">Payments &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($official['totals']['payment']['inr'], 2) ?></strong></div>
+      <div class="summary-pill">Adjustments &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($official['net_adj_inr'], 2) ?></strong></div>
       <div class="balance-pill <?= $official['isDue'] ? 'balance-pill-due' : 'balance-pill-credit' ?>">Balance &nbsp;₹ <?= number_format($official['balance']['inr'], 2) ?></div>
     </div>
     <div class="d-flex align-items-center flex-wrap gap-2 d-none" data-tab-panel="unofficial">
       <div class="summary-pill">Purchases &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($unofficial['totals']['purchase']['inr'], 2) ?></strong></div>
       <div class="summary-pill">Payments &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($unofficial['totals']['payment']['inr'], 2) ?></strong></div>
+      <div class="summary-pill">Adjustments &nbsp;<strong class="supplier-soft-text mono-amount">₹ <?= number_format($unofficial['net_adj_inr'], 2) ?></strong></div>
       <div class="balance-pill <?= $unofficial['isDue'] ? 'balance-pill-due' : 'balance-pill-credit' ?>">Balance &nbsp;₹ <?= number_format($unofficial['balance']['inr'], 2) ?></div>
     </div>
   </div>

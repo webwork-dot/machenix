@@ -10,8 +10,8 @@ $customer_history = array_reverse($customer_history);
   .history-item:last-child{ margin-bottom: 0; }
   .history-card{
     border: 1px solid #edf0f2;
-    border-radius: 0px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     overflow: hidden;
     margin: 0 !important;
   }
@@ -20,21 +20,38 @@ $customer_history = array_reverse($customer_history);
   .history-meta{
     font-size: 12px;
     color: #6c757d;
+    white-space: nowrap;
   }
-  .history-title{
+  .history-label{
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+    display: block;
+  }
+  .history-value{
+    font-size: 13px;
     font-weight: 600;
     color: #111827;
-    margin: 2px 0 6px;
+    display: block;
+    word-break: break-word;
   }
   .history-desc{
     color: #374151;
     font-size: 13px;
-    margin: 0;
+    margin-top: 8px;
+    background: #f8f9fa;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border-left: 3px solid #7367f0;
   }
   .history-pill{
     font-size: 11px;
     padding: 4px 8px;
     border-radius: 999px;
+    white-space: nowrap;
   }
 </style>
 
@@ -48,22 +65,47 @@ $customer_history = array_reverse($customer_history);
     }
 ?>
 
-<div class="history-item">
+<div class="history-item mb-1">
   <div class="card history-card">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <span class="badge bg-<?php echo $label['badge']; ?> history-pill"><?php echo $label['message']; ?></span>
+      <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap" style="gap: 4px;">
+        <span class="badge bg-<?php echo isset($label['badge']) ? $label['badge'] : 'secondary'; ?> history-pill"><?php echo isset($label['message']) ? $label['message'] : ''; ?></span>
         <small class="history-meta"><?php echo formatHistoryTime($history['added_date']); ?></small>
       </div>
 
-      <?php if($history['action'] == "create" || $history['action'] == "follow" || $history['action'] == "lost" || $history['action'] == "stalking" || $history['action'] == "call"){ ?>
-        <div class="history-title">Added By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
-      <?php } elseif($history['action'] == "reassign" || $history['action'] == "update") { ?>
-        <div class="history-title">Updated By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
-      <?php } elseif($history['action'] == "assign") { ?>
-        <div class="history-title">Assigned To: <span class="text-primary"><?php echo $json['added_by_name']; ?></span></div>
-      <?php } elseif($history['action'] == "move") { ?>
-        <div class="history-title">Moved By: <span class="text-primary"><?php echo $history['added_by_name']; ?></span></div>
+      <div class="row my-1">
+        <div class="col-6">
+          <small class="history-label">
+            <?php 
+              if($history['action'] == "reassign" || $history['action'] == "update") { echo "Updated By"; }
+              elseif($history['action'] == "assign") { echo "Assigned To"; }
+              elseif($history['action'] == "move") { echo "Moved By"; }
+              else { echo "Added By"; }
+            ?>
+          </small>
+          <span class="history-value text-primary">
+            <?php 
+              if($history['action'] == "assign") {
+                echo isset($json['added_by_name']) ? $json['added_by_name'] : $history['added_by_name'];
+              } else {
+                echo $history['added_by_name'];
+              }
+            ?>
+          </span>
+        </div>
+
+        <?php if(!empty($json['status_date']) && strtotime($json['status_date']) > 0){ ?>
+          <div class="col-6">
+            <small class="history-label">Follow Up Date</small>
+            <span class="history-value text-dark">
+              <?php echo date('d M, Y h:i A', strtotime($json['status_date'])); ?>
+            </span>
+          </div>
+        <?php } ?>
+      </div>
+
+      <?php if(!empty($json['remark'])){ ?>
+        <div class="history-desc"><b>Remark:</b> <?php echo nl2br(htmlspecialchars($json['remark'])); ?></div>
       <?php } ?>
 
     </div>

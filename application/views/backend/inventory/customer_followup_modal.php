@@ -9,7 +9,7 @@
       <input type="hidden" name="customer_id" value="<?php echo $param2; ?>">
       <div class="row">
         
-        <?php if(!empty($customer_data['status']) && ($customer_data['status'] == 'follow' || $customer_data['status'] == 'stalking')){ ?>
+        <?php if(isset($customer_data['type']) && $customer_data['type'] != 'leads' && !empty($customer_data['status']) && ($customer_data['status'] == 'follow' || $customer_data['status'] == 'stalking')){ ?>
           <?php 
             $status_hidden_val = ($customer_data['status'] == 'stalking') 
               ? 'stalking | ' . (!empty($customer_data['status_label']) ? $customer_data['status_label'] : 'Needs Follow Up')
@@ -22,10 +22,10 @@
               <label> Priority <span class="required">*</span></label>
               <select class="form-control " name="status" onchange="decideDate(this.value)" id="status" required>
                 <option value="">Select Priority</option>
-                <option value="follow | Needs Follow Up">Needs Follow Up</option>
-                <option value="follow | Tentative">Tentative</option>
-                <option value="follow | Might Turn Up">Might Turn Up</option>
-                <option value="lost | Lost">Lost</option>
+                <option value="follow | Needs Follow Up" <?php echo (!empty($customer_data['status_label']) && $customer_data['status_label'] == 'Needs Follow Up') ? 'selected' : ''; ?>>Needs Follow Up</option>
+                <option value="follow | Tentative" <?php echo (!empty($customer_data['status_label']) && $customer_data['status_label'] == 'Tentative') ? 'selected' : ''; ?>>Tentative</option>
+                <option value="follow | Might Turn Up" <?php echo (!empty($customer_data['status_label']) && $customer_data['status_label'] == 'Might Turn Up') ? 'selected' : ''; ?>>Might Turn Up</option>
+                <option value="lost | Lost" <?php echo (!empty($customer_data['status_label']) && $customer_data['status_label'] == 'Lost') ? 'selected' : ''; ?>>Lost</option>
               </select>
             </div>
           </div>

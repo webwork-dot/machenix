@@ -1,0 +1,25 @@
+I wanna create a new module called adjustment inside Master Supplier nav [Master Supplier nav]. Here are my following requirements:
+
+1. Show the data of previous adjustments entries in datatable in /supplier-adjustment page by using this table [supplier_adjustments table].
+2. In datatable page create a "Add Adjustment" button. After clicking on this button I wanna redirect user to /add-supplier-adjustment page.
+3. In add page I wanna show the following input fields: 
+  - Select Supplier (Current Company Import Supplier)
+  - Batch Number (Dropdown - Show batches of the selected supplier)
+  - Date (date only - and default value is today's date)
+  - Amount (USD, RMB, INR) 
+  - Amount Type (Minus / Plus)
+  - Type (Unofficial / Official)
+  - Remark
+4. After submitting, Insert the adjustment entry in this table [supplier_adjustments table]
+
+This is the common basic flow. I want some additional behaviour in add form.. 
+
+1. If user selects both supplier and batch then show the table below form and inside the table show the batch total amount based on selected type (actual or official).. 
+
+2. Below the batch amount entry, show all the payment entries against selected supplier of that batch.. If the type selected unofficial then show all the payment entries otherwise just show the payment entries with the status of official.
+
+3. Below payment entries, show all the adjustment entries against the selected supplier batch. And in the last show the difference of the calculation of (batch supplier outstanding amount) - (payment entries) +/- (adjustment entries based on amount type)..
+
+These are just additional requirements just to showcase the amount difference. Do not change the basic flow.
+
+Now I want you to create this module by following existing coding patterns. Also make the edit adjustment entries editable.. 

@@ -79,6 +79,19 @@ class Inventory extends CI_Controller
 
         $page_data['dashboard_stats'] = $this->inventory_model->get_dashboard_stats();
 
+        $filters = array(
+            'period'     => $this->input->get('period') ? $this->input->get('period', true) : ($this->input->post('period', true) ? $this->input->post('period', true) : 'this_month'),
+            'staff_id'   => $this->input->get('staff_id') ? $this->input->get('staff_id', true) : ($this->input->post('staff_id', true) ? $this->input->post('staff_id', true) : ''),
+            'type'       => $this->input->get('type') ? $this->input->get('type', true) : ($this->input->post('type', true) ? $this->input->post('type', true) : 'all'),
+            'status'     => $this->input->get('status') ? $this->input->get('status', true) : ($this->input->post('status', true) ? $this->input->post('status', true) : 'all'),
+            'start_date' => $this->input->get('start_date') ? $this->input->get('start_date', true) : ($this->input->post('start_date', true) ? $this->input->post('start_date', true) : ''),
+            'end_date'   => $this->input->get('end_date') ? $this->input->get('end_date', true) : ($this->input->post('end_date', true) ? $this->input->post('end_date', true) : ''),
+        );
+
+        $page_data['reporting_data']      = $this->inventory_model->get_leads_calls_dashboard_data($filters);
+        $page_data['dashboard_staff_list'] = $this->inventory_model->get_dashboard_staff_list();
+        $page_data['filters']              = $filters;
+
         $page_data['page_name']  = 'dashboard';
         $page_data['page_title'] = get_phrase('dashboard');
         $this->load->view('backend/index.php', $page_data);
@@ -333,10 +346,13 @@ class Inventory extends CI_Controller
             $data                    = $this->inventory_model->get_supplier_by_id($param2)->row_array();
             $page_data['data']       = $data;
             $page_data['id']         = $param2;
-            $page_data['outstanding'] = $this->inventory_model->get_supplier_outstanding($param2);
-            $page_data['payments'] = $this->inventory_model->get_supplier_payments($param2);
-            $page_data['official_payments'] = $this->inventory_model->get_supplier_payments($param2, 'official');
-            $page_data['unofficial_payments'] = $this->inventory_model->get_supplier_payments($param2, 'unofficial');
+            $page_data['outstanding']          = $this->inventory_model->get_supplier_outstanding($param2);
+            $page_data['payments']             = $this->inventory_model->get_supplier_payments($param2);
+            $page_data['official_payments']    = $this->inventory_model->get_supplier_payments($param2, 'official');
+            $page_data['unofficial_payments']  = $this->inventory_model->get_supplier_payments($param2, 'unofficial');
+            $page_data['adjustments']          = $this->inventory_model->get_supplier_adjustments($param2);
+            $page_data['official_adjustments']  = $this->inventory_model->get_supplier_adjustments($param2, 'official');
+            $page_data['unofficial_adjustments'] = $this->inventory_model->get_supplier_adjustments($param2, 'unofficial');
             $page_data['page_name']  = 'supplier_ledger';
             $page_data['page_title'] = 'Supplier Ledger';
             $this->load->view('backend/index', $page_data);
@@ -351,6 +367,93 @@ class Inventory extends CI_Controller
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_supplier();
         }
+    }
+
+    // Supplier Adjustment
+    public function supplier_adjustment($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_supplier_adjustment();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_supplier_adjustment($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_supplier_adjustment($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['page_name']  = 'supplier_adjustment';
+            $page_data['page_title'] = 'Supplier Adjustments';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function supplier_adjustment_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['suppliers'] = $this->inventory_model->get_import_suppliers();
+
+        if ($param1 == 'add') {
+            $page_data['page_name']  = 'supplier_adjustment_add';
+            $page_data['page_title'] = 'Add Supplier Adjustment';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $data = $this->inventory_model->get_supplier_adjustment_by_id($param2);
+            if (empty($data)) {
+                $this->session->set_flashdata('error_message', 'Supplier adjustment record not found');
+                redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+            }
+            $page_data['data']       = $data;
+            $page_data['batches']    = $this->inventory_model->get_batches_by_supplier_for_select($data['supplier_id']);
+            $page_data['id']         = $param2;
+            $page_data['page_name']  = 'supplier_adjustment_edit';
+            $page_data['page_title'] = 'Edit Supplier Adjustment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_supplier_adjustment()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->get_supplier_adjustment_datatable();
+    }
+
+    public function get_batches_by_supplier_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $supplier_id = $this->input->post('supplier_id');
+        $batches = $this->inventory_model->get_batches_by_supplier_for_select($supplier_id);
+        echo json_encode($batches);
+    }
+
+    public function get_supplier_batch_adjustment_info()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $supplier_id = $this->input->post('supplier_id');
+        $batch_no    = $this->input->post('batch_no');
+        $type        = $this->input->post('type');
+        $current_id  = $this->input->post('current_adj_id');
+
+        if (empty($supplier_id) || empty($batch_no)) {
+            echo json_encode(['success' => false, 'message' => 'Supplier and Batch required']);
+            return;
+        }
+
+        $type = !empty($type) ? $type : 'unofficial';
+        $details = $this->inventory_model->get_supplier_batch_ledger_details($supplier_id, $batch_no, $type, $current_id);
+        
+        echo json_encode(['success' => true, 'data' => $details]);
     }
 
     // Category Starts

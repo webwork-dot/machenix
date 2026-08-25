@@ -30,7 +30,7 @@
       <a href="<?php echo site_url('inventory/leads/all'); ?>" class="sub-link <?php echo ($status == 'all') ? 'active' : ''; ?>">All Leads</a>
     <?php } ?>
     <a href="<?php echo site_url('inventory/leads/new'); ?>" class="sub-link <?php echo ($status == 'new') ? 'active' : ''; ?>">New Leads</a>
-    <a href="<?php echo site_url('inventory/customer_calls'); ?>" class="sub-link <?php echo ($status == 'customer_calls') ? 'active' : ''; ?>">Customer Calls</a>
+    <a href="<?php echo site_url('inventory/customer_calls'); ?>" class="sub-link <?php echo ($status == 'customer_calls') ? 'active' : ''; ?>">Customers/Leads Calls</a>
     <a href="<?php echo site_url('inventory/leads/today'); ?>" class="sub-link <?php echo ($status == 'today') ? 'active' : ''; ?>">Todays Follow-up</a>
     <a href="<?php echo site_url('inventory/leads/upcoming'); ?>" class="sub-link <?php echo ($status == 'upcoming') ? 'active' : ''; ?>">Upcoming Follow-up</a>
     <a href="<?php echo site_url('inventory/leads/missed'); ?>" class="sub-link <?php echo ($status == 'missed') ? 'active' : ''; ?>">Missed Leads</a>
@@ -62,6 +62,9 @@
                 <th>Company Name</th>
                 <th>Name</th>
                 <th>Number</th>
+                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                  <th>Type</th>
+                <?php } ?>
                 <?php if($status != 'all' && $status != 'moved'){ ?>
                   <th>Status</th>
                 <?php } ?>
@@ -126,6 +129,9 @@
                 { "data": "name" },
                 { "data": "owner_name" },
                 { "data": "owner_no" },
+                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                  { "data": "type" },
+                <?php } ?>
                 <?php if($status != 'all' && $status != 'moved'){ ?>
                   { "data": "status" },
                 <?php } ?>
@@ -147,7 +153,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": ":visible:not(:last-child)"
                     }
                 },
                 {
@@ -155,7 +161,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": ":visible:not(:last-child)"
                     }
                 }
             ], 

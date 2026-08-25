@@ -1,14 +1,38 @@
 <link rel="stylesheet" href="<?php echo base_url('assets/css/po.css'); ?>">
 
+<style>
+  .currency-input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+  }
+  .currency-input-group .input-group-text {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-right: 0 !important;
+    background-color: #f3f4f6;
+    color: #374151;
+    font-weight: 600;
+    padding: 0.375rem 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+  .currency-input-group .form-control {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+  }
+</style>
+
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <div class="card-body py-1 my-0">
+      <div class="card-body py-2 my-0">
 
         <?php echo form_open('inventory/vendor_payments/edit_post/' . $id, ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
-        <div class="row">
-
-         <div class="col-12 col-sm-6 mb-1">
+        
+        <!-- Row 1: Vendor & Invoice No -->
+        <div class="row mb-1">
+          <div class="col-md-6">
             <div class="form-group">
               <label>Vendor <span class="required">*</span></label>
               <select class="form-control select2" name="vendor_id" id="vendor_id" required>
@@ -20,21 +44,17 @@
             </div>
           </div>
 
-          <div class="col-md-6 mb-1">
+          <div class="col-md-6">
             <div class="form-group">
               <label><?php echo get_phrase('invoice_no'); ?><span class="required">*</span></label>
-              <input type="text" name="invoice_no" class="form-control" value="<?php echo $data['invoice_no']; ?>" required>
+              <input type="text" name="invoice_no" class="form-control" value="<?php echo html_escape($data['invoice_no']); ?>" required>
             </div>
           </div>
+        </div>
 
-          <div class="col-md-4 mb-1">
-            <div class="form-group">
-              <label>Amount <span class="required">*</span></label>
-              <input type="number" name="amount" class="form-control" value="<?php echo $data['amount']; ?>" min="0" step="0.01" required>
-            </div>
-          </div>
-
-          <div class="col-md-4 mb-1">
+        <!-- Row 2: Payment Type, Bank Account, Payment Date -->
+        <div class="row mb-1">
+          <div class="col-md-4" id="pay_type_wrap">
             <div class="form-group">
               <label>Payment type <span class="required">*</span></label>
               <select class="form-control select2" name="payment_type" id="payment_type" required>
@@ -45,7 +65,7 @@
             </div>
           </div>
 
-          <div class="col-md-4 mb-1" id="bank_account_wrap" style="display:none;">
+          <div class="col-md-4" id="bank_account_wrap" style="display:none;">
             <div class="form-group">
               <label>Bank Account <span class="bank_required" style="display:none;">*</span></label>
               <select class="form-control" name="bank_account" id="bank_account">
@@ -59,28 +79,65 @@
             </div>
           </div>
 
-
-          <div class="col-md-4 mb-1">
+          <div class="col-md-4" id="pay_date_wrap">
             <div class="form-group">
               <label class="control-label">Payment Date <span class="required">*</span></label>
-              <input type="date" class="form-control" name="payment_date" value="<?php echo $data['payment_date']; ?>" id="date_picker" required>
+              <input type="date" class="form-control" name="payment_date" value="<?php echo html_escape($data['payment_date']); ?>" id="date_picker" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Amount Fields (USD, RMB, INR) -->
+        <div class="row mb-1">
+          <div class="col-md-4" id="usd_wrap">
+            <div class="form-group">
+              <label>Amount (USD)</label>
+              <div class="input-group currency-input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" name="usd" id="usd" class="form-control" value="<?php echo html_escape($data['usd'] ?? '0.00'); ?>" step="0.00001">
+              </div>
             </div>
           </div>
 
-          <div class="col-md-12 mb-2">
+          <div class="col-md-4" id="rmb_wrap">
+            <div class="form-group">
+              <label>Amount (RMB)</label>
+              <div class="input-group currency-input-group">
+                <span class="input-group-text">¥</span>
+                <input type="number" name="rmb" id="rmb" class="form-control" value="<?php echo html_escape($data['rmb'] ?? '0.00'); ?>" step="0.00001">
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4" id="inr_wrap">
+            <div class="form-group">
+              <label>Amount (INR)</label>
+              <div class="input-group currency-input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" name="inr" id="inr" class="form-control" value="<?php echo html_escape($data['inr'] ?? '0.00'); ?>" step="0.00001">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 4: Narration -->
+        <div class="row mb-1">
+          <div class="col-md-12">
             <div class="form-group">
               <label class="control-label">Narration</label>
-              <textarea class="form-control" rows="2" placeholder="Narration" name="narration" ><?php echo $data['narration']; ?></textarea>
+              <textarea class="form-control" rows="2" placeholder="Narration" name="narration"><?php echo html_escape($data['narration']); ?></textarea>
             </div>
           </div>
+        </div>
 
+        <div class="row">
           <div class="col-12">
             <button type="submit"
               class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify"
               name="btn_verify"><?php echo get_phrase('submit'); ?></button>
           </div>
-
         </div>
+
         <?php echo form_close(); ?>
 
       </div>
@@ -90,23 +147,40 @@
 
 <script>
   $(function () {
-    function toggleBankAccount() {
+    function togglePaymentTypeFields() {
       const isOfficial = $('#payment_type').val() === 'official';
 
       $('#bank_account_wrap').toggle(isOfficial);
       $('#bank_account').prop('required', isOfficial);
-
       $('.bank_required').toggle(isOfficial);
 
-      if (!isOfficial) {
-        $('#bank_account').val(''); // reset when hidden
+      if (isOfficial) {
+        // Official: Bank account visible -> Row 2 has 3 cols (4 each)
+        $('#pay_type_wrap').removeClass('col-md-6').addClass('col-md-4');
+        $('#pay_date_wrap').removeClass('col-md-6').addClass('col-md-4');
+
+        // Hide RMB, USD and INR expand to 6 each
+        $('#rmb_wrap').hide();
+        $('#rmb').val('0.00');
+        $('#usd_wrap').removeClass('col-md-4').addClass('col-md-6');
+        $('#inr_wrap').removeClass('col-md-4').addClass('col-md-6');
+      } else {
+        // Unofficial: Bank account hidden -> Row 2 has 2 cols (6 each)
+        $('#bank_account').val('');
+        $('#pay_type_wrap').removeClass('col-md-4').addClass('col-md-6');
+        $('#pay_date_wrap').removeClass('col-md-4').addClass('col-md-6');
+
+        // Show RMB, all 3 amounts take 4 each
+        $('#rmb_wrap').show();
+        $('#usd_wrap').removeClass('col-md-6').addClass('col-md-4');
+        $('#inr_wrap').removeClass('col-md-6').addClass('col-md-4');
       }
     }
 
-    $('#payment_type').on('change', toggleBankAccount);
+    $('#payment_type').on('change', togglePaymentTypeFields);
 
-    // run once on page load (for edit pages too)
-    toggleBankAccount();
+    // run once on page load
+    togglePaymentTypeFields();
   });
 
   $(document).ready(function () {
@@ -117,5 +191,4 @@
         $('#payment_type').select2('open');
     });
   });
-
 </script>

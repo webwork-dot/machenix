@@ -30,7 +30,7 @@
       <a href="<?php echo site_url('inventory/leads/all'); ?>" class="sub-link <?php echo ($status == 'all') ? 'active' : ''; ?>">All Leads</a>
     <?php } ?>
     <a href="<?php echo site_url('inventory/leads/new'); ?>" class="sub-link <?php echo ($status == 'new') ? 'active' : ''; ?>">New Leads</a>
-    <a href="<?php echo site_url('inventory/customer_calls'); ?>" class="sub-link <?php echo ($status == 'customer_calls') ? 'active' : ''; ?>">Customer Calls</a>
+    <a href="<?php echo site_url('inventory/customer_calls'); ?>" class="sub-link <?php echo ($status == 'customer_calls') ? 'active' : ''; ?>">Customers/Leads Calls</a>
     <a href="<?php echo site_url('inventory/leads/today'); ?>" class="sub-link <?php echo ($status == 'today') ? 'active' : ''; ?>">Todays Follow-up</a>
     <a href="<?php echo site_url('inventory/leads/upcoming'); ?>" class="sub-link <?php echo ($status == 'upcoming') ? 'active' : ''; ?>">Upcoming Follow-up</a>
     <a href="<?php echo site_url('inventory/leads/missed'); ?>" class="sub-link <?php echo ($status == 'missed') ? 'active' : ''; ?>">Missed Leads</a>
@@ -59,11 +59,14 @@
                 <?php if ($staff_access != 7) { ?>
                   <th>Staff</th>
                 <?php } ?>
+                <th>Company Name</th>
                 <th>Customer Name</th>
+                <th>Phone Number</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th>Remark</th>
                 <th>Follow Up Date</th>
+                <th>Added Date</th>
               </tr>
             </thead>
           </table>
@@ -110,11 +113,14 @@
                 <?php if ($staff_access != 7) { ?>
                 { "data": "added_by_name" },
                 <?php } ?>
+                { "data": "company_name" },
                 { "data": "customer_name" },
+                { "data": "phone_number" },
                 { "data": "type" },
                 { "data": "status" },
                 { "data": "remark" },
-                { "data": "date" }
+                { "data": "date" },
+                { "data": "created_at" }
             ], 
            
             "buttons": [
@@ -122,7 +128,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5]' : '[0,1,2,3,4]'; ?>
+                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5,6,7,8]' : '[0,1,2,3,4,5,6,7]'; ?>
                     }
                 },
                 {
@@ -130,7 +136,7 @@
                     "orientation": 'portrait',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5]' : '[0,1,2,3,4]'; ?>
+                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5,6,7,8]' : '[0,1,2,3,4,5,6,7]'; ?>
                     }
                 }
             ], 

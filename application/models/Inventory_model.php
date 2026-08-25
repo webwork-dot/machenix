@@ -10987,7 +10987,7 @@ class Inventory_model extends CI_Model
 			$this->db->insert('customer_calls', $call_data);
 
 			$action = $final_status;
-			$message = "Leads Moved To " . get_phrase($final_status) . " by {$user_name}";
+			$message = "Leads Moved To " . get_phrase(($final_status == 'stalking') ? 'follow_up': $final_status) . " by {$user_name}";
 			$json_data = [
 				'status_date'  => ($final_status == 'lost') ? date("Y-m-d H:i:s") : $status_date,
 				'status'       => $final_status,
@@ -11113,7 +11113,7 @@ class Inventory_model extends CI_Model
 					} else {
 						if(in_array($status, ['today', 'upcoming', 'missed'])) {
 							$action .= '
-								<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
+								<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Add Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
 							';
 
 							$action .= '
@@ -11149,13 +11149,23 @@ class Inventory_model extends CI_Model
 							<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
 						';
 					} else{
-						$action .= '
-							<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
-						';
 
-						$action .= '
-							<a href="' . $move_url . '" data-toggle="tooltip" data-bs-placement="top" title="Move To Customer"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-chevron-right" aria-hidden="true"></i></button></a>
-						';
+						if($_REQUEST['status'] != 'lost') {
+							$action .= '
+								<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Add Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
+							';
+	
+							if($_REQUEST['status'] != 'moved') {
+								$action .= '
+								<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+								';
+							}
+								
+							$action .= '
+								<a href="' . $move_url . '" data-toggle="tooltip" data-bs-placement="top" title="Move To Customer"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-chevron-right" aria-hidden="true"></i></button></a>
+							';
+						}
+
 						
 						$action .= '
 							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
@@ -11165,6 +11175,10 @@ class Inventory_model extends CI_Model
 
 				$log = $this->common_model->getRowById('customer_log', 'added_by_name', ['customer_id' => $item['id'], 'action' => 'create']);
 
+				$type_badge = ($item['type'] == 'leads') 
+					? '<span class="badge bg-light-warning text-warning" style="background: #ff9f4330 !important;">Leads</span>' 
+					: '<span class="badge bg-light-primary text-primary">Customer</span>';
+
 				$data[] = array(
 					"sr_no"       		=> ++$start,
 					"id"          		=> $item['id'],
@@ -11173,6 +11187,7 @@ class Inventory_model extends CI_Model
 					"gst_no"					=> ($item['gst_no']) ? $item['gst_no'] : '-',
 					"owner_name"			=> ($item['owner_name']) ? $item['owner_name'] : '-',
 					"owner_no"				=> ($item['owner_mobile']) ? $item['owner_mobile'] : '-',
+					"type"					=> $type_badge,
 					"city_name"				=> ($item['city_name']) ? $item['city_name'] : '-',
 					"state_name"			=> ($item['state_name']) ? $item['state_name'] : '-',
 					"pincode"					=> ($item['pincode']) ? $item['pincode'] : '-',
@@ -18631,7 +18646,9 @@ class Inventory_model extends CI_Model
 
 		$supplier_id  = (int) $this->input->post('vendor_id'); // Using vendor_id from form
 		$invoice_no   = clean_and_escape($this->input->post('invoice_no'));
-		$amount       = (float) $this->input->post('amount');
+		$usd          = (float) $this->input->post('usd');
+		$rmb          = (float) $this->input->post('rmb');
+		$inr          = (float) $this->input->post('inr');
 
 		$payment_type = clean_and_escape($this->input->post('payment_type')); // official/unofficial
 		$bank_account = (int) $this->input->post('bank_account');
@@ -18676,7 +18693,9 @@ class Inventory_model extends CI_Model
 				'vendor_id'          => $supplier_id, // storing vendor id in vendor_id
 				'vendor_name'        => $supplier_name, // storing vendor name in vendor_name
 				'invoice_no'         => $invoice_no,
-				'amount'             => number_format($amount, 5, '.', ''),
+				'usd'                => number_format($usd, 5, '.', ''),
+				'rmb'                => number_format($rmb, 5, '.', ''),
+				'inr'                => number_format($inr, 5, '.', ''),
 				'payment_type'       => $payment_type,
 				'bank_account'       => $bank_account,
 				'bank_account_name'  => $bank_accounts_name,
@@ -18719,7 +18738,9 @@ class Inventory_model extends CI_Model
 
 		$supplier_id  = (int) $this->input->post('vendor_id');
 		$invoice_no   = clean_and_escape($this->input->post('invoice_no'));
-		$amount       = (float) $this->input->post('amount');
+		$usd          = (float) $this->input->post('usd');
+		$rmb          = (float) $this->input->post('rmb');
+		$inr          = (float) $this->input->post('inr');
 
 		$payment_type = clean_and_escape($this->input->post('payment_type'));
 		$bank_account = (int) $this->input->post('bank_account');
@@ -18761,7 +18782,9 @@ class Inventory_model extends CI_Model
 				'vendor_id'          => $supplier_id,
 				'vendor_name'        => $supplier_name,
 				'invoice_no'         => $invoice_no,
-				'amount'             => number_format($amount, 5, '.', ''),
+				'usd'                => number_format($usd, 5, '.', ''),
+				'rmb'                => number_format($rmb, 5, '.', ''),
+				'inr'                => number_format($inr, 5, '.', ''),
 				'payment_type'       => $payment_type,
 				'bank_account'       => $bank_account,
 				'bank_account_name'  => $bank_accounts_name,
@@ -18810,7 +18833,7 @@ class Inventory_model extends CI_Model
 
 		$company_id = $this->session->userdata('company_id');
 		$total_count = $this->db->query("SELECT id FROM vendor_payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter)->num_rows();
-		$query = $this->db->query("SELECT id, vendor_name, payment_type, invoice_no, amount, payment_date FROM vendor_payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, vendor_name, payment_type, invoice_no, usd, rmb, inr, payment_date FROM vendor_payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 		
 		if (!empty($query)) {
 			$sr_no = $start;
@@ -18824,7 +18847,9 @@ class Inventory_model extends CI_Model
 					"sr_no"         	=> ++$sr_no,
 					"type"						=> get_phrase($item['payment_type']),
 					"vendor_name"		=> $item['vendor_name'],
-					"amount"        	=> number_format($item['amount'], 2),
+					"usd"           	=> number_format((float)$item['usd'], 2),
+					"rmb"           	=> number_format((float)$item['rmb'], 2),
+					"inr"           	=> number_format((float)$item['inr'], 2),
 					"invoice_no"			=> ($item['invoice_no']) ? $item['invoice_no'] : '-',
 					"date"          	=> $item['payment_date'] ? date('d M, Y', strtotime($item['payment_date'])) : '-',
 					"actions"        	=> $actions,
@@ -18886,7 +18911,7 @@ class Inventory_model extends CI_Model
 	public function get_vendor_payments_by_id($vendor_id)
 	{
 		$query = $this->db->query("SELECT 
-										id, invoice_no as inv_no, payment_date as date, amount, added_by
+										id, invoice_no as inv_no, payment_date as date, usd, rmb, inr, added_by
 									FROM vendor_payments
 									WHERE vendor_id = '$vendor_id'
 									AND is_delete = '0'
@@ -23716,17 +23741,17 @@ public function get_sales_return_reports()
 		}
 
 		if (!empty($search_value)) {
-			$where_sql .= " AND (cc.customer_name LIKE '%" . $search_value . "%' OR cc.remark LIKE '%" . $search_value . "%' OR cc.status LIKE '%" . $search_value . "%' OR cc.added_by_name LIKE '%" . $search_value . "%')";
+			$where_sql .= " AND (cc.customer_name LIKE '%" . $search_value . "%' OR cc.remark LIKE '%" . $search_value . "%' OR cc.status LIKE '%" . $search_value . "%' OR cc.added_by_name LIKE '%" . $search_value . "%' OR c.company_name LIKE '%" . $search_value . "%' OR c.owner_mobile LIKE '%" . $search_value . "%')";
 		}
 
-		$total_count = $this->db->query("SELECT id FROM customer_calls AS cc $where_sql")->num_rows();
+		$total_count = $this->db->query("SELECT cc.id FROM customer_calls AS cc LEFT JOIN customer c ON cc.customer_id = c.id $where_sql")->num_rows();
 
 		$limit_sql = "";
 		if ($length != -1) {
 			$limit_sql = " LIMIT $start, $length";
 		}
 
-		$query = $this->db->query("SELECT cc.* FROM customer_calls AS cc $where_sql ORDER BY cc.id DESC $limit_sql");
+		$query = $this->db->query("SELECT cc.*, c.company_name, c.owner_mobile FROM customer_calls AS cc LEFT JOIN customer c ON cc.customer_id = c.id $where_sql ORDER BY cc.id DESC $limit_sql");
 		$result = $query->result_array();
 
 		$data = array();
@@ -23737,11 +23762,14 @@ public function get_sales_return_reports()
 
 			$nested_data = array();
 			$nested_data['added_by_name'] = !empty($row['added_by_name']) ? htmlspecialchars($row['added_by_name']) : '-';
+			$nested_data['company_name']  = !empty($row['company_name']) ? htmlspecialchars($row['company_name']) : '-';
 			$nested_data['customer_name'] = htmlspecialchars($row['customer_name']);
+			$nested_data['phone_number']  = !empty($row['owner_mobile']) ? htmlspecialchars($row['owner_mobile']) : '-';
 			$nested_data['type']          = $type_badge;
 			$nested_data['status']        = !empty($row['status']) ? htmlspecialchars($row['status']) : '-';
 			$nested_data['remark']        = !empty($row['remark']) ? nl2br(htmlspecialchars($row['remark'])) : '-';
 			$nested_data['date']          = !empty($row['date']) ? date('d M, Y h:i A', strtotime($row['date'])) : '-';
+			$nested_data['created_at']    = !empty($row['created_at']) ? date('d M, Y h:i A', strtotime($row['created_at'])) : '-';
 			$data[] = $nested_data;
 		}
 
@@ -24116,5 +24144,647 @@ public function get_sales_return_reports()
 		return simple_json_output($resultpost);
 	}
 
-}
+	/* Supplier Adjustment Methods */
 
+	public function get_import_suppliers()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$this->db->where('is_deleted', '0');
+		$this->db->where('type', 'import');
+		if ($company_id) {
+			$this->db->where('company_id', $company_id);
+		}
+		$this->db->order_by('name', 'ASC');
+		return $this->db->get('supplier')->result_array();
+	}
+
+	public function add_supplier_adjustment()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$user_id = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
+		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
+		$batch_no = clean_and_escape($this->input->post('batch_no'));
+		$date = clean_and_escape($this->input->post('date'));
+		$rmb = clean_and_escape($this->input->post('rmb'));
+		$usd = clean_and_escape($this->input->post('usd'));
+		$inr = clean_and_escape($this->input->post('inr'));
+		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$type = clean_and_escape($this->input->post('type'));
+		$remark = clean_and_escape($this->input->post('remark'));
+
+		$supplier = $this->db->get_where('supplier', array('id' => $supplier_id))->row_array();
+		$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+
+		$po = $this->db->get_where('purchase_order', array('voucher_no' => $batch_no, 'is_deleted' => 0))->row_array();
+		$batch_id = isset($po['id']) ? $po['id'] : NULL;
+
+		$data = array(
+			'company_id'    => $company_id ? $company_id : 0,
+			'supplier_id'   => $supplier_id,
+			'supplier_name' => $supplier_name,
+			'batch_id'      => $batch_id,
+			'batch_no'      => $batch_no,
+			'date'          => $date ? $date : date('Y-m-d'),
+			'rmb'           => !empty($rmb) ? $rmb : 0.00,
+			'usd'           => !empty($usd) ? $usd : 0.00,
+			'inr'           => !empty($inr) ? $inr : 0.00,
+			'amt_type'      => $amt_type,
+			'type'          => $type,
+			'remark'        => $remark,
+			'is_deleted'    => 0,
+			'added_by'      => $user_name,
+			'added_by_id'   => $user_id,
+			'created_at'    => date('Y-m-d H:i:s'),
+			'updated_at'    => date('Y-m-d H:i:s')
+		);
+
+		$this->db->insert('supplier_adjustments', $data);
+		$this->session->set_flashdata('flash_message', 'Supplier Adjustment Added Successfully');
+		redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+	}
+
+	public function edit_supplier_adjustment($id)
+	{
+		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
+		$batch_no = clean_and_escape($this->input->post('batch_no'));
+		$date = clean_and_escape($this->input->post('date'));
+		$rmb = clean_and_escape($this->input->post('rmb'));
+		$usd = clean_and_escape($this->input->post('usd'));
+		$inr = clean_and_escape($this->input->post('inr'));
+		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$type = clean_and_escape($this->input->post('type'));
+		$remark = clean_and_escape($this->input->post('remark'));
+
+		$supplier = $this->db->get_where('supplier', array('id' => $supplier_id))->row_array();
+		$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+
+		$po = $this->db->get_where('purchase_order', array('voucher_no' => $batch_no, 'is_deleted' => 0))->row_array();
+		$batch_id = isset($po['id']) ? $po['id'] : NULL;
+
+		$data = array(
+			'supplier_id'   => $supplier_id,
+			'supplier_name' => $supplier_name,
+			'batch_id'      => $batch_id,
+			'batch_no'      => $batch_no,
+			'date'          => $date,
+			'rmb'           => !empty($rmb) ? $rmb : 0.00,
+			'usd'           => !empty($usd) ? $usd : 0.00,
+			'inr'           => !empty($inr) ? $inr : 0.00,
+			'amt_type'      => $amt_type,
+			'type'          => $type,
+			'remark'        => $remark,
+			'updated_at'    => date('Y-m-d H:i:s')
+		);
+
+		$this->db->where('id', $id);
+		$this->db->update('supplier_adjustments', $data);
+		$this->session->set_flashdata('flash_message', 'Supplier Adjustment Updated Successfully');
+		redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+	}
+
+	public function delete_supplier_adjustment($id)
+	{
+		$this->db->where('id', $id);
+		$this->db->update('supplier_adjustments', array('is_deleted' => 1));
+		$this->session->set_flashdata('flash_message', 'Supplier Adjustment Deleted Successfully');
+		redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+	}
+
+	public function get_supplier_adjustment_by_id($id)
+	{
+		return $this->db->get_where('supplier_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+	}
+
+	public function get_supplier_adjustment_datatable()
+	{
+		$draw = isset($_REQUEST['draw']) ? intval($_REQUEST['draw']) : 1;
+		$start = isset($_REQUEST['start']) ? intval($_REQUEST['start']) : 0;
+		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
+
+		$search_val = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
+		$where = "sa.is_deleted = '0'";
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$where .= " AND sa.company_id = '" . $company_id . "'";
+		}
+
+		if ($search_val != '') {
+			$where .= " AND (sa.supplier_name LIKE '%" . $search_val . "%' OR sa.batch_no LIKE '%" . $search_val . "%' OR sa.remark LIKE '%" . $search_val . "%' OR sa.amt_type LIKE '%" . $search_val . "%' OR sa.type LIKE '%" . $search_val . "%')";
+		}
+
+		$total_count = $this->db->query("SELECT sa.id FROM supplier_adjustments sa WHERE $where")->num_rows();
+
+		$query = $this->db->query("SELECT 
+										sa.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM supplier_adjustments sa
+									LEFT JOIN sys_users u ON sa.added_by = u.id
+									WHERE $where
+									ORDER BY sa.id DESC
+									LIMIT $start, $length");
+
+		$data = array();
+		if ($query) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$edit_url = base_url() . 'inventory/edit-supplier-adjustment/' . $id;
+				$delete_url = "confirm_modal('" . base_url() . "inventory/supplier-adjustment/delete/" . $id . "','Are you sure want to delete this adjustment!')";
+
+				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+
+				$amt_type_badge = ($item['amt_type'] == 'plus') 
+					? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
+					: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+
+				$type_badge = ($item['type'] == 'official')
+					? '<span class="badge bg-info" style="font-size:11px;">Official</span>'
+					: '<span class="badge bg-secondary" style="font-size:11px;">Unofficial</span>';
+
+				$data[] = array(
+					"sr_no"         => ++$start,
+					"id"            => $item['id'],
+					"date"          => date('d M Y', strtotime($item['date'])),
+					"supplier_name" => html_escape($item['supplier_name']),
+					"batch_no"      => html_escape($item['batch_no'] ? $item['batch_no'] : '—'),
+					"rmb"           => number_format((float)$item['rmb'], 2),
+					"usd"           => number_format((float)$item['usd'], 2),
+					"inr"           => number_format((float)$item['inr'], 2),
+					"amt_type"      => $amt_type_badge,
+					"type"          => $type_badge,
+					"remark"        => html_escape($item['remark'] ? $item['remark'] : '—'),
+					"added_by"      => html_escape($item['added_by_name'] ? $item['added_by_name'] : '—'),
+					"action"        => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => $draw,
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_batches_by_supplier_for_select($supplier_id)
+	{
+		$query = $this->db->query("SELECT DISTINCT po.voucher_no
+									FROM purchase_order po
+									LEFT JOIN purchase_in_product pp ON po.id = pp.parent_id
+									LEFT JOIN po_products pop ON po.id = pop.parent_id
+									WHERE (pp.supplier_id = '$supplier_id' OR pop.supplier_id = '$supplier_id' OR po.supplier_id = '$supplier_id')
+									AND po.delivery_status = 'purchase_in'
+									AND po.is_deleted = '0'
+									AND po.voucher_no IS NOT NULL AND po.voucher_no != ''
+									ORDER BY po.voucher_no ASC");
+		return $query->result_array();
+	}
+
+	public function get_supplier_batch_ledger_details($supplier_id, $batch_no, $type = 'unofficial', $current_adj_id = null)
+	{
+		$query_batch = $this->db->query("SELECT 
+											po.id as po_id,
+											po.voucher_no,
+											po.date as po_date,
+											SUM(pp.actual_qty * pp.unit_price_rmb) as total_actual_rmb,
+											SUM(pp.actual_qty * pp.actual_usd) as total_actual_usd,
+											SUM(pp.actual_qty * pp.actual_inr) as total_actual_inr,
+											SUM(pp.total_amount_usd) as official_usd,
+											SUM(pp.official_total_rs) as official_inr
+										FROM purchase_order po
+										JOIN purchase_in_product pp ON po.id = pp.parent_id
+										WHERE pp.supplier_id = '$supplier_id'
+										AND po.voucher_no = " . $this->db->escape($batch_no) . "
+										AND po.delivery_status = 'purchase_in'
+										AND po.is_deleted = '0'
+										GROUP BY po.id, po.voucher_no, po.date");
+
+		$batch_row = $query_batch->row_array();
+
+		$batch_amount = array(
+			'rmb' => 0.00,
+			'usd' => 0.00,
+			'inr' => 0.00
+		);
+
+		if (!empty($batch_row)) {
+			if ($type == 'official') {
+				$batch_amount['rmb'] = 0.00;
+				$batch_amount['usd'] = (float)$batch_row['official_usd'];
+				$batch_amount['inr'] = (float)$batch_row['official_inr'];
+			} else {
+				$batch_amount['rmb'] = (float)$batch_row['total_actual_rmb'];
+				$batch_amount['usd'] = (float)$batch_row['total_actual_usd'];
+				$batch_amount['inr'] = (float)$batch_row['total_actual_inr'];
+			}
+		}
+
+		$payment_where = "p.supplier_id = '$supplier_id' AND p.batch_no = " . $this->db->escape($batch_no) . " AND p.is_delete = 0";
+		if ($type == 'official') {
+			$payment_where .= " AND p.payment_type = 'official'";
+		}
+
+		$query_payments = $this->db->query("SELECT 
+												p.*,
+												CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+											FROM payments p
+											LEFT JOIN sys_users u ON p.added_by = u.id
+											WHERE $payment_where
+											ORDER BY p.payment_date ASC, p.id ASC");
+
+		$payments = $query_payments->result_array();
+
+		$payment_totals = array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00);
+		foreach ($payments as $pay) {
+			$payment_totals['rmb'] += (float)$pay['amount_rmb'];
+			$payment_totals['usd'] += (float)$pay['amount_dollar'];
+			$payment_totals['inr'] += (float)$pay['amount_rs'];
+		}
+
+		$adj_where = "sa.supplier_id = '$supplier_id' AND sa.batch_no = " . $this->db->escape($batch_no) . " AND sa.is_deleted = 0";
+		if ($current_adj_id) {
+			$adj_where .= " AND sa.id != " . intval($current_adj_id);
+		}
+
+		$query_adjustments = $this->db->query("SELECT 
+													sa.*,
+													CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+												FROM supplier_adjustments sa
+												LEFT JOIN sys_users u ON sa.added_by = u.id
+												WHERE $adj_where
+												ORDER BY sa.date ASC, sa.id ASC");
+
+		$adjustments = $query_adjustments->result_array();
+
+		$adj_totals = array(
+			'plus'  => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'minus' => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+		);
+
+		foreach ($adjustments as $adj) {
+			$amt_t = $adj['amt_type'];
+			if ($amt_t == 'plus' || $amt_t == 'minus') {
+				$adj_totals[$amt_t]['rmb'] += (float)$adj['rmb'];
+				$adj_totals[$amt_t]['usd'] += (float)$adj['usd'];
+				$adj_totals[$amt_t]['inr'] += (float)$adj['inr'];
+			}
+		}
+
+		$net_difference = array(
+			'rmb' => $batch_amount['rmb'] - $payment_totals['rmb'] + $adj_totals['plus']['rmb'] - $adj_totals['minus']['rmb'],
+			'usd' => $batch_amount['usd'] - $payment_totals['usd'] + $adj_totals['plus']['usd'] - $adj_totals['minus']['usd'],
+			'inr' => $batch_amount['inr'] - $payment_totals['inr'] + $adj_totals['plus']['inr'] - $adj_totals['minus']['inr'],
+		);
+
+		return array(
+			'batch_info'     => $batch_row,
+			'batch_amount'   => $batch_amount,
+			'payments'       => $payments,
+			'payment_totals' => $payment_totals,
+			'adjustments'    => $adjustments,
+			'adj_totals'     => $adj_totals,
+			'net_difference' => $net_difference
+		);
+	}
+
+	public function get_supplier_adjustments($supplier_id, $type = null)
+	{
+		$where = "sa.supplier_id = '$supplier_id' AND sa.is_deleted = '0'";
+		if ($type) {
+			$where .= " AND sa.type = " . $this->db->escape($type);
+		}
+		$query = $this->db->query("SELECT 
+										sa.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM supplier_adjustments sa
+									LEFT JOIN sys_users u ON sa.added_by = u.id
+									WHERE $where
+									ORDER BY sa.date ASC, sa.id ASC");
+		return $query->result_array();
+	}
+
+	public function get_dashboard_company_list()
+	{
+		$query = $this->db->query("SELECT id, name AS company_name FROM company WHERE (is_deleted = '0' OR is_deleted IS NULL) ORDER BY name ASC");
+		return $query->result_array();
+	}
+
+	public function get_dashboard_staff_list()
+	{
+		$session_company_id = $this->session->userdata('company_id');
+		$where = "(added_by_name IS NOT NULL AND added_by_name != '' AND (is_deleted = '0' OR is_deleted IS NULL))";
+		if ($session_company_id) {
+			$where .= " AND FIND_IN_SET('" . $this->db->escape_str($session_company_id) . "', company_id)";
+		}
+		$query = $this->db->query("SELECT DISTINCT added_by_id AS id, added_by_name AS name FROM customer WHERE $where ORDER BY added_by_name ASC");
+		return $query->result_array();
+	}
+
+	public function get_leads_calls_dashboard_data($filters = array())
+	{
+		$user_id            = $this->session->userdata('super_user_id');
+		$type               = $this->session->userdata('super_type');
+		$session_company_id = $this->session->userdata('company_id');
+		$staff_access       = (int)$this->session->userdata('super_type_id');
+
+		$staff_filter   = isset($filters['staff_id']) && $filters['staff_id'] !== '' && $filters['staff_id'] !== 'all' ? $filters['staff_id'] : '';
+		$period         = isset($filters['period']) && !empty($filters['period']) ? $filters['period'] : 'this_month';
+		$cust_type      = isset($filters['type']) && !empty($filters['type']) ? $filters['type'] : 'all';
+		$cust_status    = isset($filters['status']) && !empty($filters['status']) ? $filters['status'] : 'all';
+
+		// Determine date range
+		if ($period == 'today') {
+			$start_date = date('Y-m-d');
+			$end_date   = date('Y-m-d');
+		} elseif ($period == 'this_week') {
+			$start_date = date('Y-m-d', strtotime('monday this week'));
+			$end_date   = date('Y-m-d');
+		} elseif ($period == 'this_month') {
+			$start_date = date('Y-m-01');
+			$end_date   = date('Y-m-t');
+		} elseif ($period == 'last_month') {
+			$start_date = date('Y-m-01', strtotime('-1 month'));
+			$end_date   = date('Y-m-t', strtotime('-1 month'));
+		} elseif ($period == 'last_30_days') {
+			$start_date = date('Y-m-d', strtotime('-30 days'));
+			$end_date   = date('Y-m-d');
+		} elseif ($period == 'custom' && !empty($filters['start_date']) && !empty($filters['end_date'])) {
+			$start_date = $filters['start_date'];
+			$end_date   = $filters['end_date'];
+		} else {
+			$start_date = date('Y-m-01');
+			$end_date   = date('Y-m-t');
+		}
+
+		$start_dt = $start_date . ' 00:00:00';
+		$end_dt   = $end_date . ' 23:59:59';
+
+		// Build base customer WHERE clause matching get_customer() logic
+		$c_where = "WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL)";
+
+		// Staff restriction (staff user sees their assigned leads & customer follow-ups)
+		if ($staff_access == 7 || $type == 'staff') {
+			$c_where .= " AND c.added_by_id = '" . $this->db->escape_str($user_id) . "'";
+		} elseif ($session_company_id) {
+			$esc_comp = $this->db->escape_str($session_company_id);
+			$c_where .= " AND ((c.type = 'leads' AND (c.company_id IS NULL OR c.company_id = '' OR c.company_id = '0' OR FIND_IN_SET('$esc_comp', c.company_id))) OR (c.type = 'customer' AND FIND_IN_SET('$esc_comp', c.company_id)))";
+		}
+		if ($staff_filter && !($staff_access == 7 || $type == 'staff')) {
+			$c_where .= " AND (c.added_by_id = '" . $this->db->escape_str($staff_filter) . "' OR c.added_by_name = " . $this->db->escape($staff_filter) . ")";
+		}
+
+		if ($cust_type && $cust_type != 'all') {
+			$c_where .= " AND c.type = " . $this->db->escape($cust_type);
+		}
+		if ($cust_status && $cust_status != 'all') {
+			if ($cust_status == 'follow') {
+				$c_where .= " AND (c.status = 'follow' OR c.status = 'stalking')";
+			} else {
+				$c_where .= " AND c.status = " . $this->db->escape($cust_status);
+			}
+		}
+
+		// 1. KPI Summary Counts
+		$today_date = date('Y-m-d');
+		$summary_sql = "SELECT 
+			-- 1. Total Leads in current company (matching leads_data.php 'all')
+			COUNT(CASE WHEN c.type = 'leads' THEN 1 END) as total_leads,
+			-- 2. New Leads in date range (fresh or follow in leads)
+			COUNT(CASE WHEN (c.status = 'fresh' OR c.status = 'follow') AND c.type = 'leads' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt' THEN 1 END) as new_leads,
+			-- 3. Today & Upcoming Follow-ups (leads follow + customer stalking scheduled on/after today)
+			COUNT(CASE WHEN (c.status = 'follow' OR c.status = 'stalking') AND DATE(c.status_date) >= '$today_date' THEN 1 END) as active_followups,
+			-- 4. Converted to Customer in date range
+			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' AND ((c.move_date >= '$start_dt' AND c.move_date <= '$end_dt') OR (c.move_date IS NULL AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt')) THEN 1 END) as converted_leads,
+			-- 5. Lost Leads (matching leads_data.php status='lost' AND type='leads')
+			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' THEN 1 END) as lost_leads,
+			-- 7. Missed Leads (leads follow + customer stalking scheduled before today)
+			COUNT(CASE WHEN (c.status = 'follow' OR c.status = 'stalking') AND DATE(c.status_date) < '$today_date' THEN 1 END) as missed_leads
+		FROM customer c $c_where";
+		$summary_res = $this->db->query($summary_sql)->row_array();
+
+		// 6. Calls attended in date range for current company (matching get_customer_calls logic)
+		$call_where = "WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL) AND cc.created_at >= '$start_dt' AND cc.created_at <= '$end_dt'";
+		if ($staff_access == 7 || $type == 'staff') {
+			$call_where .= " AND cc.added_by = '" . $this->db->escape_str($user_id) . "'";
+		} elseif ($session_company_id) {
+			$esc_comp = $this->db->escape_str($session_company_id);
+			$call_where .= " AND ((c.type = 'leads' AND (c.company_id IS NULL OR c.company_id = '' OR c.company_id = '0' OR FIND_IN_SET('$esc_comp', c.company_id))) OR (c.type = 'customer' AND FIND_IN_SET('$esc_comp', c.company_id)) OR c.company_id IS NULL)";
+		}
+		if ($staff_filter && !($staff_access == 7 || $type == 'staff')) {
+			$call_where .= " AND (cc.added_by = '" . $this->db->escape_str($staff_filter) . "' OR cc.added_by_name = " . $this->db->escape($staff_filter) . ")";
+		}
+		$calls_sql = "SELECT COUNT(cc.id) as calls_count FROM customer_calls cc LEFT JOIN customer c ON cc.customer_id = c.id $call_where";
+		$calls_res = $this->db->query($calls_sql)->row_array();
+
+		$summary = array(
+			'total_leads'      => (int)($summary_res['total_leads'] ?? 0),
+			'new_leads'        => (int)($summary_res['new_leads'] ?? 0),
+			'active_followups' => (int)($summary_res['active_followups'] ?? 0),
+			'converted_leads'  => (int)($summary_res['converted_leads'] ?? 0),
+			'lost_leads'       => (int)($summary_res['lost_leads'] ?? 0),
+			'calls'            => (int)($calls_res['calls_count'] ?? 0),
+			'missed_leads'     => (int)($summary_res['missed_leads'] ?? 0),
+		);
+
+		// 2. Lead Pipeline Breakdown (Needs / In Follow-up includes both today and upcoming follow-ups for leads and customers)
+		$pipeline_sql = "SELECT 
+			COUNT(CASE WHEN c.status = 'fresh' AND c.type = 'leads' THEN 1 END) as fresh,
+			COUNT(CASE WHEN (c.status = 'follow' OR c.status = 'stalking') AND DATE(c.status_date) >= '$today_date' THEN 1 END) as followup,
+			COUNT(CASE WHEN c.status = 'lost' AND c.type = 'leads' THEN 1 END) as lost,
+			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' THEN 1 END) as converted
+		FROM customer c $c_where";
+		$pipeline = $this->db->query($pipeline_sql)->row_array();
+
+		// 3. Daily Lead Trend
+		$lead_trend_sql = "SELECT 
+			DATE(c.added_date) as date_val,
+			COUNT(c.id) as total
+		FROM customer c 
+		$c_where AND c.type = 'leads' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt'
+		GROUP BY DATE(c.added_date)
+		ORDER BY date_val ASC";
+		$lead_trends = $this->db->query($lead_trend_sql)->result_array();
+
+		// 4. Daily Call Trend
+		$call_trend_sql = "SELECT 
+			DATE(cc.created_at) as date_val,
+			COUNT(cc.id) as total
+		FROM customer_calls cc
+		LEFT JOIN customer c ON cc.customer_id = c.id
+		$call_where
+		GROUP BY DATE(cc.created_at)
+		ORDER BY date_val ASC";
+		$call_trends = $this->db->query($call_trend_sql)->result_array();
+
+		// 5. Followup Performance Counts
+		$now_dt      = date('Y-m-d H:i:s');
+		$today_date  = date('Y-m-d');
+		$today_start = $today_date . ' 00:00:00';
+		$today_end   = $today_date . ' 23:59:59';
+
+		$followup_perf_sql = "SELECT 
+			COUNT(CASE WHEN c.status_date >= '$today_start' AND c.status_date <= '$today_end' THEN 1 END) as due_today,
+			COUNT(CASE WHEN c.status_date > '$now_dt' THEN 1 END) as upcoming,
+			COUNT(CASE WHEN c.status_date < '$now_dt' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as overdue
+		FROM customer c $c_where";
+		$followup_perf = $this->db->query($followup_perf_sql)->row_array();
+
+		// 6. Today's Follow-ups Table
+		$todays_followups_sql = "SELECT c.id, c.company_name, c.type, c.added_by_name, c.status, c.status_label, c.status_date, c.remark 
+		FROM customer c 
+		$c_where AND c.status_date >= '$today_start' AND c.status_date <= '$today_end'
+		ORDER BY c.status_date ASC LIMIT 10";
+		$todays_followups = $this->db->query($todays_followups_sql)->result_array();
+
+		// Map status stalking -> Follow-up
+		foreach ($todays_followups as &$row) {
+			if ($row['status'] == 'stalking' || $row['status'] == 'follow') {
+				$row['status_display'] = 'Follow-up';
+			} elseif ($row['status'] == 'fresh') {
+				$row['status_display'] = 'New Lead';
+			} else {
+				$row['status_display'] = ucfirst($row['status'] ?? '');
+			}
+		}
+
+		// 7. Upcoming Follow-ups Table
+		$upcoming_followups_sql = "SELECT c.id, c.company_name, c.type, c.added_by_name, c.status, c.status_label, c.status_date, c.remark 
+		FROM customer c 
+		$c_where AND c.status_date > '$now_dt'
+		ORDER BY c.status_date ASC LIMIT 10";
+		$upcoming_followups = $this->db->query($upcoming_followups_sql)->result_array();
+		foreach ($upcoming_followups as &$row) {
+			if ($row['status'] == 'stalking' || $row['status'] == 'follow') {
+				$row['status_display'] = 'Follow-up';
+			} elseif ($row['status'] == 'fresh') {
+				$row['status_display'] = 'New Lead';
+			} else {
+				$row['status_display'] = ucfirst($row['status'] ?? '');
+			}
+		}
+
+		// 8. Overdue Follow-ups Table
+		$overdue_followups_sql = "SELECT c.id, c.company_name, c.type, c.added_by_name, c.status, c.status_label, c.status_date, c.remark,
+		DATEDIFF(NOW(), c.status_date) as days_overdue
+		FROM customer c 
+		$c_where AND c.status_date < '$now_dt' AND (c.status != 'lost' OR c.status IS NULL)
+		ORDER BY c.status_date ASC LIMIT 10";
+		$overdue_followups = $this->db->query($overdue_followups_sql)->result_array();
+		foreach ($overdue_followups as &$row) {
+			if ($row['status'] == 'stalking' || $row['status'] == 'follow') {
+				$row['status_display'] = 'Follow-up';
+			} elseif ($row['status'] == 'fresh') {
+				$row['status_display'] = 'New Lead';
+			} else {
+				$row['status_display'] = ucfirst($row['status'] ?? '');
+			}
+		}
+
+		// 9. Staff Performance Table
+		$staff_perf_sql = "SELECT 
+			IFNULL(NULLIF(c.added_by_name, ''), 'Unassigned') as staff_name,
+			COUNT(CASE WHEN c.type = 'leads' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt' THEN 1 END) as leads_added,
+			COUNT(CASE WHEN c.type = 'leads' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as active_leads,
+			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' THEN 1 END) as lost_leads,
+			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' THEN 1 END) as converted_leads
+		FROM customer c $c_where
+		GROUP BY IFNULL(NULLIF(c.added_by_name, ''), 'Unassigned')
+		ORDER BY leads_added DESC";
+		$staff_perf = $this->db->query($staff_perf_sql)->result_array();
+
+		// Add Call count per staff
+		foreach ($staff_perf as &$sp) {
+			$s_name = $sp['staff_name'];
+			$staff_call_sql = "SELECT COUNT(cc.id) as call_cnt 
+			FROM customer_calls cc 
+			LEFT JOIN customer c ON cc.customer_id = c.id
+			$call_where AND cc.added_by_name = " . $this->db->escape($s_name);
+			$sp_call_res = $this->db->query($staff_call_sql)->row_array();
+			$sp['calls_created'] = (int)($sp_call_res['call_cnt'] ?? 0);
+
+			$total_leads_for_staff = $sp['leads_added'];
+			$sp['conversion_rate'] = $total_leads_for_staff > 0 ? round(($sp['converted_leads'] / $total_leads_for_staff) * 100, 1) : 0;
+		}
+
+		// 10. Needs Attention Widget
+		$old_leads_date = date('Y-m-d H:i:s', strtotime('-30 days'));
+		$attention_sql = "SELECT 
+			COUNT(CASE WHEN c.status_date < '$now_dt' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as overdue_followups,
+			COUNT(CASE WHEN c.type = 'leads' AND (c.status != 'lost' OR c.status IS NULL) AND c.added_date < '$old_leads_date' THEN 1 END) as old_active_leads,
+			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'fresh' AND (c.status_date IS NULL OR c.status_date = '0000-00-00 00:00:00') THEN 1 END) as fresh_without_followup,
+			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt' THEN 1 END) as lost_in_period
+		FROM customer c $c_where";
+		$needs_attention = $this->db->query($attention_sql)->row_array();
+
+		// 11. Recent Activity Feed (from customer_log)
+		$log_where = "WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL)";
+		if ($session_company_id) {
+			$esc_comp = $this->db->escape_str($session_company_id);
+			$log_where .= " AND ((c.type = 'leads' AND (c.company_id IS NULL OR c.company_id = '' OR c.company_id = '0' OR FIND_IN_SET('$esc_comp', c.company_id))) OR (c.type = 'customer' AND FIND_IN_SET('$esc_comp', c.company_id)) OR c.company_id IS NULL)";
+		}
+		if ($staff_access == 7 || $type == 'staff') {
+			$log_where .= " AND (cl.added_by = '" . $this->db->escape_str($user_id) . "' OR c.added_by_id = '" . $this->db->escape_str($user_id) . "')";
+		} elseif ($staff_filter) {
+			$log_where .= " AND (cl.added_by = '" . $this->db->escape_str($staff_filter) . "' OR cl.added_by_name = " . $this->db->escape($staff_filter) . ")";
+		}
+		$activity_sql = "SELECT cl.id, cl.action, cl.message, cl.label, cl.added_by_name, cl.added_date, c.company_name
+		FROM customer_log cl
+		LEFT JOIN customer c ON cl.customer_id = c.id
+		$log_where
+		ORDER BY cl.id DESC LIMIT 10";
+		$recent_activity = $this->db->query($activity_sql)->result_array();
+
+		foreach ($recent_activity as &$act) {
+			$badge_type  = 'primary';
+			$badge_label = '';
+
+			if (!empty($act['label'])) {
+				$label_decoded = json_decode($act['label'], true);
+				if (is_array($label_decoded)) {
+					$badge_type  = !empty($label_decoded['badge']) ? $label_decoded['badge'] : 'primary';
+					$badge_label = !empty($label_decoded['message']) ? $label_decoded['message'] : '';
+				} else {
+					$badge_label = $act['label'];
+				}
+			}
+
+			// Clean message text from message column
+			$msg = !empty($act['message']) ? $act['message'] : ($badge_label ?: ucfirst($act['action'] ?? 'Activity'));
+			// Replace internal terminology
+			$msg = str_ireplace(['stalking', 'follow_up'], ['Follow Up', 'Follow Up'], $msg);
+
+			$act['display_message'] = $msg;
+			$act['display_text']    = $msg;
+			$act['badge_type']      = ($badge_type == 'danger') ? 'danger' : (($badge_type == 'warning') ? 'warning' : 'primary');
+			$act['badge_label']     = $badge_label;
+		}
+
+		return array(
+			'summary'            => $summary,
+			'pipeline'           => $pipeline,
+			'lead_trends'        => $lead_trends,
+			'call_trends'        => $call_trends,
+			'followup_perf'      => $followup_perf,
+			'todays_followups'   => $todays_followups,
+			'upcoming_followups' => $upcoming_followups,
+			'overdue_followups'  => $overdue_followups,
+			'staff_performance'  => $staff_perf,
+			'needs_attention'    => $needs_attention,
+			'recent_activity'    => $recent_activity,
+			'filters_used'       => array(
+				'start_date' => $start_date,
+				'end_date'   => $end_date,
+				'period'     => $period,
+				'company_id' => $session_company_id,
+				'staff_id'   => $staff_filter,
+				'type'       => $cust_type,
+				'status'     => $cust_status,
+			)
+		);
+	}
+}

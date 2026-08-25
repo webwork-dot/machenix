@@ -47,7 +47,6 @@
   }
 </style>
 
-
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
@@ -62,7 +61,7 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/vendor-payments/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_vendor_payments');?></span></a>     
+        <a href="<?php echo site_url('inventory/vendor-payments/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_vendor_payments');?></span></a>     
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
@@ -70,7 +69,9 @@
               <th>Vendor Name</th>
               <th>Invoice No</th>
               <th>Payment Type</th>
-              <th>Amount</th>
+              <th>USD ($)</th>
+              <th>RMB (¥)</th>
+              <th>INR (₹)</th>
               <th>Date</th>
               <th>Action</th>
             </tr>
@@ -120,21 +121,23 @@ $(document).ready(function($) {
       { "data": "vendor_name" },
       { "data": "invoice_no" },
       { "data": "type" },
-      { "data": "amount" },
+      { "data": "usd" },
+      { "data": "rmb" },
+      { "data": "inr" },
       { "data": "date" },
       { "data": "actions" },
     ],
 
     "buttons": [{
         "extend": 'excel',
-        "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
+        "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       }
     ],
 
@@ -145,7 +148,7 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
     }, ]
 
