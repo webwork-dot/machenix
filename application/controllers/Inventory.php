@@ -456,6 +456,107 @@ class Inventory extends CI_Controller
         echo json_encode(['success' => true, 'data' => $details]);
     }
 
+    public function get_supplier_ledger_summary_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        $supplier_id = $this->input->post('supplier_id');
+        $type        = $this->input->post('type');
+        $current_id  = $this->input->post('current_adj_id');
+
+        if (empty($supplier_id)) {
+            echo json_encode(['success' => false, 'message' => 'Supplier required']);
+            return;
+        }
+
+        $type = !empty($type) ? $type : 'unofficial';
+        $summary = $this->inventory_model->get_supplier_ledger_summary($supplier_id, $type, $current_id);
+
+        if ($summary) {
+            echo json_encode(['success' => true, 'data' => $summary]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Supplier not found']);
+        }
+    }
+
+    // Vendor Adjustment Starts
+    public function vendor_adjustment($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_vendor_adjustment();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_vendor_adjustment($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_vendor_adjustment($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['page_name']  = 'vendor_adjustment';
+            $page_data['page_title'] = 'Vendor Adjustments';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function vendor_adjustment_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['vendors'] = $this->inventory_model->get_company_vendors();
+
+        if ($param1 == 'add') {
+            $page_data['page_name']  = 'vendor_adjustment_add';
+            $page_data['page_title'] = 'Add Vendor Adjustment';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $data = $this->inventory_model->get_vendor_adjustment_by_id($param2);
+            if (empty($data)) {
+                $this->session->set_flashdata('error_message', 'Vendor adjustment record not found');
+                redirect(site_url('inventory/vendor-adjustment'), 'refresh');
+            }
+            $page_data['data']       = $data;
+            $page_data['id']         = $param2;
+            $page_data['page_name']  = 'vendor_adjustment_edit';
+            $page_data['page_title'] = 'Edit Vendor Adjustment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_vendor_adjustment()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->get_vendor_adjustment_datatable();
+    }
+
+    public function get_vendor_ledger_summary_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        $vendor_id = $this->input->post('vendor_id');
+        $current_adj_id = $this->input->post('current_adj_id');
+
+        if (empty($vendor_id)) {
+            echo json_encode(['success' => false, 'message' => 'Vendor ID is required']);
+            return;
+        }
+
+        $summary = $this->inventory_model->get_vendor_ledger_summary($vendor_id, $current_adj_id);
+        if ($summary) {
+            echo json_encode(['success' => true, 'data' => $summary]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Vendor not found']);
+        }
+    }
+    // Vendor Adjustment Ends
+
     // Category Starts
 
     public function categories($param1 = "", $param2 = "")
@@ -1066,12 +1167,19 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['data'] = $this->inventory_model->get_my_company_by_id($id)->row_array();
-        $page_data['id'] = $id;
-        $page_data['outstanding'] = $this->inventory_model->get_vendor_ledger($id);
-        $page_data['payments'] = $this->inventory_model->get_vendor_payments_by_id($id);
-        $page_data['page_name'] = 'vendor_ledger';
-        $page_data['page_title'] = 'Vendor Ledger';
+        $page_data['data']                   = $this->inventory_model->get_my_company_by_id($id)->row_array();
+        $page_data['id']                     = $id;
+        $page_data['outstanding']            = $this->inventory_model->get_vendor_ledger($id);
+        $page_data['official_expenses']      = $this->inventory_model->get_vendor_ledger($id, 'official');
+        $page_data['unofficial_expenses']    = $this->inventory_model->get_vendor_ledger($id, 'unofficial');
+        $page_data['payments']               = $this->inventory_model->get_vendor_payments_by_id($id);
+        $page_data['official_payments']      = $this->inventory_model->get_vendor_payments_by_id($id, 'official');
+        $page_data['unofficial_payments']    = $this->inventory_model->get_vendor_payments_by_id($id, 'unofficial');
+        $page_data['adjustments']            = $this->inventory_model->get_vendor_adjustments($id);
+        $page_data['official_adjustments']    = $this->inventory_model->get_vendor_adjustments($id, 'official');
+        $page_data['unofficial_adjustments']  = $this->inventory_model->get_vendor_adjustments($id, 'unofficial');
+        $page_data['page_name']              = 'vendor_ledger';
+        $page_data['page_title']             = 'Vendor Ledger';
         $this->load->view('backend/index', $page_data);
     }
     // Vendor Payments Ends

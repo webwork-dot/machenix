@@ -344,6 +344,14 @@ function formatNumber($value)
           </div>
 
           <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Official Sale Amt</label>
+              <input type="number" class="form-control" placeholder="Enter Official Sale Amt" name="off_sale_price" min="0" step="0.00001"
+                value="<?php echo isset($data['off_sale_price']) ? htmlspecialchars($data['off_sale_price']) : '0.00000'; ?>">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
             <label class="form-label" for="state">Status <span class="required">*</span></label>
             <select class="form-select select2" name="status" required>
               <option value="1" <?php echo ($data['status'] == 1) ? 'selected' : ''; ?>>Active </option>

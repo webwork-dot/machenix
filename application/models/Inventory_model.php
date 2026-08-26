@@ -2372,6 +2372,7 @@ class Inventory_model extends CI_Model
 				$data['product_mrp']     = clean_and_escape($first_product_mrp);
 				$data['costing_price']   = clean_and_escape($first_costing_price);
 				$data['intimation']      = clean_and_escape($first_intimation);
+				$data['off_sale_price']  = clean_and_escape($this->input->post('off_sale_price') ?? 0);
 				$data['status']          = clean_and_escape($this->input->post('status'));
 				$data['min_stock']       = clean_and_escape($first_intimation);
 				$data['listed_1']        = clean_and_escape($this->input->post('p_listed_1'));
@@ -2722,6 +2723,7 @@ class Inventory_model extends CI_Model
 				$data['cbm']			= clean_and_escape($this->input->post('cbm'));
 			}
 
+			$data['off_sale_price'] = clean_and_escape($this->input->post('off_sale_price') ?? 0);
 			$data['status']         = clean_and_escape($this->input->post('status'));
 			$data['listed_1']       = clean_and_escape($this->input->post('p_listed_1'));
 			$data['listed_2']       = clean_and_escape($this->input->post('p_listed_2'));
@@ -18891,13 +18893,16 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
-	public function get_vendor_ledger($vendor_id)
+	public function get_vendor_ledger($vendor_id, $type = null)
 	{
+		$where = "vendor_id = '$vendor_id' AND is_delete = '0'";
+		if ($type) {
+			$where .= " AND type = " . $this->db->escape($type);
+		}
 		$query = $this->db->query("SELECT 
-										id, batch_no as voucher_no, expense_date as date, grand_total, added_by_id
+										id, batch_no as voucher_no, expense_date as date, grand_total, usd, rmb, added_by_id, narration, type
 									FROM po_expense
-									WHERE vendor_id = '$vendor_id'
-									AND is_delete = '0'
+									WHERE $where
 									ORDER BY expense_date DESC, id DESC");
 		
 		$result = $query->result_array();
@@ -18908,13 +18913,16 @@ class Inventory_model extends CI_Model
 		return $result;
 	}
 
-	public function get_vendor_payments_by_id($vendor_id)
+	public function get_vendor_payments_by_id($vendor_id, $type = null)
 	{
+		$where = "vendor_id = '$vendor_id' AND is_delete = '0'";
+		if ($type) {
+			$where .= " AND payment_type = " . $this->db->escape($type);
+		}
 		$query = $this->db->query("SELECT 
-										id, invoice_no as inv_no, payment_date as date, usd, rmb, inr, added_by
+										id, invoice_no as inv_no, payment_date as date, usd, rmb, inr, added_by, narration, payment_type
 									FROM vendor_payments
-									WHERE vendor_id = '$vendor_id'
-									AND is_delete = '0'
+									WHERE $where
 									ORDER BY payment_date DESC, id DESC");
 		
 		$result = $query->result_array();
@@ -24452,6 +24460,87 @@ public function get_sales_return_reports()
 		);
 	}
 
+	public function get_supplier_ledger_summary($supplier_id, $type = 'unofficial', $current_adj_id = null)
+	{
+		$supplier = $this->get_supplier_by_id($supplier_id)->row_array();
+		if (empty($supplier)) {
+			return null;
+		}
+
+		$is_official = ($type === 'official');
+		$show_rmb    = !$is_official;
+
+		$opening = array(
+			'rmb' => (float)($supplier['outstanding_rmb'] ?? 0),
+			'usd' => (float)($supplier['outstanding_usd'] ?? 0),
+			'inr' => (float)($supplier['outstanding_inr'] ?? 0),
+		);
+
+		$outstanding = $this->get_supplier_outstanding($supplier_id);
+		$payments    = $is_official ? $this->get_supplier_payments($supplier_id, 'official') : $this->get_supplier_payments($supplier_id);
+
+		$adj_where = "sa.supplier_id = '$supplier_id' AND sa.is_deleted = '0'";
+		if ($is_official) {
+			$adj_where .= " AND sa.type = 'official'";
+		}
+		if ($current_adj_id) {
+			$adj_where .= " AND sa.id != " . intval($current_adj_id);
+		}
+		$adjustments = $this->db->query("SELECT sa.* FROM supplier_adjustments sa WHERE $adj_where")->result_array();
+
+		$totals = array(
+			'purchase'  => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'payment'   => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'adj_plus'  => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'adj_minus' => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+		);
+
+		foreach ($outstanding as $row) {
+			if ($is_official) {
+				$totals['purchase']['usd'] += (float)$row['official_usd'];
+				$totals['purchase']['inr'] += (float)$row['official_inr'];
+			} else {
+				$totals['purchase']['rmb'] += (float)$row['total_actual_rmb'];
+				$totals['purchase']['usd'] += (float)$row['total_actual_usd'];
+				$totals['purchase']['inr'] += (float)$row['total_actual_inr'];
+			}
+		}
+
+		foreach ($payments as $pay) {
+			$totals['payment']['rmb'] += (float)$pay['amount_rmb'];
+			$totals['payment']['usd'] += (float)$pay['amount_dollar'];
+			$totals['payment']['inr'] += (float)$pay['amount_rs'];
+		}
+
+		foreach ($adjustments as $adj) {
+			$amt_type = ($adj['amt_type'] === 'plus') ? 'adj_plus' : 'adj_minus';
+			$totals[$amt_type]['rmb'] += (float)$adj['rmb'];
+			$totals[$amt_type]['usd'] += (float)$adj['usd'];
+			$totals[$amt_type]['inr'] += (float)$adj['inr'];
+		}
+
+		$open = $is_official ? array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00) : $opening;
+
+		$balance = array(
+			'rmb' => $open['rmb'] + $totals['purchase']['rmb'] - $totals['payment']['rmb'] + $totals['adj_plus']['rmb'] - $totals['adj_minus']['rmb'],
+			'usd' => $open['usd'] + $totals['purchase']['usd'] - $totals['payment']['usd'] + $totals['adj_plus']['usd'] - $totals['adj_minus']['usd'],
+			'inr' => $open['inr'] + $totals['purchase']['inr'] - $totals['payment']['inr'] + $totals['adj_plus']['inr'] - $totals['adj_minus']['inr'],
+		);
+
+		$net_adj_inr = $totals['adj_plus']['inr'] - $totals['adj_minus']['inr'];
+
+		return array(
+			'supplier_name' => $supplier['name'],
+			'type'          => $type,
+			'show_rmb'      => $show_rmb,
+			'opening'       => $open,
+			'totals'        => $totals,
+			'net_adj_inr'   => $net_adj_inr,
+			'balance'       => $balance,
+			'is_due'        => ($balance['inr'] > 0),
+		);
+	}
+
 	public function get_supplier_adjustments($supplier_id, $type = null)
 	{
 		$where = "sa.supplier_id = '$supplier_id' AND sa.is_deleted = '0'";
@@ -24467,6 +24556,263 @@ public function get_sales_return_reports()
 									ORDER BY sa.date ASC, sa.id ASC");
 		return $query->result_array();
 	}
+
+	/* Vendor Adjustments Starts */
+	public function get_company_vendors()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$where = "is_deleted = '0'";
+		if ($company_id) {
+			$where .= " AND company_id = '" . $company_id . "'";
+		}
+		$query = $this->db->query("SELECT id, name FROM my_companies WHERE $where ORDER BY name ASC");
+		return $query ? $query->result_array() : [];
+	}
+
+	public function add_vendor_adjustment()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$user_id = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
+		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
+		$date = clean_and_escape($this->input->post('date'));
+		$rmb = clean_and_escape($this->input->post('rmb'));
+		$usd = clean_and_escape($this->input->post('usd'));
+		$inr = clean_and_escape($this->input->post('inr'));
+		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$type = clean_and_escape($this->input->post('type'));
+		$remark = clean_and_escape($this->input->post('remark'));
+
+		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
+		$supplier_name = isset($vendor['name']) ? $vendor['name'] : '';
+
+		$data = array(
+			'company_id'    => $company_id ? $company_id : 0,
+			'supplier_id'   => $supplier_id,
+			'supplier_name' => $supplier_name,
+			'batch_id'      => NULL,
+			'batch_no'      => NULL,
+			'date'          => $date ? $date : date('Y-m-d'),
+			'rmb'           => !empty($rmb) ? $rmb : 0.00,
+			'usd'           => !empty($usd) ? $usd : 0.00,
+			'inr'           => !empty($inr) ? $inr : 0.00,
+			'amt_type'      => $amt_type,
+			'type'          => $type,
+			'remark'        => $remark,
+			'is_deleted'    => 0,
+			'added_by'      => $user_name,
+			'added_by_id'   => $user_id,
+			'created_at'    => date('Y-m-d H:i:s'),
+			'updated_at'    => date('Y-m-d H:i:s')
+		);
+
+		$this->db->insert('vendor_adjustments', $data);
+		$this->session->set_flashdata('flash_message', 'Vendor Adjustment Added Successfully');
+		redirect(site_url('inventory/vendor-adjustment'), 'refresh');
+	}
+
+	public function edit_vendor_adjustment($id)
+	{
+		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
+		$date = clean_and_escape($this->input->post('date'));
+		$rmb = clean_and_escape($this->input->post('rmb'));
+		$usd = clean_and_escape($this->input->post('usd'));
+		$inr = clean_and_escape($this->input->post('inr'));
+		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$type = clean_and_escape($this->input->post('type'));
+		$remark = clean_and_escape($this->input->post('remark'));
+
+		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
+		$supplier_name = isset($vendor['name']) ? $vendor['name'] : '';
+
+		$data = array(
+			'supplier_id'   => $supplier_id,
+			'supplier_name' => $supplier_name,
+			'date'          => $date ? $date : date('Y-m-d'),
+			'rmb'           => !empty($rmb) ? $rmb : 0.00,
+			'usd'           => !empty($usd) ? $usd : 0.00,
+			'inr'           => !empty($inr) ? $inr : 0.00,
+			'amt_type'      => $amt_type,
+			'type'          => $type,
+			'remark'        => $remark,
+			'updated_at'    => date('Y-m-d H:i:s')
+		);
+
+		$this->db->where('id', $id);
+		$this->db->update('vendor_adjustments', $data);
+		$this->session->set_flashdata('flash_message', 'Vendor Adjustment Updated Successfully');
+		redirect(site_url('inventory/vendor-adjustment'), 'refresh');
+	}
+
+	public function delete_vendor_adjustment($id)
+	{
+		$this->db->where('id', $id);
+		$this->db->update('vendor_adjustments', array('is_deleted' => 1));
+		$this->session->set_flashdata('flash_message', 'Vendor Adjustment Deleted Successfully');
+		redirect(site_url('inventory/vendor-adjustment'), 'refresh');
+	}
+
+	public function get_vendor_adjustment_by_id($id)
+	{
+		return $this->db->get_where('vendor_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+	}
+
+	public function get_vendor_adjustment_datatable()
+	{
+		$draw = isset($_REQUEST['draw']) ? intval($_REQUEST['draw']) : 1;
+		$start = isset($_REQUEST['start']) ? intval($_REQUEST['start']) : 0;
+		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
+
+		$search_val = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
+		$where = "va.is_deleted = '0'";
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$where .= " AND va.company_id = '" . $company_id . "'";
+		}
+
+		if ($search_val != '') {
+			$where .= " AND (va.supplier_name LIKE '%" . $search_val . "%' OR va.remark LIKE '%" . $search_val . "%' OR va.amt_type LIKE '%" . $search_val . "%' OR va.type LIKE '%" . $search_val . "%')";
+		}
+
+		$total_count = $this->db->query("SELECT va.id FROM vendor_adjustments va WHERE $where")->num_rows();
+
+		$query = $this->db->query("SELECT 
+										va.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM vendor_adjustments va
+									LEFT JOIN sys_users u ON va.added_by_id = u.id
+									WHERE $where
+									ORDER BY va.id DESC
+									LIMIT $start, $length");
+
+		$data = array();
+		if ($query) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$edit_url = base_url() . 'inventory/edit-vendor-adjustment/' . $id;
+				$delete_url = "confirm_modal('" . base_url() . "inventory/vendor-adjustment/delete/" . $id . "','Are you sure want to delete this adjustment!')";
+
+				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+
+				$amt_type_badge = ($item['amt_type'] == 'plus') 
+					? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
+					: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+
+				$type_badge = ($item['type'] == 'official')
+					? '<span class="badge bg-info" style="font-size:11px;">Official</span>'
+					: '<span class="badge bg-secondary" style="font-size:11px;">Unofficial</span>';
+
+				$data[] = array(
+					"sr_no"         => ++$start,
+					"id"            => $item['id'],
+					"date"          => date('d M Y', strtotime($item['date'])),
+					"vendor_name"   => html_escape($item['supplier_name']),
+					"usd"           => number_format((float)$item['usd'], 2),
+					"rmb"           => number_format((float)$item['rmb'], 2),
+					"inr"           => number_format((float)$item['inr'], 2),
+					"amt_type"      => $amt_type_badge,
+					"type"          => $type_badge,
+					"remark"        => html_escape($item['remark'] ? $item['remark'] : '—'),
+					"added_by"      => html_escape($item['added_by_name'] ? $item['added_by_name'] : ($item['added_by'] ? $item['added_by'] : '—')),
+					"action"        => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => $draw,
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_vendor_adjustments($vendor_id, $type = null)
+	{
+		$where = "va.supplier_id = '$vendor_id' AND va.is_deleted = '0'";
+		if ($type) {
+			$where .= " AND va.type = " . $this->db->escape($type);
+		}
+		$query = $this->db->query("SELECT 
+										va.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM vendor_adjustments va
+									LEFT JOIN sys_users u ON va.added_by_id = u.id
+									WHERE $where
+									ORDER BY va.date ASC, va.id ASC");
+		return $query ? $query->result_array() : [];
+	}
+
+	public function get_vendor_ledger_summary($vendor_id, $current_adj_id = null)
+	{
+		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
+		if (!$vendor) {
+			return null;
+		}
+
+		$opening = array(
+			'rmb' => (float)($vendor['outstanding_rmb'] ?? 0.00),
+			'usd' => (float)($vendor['outstanding_usd'] ?? 0.00),
+			'inr' => (float)($vendor['outstanding_inr'] ?? $vendor['outstanding'] ?? 0.00),
+		);
+
+		$outstanding = $this->get_vendor_ledger($vendor_id);
+		$payments = $this->get_vendor_payments_by_id($vendor_id);
+
+		$adj_where = "supplier_id = '$vendor_id' AND is_deleted = 0";
+		if ($current_adj_id) {
+			$adj_where .= " AND id != " . intval($current_adj_id);
+		}
+		$adjustments = $this->db->query("SELECT * FROM vendor_adjustments WHERE $adj_where")->result_array();
+
+		$totals = array(
+			'expenses'  => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'payment'   => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'adj_plus'  => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+			'adj_minus' => array('rmb' => 0.00, 'usd' => 0.00, 'inr' => 0.00),
+		);
+
+		foreach ($outstanding as $row) {
+			$totals['expenses']['rmb'] += (float)($row['rmb'] ?? 0);
+			$totals['expenses']['usd'] += (float)($row['usd'] ?? 0);
+			$totals['expenses']['inr'] += (float)($row['grand_total'] ?? 0);
+		}
+
+		foreach ($payments as $pay) {
+			$totals['payment']['rmb'] += (float)($pay['rmb'] ?? 0);
+			$totals['payment']['usd'] += (float)($pay['usd'] ?? 0);
+			$totals['payment']['inr'] += (float)($pay['inr'] ?? 0);
+		}
+
+		foreach ($adjustments as $adj) {
+			$amt_type = ($adj['amt_type'] === 'plus') ? 'adj_plus' : 'adj_minus';
+			$totals[$amt_type]['rmb'] += (float)$adj['rmb'];
+			$totals[$amt_type]['usd'] += (float)$adj['usd'];
+			$totals[$amt_type]['inr'] += (float)$adj['inr'];
+		}
+
+		$balance = array(
+			'rmb' => $opening['rmb'] + $totals['expenses']['rmb'] - $totals['payment']['rmb'] + $totals['adj_plus']['rmb'] - $totals['adj_minus']['rmb'],
+			'usd' => $opening['usd'] + $totals['expenses']['usd'] - $totals['payment']['usd'] + $totals['adj_plus']['usd'] - $totals['adj_minus']['usd'],
+			'inr' => $opening['inr'] + $totals['expenses']['inr'] - $totals['payment']['inr'] + $totals['adj_plus']['inr'] - $totals['adj_minus']['inr'],
+		);
+
+		$net_adj_inr = $totals['adj_plus']['inr'] - $totals['adj_minus']['inr'];
+
+		return array(
+			'vendor_name' => $vendor['name'],
+			'opening'     => $opening,
+			'totals'      => $totals,
+			'net_adj_inr' => $net_adj_inr,
+			'balance'     => $balance,
+			'is_due'      => ($balance['inr'] > 0 || $balance['usd'] > 0 || $balance['rmb'] > 0),
+		);
+	}
+	/* Vendor Adjustments Ends */
 
 	public function get_dashboard_company_list()
 	{
@@ -24534,248 +24880,126 @@ public function get_sales_return_reports()
 			$esc_comp = $this->db->escape_str($session_company_id);
 			$c_where .= " AND ((c.type = 'leads' AND (c.company_id IS NULL OR c.company_id = '' OR c.company_id = '0' OR FIND_IN_SET('$esc_comp', c.company_id))) OR (c.type = 'customer' AND FIND_IN_SET('$esc_comp', c.company_id)))";
 		}
-		if ($staff_filter && !($staff_access == 7 || $type == 'staff')) {
-			$c_where .= " AND (c.added_by_id = '" . $this->db->escape_str($staff_filter) . "' OR c.added_by_name = " . $this->db->escape($staff_filter) . ")";
-		}
 
-		if ($cust_type && $cust_type != 'all') {
-			$c_where .= " AND c.type = " . $this->db->escape($cust_type);
-		}
-		if ($cust_status && $cust_status != 'all') {
-			if ($cust_status == 'follow') {
-				$c_where .= " AND (c.status = 'follow' OR c.status = 'stalking')";
-			} else {
-				$c_where .= " AND c.status = " . $this->db->escape($cust_status);
-			}
-		}
-
-		// 1. KPI Summary Counts
+		// 1. KPI Summary Counts (Overall Data for Current Company / Staff)
 		$today_date = date('Y-m-d');
 		$summary_sql = "SELECT 
 			-- 1. Total Leads in current company (matching leads_data.php 'all')
 			COUNT(CASE WHEN c.type = 'leads' THEN 1 END) as total_leads,
-			-- 2. New Leads in date range (fresh or follow in leads)
-			COUNT(CASE WHEN (c.status = 'fresh' OR c.status = 'follow') AND c.type = 'leads' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt' THEN 1 END) as new_leads,
-			-- 3. Today & Upcoming Follow-ups (leads follow + customer stalking scheduled on/after today)
-			COUNT(CASE WHEN (c.status = 'follow' OR c.status = 'stalking') AND DATE(c.status_date) >= '$today_date' THEN 1 END) as active_followups,
-			-- 4. Converted to Customer in date range
-			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' AND ((c.move_date >= '$start_dt' AND c.move_date <= '$end_dt') OR (c.move_date IS NULL AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt')) THEN 1 END) as converted_leads,
-			-- 5. Lost Leads (matching leads_data.php status='lost' AND type='leads')
+			-- 2. Overall New Leads (matching leads_data.php 'new': fresh or follow in leads)
+			COUNT(CASE WHEN (c.status = 'fresh' OR c.status = 'follow') AND c.type = 'leads' THEN 1 END) as new_leads,
+			-- 3. Today's Follow-up (matching leads_data.php status='today')
+			COUNT(CASE WHEN ((c.status = 'follow' AND c.type = 'leads') OR (c.status = 'stalking' AND c.type = 'customer')) AND DATE(c.status_date) = '$today_date' THEN 1 END) as todays_followups,
+			-- 4. Upcoming Follow-up (matching leads_data.php status='upcoming')
+			COUNT(CASE WHEN ((c.status = 'follow' AND c.type = 'leads') OR (c.status = 'stalking' AND c.type = 'customer')) AND DATE(c.status_date) > '$today_date' THEN 1 END) as upcoming_followups,
+			-- 5. Converted to Customer (matching leads_data.php 'moved')
+			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' THEN 1 END) as converted_leads,
+			-- 6. Lost Leads (matching leads_data.php status='lost' AND type='leads')
 			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' THEN 1 END) as lost_leads,
 			-- 7. Missed Leads (leads follow + customer stalking scheduled before today)
 			COUNT(CASE WHEN (c.status = 'follow' OR c.status = 'stalking') AND DATE(c.status_date) < '$today_date' THEN 1 END) as missed_leads
 		FROM customer c $c_where";
 		$summary_res = $this->db->query($summary_sql)->row_array();
 
-		// 6. Calls attended in date range for current company (matching get_customer_calls logic)
-		$call_where = "WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL) AND cc.created_at >= '$start_dt' AND cc.created_at <= '$end_dt'";
+		// Calls attended for current company / staff on current date (matching customer_calls_data.php / get_customer_calls default logic)
+		$call_where = "WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL)";
 		if ($staff_access == 7 || $type == 'staff') {
 			$call_where .= " AND cc.added_by = '" . $this->db->escape_str($user_id) . "'";
 		} elseif ($session_company_id) {
 			$esc_comp = $this->db->escape_str($session_company_id);
 			$call_where .= " AND ((c.type = 'leads' AND (c.company_id IS NULL OR c.company_id = '' OR c.company_id = '0' OR FIND_IN_SET('$esc_comp', c.company_id))) OR (c.type = 'customer' AND FIND_IN_SET('$esc_comp', c.company_id)) OR c.company_id IS NULL)";
 		}
-		if ($staff_filter && !($staff_access == 7 || $type == 'staff')) {
-			$call_where .= " AND (cc.added_by = '" . $this->db->escape_str($staff_filter) . "' OR cc.added_by_name = " . $this->db->escape($staff_filter) . ")";
-		}
-		$calls_sql = "SELECT COUNT(cc.id) as calls_count FROM customer_calls cc LEFT JOIN customer c ON cc.customer_id = c.id $call_where";
+		$today_calls_where = $call_where . " AND DATE(cc.created_at) = '$today_date'";
+		$calls_sql = "SELECT COUNT(cc.id) as calls_count FROM customer_calls cc LEFT JOIN customer c ON cc.customer_id = c.id $today_calls_where";
 		$calls_res = $this->db->query($calls_sql)->row_array();
 
 		$summary = array(
-			'total_leads'      => (int)($summary_res['total_leads'] ?? 0),
-			'new_leads'        => (int)($summary_res['new_leads'] ?? 0),
-			'active_followups' => (int)($summary_res['active_followups'] ?? 0),
-			'converted_leads'  => (int)($summary_res['converted_leads'] ?? 0),
-			'lost_leads'       => (int)($summary_res['lost_leads'] ?? 0),
-			'calls'            => (int)($calls_res['calls_count'] ?? 0),
-			'missed_leads'     => (int)($summary_res['missed_leads'] ?? 0),
+			'total_leads'        => (int)($summary_res['total_leads'] ?? 0),
+			'new_leads'          => (int)($summary_res['new_leads'] ?? 0),
+			'todays_followups'   => (int)($summary_res['todays_followups'] ?? 0),
+			'upcoming_followups' => (int)($summary_res['upcoming_followups'] ?? 0),
+			'converted_leads'    => (int)($summary_res['converted_leads'] ?? 0),
+			'lost_leads'         => (int)($summary_res['lost_leads'] ?? 0),
+			'calls'              => (int)($calls_res['calls_count'] ?? 0),
+			'missed_leads'       => (int)($summary_res['missed_leads'] ?? 0),
 		);
 
-		// 2. Lead Pipeline Breakdown (Needs / In Follow-up includes both today and upcoming follow-ups for leads and customers)
-		$pipeline_sql = "SELECT 
-			COUNT(CASE WHEN c.status = 'fresh' AND c.type = 'leads' THEN 1 END) as fresh,
-			COUNT(CASE WHEN (c.status = 'follow' OR c.status = 'stalking') AND DATE(c.status_date) >= '$today_date' THEN 1 END) as followup,
-			COUNT(CASE WHEN c.status = 'lost' AND c.type = 'leads' THEN 1 END) as lost,
-			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' THEN 1 END) as converted
-		FROM customer c $c_where";
-		$pipeline = $this->db->query($pipeline_sql)->row_array();
+		// 2. Daily Call Trend (Last 7 Days - Customer vs Lead Calls)
+		$days_map = array();
+		for ($i = 6; $i >= 0; $i--) {
+			$d_key = date('Y-m-d', strtotime("-$i days"));
+			$days_map[$d_key] = array(
+				'total'          => 0,
+				'customer_calls' => 0,
+				'lead_calls'     => 0,
+			);
+		}
 
-		// 3. Daily Lead Trend
-		$lead_trend_sql = "SELECT 
-			DATE(c.added_date) as date_val,
-			COUNT(c.id) as total
-		FROM customer c 
-		$c_where AND c.type = 'leads' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt'
-		GROUP BY DATE(c.added_date)
-		ORDER BY date_val ASC";
-		$lead_trends = $this->db->query($lead_trend_sql)->result_array();
-
-		// 4. Daily Call Trend
+		$trend_start_dt = date('Y-m-d 00:00:00', strtotime('-6 days'));
 		$call_trend_sql = "SELECT 
 			DATE(cc.created_at) as date_val,
-			COUNT(cc.id) as total
+			COUNT(cc.id) as total,
+			COUNT(CASE WHEN c.type = 'customer' THEN 1 END) as customer_calls,
+			COUNT(CASE WHEN c.type = 'leads' OR c.type IS NULL OR c.type = '' THEN 1 END) as lead_calls
 		FROM customer_calls cc
 		LEFT JOIN customer c ON cc.customer_id = c.id
-		$call_where
+		$call_where AND cc.created_at >= '$trend_start_dt'
 		GROUP BY DATE(cc.created_at)
 		ORDER BY date_val ASC";
-		$call_trends = $this->db->query($call_trend_sql)->result_array();
+		$call_trend_raw = $this->db->query($call_trend_sql)->result_array();
 
-		// 5. Followup Performance Counts
-		$now_dt      = date('Y-m-d H:i:s');
-		$today_date  = date('Y-m-d');
-		$today_start = $today_date . ' 00:00:00';
-		$today_end   = $today_date . ' 23:59:59';
-
-		$followup_perf_sql = "SELECT 
-			COUNT(CASE WHEN c.status_date >= '$today_start' AND c.status_date <= '$today_end' THEN 1 END) as due_today,
-			COUNT(CASE WHEN c.status_date > '$now_dt' THEN 1 END) as upcoming,
-			COUNT(CASE WHEN c.status_date < '$now_dt' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as overdue
-		FROM customer c $c_where";
-		$followup_perf = $this->db->query($followup_perf_sql)->row_array();
-
-		// 6. Today's Follow-ups Table
-		$todays_followups_sql = "SELECT c.id, c.company_name, c.type, c.added_by_name, c.status, c.status_label, c.status_date, c.remark 
-		FROM customer c 
-		$c_where AND c.status_date >= '$today_start' AND c.status_date <= '$today_end'
-		ORDER BY c.status_date ASC LIMIT 10";
-		$todays_followups = $this->db->query($todays_followups_sql)->result_array();
-
-		// Map status stalking -> Follow-up
-		foreach ($todays_followups as &$row) {
-			if ($row['status'] == 'stalking' || $row['status'] == 'follow') {
-				$row['status_display'] = 'Follow-up';
-			} elseif ($row['status'] == 'fresh') {
-				$row['status_display'] = 'New Lead';
-			} else {
-				$row['status_display'] = ucfirst($row['status'] ?? '');
+		foreach ($call_trend_raw as $ctr) {
+			if (isset($days_map[$ctr['date_val']])) {
+				$days_map[$ctr['date_val']]['total']          = (int)$ctr['total'];
+				$days_map[$ctr['date_val']]['customer_calls'] = (int)$ctr['customer_calls'];
+				$days_map[$ctr['date_val']]['lead_calls']     = (int)$ctr['lead_calls'];
 			}
 		}
 
-		// 7. Upcoming Follow-ups Table
-		$upcoming_followups_sql = "SELECT c.id, c.company_name, c.type, c.added_by_name, c.status, c.status_label, c.status_date, c.remark 
-		FROM customer c 
-		$c_where AND c.status_date > '$now_dt'
-		ORDER BY c.status_date ASC LIMIT 10";
-		$upcoming_followups = $this->db->query($upcoming_followups_sql)->result_array();
-		foreach ($upcoming_followups as &$row) {
-			if ($row['status'] == 'stalking' || $row['status'] == 'follow') {
-				$row['status_display'] = 'Follow-up';
-			} elseif ($row['status'] == 'fresh') {
-				$row['status_display'] = 'New Lead';
-			} else {
-				$row['status_display'] = ucfirst($row['status'] ?? '');
+		$call_trends = array();
+		foreach ($days_map as $d_val => $row) {
+			$call_trends[] = array(
+				'date_val'       => $d_val,
+				'formatted_date' => date('d M', strtotime($d_val)),
+				'total'          => $row['total'],
+				'customer_calls' => $row['customer_calls'],
+				'lead_calls'     => $row['lead_calls'],
+			);
+		}
+
+		// 3. Staff Performance Table (Admin only)
+		$staff_perf = array();
+		if ($staff_access != 7 && $type != 'staff') {
+			$staff_perf_sql = "SELECT 
+				IFNULL(NULLIF(c.added_by_name, ''), 'Unassigned') as staff_name,
+				COUNT(CASE WHEN c.type = 'leads' THEN 1 END) as leads_added,
+				COUNT(CASE WHEN c.type = 'leads' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as active_leads,
+				COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' THEN 1 END) as lost_leads,
+				COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' THEN 1 END) as converted_leads
+			FROM customer c $c_where
+			GROUP BY IFNULL(NULLIF(c.added_by_name, ''), 'Unassigned')
+			ORDER BY leads_added DESC";
+			$staff_perf = $this->db->query($staff_perf_sql)->result_array();
+
+			// Add Call count per staff
+			foreach ($staff_perf as &$sp) {
+				$s_name = $sp['staff_name'];
+				$staff_call_sql = "SELECT COUNT(cc.id) as call_cnt 
+				FROM customer_calls cc 
+				LEFT JOIN customer c ON cc.customer_id = c.id
+				$call_where AND cc.added_by_name = " . $this->db->escape($s_name);
+				$sp_call_res = $this->db->query($staff_call_sql)->row_array();
+				$sp['calls_created'] = (int)($sp_call_res['call_cnt'] ?? 0);
+
+				$total_leads_for_staff = $sp['leads_added'];
+				$sp['conversion_rate'] = $total_leads_for_staff > 0 ? round(($sp['converted_leads'] / $total_leads_for_staff) * 100, 1) : 0;
 			}
-		}
-
-		// 8. Overdue Follow-ups Table
-		$overdue_followups_sql = "SELECT c.id, c.company_name, c.type, c.added_by_name, c.status, c.status_label, c.status_date, c.remark,
-		DATEDIFF(NOW(), c.status_date) as days_overdue
-		FROM customer c 
-		$c_where AND c.status_date < '$now_dt' AND (c.status != 'lost' OR c.status IS NULL)
-		ORDER BY c.status_date ASC LIMIT 10";
-		$overdue_followups = $this->db->query($overdue_followups_sql)->result_array();
-		foreach ($overdue_followups as &$row) {
-			if ($row['status'] == 'stalking' || $row['status'] == 'follow') {
-				$row['status_display'] = 'Follow-up';
-			} elseif ($row['status'] == 'fresh') {
-				$row['status_display'] = 'New Lead';
-			} else {
-				$row['status_display'] = ucfirst($row['status'] ?? '');
-			}
-		}
-
-		// 9. Staff Performance Table
-		$staff_perf_sql = "SELECT 
-			IFNULL(NULLIF(c.added_by_name, ''), 'Unassigned') as staff_name,
-			COUNT(CASE WHEN c.type = 'leads' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt' THEN 1 END) as leads_added,
-			COUNT(CASE WHEN c.type = 'leads' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as active_leads,
-			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' THEN 1 END) as lost_leads,
-			COUNT(CASE WHEN c.type = 'customer' AND c.is_move = '1' THEN 1 END) as converted_leads
-		FROM customer c $c_where
-		GROUP BY IFNULL(NULLIF(c.added_by_name, ''), 'Unassigned')
-		ORDER BY leads_added DESC";
-		$staff_perf = $this->db->query($staff_perf_sql)->result_array();
-
-		// Add Call count per staff
-		foreach ($staff_perf as &$sp) {
-			$s_name = $sp['staff_name'];
-			$staff_call_sql = "SELECT COUNT(cc.id) as call_cnt 
-			FROM customer_calls cc 
-			LEFT JOIN customer c ON cc.customer_id = c.id
-			$call_where AND cc.added_by_name = " . $this->db->escape($s_name);
-			$sp_call_res = $this->db->query($staff_call_sql)->row_array();
-			$sp['calls_created'] = (int)($sp_call_res['call_cnt'] ?? 0);
-
-			$total_leads_for_staff = $sp['leads_added'];
-			$sp['conversion_rate'] = $total_leads_for_staff > 0 ? round(($sp['converted_leads'] / $total_leads_for_staff) * 100, 1) : 0;
-		}
-
-		// 10. Needs Attention Widget
-		$old_leads_date = date('Y-m-d H:i:s', strtotime('-30 days'));
-		$attention_sql = "SELECT 
-			COUNT(CASE WHEN c.status_date < '$now_dt' AND (c.status != 'lost' OR c.status IS NULL) THEN 1 END) as overdue_followups,
-			COUNT(CASE WHEN c.type = 'leads' AND (c.status != 'lost' OR c.status IS NULL) AND c.added_date < '$old_leads_date' THEN 1 END) as old_active_leads,
-			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'fresh' AND (c.status_date IS NULL OR c.status_date = '0000-00-00 00:00:00') THEN 1 END) as fresh_without_followup,
-			COUNT(CASE WHEN c.type = 'leads' AND c.status = 'lost' AND c.added_date >= '$start_dt' AND c.added_date <= '$end_dt' THEN 1 END) as lost_in_period
-		FROM customer c $c_where";
-		$needs_attention = $this->db->query($attention_sql)->row_array();
-
-		// 11. Recent Activity Feed (from customer_log)
-		$log_where = "WHERE (c.is_deleted = '0' OR c.is_deleted IS NULL)";
-		if ($session_company_id) {
-			$esc_comp = $this->db->escape_str($session_company_id);
-			$log_where .= " AND ((c.type = 'leads' AND (c.company_id IS NULL OR c.company_id = '' OR c.company_id = '0' OR FIND_IN_SET('$esc_comp', c.company_id))) OR (c.type = 'customer' AND FIND_IN_SET('$esc_comp', c.company_id)) OR c.company_id IS NULL)";
-		}
-		if ($staff_access == 7 || $type == 'staff') {
-			$log_where .= " AND (cl.added_by = '" . $this->db->escape_str($user_id) . "' OR c.added_by_id = '" . $this->db->escape_str($user_id) . "')";
-		} elseif ($staff_filter) {
-			$log_where .= " AND (cl.added_by = '" . $this->db->escape_str($staff_filter) . "' OR cl.added_by_name = " . $this->db->escape($staff_filter) . ")";
-		}
-		$activity_sql = "SELECT cl.id, cl.action, cl.message, cl.label, cl.added_by_name, cl.added_date, c.company_name
-		FROM customer_log cl
-		LEFT JOIN customer c ON cl.customer_id = c.id
-		$log_where
-		ORDER BY cl.id DESC LIMIT 10";
-		$recent_activity = $this->db->query($activity_sql)->result_array();
-
-		foreach ($recent_activity as &$act) {
-			$badge_type  = 'primary';
-			$badge_label = '';
-
-			if (!empty($act['label'])) {
-				$label_decoded = json_decode($act['label'], true);
-				if (is_array($label_decoded)) {
-					$badge_type  = !empty($label_decoded['badge']) ? $label_decoded['badge'] : 'primary';
-					$badge_label = !empty($label_decoded['message']) ? $label_decoded['message'] : '';
-				} else {
-					$badge_label = $act['label'];
-				}
-			}
-
-			// Clean message text from message column
-			$msg = !empty($act['message']) ? $act['message'] : ($badge_label ?: ucfirst($act['action'] ?? 'Activity'));
-			// Replace internal terminology
-			$msg = str_ireplace(['stalking', 'follow_up'], ['Follow Up', 'Follow Up'], $msg);
-
-			$act['display_message'] = $msg;
-			$act['display_text']    = $msg;
-			$act['badge_type']      = ($badge_type == 'danger') ? 'danger' : (($badge_type == 'warning') ? 'warning' : 'primary');
-			$act['badge_label']     = $badge_label;
 		}
 
 		return array(
 			'summary'            => $summary,
-			'pipeline'           => $pipeline,
-			'lead_trends'        => $lead_trends,
 			'call_trends'        => $call_trends,
-			'followup_perf'      => $followup_perf,
-			'todays_followups'   => $todays_followups,
-			'upcoming_followups' => $upcoming_followups,
-			'overdue_followups'  => $overdue_followups,
 			'staff_performance'  => $staff_perf,
-			'needs_attention'    => $needs_attention,
-			'recent_activity'    => $recent_activity,
 			'filters_used'       => array(
 				'start_date' => $start_date,
 				'end_date'   => $end_date,

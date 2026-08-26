@@ -261,6 +261,7 @@ class Local_products_model extends CI_Model
                 $data['product_mrp']            = 0;
                 $data['product_mrp']   = clean_and_escape($this->input->post('product_mrp'));
                 $data['costing_price']   = clean_and_escape($this->input->post('costing_price'));
+                $data['off_sale_price']  = clean_and_escape($this->input->post('off_sale_price') ?? 0);
                 $data['status']          = clean_and_escape($this->input->post('status'));
                 $data['min_stock']       = clean_and_escape($this->input->post('intimation'));
                 $data['intimation']      = clean_and_escape($this->input->post('intimation'));
@@ -465,7 +466,9 @@ class Local_products_model extends CI_Model
             $data['supplier_id']    = 0;
             $data['supplier_name']  = '';
 
-            $data['product_type'] = 'local';
+            $data['product_type']   = 'local';
+            $data['off_sale_price'] = clean_and_escape($this->input->post('off_sale_price') ?? 0);
+            $data['status']         = clean_and_escape($this->input->post('status'));
             $opening_stock = $this->input->post('opening_stock');
             $data['opening_stock']  = (!empty($opening_stock)) ? intval($opening_stock) : 0;
             $old_product_data = $this->db->where('id', $id)->get('raw_products')->row_array();

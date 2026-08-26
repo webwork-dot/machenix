@@ -299,11 +299,25 @@
         <?php } ?>
 
         <?php if($user_id == 4) {?>
-        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit' || $page_name == 'commission_slab' || $page_name == 'commission_slab_add' || $page_name == 'commission_slab_edit') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
+        <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit' || $page_name == 'commission_slab' || $page_name == 'commission_slab_add' || $page_name == 'commission_slab_edit' || $page_name == 'vendor_adjustment' || $page_name == 'vendor_adjustment_add' || $page_name == 'vendor_adjustment_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">My Vendors</span>
+                <span class="menu-title text-truncate">Vendor Master</span>
             </a>
+            <ul class="menu-content">
+                <li class="nav-item <?php if($page_name == 'my_company' || $page_name == 'my_company_add' || $page_name == 'my_company_edit' || $page_name == 'commission_slab' || $page_name == 'commission_slab_add' || $page_name == 'commission_slab_edit') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/my-company">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">My Vendors</span>
+                    </a>
+                </li>
+                <li class="nav-item <?php if($page_name == 'vendor_adjustment' || $page_name == 'vendor_adjustment_add' || $page_name == 'vendor_adjustment_edit') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/vendor-adjustment">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Adjustment</span>
+                    </a>
+                </li>
+            </ul>
         </li>
         <?php } ?>
 

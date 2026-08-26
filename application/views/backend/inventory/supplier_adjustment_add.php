@@ -173,6 +173,53 @@
       </div>
     </div>
 
+    <!-- Supplier Overall Ledger Outstanding / Balance Summary (When No Batch Selected) -->
+    <div id="supplier_summary_wrapper" style="display: none;">
+      <div class="ledger-card-shell mb-4">
+        
+        <!-- Header with Summary Pills -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 card-soft-header flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold supplier-main-text fs-13"><i class="feather icon-user me-1 text-primary"></i> Supplier Balance: <span id="lbl_supplier_name"></span></span>
+            <span id="selected_supplier_type_badge" class="type-badge type-badge-po"></span>
+          </div>
+          
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <div class="summary-pill" id="sup_opening_pill">Opening: <strong class="supplier-soft-text mono-amount" id="sup_hdr_open_inr">₹ 0.00</strong></div>
+            <div class="summary-pill">Purchases: <strong class="supplier-soft-text mono-amount" id="sup_hdr_po_inr">₹ 0.00</strong></div>
+            <div class="summary-pill">Payments: <strong class="text-success mono-amount" id="sup_hdr_pay_inr">₹ 0.00</strong></div>
+            <div class="summary-pill">Adjustments: <strong class="text-info mono-amount" id="sup_hdr_adj_inr">₹ 0.00</strong></div>
+            <div class="balance-pill balance-pill-due" id="sup_hdr_bal_pill">Outstanding: ₹ 0.00</div>
+          </div>
+        </div>
+
+        <!-- Total Outstanding Balance Summary -->
+        <div class="p-3 bg-white">
+          <div class="row g-2">
+            <div class="col-md-4 col-12" id="sup_bal_box_inr">
+              <div class="p-2 rounded border" style="background-color: #fafbfc;">
+                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (INR)</div>
+                <div class="fs-16 fw-bold mono-amount" id="sup_bal_inr">₹ 0.00</div>
+              </div>
+            </div>
+            <div class="col-md-4 col-12" id="sup_bal_box_usd">
+              <div class="p-2 rounded border" style="background-color: #fafbfc;">
+                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (USD)</div>
+                <div class="fs-16 fw-bold mono-amount" id="sup_bal_usd">$ 0.00</div>
+              </div>
+            </div>
+            <div class="col-md-4 col-12 sup-rmb-col" id="sup_bal_box_rmb">
+              <div class="p-2 rounded border" style="background-color: #fafbfc;">
+                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (RMB)</div>
+                <div class="fs-16 fw-bold mono-amount" id="sup_bal_rmb">¥ 0.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Unified Single Batch Ledger & Outstanding Difference Table -->
     <div id="batch_summary_wrapper" style="display: none;">
       <div class="ledger-card-shell mb-4">
@@ -235,7 +282,7 @@ $(document).ready(function() {
   // Type change handler
   $('#type').on('change', function() {
     handleTypeVisibility();
-    loadBatchLedgerSummary();
+    loadAdjustmentSummary();
   });
 
   function handleTypeVisibility() {
@@ -254,11 +301,10 @@ $(document).ready(function() {
     }
   }
 
-  // Supplier Change -> Fetch Batches
+  // Supplier Change -> Fetch Batches and Load Summary
   $('#supplier_id').on('change', function() {
     var supplier_id = $(this).val();
     $('#batch_no').html('<option value="">-- Loading Batches... --</option>').prop('disabled', true);
-    $('#batch_summary_wrapper').hide();
 
     if (supplier_id) {
       $.ajax({
@@ -276,22 +322,37 @@ $(document).ready(function() {
           } else {
             $('#batch_no').html('<option value="">-- No batches found (Optional) --</option>').prop('disabled', false);
           }
+          loadAdjustmentSummary();
+        },
+        error: function() {
+          loadAdjustmentSummary();
         }
       });
+    } else {
+      $('#batch_no').html('<option value="">-- Select Batch Number --</option>').prop('disabled', true);
+      loadAdjustmentSummary();
     }
   });
 
   // Batch Change -> Fetch & Update Calculation Summary
   $('#batch_no').on('change', function() {
-    loadBatchLedgerSummary();
+    loadAdjustmentSummary();
   });
 
-  function loadBatchLedgerSummary() {
+  function loadAdjustmentSummary() {
     var supplier_id = $('#supplier_id').val();
     var batch_no    = $('#batch_no').val();
     var type        = $('#type').val();
 
-    if (supplier_id && batch_no) {
+    if (!supplier_id) {
+      $('#batch_summary_wrapper').slideUp();
+      $('#supplier_summary_wrapper').slideUp();
+      return;
+    }
+
+    if (batch_no) {
+      // Batch selected -> show batch ledger
+      $('#supplier_summary_wrapper').slideUp();
       $('#selected_type_badge').text(type.toUpperCase());
       $('#lbl_batch_no').text(batch_no);
 
@@ -393,7 +454,67 @@ $(document).ready(function() {
         }
       });
     } else {
+      // No Batch Selected -> Show Supplier Overall Ledger Total Outstanding / Balance
       $('#batch_summary_wrapper').slideUp();
+      
+      $.ajax({
+        url: '<?= base_url("inventory/get_supplier_ledger_summary_ajax") ?>',
+        type: 'POST',
+        data: {
+          supplier_id: supplier_id,
+          type: type
+        },
+        dataType: 'json',
+        success: function(res) {
+          if (res.success && res.data) {
+            var d = res.data;
+            var showRmb = (type !== 'official');
+
+            $('#lbl_supplier_name').text(d.supplier_name);
+            $('#selected_supplier_type_badge').text(type === 'official' ? 'OFFICIAL' : 'ACTUAL');
+
+            if (type === 'official') {
+              $('#sup_opening_pill').hide();
+              $('#sup_bal_box_inr').removeClass('col-md-4').addClass('col-md-6');
+              $('#sup_bal_box_usd').removeClass('col-md-4').addClass('col-md-6');
+            } else {
+              $('#sup_opening_pill').show();
+              $('#sup_hdr_open_inr').text('₹ ' + formatMoney(d.opening.inr));
+              $('#sup_bal_box_inr').removeClass('col-md-6').addClass('col-md-4');
+              $('#sup_bal_box_usd').removeClass('col-md-6').addClass('col-md-4');
+            }
+
+            $('#sup_hdr_po_inr').text('₹ ' + formatMoney(d.totals.purchase.inr));
+            $('#sup_hdr_pay_inr').text('₹ ' + formatMoney(d.totals.payment.inr));
+            $('#sup_hdr_adj_inr').text('₹ ' + formatMoney(d.net_adj_inr));
+
+            var isDueInr = (d.balance.inr > 0);
+            var isDueUsd = (d.balance.usd > 0);
+            var isDueRmb = (d.balance.rmb > 0);
+
+            $('#sup_bal_inr')
+              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueInr ? 'text-danger' : 'text-success'))
+              .text('₹ ' + formatMoney(d.balance.inr));
+
+            $('#sup_bal_usd')
+              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueUsd ? 'text-danger' : 'text-success'))
+              .text('$ ' + formatMoney(d.balance.usd));
+
+            $('#sup_bal_rmb')
+              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueRmb ? 'text-danger' : 'text-success'))
+              .text('¥ ' + formatMoney(d.balance.rmb));
+
+            var isOverallDue = (d.balance.inr > 0);
+            $('#sup_hdr_bal_pill')
+              .removeClass('balance-pill-due balance-pill-credit')
+              .addClass(isOverallDue ? 'balance-pill-due' : 'balance-pill-credit')
+              .text('Outstanding: ₹ ' + formatMoney(d.balance.inr));
+
+            $('.sup-rmb-col').toggle(showRmb);
+            $('#supplier_summary_wrapper').slideDown();
+          }
+        }
+      });
     }
   }
 

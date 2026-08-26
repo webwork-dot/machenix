@@ -32,7 +32,8 @@ $build_ledger = function ($purchases, $payments, $adjustments, $usd_key, $inr_ke
   foreach ($purchases ?? [] as $row) {
     $ledger[] = [
       'date'     => $row['date'],
-      'batch'    => $row['voucher_no'],
+      'batch'    => $row['voucher_no'] ?: '-',
+      'remark'   => '-',
       'kind'     => 'purchase',
       'rmb'      => $rmb_key ? (float) $row[$rmb_key] : 0,
       'usd'      => (float) $row[$usd_key],
@@ -41,26 +42,26 @@ $build_ledger = function ($purchases, $payments, $adjustments, $usd_key, $inr_ke
     ];
   }
   foreach ($payments ?? [] as $pay) {
+    $payRemark = !empty($pay['remark']) ? $pay['remark'] : (!empty($pay['invoice_no']) ? ('Inv: ' . $pay['invoice_no']) : '-');
     $ledger[] = [
       'date'     => $pay['payment_date'],
-      'batch'    => $pay['batch_no'],
+      'batch'    => $pay['batch_no'] ?: '-',
+      'remark'   => $payRemark,
       'kind'     => 'payment',
       'rmb'      => (float) $pay['amount_rmb'],
       'usd'      => (float) $pay['amount_dollar'],
       'inr'      => (float) $pay['amount_rs'],
       'added_by' => $pay['added_by_name'] ?? '—',
-      'remark'   => $pay['invoice_no'] ? ('Inv: ' . $pay['invoice_no']) : '',
     ];
   }
   foreach ($adjustments ?? [] as $adj) {
     $kind = ($adj['amt_type'] === 'plus') ? 'adj_plus' : 'adj_minus';
-    $batchText = !empty($adj['batch_no']) ? $adj['batch_no'] : 'General Adjustment';
-    if (!empty($adj['remark'])) {
-      $batchText .= ' (' . $adj['remark'] . ')';
-    }
+    $batchText = !empty($adj['batch_no']) ? $adj['batch_no'] : '-';
+    $remarkText = !empty($adj['remark']) ? $adj['remark'] : '-';
     $ledger[] = [
       'date'     => $adj['date'],
       'batch'    => $batchText,
+      'remark'   => $remarkText,
       'kind'     => $kind,
       'rmb'      => (float) $adj['rmb'],
       'usd'      => (float) $adj['usd'],
@@ -97,6 +98,7 @@ $build_ledger = function ($purchases, $payments, $adjustments, $usd_key, $inr_ke
     array_unshift($rows, [
       'date'     => $supplier['added_date'] ?? '',
       'batch'    => 'Opening Balance',
+      'remark'   => '-',
       'kind'     => 'opening',
       'rmb'      => $opening_bal['rmb'],
       'usd'      => $opening_bal['usd'],
@@ -132,7 +134,8 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
         <tr>
           <th class="text-start px-3 py-2 text-muted fw-semibold">Date</th>
           <th class="text-start px-2 py-2 text-muted fw-semibold">Type</th>
-          <th class="text-start px-2 py-2 text-muted fw-semibold">Batch / Remark</th>
+          <th class="text-start px-2 py-2 text-muted fw-semibold">Batch</th>
+          <th class="text-start px-2 py-2 text-muted fw-semibold">Remark</th>
           <?php if ($show_rmb): ?>
             <th class="text-end px-2 py-2 text-muted fw-semibold">RMB</th>
           <?php endif; ?>
@@ -144,7 +147,7 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
       <tbody>
         <?php if (empty($rows)): ?>
           <tr>
-            <td colspan="<?= $show_rmb ? 7 : 6 ?>" class="py-5 text-center text-muted fs-13">No transactions found.</td>
+            <td colspan="<?= $show_rmb ? 8 : 7 ?>" class="py-5 text-center text-muted fs-13">No transactions found.</td>
           </tr>
         <?php else: ?>
           <?php foreach ($rows as $item):
@@ -155,6 +158,7 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
               <td class="px-3 py-2 text-secondary fs-11 text-nowrap"><?= $date ?></td>
               <td class="px-2 py-2"><span class="type-badge <?= $k['badge'] ?>"><?= $k['label'] ?></span></td>
               <td class="px-2 py-2"><div class="fw-semibold supplier-soft-text fs-11"><?= html_escape($item['batch']) ?></div></td>
+              <td class="px-2 py-2"><div class="supplier-soft-text fs-11"><?= html_escape($item['remark']) ?></div></td>
               <?php if ($show_rmb): ?>
                 <td class="px-2 py-2 text-end <?= $k['amt'] ?>"><?= $k['sign'] ?> <?= number_format($item['rmb'], 2) ?></td>
               <?php endif; ?>
@@ -167,7 +171,7 @@ $render_table = function ($ledger, $show_rmb) use ($kinds) {
       </tbody>
       <tfoot>
         <tr class="<?= $isDue ? 'balance-row-due' : 'balance-row-credit' ?> tfoot-border-top">
-          <td colspan="3" class="px-3 py-2 text-end fs-11 fw-bold supplier-main-text">Total Outstanding</td>
+          <td colspan="4" class="px-3 py-2 text-end fs-11 fw-bold supplier-main-text">Total Outstanding</td>
           <?php if ($show_rmb): ?>
             <td class="px-2 py-2 text-end fw-bold <?= $amtCls ?> fs-12"><?= number_format($balance['rmb'], 2) ?></td>
           <?php endif; ?>

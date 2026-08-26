@@ -122,7 +122,7 @@
                 "complete": function() {
                   $('.loader').hide();
                 }
-            },   
+            },
                      
             "columns": [
                 { "data": "sr_no" },

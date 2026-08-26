@@ -75,6 +75,20 @@ $route[$r_inventory . '/my-company'] = 'inventory/my_company';
 $route[$r_inventory . '/my-company/add']    = 'inventory/my_company_form/my_company_add';
 $route[$r_inventory . '/my-company/edit/(:num)'] = 'inventory/my_company_form/my_company_edit/$1';
 
+$route[$r_inventory . '/vendor-adjustment']                      = 'inventory/vendor_adjustment';
+$route['vendor-adjustment']                                      = 'inventory/vendor_adjustment';
+$route[$r_inventory . '/vendor-adjustment/add_post']             = 'inventory/vendor_adjustment/add_post';
+$route[$r_inventory . '/vendor-adjustment/edit_post/(:num)']     = 'inventory/vendor_adjustment/edit_post/$1';
+$route[$r_inventory . '/vendor-adjustment/delete/(:num)']        = 'inventory/vendor_adjustment/delete/$1';
+$route[$r_inventory . '/add-vendor-adjustment']                  = 'inventory/vendor_adjustment_form/add';
+$route['add-vendor-adjustment']                                  = 'inventory/vendor_adjustment_form/add';
+$route[$r_inventory . '/edit-vendor-adjustment/(:num)']          = 'inventory/vendor_adjustment_form/edit/$1';
+$route['edit-vendor-adjustment/(:num)']                          = 'inventory/vendor_adjustment_form/edit/$1';
+$route[$r_inventory . '/get_vendor_adjustment']                  = 'inventory/get_vendor_adjustment';
+$route['get_vendor_adjustment']                                  = 'inventory/get_vendor_adjustment';
+$route[$r_inventory . '/get_vendor_ledger_summary_ajax']          = 'inventory/get_vendor_ledger_summary_ajax';
+$route['get_vendor_ledger_summary_ajax']                          = 'inventory/get_vendor_ledger_summary_ajax';
+
 $route[$r_inventory . '/expense-type'] = 'inventory/expense_type';
 $route[$r_inventory . '/expense-type/add']    = 'inventory/expense_type_form/expense_type_add';
 $route[$r_inventory . '/expense-type/edit/(:num)'] = 'inventory/expense_type_form/expense_type_edit/$1';
