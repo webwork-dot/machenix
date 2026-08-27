@@ -274,6 +274,15 @@ $route[$r_inventory . '/black-order'] = 'inventory/black_order';
 $route[$r_inventory . '/conversion-order'] = 'inventory/conversion_order';
 $route[$r_inventory . '/conversion-order/add'] = 'inventory/conversion_order_form/add';
 
+$route[$r_inventory . '/company-sales']                  = 'inventory/company_sales';
+$route[$r_inventory . '/company-sales/add']              = 'inventory/company_sales_form/add';
+$route[$r_inventory . '/company-sales/add_post']         = 'inventory/company_sales/add_post';
+$route[$r_inventory . '/company-sales/delete/(:num)']    = 'inventory/company_sales/delete/$1';
+$route[$r_inventory . '/get_company_sales']              = 'inventory/get_company_sales';
+$route[$r_inventory . '/get_company_details_ajax']       = 'inventory/get_company_details_ajax';
+$route[$r_inventory . '/get_company_sales_batch_details'] = 'inventory/get_company_sales_batch_details';
+$route[$r_inventory . '/get_company_sales_product_details'] = 'inventory/get_company_sales_product_details';
+
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
 $route[$r_inventory . '/sales-commission'] = 'inventory/sales_commission';
 $route[$r_inventory . '/get_sales_commission'] = 'inventory/get_sales_commission';
@@ -291,7 +300,6 @@ $route[$r_inventory . '/sales-order/edit-order/(:num)']    = 'inventory/sales_or
 $route[$r_inventory . '/sales-order/view/(:num)']    = 'inventory/sales_order_form/view/$1';
 $route[$r_inventory . '/sales-order/not-uploaded/(:num)']    = 'inventory/sales_order_form/excel/$1';
 $route[$r_inventory . '/sales-order/products/(:num)']    = 'inventory/sales_order_form/products/$1';
-
 
 $route[$r_inventory . '/purchase-return'] = 'inventory/purchase_return';
 $route[$r_inventory . '/purchase-return/add'] = 'inventory/purchase_return_form/add';

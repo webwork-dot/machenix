@@ -1,0 +1,13 @@
+- Manual Sale Order (Comp to Comp)
+
+In the sales dropdown nav [SalesDropdownNav] I wanna create the new navigation called "Company Sales".. Show the list of sale order with the type = "company".. In the datatable page create an "Add Sale" button and open an add sale form similar to [direct_sale_add] at this url "/company-sales/add".. Inside teh form I want following behaviour:
+
+1. Instead of showing the customers dropdown in form I want you to show the company dropdown from this table [company_table] and exlude the current selected session company from dropdown.. You can get the selected company from session("company_id")..
+
+2. In dropdown of warehouse, only show the dropdown of the current selected company.. You can get the warehouse from here [warehouse_table] by using current company id from session. 
+
+3. The rest of the form will be same only the amount logic will change a bit.. Don't show the customer history logic here because we are not selling products to customer anymore.. Get the amount automatically from this column [expense_actual_cost] of the selected batch and make the amount column read only.. Also get the official amount of the product from raw_products table from this column [official_sell_amt].. The rest of the form logic will be the same..
+
+4. After submission insert the sales order like current direct sales process with type of 'company' and save it.
+
+That's it for now. Follow the existing coding pattern for development and logic. Insert the sale order like the current one with some tweaks and keep the code simple as much as possible.

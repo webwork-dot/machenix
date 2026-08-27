@@ -2518,6 +2518,8 @@ class Inventory extends CI_Controller
                     }
                 }
 
+                // echo json_encode($suppliers[$exp_sup]['totals']['actual_cbm_total']); exit();
+
                 // avg expense
                 if($total_act_cbm > 0) {
                     $act_exp[] = $exp['sub_total'] / $total_act_cbm;
@@ -3630,6 +3632,55 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function company_sales($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_company_sales_post();
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_sales_order($param2);
+            $this->session->set_flashdata('flash_message', get_phrase('sales_order_deleted_successfully'));
+            redirect(site_url('inventory/company-sales'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'company_sales';
+            $page_data['page_name']  = 'company_sales';
+            $page_data['page_title'] = 'Company Sales';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function company_sales_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $company_id = $this->session->userdata('company_id');
+
+        $where_wh = array('is_deleted' => '0');
+        if (!empty($company_id)) {
+            $where_wh['company_id'] = $company_id;
+        }
+        $page_data['warehouse_list'] = $this->common_model->selectWhere('warehouse', $where_wh, 'ASC', 'name');
+
+        $this->db->where('is_deleted', 0);
+        if (!empty($company_id)) {
+            $this->db->where('id !=', $company_id);
+        }
+        $page_data['company_list'] = $this->db->order_by('name', 'ASC')->get('company')->result_array();
+
+        $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
+        $page_data['states'] = $this->crud_model->get_states_by_country(101);
+        if ($param1 == 'add') {
+            $page_data['order_no']  = $this->inventory_model->get_sales_order_no();
+            $page_data['page_name']  = 'company_sales_add';
+            $page_data['navigation']  = 'company_sales';
+            $page_data['page_title'] = 'Add Company Sale';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
     public function sales_order_form($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -3964,6 +4015,115 @@ class Inventory extends CI_Controller
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_conversion_order();
         }
+    }
+
+    public function get_company_sales()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_company_sales();
+        }
+    }
+
+    public function get_company_details_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(["status" => 401]);
+            return;
+        }
+
+        $company_id = $this->input->post('company_id', true);
+        if ($company_id) {
+            $company = $this->db->get_where('company', ['id' => $company_id])->row_array();
+            if ($company) {
+                $city_html = '<option value="">Select City</option>';
+                if ($company['state_id']) {
+                    $cities = $this->crud_model->get_city_by_state($company['state_id']);
+                    foreach ($cities as $cit) {
+                        $selected = ($cit['id'] == $company['city_id']) ? 'selected' : '';
+                        $city_html .= '<option value="' . $cit['id'] . '" ' . $selected . '>' . $cit['name'] . '</option>';
+                    }
+                }
+
+                echo json_encode([
+                    "status" => 200,
+                    "data" => [
+                        "state_id" => $company['state_id'],
+                        "city_id"  => $company['city_id'],
+                        "pincode"  => $company['pincode'],
+                        "address"  => $company['address'],
+                        "gst_name" => $company['gst_name'],
+                        "gst_no"   => $company['gst_no']
+                    ],
+                    "city_html" => $city_html
+                ]);
+            } else {
+                echo json_encode(["status" => 404, "message" => "Company not found"]);
+            }
+        } else {
+            echo json_encode(["status" => 400, "message" => "Invalid company ID"]);
+        }
+    }
+
+    public function get_company_sales_batch_details()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(["status" => 401]);
+            return;
+        }
+
+        $batch_id = $this->input->post('batch_id', true);
+        $query = $this->db->query("SELECT id, supplier_id, product_id, quantity, official_qty, black_qty, actual_cost_with_exp FROM inventory WHERE id = '$batch_id'");
+        $res = array('quantity' => 0, 'official_qty' => 0, 'black_qty' => 0, 'actual_cost_with_exp' => 0, 'off_sale_price' => 0, 'gst' => 0);
+        if ($query->num_rows() > 0) {
+            $inv = $query->row_array();
+            $res['id'] = $inv['id'];
+            $res['quantity'] = (float)$inv['quantity'];
+            $res['official_qty'] = (float)$inv['official_qty'];
+            $res['black_qty'] = (float)$inv['black_qty'];
+            $res['actual_cost_with_exp'] = (float)$inv['actual_cost_with_exp'];
+
+            $product_id = !empty($inv['product_id']) ? intval($inv['product_id']) : 0;
+            if ($product_id > 0) {
+                $rp_row = $this->db->get_where('raw_products', ['id' => $product_id])->row_array();
+                if ($rp_row) {
+                    $res['off_sale_price'] = (float)($rp_row['off_sale_price'] ?? 0);
+                    $res['gst'] = (float)($rp_row['gst'] ?? 0);
+                }
+            }
+        }
+        header('Content-Type: application/json');
+        echo json_encode($res);
+    }
+
+    public function get_company_sales_product_details()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(["status" => 401]);
+            return;
+        }
+
+        $product_id = $this->input->post('product_id', true);
+        $product = $this->common_model->getRowById('raw_products', '*', ['id' => $product_id]);
+        if (empty($product)) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 400, 'message' => 'Product not found']);
+            return;
+        }
+
+        $query = $this->db->query("SELECT IFNULL(SUM(quantity), 0) as total_qty FROM inventory WHERE product_id='$product_id'");
+        $item = $query->row_array();
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status' => 200,
+            'message' => 'success',
+            'quantity' => $item['total_qty'] ?? 0,
+            'tax' => (float)($product['gst'] ?? 0),
+            'off_sale_price' => (float)($product['off_sale_price'] ?? 0),
+        ]);
     }
 
     public function get_sales_order_products($id)
