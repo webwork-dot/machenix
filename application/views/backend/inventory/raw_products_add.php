@@ -231,7 +231,7 @@
               $category_ = array(); 
               if(isset($product)){  $category_ = explode(',',$product->category_id); } ?>
               <select name="category_id" class="category-select select2" onchange="detectType(this)" required="" >
-                <?php $this->common_model->displayTreeOptions($category_tree,$category_);?>
+                <?php $this->common_model->displayTreeOptions($category_tree,$category_); ?>
               </select>
             </div>
           </div>

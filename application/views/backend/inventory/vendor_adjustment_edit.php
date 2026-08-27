@@ -61,12 +61,14 @@ $id = $id ?? 0;
           <div class="row g-2">
             <!-- Select Vendor -->
             <div class="col-md-12 mb-2">
-              <label for="supplier_id" class="form-label fw-semibold fs-12 mb-1">Select Vendor <span class="text-danger">*</span></label>
-              <select name="supplier_id" id="supplier_id" class="form-select select2" required>
+              <label for="vendor_id" class="form-label fw-semibold fs-12 mb-1">Select Vendor <span class="text-danger">*</span></label>
+              <select name="vendor_id" id="vendor_id" class="form-select select2" required>
                 <option value="">-- Select Vendor --</option>
                 <?php if (!empty($vendors)): ?>
-                  <?php foreach ($vendors as $v): ?>
-                    <option value="<?= $v['id'] ?>" <?= (isset($row['supplier_id']) && $row['supplier_id'] == $v['id']) ? 'selected' : '' ?>>
+                  <?php foreach ($vendors as $v): 
+                    $selected_vendor_id = $row['vendor_id'] ?? $row['supplier_id'] ?? 0;
+                  ?>
+                    <option value="<?= $v['id'] ?>" <?= ($selected_vendor_id == $v['id']) ? 'selected' : '' ?>>
                       <?= html_escape($v['name']) ?>
                     </option>
                   <?php endforeach; ?>
@@ -195,77 +197,77 @@ $id = $id ?? 0;
 </div>
 
 <script type="text/javascript">
-$(document).ready(function() {
-  var current_adj_id = <?= intval($id) ?>;
+  $(document).ready(function() {
+    var current_adj_id = <?= intval($id) ?>;
 
-  // Initial load summary
-  loadVendorSummary();
-
-  // Vendor Change -> Load Summary
-  $('#supplier_id').on('change', function() {
+    // Initial load summary
     loadVendorSummary();
-  });
 
-  function loadVendorSummary() {
-    var vendor_id = $('#supplier_id').val();
+    // Vendor Change -> Load Summary
+    $('#vendor_id').on('change', function() {
+      loadVendorSummary();
+    });
 
-    if (!vendor_id) {
-      $('#vendor_summary_wrapper').slideUp();
-      return;
+    function loadVendorSummary() {
+      var vendor_id = $('#vendor_id').val();
+
+      if (!vendor_id) {
+        $('#vendor_summary_wrapper').slideUp();
+        return;
+      }
+
+      $.ajax({
+        url: '<?= base_url("inventory/get_vendor_ledger_summary_ajax") ?>',
+        type: 'POST',
+        data: {
+          vendor_id: vendor_id,
+          current_adj_id: current_adj_id
+        },
+        dataType: 'json',
+        success: function(res) {
+          if (res.success && res.data) {
+            var d = res.data;
+
+            $('#lbl_vendor_name').text(d.vendor_name);
+
+            $('#ven_hdr_open_inr').text('₹ ' + formatMoney(d.opening.inr));
+            $('#ven_hdr_exp_inr').text('₹ ' + formatMoney(d.totals.expenses.inr));
+            $('#ven_hdr_pay_inr').text('₹ ' + formatMoney(d.totals.payment.inr));
+            $('#ven_hdr_adj_inr').text('₹ ' + formatMoney(d.net_adj_inr));
+
+            var isDueInr = (d.balance.inr > 0);
+            var isDueUsd = (d.balance.usd > 0);
+            var isDueRmb = (d.balance.rmb > 0);
+
+            $('#ven_bal_inr')
+              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueInr ? 'text-danger' : 'text-success'))
+              .text('₹ ' + formatMoney(d.balance.inr));
+
+            $('#ven_bal_usd')
+              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueUsd ? 'text-danger' : 'text-success'))
+              .text('$ ' + formatMoney(d.balance.usd));
+
+            $('#ven_bal_rmb')
+              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueRmb ? 'text-danger' : 'text-success'))
+              .text('¥ ' + formatMoney(d.balance.rmb));
+
+            var isOverallDue = (d.balance.inr > 0 || d.balance.usd > 0 || d.balance.rmb > 0);
+            $('#ven_hdr_bal_pill')
+              .removeClass('balance-pill-due balance-pill-credit')
+              .addClass(isOverallDue ? 'balance-pill-due' : 'balance-pill-credit')
+              .text('Outstanding: ₹ ' + formatMoney(d.balance.inr));
+
+            $('#vendor_summary_wrapper').slideDown();
+          }
+        }
+      });
     }
 
-    $.ajax({
-      url: '<?= base_url("inventory/get_vendor_ledger_summary_ajax") ?>',
-      type: 'POST',
-      data: {
-        vendor_id: vendor_id,
-        current_adj_id: current_adj_id
-      },
-      dataType: 'json',
-      success: function(res) {
-        if (res.success && res.data) {
-          var d = res.data;
+    function formatMoney(num) {
+      var val = parseFloat(num);
+      if (isNaN(val)) return '0.00';
+      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
-          $('#lbl_vendor_name').text(d.vendor_name);
-
-          $('#ven_hdr_open_inr').text('₹ ' + formatMoney(d.opening.inr));
-          $('#ven_hdr_exp_inr').text('₹ ' + formatMoney(d.totals.expenses.inr));
-          $('#ven_hdr_pay_inr').text('₹ ' + formatMoney(d.totals.payment.inr));
-          $('#ven_hdr_adj_inr').text('₹ ' + formatMoney(d.net_adj_inr));
-
-          var isDueInr = (d.balance.inr > 0);
-          var isDueUsd = (d.balance.usd > 0);
-          var isDueRmb = (d.balance.rmb > 0);
-
-          $('#ven_bal_inr')
-            .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueInr ? 'text-danger' : 'text-success'))
-            .text('₹ ' + formatMoney(d.balance.inr));
-
-          $('#ven_bal_usd')
-            .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueUsd ? 'text-danger' : 'text-success'))
-            .text('$ ' + formatMoney(d.balance.usd));
-
-          $('#ven_bal_rmb')
-            .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueRmb ? 'text-danger' : 'text-success'))
-            .text('¥ ' + formatMoney(d.balance.rmb));
-
-          var isOverallDue = (d.balance.inr > 0 || d.balance.usd > 0 || d.balance.rmb > 0);
-          $('#ven_hdr_bal_pill')
-            .removeClass('balance-pill-due balance-pill-credit')
-            .addClass(isOverallDue ? 'balance-pill-due' : 'balance-pill-credit')
-            .text('Outstanding: ₹ ' + formatMoney(d.balance.inr));
-
-          $('#vendor_summary_wrapper').slideDown();
-        }
-      }
-    });
-  }
-
-  function formatMoney(num) {
-    var val = parseFloat(num);
-    if (isNaN(val)) return '0.00';
-    return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-});
+  });
 </script>

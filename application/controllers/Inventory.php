@@ -557,6 +557,82 @@ class Inventory extends CI_Controller
     }
     // Vendor Adjustment Ends
 
+    // Customer Adjustment Starts
+    public function customer_adjustment($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_customer_adjustment();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_customer_adjustment($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_customer_adjustment($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['page_name']  = 'customer_adjustment';
+            $page_data['page_title'] = 'Customer Adjustments';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function customer_adjustment_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['customers'] = $this->inventory_model->get_company_customers();
+
+        if ($param1 == 'add') {
+            $page_data['page_name']  = 'customer_adjustment_add';
+            $page_data['page_title'] = 'Add Customer Adjustment';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $data = $this->inventory_model->get_customer_adjustment_by_id($param2);
+            if (empty($data)) {
+                $this->session->set_flashdata('error_message', 'Customer adjustment record not found');
+                redirect(site_url('inventory/customer-adjustment'), 'refresh');
+            }
+            $page_data['data']       = $data;
+            $page_data['id']         = $param2;
+            $page_data['page_name']  = 'customer_adjustment_edit';
+            $page_data['page_title'] = 'Edit Customer Adjustment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_customer_adjustment()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->get_customer_adjustment_datatable();
+    }
+
+    public function get_customer_ledger_summary_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        $customer_id = $this->input->post('customer_id');
+        $current_adj_id = $this->input->post('current_adj_id');
+
+        if (empty($customer_id)) {
+            echo json_encode(['success' => false, 'message' => 'Customer ID is required']);
+            return;
+        }
+
+        $summary = $this->inventory_model->get_customer_ledger_summary($customer_id, $current_adj_id);
+        if ($summary) {
+            echo json_encode(['success' => true, 'data' => $summary]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Customer not found']);
+        }
+    }
+    // Customer Adjustment Ends
+
     // Category Starts
 
     public function categories($param1 = "", $param2 = "")
@@ -3241,6 +3317,7 @@ class Inventory extends CI_Controller
             $page_data['id']         = $param2;
             $page_data['outstanding'] = $this->inventory_model->get_customer_ledger($param2);
             $page_data['payments']    = $this->inventory_model->get_customer_payments_by_id($param2);
+            $page_data['adjustments'] = $this->inventory_model->get_customer_adjustments($param2);
             $page_data['page_name']  = 'customer_ledger';
             $page_data['page_title'] = 'Customer Ledger';
             $this->load->view('backend/index', $page_data);

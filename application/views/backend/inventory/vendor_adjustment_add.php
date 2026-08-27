@@ -56,8 +56,8 @@
           <div class="row g-2">
             <!-- Select Vendor -->
             <div class="col-md-12 mb-2">
-              <label for="supplier_id" class="form-label fw-semibold fs-12 mb-1">Select Vendor <span class="text-danger">*</span></label>
-              <select name="supplier_id" id="supplier_id" class="form-select select2" required>
+              <label for="vendor_id" class="form-label fw-semibold fs-12 mb-1">Select Vendor <span class="text-danger">*</span></label>
+              <select name="vendor_id" id="vendor_id" class="form-select select2" required>
                 <option value="">-- Select Vendor --</option>
                 <?php if (!empty($vendors)): ?>
                   <?php foreach ($vendors as $v): ?>
@@ -191,12 +191,12 @@
 $(document).ready(function() {
 
   // Vendor Change -> Load Summary
-  $('#supplier_id').on('change', function() {
+  $('#vendor_id').on('change', function() {
     loadVendorSummary();
   });
 
   function loadVendorSummary() {
-    var vendor_id = $('#supplier_id').val();
+    var vendor_id = $('#vendor_id').val();
 
     if (!vendor_id) {
       $('#vendor_summary_wrapper').slideUp();

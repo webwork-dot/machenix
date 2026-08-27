@@ -281,11 +281,25 @@
         <?php } ?>
         
         <?php if($user_id == 4 || in_array('36',$access_array)) {?>
-        <li class="nav-item <?php if($navigation == 'customer') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/customer">
+        <li class="nav-item <?php if($navigation == 'customer' || $page_name == 'customer_adjustment' || $page_name == 'customer_adjustment_add' || $page_name == 'customer_adjustment_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center" href="#">
                 <i class="feather icon-layers"></i>
-                <span class="menu-title text-truncate">Customer</span>
+                <span class="menu-title text-truncate">Customer Master</span>
             </a>
+            <ul class="menu-content">
+                <li class="nav-item <?php if($navigation == 'customer' && !in_array($page_name, ['customer_adjustment', 'customer_adjustment_add', 'customer_adjustment_edit'])) echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/customer">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Customer</span>
+                    </a>
+                </li>
+                <li class="nav-item <?php if($page_name == 'customer_adjustment' || $page_name == 'customer_adjustment_add' || $page_name == 'customer_adjustment_edit') echo 'active'; ?>">
+                    <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/customer-adjustment">
+                        <i class="feather icon-circle"></i>
+                        <span class="menu-title text-truncate">Adjustment</span>
+                    </a>
+                </li>
+            </ul>
         </li>
         <?php } ?>
 

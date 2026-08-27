@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 26, 2026 at 12:35 PM
+-- Generation Time: Aug 27, 2026 at 08:39 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 7.4.33
 
@@ -24,17 +24,15 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `vendor_adjustments`
+-- Table structure for table `customer_adjustments`
 --
 
-CREATE TABLE `vendor_adjustments` (
+CREATE TABLE `customer_adjustments` (
   `id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
-  `vendor_id` int(11) NOT NULL,
-  `vendor_name` varchar(255) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
   `date` date NOT NULL,
-  `rmb` decimal(16,5) NOT NULL DEFAULT 0.00000,
-  `usd` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `inr` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `amt_type` enum('plus','minus','') NOT NULL,
   `type` enum('official','unofficial','') NOT NULL,
@@ -51,9 +49,9 @@ CREATE TABLE `vendor_adjustments` (
 --
 
 --
--- Indexes for table `vendor_adjustments`
+-- Indexes for table `customer_adjustments`
 --
-ALTER TABLE `vendor_adjustments`
+ALTER TABLE `customer_adjustments`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -61,9 +59,9 @@ ALTER TABLE `vendor_adjustments`
 --
 
 --
--- AUTO_INCREMENT for table `vendor_adjustments`
+-- AUTO_INCREMENT for table `customer_adjustments`
 --
-ALTER TABLE `vendor_adjustments`
+ALTER TABLE `customer_adjustments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 

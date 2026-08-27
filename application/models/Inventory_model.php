@@ -18646,7 +18646,7 @@ class Inventory_model extends CI_Model
 		$company_id = (int) $this->session->userdata('company_id');
 		$added_by   = (int) $this->session->userdata('super_user_id');
 
-		$supplier_id  = (int) $this->input->post('vendor_id'); // Using vendor_id from form
+		$vendor_id    = (int) $this->input->post('vendor_id'); // Using vendor_id from form
 		$invoice_no   = clean_and_escape($this->input->post('invoice_no'));
 		$usd          = (float) $this->input->post('usd');
 		$rmb          = (float) $this->input->post('rmb');
@@ -18661,13 +18661,13 @@ class Inventory_model extends CI_Model
 		$narration = clean_and_escape($this->input->post('narration'));
 
 		// Validate vendor (using my_companies table)
-		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
+		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
 		if (empty($vendor)) {
 				$resultpost['status']  = 400;
 				$resultpost['message'] = "Invalid vendor selected.";
 				return simple_json_output($resultpost);
 		}
-		$supplier_name = $vendor['name'];
+		$vendor_name = $vendor['name'];
 
 		// Bank account logic
 		$bank_accounts_name = null;
@@ -18692,8 +18692,8 @@ class Inventory_model extends CI_Model
 
 		$data = array(
 				'company_id'         => $company_id,
-				'vendor_id'          => $supplier_id, // storing vendor id in vendor_id
-				'vendor_name'        => $supplier_name, // storing vendor name in vendor_name
+				'vendor_id'          => $vendor_id,
+				'vendor_name'        => $vendor_name,
 				'invoice_no'         => $invoice_no,
 				'usd'                => number_format($usd, 5, '.', ''),
 				'rmb'                => number_format($rmb, 5, '.', ''),
@@ -18738,7 +18738,7 @@ class Inventory_model extends CI_Model
 				return simple_json_output($resultpost);
 		}
 
-		$supplier_id  = (int) $this->input->post('vendor_id');
+		$vendor_id    = (int) $this->input->post('vendor_id');
 		$invoice_no   = clean_and_escape($this->input->post('invoice_no'));
 		$usd          = (float) $this->input->post('usd');
 		$rmb          = (float) $this->input->post('rmb');
@@ -18752,13 +18752,13 @@ class Inventory_model extends CI_Model
 
 		$narration = clean_and_escape($this->input->post('narration'));
 
-		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
+		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
 		if (empty($vendor)) {
 				$resultpost['status']  = 400;
 				$resultpost['message'] = "Invalid vendor selected.";
 				return simple_json_output($resultpost);
 		}
-		$supplier_name = $vendor['name'];
+		$vendor_name = $vendor['name'];
 
 		$bank_accounts_name = null;
 		if ($payment_type === 'official') {
@@ -18781,8 +18781,8 @@ class Inventory_model extends CI_Model
 		}
 
 		$data = array(
-				'vendor_id'          => $supplier_id,
-				'vendor_name'        => $supplier_name,
+				'vendor_id'          => $vendor_id,
+				'vendor_name'        => $vendor_name,
 				'invoice_no'         => $invoice_no,
 				'usd'                => number_format($usd, 5, '.', ''),
 				'rmb'                => number_format($rmb, 5, '.', ''),
@@ -24575,7 +24575,7 @@ public function get_sales_return_reports()
 		$user_id = $this->session->userdata('super_user_id');
 		$user_name = $this->session->userdata('super_name');
 
-		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
+		$vendor_id = clean_and_escape($this->input->post('vendor_id') ? $this->input->post('vendor_id') : $this->input->post('supplier_id'));
 		$date = clean_and_escape($this->input->post('date'));
 		$rmb = clean_and_escape($this->input->post('rmb'));
 		$usd = clean_and_escape($this->input->post('usd'));
@@ -24584,15 +24584,13 @@ public function get_sales_return_reports()
 		$type = clean_and_escape($this->input->post('type'));
 		$remark = clean_and_escape($this->input->post('remark'));
 
-		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
-		$supplier_name = isset($vendor['name']) ? $vendor['name'] : '';
+		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
+		$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
 
 		$data = array(
 			'company_id'    => $company_id ? $company_id : 0,
-			'supplier_id'   => $supplier_id,
-			'supplier_name' => $supplier_name,
-			'batch_id'      => NULL,
-			'batch_no'      => NULL,
+			'vendor_id'     => $vendor_id,
+			'vendor_name'   => $vendor_name,
 			'date'          => $date ? $date : date('Y-m-d'),
 			'rmb'           => !empty($rmb) ? $rmb : 0.00,
 			'usd'           => !empty($usd) ? $usd : 0.00,
@@ -24614,7 +24612,7 @@ public function get_sales_return_reports()
 
 	public function edit_vendor_adjustment($id)
 	{
-		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
+		$vendor_id = clean_and_escape($this->input->post('vendor_id') ? $this->input->post('vendor_id') : $this->input->post('supplier_id'));
 		$date = clean_and_escape($this->input->post('date'));
 		$rmb = clean_and_escape($this->input->post('rmb'));
 		$usd = clean_and_escape($this->input->post('usd'));
@@ -24623,12 +24621,12 @@ public function get_sales_return_reports()
 		$type = clean_and_escape($this->input->post('type'));
 		$remark = clean_and_escape($this->input->post('remark'));
 
-		$vendor = $this->db->get_where('my_companies', array('id' => $supplier_id))->row_array();
-		$supplier_name = isset($vendor['name']) ? $vendor['name'] : '';
+		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
+		$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
 
 		$data = array(
-			'supplier_id'   => $supplier_id,
-			'supplier_name' => $supplier_name,
+			'vendor_id'   => $vendor_id,
+			'vendor_name' => $vendor_name,
 			'date'          => $date ? $date : date('Y-m-d'),
 			'rmb'           => !empty($rmb) ? $rmb : 0.00,
 			'usd'           => !empty($usd) ? $usd : 0.00,
@@ -24673,7 +24671,7 @@ public function get_sales_return_reports()
 		}
 
 		if ($search_val != '') {
-			$where .= " AND (va.supplier_name LIKE '%" . $search_val . "%' OR va.remark LIKE '%" . $search_val . "%' OR va.amt_type LIKE '%" . $search_val . "%' OR va.type LIKE '%" . $search_val . "%')";
+			$where .= " AND (va.vendor_name LIKE '%" . $search_val . "%' OR va.remark LIKE '%" . $search_val . "%' OR va.amt_type LIKE '%" . $search_val . "%' OR va.type LIKE '%" . $search_val . "%')";
 		}
 
 		$total_count = $this->db->query("SELECT va.id FROM vendor_adjustments va WHERE $where")->num_rows();
@@ -24709,7 +24707,7 @@ public function get_sales_return_reports()
 					"sr_no"         => ++$start,
 					"id"            => $item['id'],
 					"date"          => date('d M Y', strtotime($item['date'])),
-					"vendor_name"   => html_escape($item['supplier_name']),
+					"vendor_name"   => html_escape($item['vendor_name']),
 					"usd"           => number_format((float)$item['usd'], 2),
 					"rmb"           => number_format((float)$item['rmb'], 2),
 					"inr"           => number_format((float)$item['inr'], 2),
@@ -24733,7 +24731,7 @@ public function get_sales_return_reports()
 
 	public function get_vendor_adjustments($vendor_id, $type = null)
 	{
-		$where = "va.supplier_id = '$vendor_id' AND va.is_deleted = '0'";
+		$where = "va.vendor_id = '$vendor_id' AND va.is_deleted = '0'";
 		if ($type) {
 			$where .= " AND va.type = " . $this->db->escape($type);
 		}
@@ -24763,7 +24761,7 @@ public function get_sales_return_reports()
 		$outstanding = $this->get_vendor_ledger($vendor_id);
 		$payments = $this->get_vendor_payments_by_id($vendor_id);
 
-		$adj_where = "supplier_id = '$vendor_id' AND is_deleted = 0";
+		$adj_where = "vendor_id = '$vendor_id' AND is_deleted = 0";
 		if ($current_adj_id) {
 			$adj_where .= " AND id != " . intval($current_adj_id);
 		}
@@ -24813,6 +24811,237 @@ public function get_sales_return_reports()
 		);
 	}
 	/* Vendor Adjustments Ends */
+
+	/* Customer Adjustments Starts */
+	public function get_company_customers()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$where = "is_deleted = '0' AND type = 'customer'";
+		if ($company_id) {
+			$where .= " AND FIND_IN_SET('" . $this->db->escape_str($company_id) . "', company_id)";
+		}
+		$query = $this->db->query("SELECT id, company_name, owner_name, outstanding FROM customer WHERE $where ORDER BY company_name ASC");
+		return $query ? $query->result_array() : [];
+	}
+
+	public function add_customer_adjustment()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$user_id = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
+		$customer_id = clean_and_escape($this->input->post('customer_id'));
+		$date = clean_and_escape($this->input->post('date'));
+		$inr = clean_and_escape($this->input->post('inr'));
+		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$type = clean_and_escape($this->input->post('type'));
+		$remark = clean_and_escape($this->input->post('remark'));
+
+		$customer = $this->db->get_where('customer', array('id' => $customer_id))->row_array();
+		$customer_name = !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '');
+
+		$data = array(
+			'company_id'    => $company_id ? $company_id : 0,
+			'customer_id'   => $customer_id,
+			'customer_name' => $customer_name,
+			'date'          => $date ? $date : date('Y-m-d'),
+			'inr'           => !empty($inr) ? $inr : 0.00,
+			'amt_type'      => $amt_type,
+			'type'          => $type,
+			'remark'        => $remark,
+			'is_deleted'    => 0,
+			'added_by'      => $user_name,
+			'added_by_id'   => $user_id,
+			'created_at'    => date('Y-m-d H:i:s'),
+			'updated_at'    => date('Y-m-d H:i:s')
+		);
+
+		$this->db->insert('customer_adjustments', $data);
+		$this->session->set_flashdata('flash_message', 'Customer Adjustment Added Successfully');
+		redirect(site_url('inventory/customer-adjustment'), 'refresh');
+	}
+
+	public function edit_customer_adjustment($id)
+	{
+		$customer_id = clean_and_escape($this->input->post('customer_id'));
+		$date = clean_and_escape($this->input->post('date'));
+		$inr = clean_and_escape($this->input->post('inr'));
+		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$type = clean_and_escape($this->input->post('type'));
+		$remark = clean_and_escape($this->input->post('remark'));
+
+		$customer = $this->db->get_where('customer', array('id' => $customer_id))->row_array();
+		$customer_name = !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '');
+
+		$data = array(
+			'customer_id'   => $customer_id,
+			'customer_name' => $customer_name,
+			'date'          => $date ? $date : date('Y-m-d'),
+			'inr'           => !empty($inr) ? $inr : 0.00,
+			'amt_type'      => $amt_type,
+			'type'          => $type,
+			'remark'        => $remark,
+			'updated_at'    => date('Y-m-d H:i:s')
+		);
+
+		$this->db->where('id', $id);
+		$this->db->update('customer_adjustments', $data);
+		$this->session->set_flashdata('flash_message', 'Customer Adjustment Updated Successfully');
+		redirect(site_url('inventory/customer-adjustment'), 'refresh');
+	}
+
+	public function delete_customer_adjustment($id)
+	{
+		$this->db->where('id', $id);
+		$this->db->update('customer_adjustments', array('is_deleted' => 1));
+		$this->session->set_flashdata('flash_message', 'Customer Adjustment Deleted Successfully');
+		redirect(site_url('inventory/customer-adjustment'), 'refresh');
+	}
+
+	public function get_customer_adjustment_by_id($id)
+	{
+		return $this->db->get_where('customer_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+	}
+
+	public function get_customer_adjustment_datatable()
+	{
+		$draw = isset($_REQUEST['draw']) ? intval($_REQUEST['draw']) : 1;
+		$start = isset($_REQUEST['start']) ? intval($_REQUEST['start']) : 0;
+		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
+
+		$search_val = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
+		$where = "ca.is_deleted = '0'";
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$where .= " AND ca.company_id = '" . $company_id . "'";
+		}
+
+		if ($search_val != '') {
+			$where .= " AND (ca.customer_name LIKE '%" . $search_val . "%' OR ca.remark LIKE '%" . $search_val . "%' OR ca.amt_type LIKE '%" . $search_val . "%' OR ca.type LIKE '%" . $search_val . "%')";
+		}
+
+		$total_count = $this->db->query("SELECT ca.id FROM customer_adjustments ca WHERE $where")->num_rows();
+
+		$query = $this->db->query("SELECT 
+										ca.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM customer_adjustments ca
+									LEFT JOIN sys_users u ON ca.added_by_id = u.id
+									WHERE $where
+									ORDER BY ca.id DESC
+									LIMIT $start, $length");
+
+		$data = array();
+		if ($query) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$edit_url = base_url() . 'inventory/edit-customer-adjustment/' . $id;
+				$delete_url = "confirm_modal('" . base_url() . "inventory/customer-adjustment/delete/" . $id . "','Are you sure want to delete this adjustment!')";
+
+				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+
+				$amt_type_badge = ($item['amt_type'] == 'plus') 
+					? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
+					: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+
+				$type_badge = ($item['type'] == 'official')
+					? '<span class="badge bg-info" style="font-size:11px;">Official</span>'
+					: '<span class="badge bg-secondary" style="font-size:11px;">Unofficial</span>';
+
+				$data[] = array(
+					"sr_no"         => ++$start,
+					"id"            => $item['id'],
+					"date"          => date('d M Y', strtotime($item['date'])),
+					"customer_name" => html_escape($item['customer_name']),
+					"inr"           => '₹ ' . number_format((float)$item['inr'], 2),
+					"amt_type"      => $amt_type_badge,
+					"type"          => $type_badge,
+					"remark"        => html_escape($item['remark'] ? $item['remark'] : '—'),
+					"added_by"      => html_escape($item['added_by_name'] ? $item['added_by_name'] : ($item['added_by'] ? $item['added_by'] : '—')),
+					"action"        => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => $draw,
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_customer_adjustments($customer_id, $type = null)
+	{
+		$where = "ca.customer_id = '$customer_id' AND ca.is_deleted = '0'";
+		if ($type) {
+			$where .= " AND ca.type = " . $this->db->escape($type);
+		}
+		$query = $this->db->query("SELECT 
+										ca.*,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+									FROM customer_adjustments ca
+									LEFT JOIN sys_users u ON ca.added_by_id = u.id
+									WHERE $where
+									ORDER BY ca.date ASC, ca.id ASC");
+		return $query ? $query->result_array() : [];
+	}
+
+	public function get_customer_ledger_summary($customer_id, $current_adj_id = null)
+	{
+		$customer = $this->db->get_where('customer', array('id' => $customer_id))->row_array();
+		if (!$customer) {
+			return null;
+		}
+
+		$opening = (float)($customer['outstanding'] ?? 0.00);
+
+		$outstanding = $this->get_customer_ledger($customer_id);
+		$payments = $this->get_customer_payments_by_id($customer_id);
+
+		$adj_where = "customer_id = '$customer_id' AND is_deleted = 0";
+		if ($current_adj_id) {
+			$adj_where .= " AND id != " . intval($current_adj_id);
+		}
+		$adjustments = $this->db->query("SELECT * FROM customer_adjustments WHERE $adj_where")->result_array();
+
+		$totals = array(
+			'sales'     => 0.00,
+			'payment'   => 0.00,
+			'adj_plus'  => 0.00,
+			'adj_minus' => 0.00,
+		);
+
+		foreach ($outstanding as $row) {
+			$totals['sales'] += (float)($row['grand_total'] ?? 0);
+		}
+
+		foreach ($payments as $pay) {
+			$totals['payment'] += (float)($pay['amount'] ?? 0);
+		}
+
+		foreach ($adjustments as $adj) {
+			$amt_type = ($adj['amt_type'] === 'plus') ? 'adj_plus' : 'adj_minus';
+			$totals[$amt_type] += (float)$adj['inr'];
+		}
+
+		$balance = $opening + $totals['sales'] - $totals['payment'] + $totals['adj_plus'] - $totals['adj_minus'];
+		$net_adj = $totals['adj_plus'] - $totals['adj_minus'];
+
+		return array(
+			'customer_name' => !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '—'),
+			'opening'       => $opening,
+			'totals'        => $totals,
+			'net_adj'       => $net_adj,
+			'balance'       => $balance,
+			'is_due'        => ($balance > 0),
+		);
+	}
+	/* Customer Adjustments Ends */
+
 
 	public function get_dashboard_company_list()
 	{

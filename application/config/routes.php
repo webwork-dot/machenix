@@ -118,6 +118,20 @@ $route[$r_inventory . '/customer/add']    = 'inventory/customer_form/customer_ad
 $route[$r_inventory . '/customer/edit/(:num)'] = 'inventory/customer_form/customer_edit/$1';
 $route[$r_inventory . '/customer/ledger/(:num)'] = 'inventory/customer_form/customer_ledger/$1';
 
+$route[$r_inventory . '/customer-adjustment']                      = 'inventory/customer_adjustment';
+$route['customer-adjustment']                                      = 'inventory/customer_adjustment';
+$route[$r_inventory . '/customer-adjustment/add_post']             = 'inventory/customer_adjustment/add_post';
+$route[$r_inventory . '/customer-adjustment/edit_post/(:num)']     = 'inventory/customer_adjustment/edit_post/$1';
+$route[$r_inventory . '/customer-adjustment/delete/(:num)']        = 'inventory/customer_adjustment/delete/$1';
+$route[$r_inventory . '/add-customer-adjustment']                  = 'inventory/customer_adjustment_form/add';
+$route['add-customer-adjustment']                                  = 'inventory/customer_adjustment_form/add';
+$route[$r_inventory . '/edit-customer-adjustment/(:num)']          = 'inventory/customer_adjustment_form/edit/$1';
+$route['edit-customer-adjustment/(:num)']                          = 'inventory/customer_adjustment_form/edit/$1';
+$route[$r_inventory . '/get_customer_adjustment']                  = 'inventory/get_customer_adjustment';
+$route['get_customer_adjustment']                                  = 'inventory/get_customer_adjustment';
+$route[$r_inventory . '/get_customer_ledger_summary_ajax']          = 'inventory/get_customer_ledger_summary_ajax';
+$route['get_customer_ledger_summary_ajax']                          = 'inventory/get_customer_ledger_summary_ajax';
+
 
 $route[$r_inventory . '/leads/add']               = 'inventory/leads_form/leads_add';
 $route[$r_inventory . '/leads/edit/(:num)']       = 'inventory/leads_form/leads_edit/$1';

@@ -65,9 +65,6 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
     font-weight: 700;
     border-radius: 20px;
     padding: 4px 12px;
-    color: #dc2626;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
   }
 
   .ledger-table thead th {
@@ -87,6 +84,17 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
 
   .ledger-row:hover { background: #f9fafb; }
 
+  .ledger-row-opening { background: #fafbfc; }
+  .ledger-row-opening:hover { background: #f3f4f6; }
+  .ledger-row-payment { background: #f0fdf4; }
+  .ledger-row-payment:hover { background: #dcfce7; }
+  .ledger-row-sales { background: #ffffff; }
+  .ledger-row-sales:hover { background: #f9fafb; }
+  .ledger-row-adj-plus { background: #eff6ff; }
+  .ledger-row-adj-plus:hover { background: #dbeafe; }
+  .ledger-row-adj-minus { background: #fff5f5; }
+  .ledger-row-adj-minus:hover { background: #fee2e2; }
+
   .type-badge {
     display: inline-block;
     font-size: 9px;
@@ -95,16 +103,25 @@ $locationLine = trim($cityState . ($pincode ? " – $pincode" : ''));
     border-radius: 4px;
     padding: 2px 7px;
     text-transform: uppercase;
-    color: #7c3aed;
-    background: #f5f3ff;
-    border: 1px solid #ddd6fe;
   }
 
-  .amount-positive { color: #dc2626; font-weight: 600; }
+  .type-badge-opening { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
+  .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
+  .type-badge-sales { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
+  .type-badge-adj-plus { color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; }
+  .type-badge-adj-minus { color: #d97706; background: #fffbeb; border: 1px solid #fde68a; }
 
+  .amount-positive { color: #dc2626; font-weight: 600; }
+  .amount-negative { color: #16a34a; font-weight: 600; }
+
+  .balance-pill-due { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+  .balance-pill-credit { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
+  
   .tfoot-border-top { border-top: 2px solid #e8eaed; }
   .balance-row-due { background: #fff5f5; }
   .balance-text-due { color: #dc2626; }
+  .balance-row-credit { background: #f0fdf4; }
+  .balance-text-credit { color: #16a34a; }
 </style>
 
 <!-- ───── Customer Info Card ───── -->
@@ -174,12 +191,14 @@ $ledger = [];
 if (!empty($outstanding)) {
   foreach ($outstanding as $row) {
     $ledger[] = [
-      'date' => $row['date'],
-      'ref' => $row['voucher_no'],
-      'type' => 'SALES',
-      'amount' => (float) $row['grand_total'],
-      'added_by' => $row['added_by_name'],
-      'is_payment' => false
+      'date'          => $row['date'],
+      'ref'           => $row['voucher_no'],
+      'type'          => 'SALES',
+      'amount'        => (float) $row['grand_total'],
+      'added_by'      => $row['added_by_name'],
+      'is_payment'    => false,
+      'is_adjustment' => false,
+      'amt_type'      => 'plus'
     ];
   }
 }
@@ -187,12 +206,32 @@ if (!empty($outstanding)) {
 if (!empty($payments)) {
   foreach ($payments as $pay) {
     $ledger[] = [
-      'date' => $pay['date'],
-      'ref' => $pay['inv_no'],
-      'type' => 'PAYMENT',
-      'amount' => (float) $pay['amount'],
-      'added_by' => $pay['added_by_name'],
-      'is_payment' => true
+      'date'          => $pay['date'],
+      'ref'           => $pay['inv_no'],
+      'type'          => 'PAYMENT',
+      'amount'        => (float) $pay['amount'],
+      'added_by'      => $pay['added_by_name'],
+      'is_payment'    => true,
+      'is_adjustment' => false,
+      'amt_type'      => 'minus'
+    ];
+  }
+}
+
+if (!empty($adjustments)) {
+  foreach ($adjustments as $adj) {
+    $refText = !empty($adj['remark']) ? $adj['remark'] : 'Adjustment';
+    $typeLabel = ($adj['amt_type'] === 'plus') ? 'Adjustment (+)' : 'Adjustment (-)';
+    $ledger[] = [
+      'date'          => $adj['date'],
+      'ref'           => $refText,
+      'type'          => $typeLabel,
+      'amount'        => (float) $adj['inr'],
+      'added_by'      => !empty($adj['added_by_name']) ? $adj['added_by_name'] : (!empty($adj['added_by']) ? $adj['added_by'] : '—'),
+      'is_payment'    => false,
+      'is_adjustment' => true,
+      'amt_type'      => $adj['amt_type'],
+      'adj_type'      => $adj['type']
     ];
   }
 }
@@ -204,16 +243,28 @@ usort($ledger, function ($a, $b) {
 $opening_balance = (float)($customer['outstanding'] ?? 0.00);
 
 $totals = [
-  'sales' => 0,
-  'payment' => 0
+  'sales'     => 0,
+  'payment'   => 0,
+  'adj_plus'  => 0,
+  'adj_minus' => 0,
 ];
 
 foreach ($ledger as $item) {
-  $tKey = $item['is_payment'] ? 'payment' : 'sales';
-  $totals[$tKey] += $item['amount'];
+  if (!empty($item['is_adjustment'])) {
+    if ($item['amt_type'] === 'plus') {
+      $totals['adj_plus'] += $item['amount'];
+    } else {
+      $totals['adj_minus'] += $item['amount'];
+    }
+  } elseif ($item['is_payment']) {
+    $totals['payment'] += $item['amount'];
+  } else {
+    $totals['sales'] += $item['amount'];
+  }
 }
 
-$balance = $opening_balance + $totals['sales'] - $totals['payment'];
+$net_adj = $totals['adj_plus'] - $totals['adj_minus'];
+$balance = $opening_balance + $totals['sales'] - $totals['payment'] + $totals['adj_plus'] - $totals['adj_minus'];
 
 $balanceIsDue = $balance > 0;
 $balancePillClass = $balanceIsDue ? 'balance-pill-due' : 'balance-pill-credit';
@@ -223,19 +274,26 @@ $balanceTextClass = $balanceIsDue ? 'balance-text-due' : 'balance-text-credit';
 // Build display rows with opening balance prepended and calculate running balance
 $display_rows = [];
 $display_rows[] = [
-  'date' => !empty($customer['added_date']) ? $customer['added_date'] : '',
-  'ref' => 'Opening Balance',
-  'type' => 'OPENING',
-  'amount' => $opening_balance,
-  'added_by' => $customer['added_by_name'] ?? '—',
-  'is_payment' => false,
-  'is_opening' => true,
+  'date'            => !empty($customer['added_date']) ? $customer['added_date'] : '',
+  'ref'             => 'Opening Balance',
+  'type'            => 'OPENING',
+  'amount'          => $opening_balance,
+  'added_by'        => $customer['added_by_name'] ?? '—',
+  'is_payment'      => false,
+  'is_adjustment'   => false,
+  'is_opening'      => true,
   'running_balance' => $opening_balance
 ];
 
 $running = $opening_balance;
 foreach ($ledger as $item) {
-  if ($item['is_payment']) {
+  if (!empty($item['is_adjustment'])) {
+    if ($item['amt_type'] === 'plus') {
+      $running += $item['amount'];
+    } else {
+      $running -= $item['amount'];
+    }
+  } elseif ($item['is_payment']) {
     $running -= $item['amount'];
   } else {
     $running += $item['amount'];
@@ -246,33 +304,11 @@ foreach ($ledger as $item) {
 }
 ?>
 
-<style>
-  .ledger-row-opening { background: #fafbfc; }
-  .ledger-row-opening:hover { background: #f3f4f6; }
-  .ledger-row-payment { background: #f0fdf4; }
-  .ledger-row-payment:hover { background: #dcfce7; }
-  .ledger-row-sales { background: #ffffff; }
-  .ledger-row-sales:hover { background: #f9fafb; }
-
-  .type-badge-opening { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
-  .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
-  .type-badge-sales { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
-
-  .amount-positive { color: #dc2626; font-weight: 600; }
-  .amount-negative { color: #16a34a; font-weight: 600; }
-
-  .balance-pill-due { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-  .balance-pill-credit { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
-  
-  .balance-row-credit { background: #f0fdf4; }
-  .balance-text-credit { color: #16a34a; }
-</style>
-
 <!-- ───── Unified Ledger ───── -->
 <div>
   <div class="bg-white ledger-card-shell">
     <!-- Ledger Header -->
-    <div class="d-flex align-items-center justify-content-between px-2 py-2 card-soft-header">
+    <div class="d-flex align-items-center justify-content-between px-2 py-2 card-soft-header flex-wrap gap-2">
       <div class="fw-semibold customer-main-text fs-13">Customer Ledger</div>
       
       <!-- Balance Summary Pills -->
@@ -286,8 +322,11 @@ foreach ($ledger as $item) {
         <div class="summary-pill">
           Payments &nbsp;<strong class="customer-soft-text">₹ <?= number_format($totals['payment'], 2) ?></strong>
         </div>
+        <div class="summary-pill">
+          Adjustments &nbsp;<strong class="customer-soft-text"><?= ($net_adj >= 0 ? '+' : '−') ?> ₹ <?= number_format(abs($net_adj), 2) ?></strong>
+        </div>
         <div class="balance-pill <?= $balancePillClass ?>">
-          Balance &nbsp;₹ <?= number_format($balance, 2) ?>
+          Outstanding &nbsp;₹ <?= number_format($balance, 2) ?>
         </div>
       </div>
     </div>
@@ -313,6 +352,11 @@ foreach ($ledger as $item) {
                 $rowClass = 'ledger-row-opening';
                 $amtClass = 'customer-soft-text';
                 $sign = '';
+              } elseif (!empty($item['is_adjustment'])) {
+                $isPlus = ($item['amt_type'] === 'plus');
+                $rowClass = $isPlus ? 'ledger-row-adj-plus' : 'ledger-row-adj-minus';
+                $amtClass = $isPlus ? 'amount-positive' : 'amount-negative';
+                $sign = $isPlus ? '+' : '−';
               } else {
                 $rowClass = $item['is_payment'] ? 'ledger-row-payment' : 'ledger-row-sales';
                 $amtClass = $item['is_payment'] ? 'amount-negative' : 'amount-positive';
@@ -324,6 +368,12 @@ foreach ($ledger as $item) {
                 <td class="px-2 py-2">
                   <?php if ($item['is_opening']): ?>
                     <span class="type-badge type-badge-opening">Opening</span>
+                  <?php elseif (!empty($item['is_adjustment'])): ?>
+                    <?php if ($item['amt_type'] === 'plus'): ?>
+                      <span class="type-badge type-badge-adj-plus">Adjustment (+)</span>
+                    <?php else: ?>
+                      <span class="type-badge type-badge-adj-minus">Adjustment (−)</span>
+                    <?php endif; ?>
                   <?php elseif ($item['is_payment']): ?>
                     <span class="type-badge type-badge-payment">Payment</span>
                   <?php else: ?>
