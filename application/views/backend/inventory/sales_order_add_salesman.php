@@ -218,6 +218,7 @@
 	}
 </style>
 
+<?php $current_company_id = (int)$this->session->userdata('company_id'); ?>
 <div class="row">
   <div class="col-12">
     <!-- profile -->
@@ -358,11 +359,22 @@
 
           <div class="col-12 col-sm-3 mb-1">
             <label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
-            <select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="clearAllBatches()" required>
+            <select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="onWarehouseChange()" required>
               <option value="0">Select Warehouse</option>
               <?php foreach ($warehouse_list as $warehouse) { ?>
-                <option value="<?php echo $warehouse->id; ?>"><?php echo $warehouse->name; ?></option>
+                <option value="<?php echo $warehouse->id; ?>" data-company-id="<?php echo $warehouse->company_id; ?>"><?php echo $warehouse->name; ?></option>
               <?php } ?>
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1" id="my_warehouse_container" style="display: none;">
+            <label class="form-label" for="my_warehouse_id">My Warehouse <span class="required">*</span></label>
+            <select class="form-select select2" name="my_warehouse_id" id="my_warehouse_id">
+              <option value="">Select My Warehouse</option>
+              <?php foreach ($warehouse_list as $warehouse) { 
+                if ((int)$warehouse->company_id === (int)$current_company_id) { ?>
+                  <option value="<?php echo $warehouse->id; ?>"><?php echo $warehouse->name; ?></option>
+              <?php } } ?>
             </select>
           </div>
 
@@ -391,6 +403,8 @@
                     <th style="min-width:100px;">Move Replace</th>
                     <th style="min-width:200px;">Product <span class="text-danger">*</span></th>
                     <th style="min-width:50px;">Qty <span class="text-danger">*</span></th>
+                    <th class="col-intercompany" style="min-width:120px; display: none;">Actual Price</th>
+                    <th class="col-intercompany" style="min-width:120px; display: none;">Official Price</th>
                     <th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
                     <th style="min-width:170px;">Remark</th>
                     <th style="min-width:100px;">Total Amt</th>
@@ -423,6 +437,8 @@
                       </div>
                     </td>
                     <td><input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('1')" value="1" class="form-control" required=""></td>
+                    <td class="col-intercompany" style="display: none;"></td>
+                    <td class="col-intercompany" style="display: none;"></td>
                     <td>
                       <input type="hidden" id="master_amount_1" name="master_amount[]" value="">
                     </td>
@@ -755,6 +771,8 @@ function appendRequirement() {
           </div>
         </td>
         <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
+        <td class="col-intercompany" style="${isOtherCompanyWarehouse() ? '' : 'display: none;'}"></td>
+        <td class="col-intercompany" style="${isOtherCompanyWarehouse() ? '' : 'display: none;'}"></td>
         <td>
           <input type="hidden" id="master_amount_${nextindex}" name="master_amount[]">
         </td>
@@ -1569,6 +1587,12 @@ function appendRequirement() {
             </div>
           </div>
         </td>
+        <td class="col-intercompany" style="${isOtherCompanyWarehouse() ? '' : 'display: none;'}">
+          <input type="number" step="any" class="form-control batch_actual_price text-center" name="batch_actual_price[${index}][]" id="batch_actual_price_${index}_${batch_index}" readonly placeholder="Actual Price">
+        </td>
+        <td class="col-intercompany" style="${isOtherCompanyWarehouse() ? '' : 'display: none;'}">
+          <input type="number" step="any" class="form-control batch_official_price text-center" name="batch_official_price[${index}][]" id="batch_official_price_${index}_${batch_index}" placeholder="Official Price">
+        </td>
         <td>
           <div class="input-group">
             <input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
@@ -1716,6 +1740,8 @@ function appendRequirement() {
       row.find('.avail-black-text').text(0);
       row.find('.batch_white_qty_input').val(0);
       row.find('.batch_black_qty_input').val(0);
+      row.find('.batch_actual_price').val('');
+      row.find('.batch_official_price').val('');
       row.find('.batch_rate').val(0);
       row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
       row.find('.batch_bill_total').val(0);
@@ -1758,6 +1784,8 @@ function appendRequirement() {
       row.find('.avail-black-text').text(0);
       row.find('.batch_white_qty_input').val(0);
       row.find('.batch_black_qty_input').val(0);
+      row.find('.batch_actual_price').val('');
+      row.find('.batch_official_price').val('');
       row.find('.batch_rate').val(0);
       row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
       row.find('.batch_bill_total').val(0);
@@ -1792,6 +1820,9 @@ function appendRequirement() {
         row.attr('data-min-price', res.min_selling_price || 0);
         row.attr('data-min-billing-price', res.min_billing_price || 0);
         
+        row.find('.batch_actual_price').val(parseFloat(res.actual_cost_with_exp || 0).toFixed(2));
+        row.find('.batch_official_price').val(parseFloat(res.off_sale_price || 0).toFixed(2));
+
         var main_rate = $('#master_amount_' + index).val();
         var main_gst = $('#gst_' + index).val();
         var main_bill_amt = $('#bill_amount_' + index).val();
@@ -1827,6 +1858,37 @@ function appendRequirement() {
       }
     });
   }
+
+  const CURRENT_COMPANY_ID = <?php echo $current_company_id; ?>;
+
+  function isOtherCompanyWarehouse() {
+    var selectedOption = $('#warehouse_id').find(':selected');
+    var warehouse_id = $('#warehouse_id').val();
+    var wh_company_id = parseInt(selectedOption.data('company-id'), 10);
+    return (warehouse_id && warehouse_id != '0' && wh_company_id && wh_company_id !== CURRENT_COMPANY_ID);
+  }
+
+  function onWarehouseChange() {
+    clearAllBatches();
+    checkWarehouseCompany();
+  }
+
+  function checkWarehouseCompany() {
+    var is_other = isOtherCompanyWarehouse();
+    if (is_other) {
+      $('#my_warehouse_container').show();
+      $('#my_warehouse_id').prop('required', true);
+      $('.col-intercompany').show();
+    } else {
+      $('#my_warehouse_container').hide();
+      $('#my_warehouse_id').prop('required', false).val('').trigger('change.select2');
+      $('.col-intercompany').hide();
+    }
+  }
+
+  $(document).ready(function() {
+    checkWarehouseCompany();
+  });
 </script>
 
 <!-- Price History Modal -->

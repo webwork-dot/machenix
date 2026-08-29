@@ -11,3 +11,20 @@ In the sales dropdown nav [SalesDropdownNav] I wanna create the new navigation c
 4. After submission insert the sales order like current direct sales process with type of 'company' and save it.
 
 That's it for now. Follow the existing coding pattern for development and logic. Insert the sale order like the current one with some tweaks and keep the code simple as much as possible.
+
+
+
+
+
+
+Auto Company to Company Sales:
+
+- Common Flow: I am Company A and I am selling some product to customer from company B warehouse. So to company B, I am their customer because I am using their products to sell.. So whenever I as company A sells someone else's product then that company should automatically generate a sale order to me. And also A local purchase In entry should also create automatically. After this automated process I wanna insert the stock and then insert the actual sale order to the customer I am selling the product. So the common flow should be like this:
+--> I as company A sell a product to customer from company B warehouse.. 
+--> Company B should automatically generate a sale order to me. 
+--> Local purchase should be created in company A 
+--> After this local purchase entry, stock should be inserted in company A automatically
+--> After this stock entry, actual sale order should be created to the customer from company A 
+
+- Code Structure: Before inserting the original sale order create a function which will add automated sale order, and purchase In same as this function [post_company_sale]. The coding pattern will be almost same only with slight difference. Take the warehouse id of the selected warehouse id [warehouse_inp] and customer will be the session company.. Calculate total from prices while inserting product. In products take the actual amount and official amount [batch_actual_and_off columns] and take the gst from product masters. Auto calculate the total and insert the sale order.. After that create a purchase entry with same logic.. Take the current session company as a company id and name, and take the selected warehouse id to fetch the company detail and use that company to put in supplier column.. Use this [my_warehouse] for warehouse column in PO and use this function [voucher_generate] to generate voucher in auto.. Also mark all the quantity received and insert it in stock.. In manual we are selecting batch, warehouse and receiving qty manually.. In auto we have everything.. So insert the product in inventory.. After all that in orginal sale order function use this my warehouse id instead of other company warehouse id and let the rest of the process continue as it is..
+Follow the existing coding pattern and create a helper function for automated flow

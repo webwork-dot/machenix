@@ -133,6 +133,7 @@
 	}
 </style>
 
+<?php $current_company_id = (int)$this->session->userdata('company_id'); ?>
 <div class="row">
 	<div class="col-12">
 		<div class="card">
@@ -176,20 +177,33 @@
 
 					<div class="col-12 col-sm-3 mb-1">
 						<label class="form-label" for="warehouse_id">Warehouse <span class="required">*</span></label>
-						<select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="clearAllBatches()" required>
+						<select class="form-select select2" name="warehouse_id" id="warehouse_id" onchange="onWarehouseChange()" required>
 							<option value="0">Select Warehouse</option>
 							<?php foreach ($warehouse_list as $warehouse) { ?>
-								<option value="<?php echo $warehouse->id; ?>" <?php echo $data['warehouse_id'] == $warehouse->id ? 'selected' : ''; ?>>
+								<option value="<?php echo $warehouse->id; ?>" data-company-id="<?php echo $warehouse->company_id; ?>" <?php echo $data['warehouse_id'] == $warehouse->id ? 'selected' : ''; ?>>
 									<?php echo $warehouse->name; ?>
 								</option>
 							<?php } ?>
 						</select>
 					</div>
 
+					<div class="col-12 col-sm-3 mb-1" id="my_warehouse_container" style="display: none;">
+						<label class="form-label" for="my_warehouse_id">My Warehouse <span class="required">*</span></label>
+						<select class="form-select select2" name="my_warehouse_id" id="my_warehouse_id">
+							<option value="">Select My Warehouse</option>
+							<?php foreach ($warehouse_list as $warehouse) { 
+								if ((int)$warehouse->company_id === (int)$current_company_id) { ?>
+									<option value="<?php echo $warehouse->id; ?>" <?php echo (isset($data['my_warehouse_id']) && $data['my_warehouse_id'] == $warehouse->id) ? 'selected' : ''; ?>>
+										<?php echo $warehouse->name; ?>
+									</option>
+							<?php } } ?>
+						</select>
+					</div>
+
 					<input type="hidden" name="company_id" value="<?php echo $data['company_id']; ?>">
 					<input type="hidden" name="narration" value="<?php echo htmlspecialchars($data['narration'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
-					<div class="col-12 col-sm-9 mb-1">
+					<div class="col-12 col-sm-6 mb-1">
 						<div class="form-group">
 							<label>Remark</label>
 							<textarea class="form-control" placeholder="" rows="1" name="remark" id="remark"><?php echo $data['remark']; ?></textarea>
@@ -298,6 +312,8 @@
 										<th style="min-width:100px;">Move Replace</th>
 										<th style="min-width:200px;">Product <span class="text-danger">*</span></th>
 										<th style="min-width:120px;">Qty <span class="text-danger">*</span></th>
+										<th class="col-intercompany" style="min-width:120px; display: none;">Actual Price</th>
+										<th class="col-intercompany" style="min-width:120px; display: none;">Official Price</th>
 										<th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
 										<th style="min-width:170px;">Remark</th>
 										<th style="min-width:100px;">Total Amt</th>
@@ -356,6 +372,8 @@
 										<td>
 											<input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" value="<?php echo $qty; ?>" class="form-control text-center" readonly>
 										</td>
+										<td class="col-intercompany" style="display: none;"></td>
+										<td class="col-intercompany" style="display: none;"></td>
 										<td>
 											<input type="number" step="any" id="master_amount_<?php echo $k; ?>" name="master_amount[]" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control text-center" readonly>
 										</td>
@@ -1024,6 +1042,12 @@ function addBatch(index) {
 					</div>
 				</div>
 			</td>
+			<td class="col-intercompany" style="${isOtherCompanyWarehouse() ? '' : 'display: none;'}">
+				<input type="number" step="any" class="form-control batch_actual_price text-center" name="batch_actual_price[${index}][]" id="batch_actual_price_${index}_${batch_index}" readonly placeholder="Actual Price">
+			</td>
+			<td class="col-intercompany" style="${isOtherCompanyWarehouse() ? '' : 'display: none;'}">
+				<input type="number" step="any" class="form-control batch_official_price text-center" name="batch_official_price[${index}][]" id="batch_official_price_${index}_${batch_index}" placeholder="Official Price">
+			</td>
 			<td>
 				<div class="input-group">
 					<input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
@@ -1170,6 +1194,8 @@ function getBatchDetails(element, index) {
 		row.find('.avail-black-text').text(0);
 		row.find('.batch_white_qty_input').val(0);
 		row.find('.batch_black_qty_input').val(0);
+		row.find('.batch_actual_price').val('');
+		row.find('.batch_official_price').val('');
 		row.find('.batch_rate').val(0);
 		row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
 		row.find('.batch_bill_total').val(0);
@@ -1217,6 +1243,8 @@ function getBatchDetails(element, index) {
 		row.find('.avail-black-text').text(0);
 		row.find('.batch_white_qty_input').val(0);
 		row.find('.batch_black_qty_input').val(0);
+		row.find('.batch_actual_price').val('');
+		row.find('.batch_official_price').val('');
 		row.find('.batch_rate').val(0);
 		row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
 		row.find('.batch_bill_total').val(0);
@@ -1230,7 +1258,7 @@ function getBatchDetails(element, index) {
 		row.find('.batch_remark').val('');
 		row.find('.batch_bill_remark').val('');
 		checkBatchRemarkRequirement(element);
-		checkBatchBillRemarkRequirement(element);
+		checkBatchBillRequirement(element);
 		rollup_product_totals(index);
 		recalculate();
 		return;
@@ -1251,6 +1279,9 @@ function getBatchDetails(element, index) {
 			row.attr('data-min-price', res.min_selling_price || 0);
 			row.attr('data-min-billing-price', res.min_billing_price || 0);
 			
+			row.find('.batch_actual_price').val(parseFloat(res.actual_cost_with_exp || 0).toFixed(2));
+			row.find('.batch_official_price').val(parseFloat(res.off_sale_price || 0).toFixed(2));
+
 			// Initialize Rate and GST from main row
 			var main_rate = $('#master_amount_' + index).val();
 			var main_gst = $('#gst_' + index).val();
@@ -1381,6 +1412,33 @@ function get_billing_city(stateId) {
 	});
 }
 
+const CURRENT_COMPANY_ID = <?php echo $current_company_id; ?>;
+
+function isOtherCompanyWarehouse() {
+	var selectedOption = $('#warehouse_id').find(':selected');
+	var warehouse_id = $('#warehouse_id').val();
+	var wh_company_id = parseInt(selectedOption.data('company-id'), 10);
+	return (warehouse_id && warehouse_id != '0' && wh_company_id && wh_company_id !== CURRENT_COMPANY_ID);
+}
+
+function onWarehouseChange() {
+	clearAllBatches();
+	checkWarehouseCompany();
+}
+
+function checkWarehouseCompany() {
+	var is_other = isOtherCompanyWarehouse();
+	if (is_other) {
+		$('#my_warehouse_container').show();
+		$('#my_warehouse_id').prop('required', true);
+		$('.col-intercompany').show();
+	} else {
+		$('#my_warehouse_container').hide();
+		$('#my_warehouse_id').prop('required', false).val('').trigger('change.select2');
+		$('.col-intercompany').hide();
+	}
+}
+
 $(document).ready(function() {
 	var s_state_id = "<?php echo $data['shipping_state_id']; ?>";
 	var s_city_id = "<?php echo $data['shipping_city_id']; ?>";
@@ -1424,6 +1482,8 @@ $(document).ready(function() {
 		var index = $(this).data('id');
 		updateProductOverallQty(index);
 	});
+
+	checkWarehouseCompany();
 });
 </script>
 

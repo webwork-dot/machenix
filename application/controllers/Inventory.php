@@ -1458,6 +1458,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->move_to_purchase_in($param2);
         } elseif ($param1 == "lock_po") {
             $this->inventory_model->lock_purchase_order($param2);
+        } elseif ($param1 == "receive_company_purchase_qty") {
+            $this->inventory_model->receive_company_purchase_qty($param2);
         } elseif ($param1 == "local") {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'purchase_order';
@@ -1590,6 +1592,14 @@ class Inventory extends CI_Controller
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_purchase_order_local();
         }
+    }
+
+    public function receive_company_purchase_qty()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->inventory_model->receive_company_purchase_qty();
     }
 
     public function formula_product_order($param1 = "", $param2 = "")

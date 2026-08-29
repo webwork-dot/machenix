@@ -1,7 +1,7 @@
 CREATE TABLE `sales_order` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sale_person_id` varchar(255) DEFAULT NULL,
-  `type` enum('normal','bill','conversion','company') NOT NULL DEFAULT 'normal',
+  `type` enum('normal','bill','conversion','company', 'auto') NOT NULL DEFAULT 'normal',
   `is_distributor` tinyint(1) NOT NULL DEFAULT 0,
   `unique_id` varchar(250) DEFAULT NULL,
   `invoice_no` varchar(255) DEFAULT NULL,

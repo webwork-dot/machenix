@@ -173,6 +173,7 @@ $route[$r_inventory . '/product-formula/edit/(:num)']         = 'inventory/produ
 $route[$r_inventory . '/purchase-order'] = 'inventory/purchase_order/local';
 $route[$r_inventory . '/get_purchase_order_local'] = 'inventory/get_purchase_order_local';
 $route[$r_inventory . '/purchase-order/add-local']    = 'inventory/purchase_order_form/add_local';
+$route[$r_inventory . '/receive_company_purchase_qty'] = 'inventory/receive_company_purchase_qty';
 
 $route[$r_inventory . '/formula-product-order'] = 'inventory/formula_product_order';
 $route[$r_inventory . '/formula-product-order/add'] = 'inventory/formula_product_order_form/add';
