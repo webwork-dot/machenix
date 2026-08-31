@@ -3691,6 +3691,68 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function customer_quotations($param1 = "", $param2 = "", $param3 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_customer_quotation();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_customer_quotation($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_customer_quotation($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'customer_quotations';
+            $page_data['page_name']   = 'customer_quotations';
+            $page_data['page_title']  = 'Customer Quotations';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function customer_quotations_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $company_id = $this->session->userdata('company_id');
+        $where_wh = array('is_deleted' => '0');
+        if (!empty($company_id)) {
+            $where_wh['company_id'] = $company_id;
+        }
+        $page_data['warehouse_list'] = $this->common_model->selectWhere('warehouse', $where_wh, 'ASC', 'name');
+        $page_data['customer_list']  = $this->common_model->getSessionCustomers();
+        $page_data['other_charges']  = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
+        $page_data['states']         = $this->crud_model->get_states_by_country(101);
+
+        if ($param1 == 'add') {
+            $page_data['order_no']   = $this->inventory_model->get_customer_quotation_no();
+            $page_data['page_name']  = 'customer_quotation_add';
+            $page_data['navigation'] = 'customer_quotations';
+            $page_data['page_title'] = 'Add Customer Quotation';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $data = $this->inventory_model->get_customer_quotation_details($param2);
+            $page_data['data']       = $data;
+            $page_data['products_list'] = $this->inventory_model->get_product_id_by_warehouse($data['warehouse_id']);
+            $page_data['page_name']  = 'customer_quotation_edit';
+            $page_data['navigation'] = 'customer_quotations';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Customer Quotation';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_customer_quotations()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_customer_quotations();
+        }
+    }
+
     public function sales_order_form($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {

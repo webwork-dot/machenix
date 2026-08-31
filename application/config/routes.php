@@ -282,7 +282,16 @@ $route[$r_inventory . '/company-sales/delete/(:num)']    = 'inventory/company_sa
 $route[$r_inventory . '/get_company_sales']              = 'inventory/get_company_sales';
 $route[$r_inventory . '/get_company_details_ajax']       = 'inventory/get_company_details_ajax';
 $route[$r_inventory . '/get_company_sales_batch_details'] = 'inventory/get_company_sales_batch_details';
-$route[$r_inventory . '/get_company_sales_product_details'] = 'inventory/get_company_sales_product_details';
+$route[$r_inventory . '/company-sales/product_details'] = 'inventory/get_company_sales_product_details';
+
+$route[$r_inventory . '/customer-quotations']                  = 'inventory/customer_quotations';
+$route['customer-quotations']                                  = 'inventory/customer_quotations';
+$route[$r_inventory . '/customer-quotations/add']              = 'inventory/customer_quotations_form/add';
+$route[$r_inventory . '/customer-quotations/add_post']         = 'inventory/customer_quotations/add_post';
+$route[$r_inventory . '/customer-quotations/edit/(:num)']      = 'inventory/customer_quotations_form/edit/$1';
+$route[$r_inventory . '/customer-quotations/edit_post/(:num)'] = 'inventory/customer_quotations/edit_post/$1';
+$route[$r_inventory . '/customer-quotations/delete/(:num)']    = 'inventory/customer_quotations/delete/$1';
+$route[$r_inventory . '/get_customer_quotations']              = 'inventory/get_customer_quotations';
 
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
 $route[$r_inventory . '/sales-commission'] = 'inventory/sales_commission';

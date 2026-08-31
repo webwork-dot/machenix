@@ -84,9 +84,20 @@ $states = $this->db->get_where('states', array('country_id' => 101))->result_arr
         <label class="form-label">Date <span class="text-danger">*</span></label>
         <input type="date" name="date" class="form-control form-control-sm" value="<?= date('Y-m-d'); ?>" max="<?= date('Y-m-d'); ?>" required>
       </div>
+<?php
+$missing_invoices = $this->inventory_model->get_missing_invoice_numbers();
+?>
+
       <div class="col-md-2 mb-1">
         <label class="form-label">Invoice No <span class="text-danger">*</span></label>
-        <input type="text" name="invoice_no" id="invoice_no" class="form-control form-control-sm" value="<?= htmlspecialchars($this->inventory_model->get_invoice_no()); ?>" required>
+        <div class="input-group input-group-sm">
+          <input type="text" name="invoice_no" id="invoice_no" class="form-control form-control-sm font-monospace" value="<?= htmlspecialchars($this->inventory_model->get_invoice_no()); ?>" required>
+          <?php if (!empty($missing_invoices)): ?>
+            <button type="button" class="btn btn-warning btn-sm waves-effect waves-float waves-light d-flex align-items-center gap-1 text-nowrap" id="btn_missing_invoices" onclick="openMissingInvoicesModal();" title="<?= count($missing_invoices); ?> missing invoice numbers found. Click to view.">
+              <i class="fa fa-exclamation-triangle"></i> <span class="d-none d-lg-inline">Missing</span> (<?= count($missing_invoices); ?>)
+            </button>
+          <?php endif; ?>
+        </div>
       </div>
       <div class="col-md-2 mb-1">
         <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
@@ -628,3 +639,5 @@ $(document).ready(function() {
   recalculateBill();
 });
 </script>
+
+<?php $this->load->view('backend/inventory/modal_missing_invoices', ['missing_invoices' => $missing_invoices, 'target_input_id' => 'invoice_no']); ?>

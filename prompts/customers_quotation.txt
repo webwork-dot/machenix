@@ -1,0 +1,8 @@
+I wanna create a new module called "Customer Quotations" inside sales dropdown navigation menu [Sales_nav]. Inside the /customer-quotations page show the data from this table [quot_tables] in datatable.. In add form I wanna create the following fields..
+
+- Customer dropdown (Get customer from this function [session_customers_helper])
+- Remark
+- Multi product selection section with price (black and white) and gst like sales add form [sales_add_form]
+- Grand total section like sales add form [sales_add_form]
+
+After submission, Insert the data in these 2 tables [quot_tables] and make these entry editable.. Show the company wise data and use the existing coding pattern...

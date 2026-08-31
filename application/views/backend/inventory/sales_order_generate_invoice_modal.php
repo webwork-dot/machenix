@@ -22,6 +22,10 @@ $products = !empty($product_query) ? $product_query->result_array() : [];
   <div class="col-12">
     <?php echo form_open('inventory/sales_order/gen_invoice_post', ['id' => 'sales_order_generate_invoice_form', 'onsubmit' => 'return submitGenerateInvoiceForm(event);']); ?>
     
+<?php
+$missing_invoices = $this->inventory_model->get_missing_invoice_numbers();
+?>
+
     <div class="row align-items-center mb-2">
       <div class="col-md-6 col-12">
         <h5 class="mb-0"><strong><?= htmlspecialchars($customer_name); ?></strong>'s Sale Orders</h5>
@@ -31,7 +35,14 @@ $products = !empty($product_query) ? $product_query->result_array() : [];
           <div class="col-md-6 col-12">
             <div class="form-group text-start">
               <label for="invoice_no" class="form-label mb-0">Invoice No</label>
-              <input type="text" name="invoice_no" id="invoice_no" class="form-control form-control-sm" value="<?= htmlspecialchars($this->inventory_model->get_invoice_no()); ?>" required>
+              <div class="input-group input-group-sm">
+                <input type="text" name="invoice_no" id="invoice_no" class="form-control form-control-sm font-monospace" value="<?= htmlspecialchars($this->inventory_model->get_invoice_no()); ?>" required>
+                <?php if (!empty($missing_invoices)): ?>
+                  <button type="button" class="btn btn-warning btn-sm waves-effect waves-float waves-light d-flex align-items-center gap-1 text-nowrap" id="btn_missing_invoices" onclick="openMissingInvoicesModal();" title="<?= count($missing_invoices); ?> missing invoice numbers found. Click to view.">
+                    <i class="fa fa-exclamation-triangle"></i> Missing (<?= count($missing_invoices); ?>)
+                  </button>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
           <div class="col-md-6 col-12">
@@ -334,3 +345,5 @@ $(document).ready(function() {
   }
 });
 </script>
+
+<?php $this->load->view('backend/inventory/modal_missing_invoices', ['missing_invoices' => $missing_invoices, 'target_input_id' => 'invoice_no']); ?>

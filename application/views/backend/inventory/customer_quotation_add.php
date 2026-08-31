@@ -1,0 +1,977 @@
+<style>
+	.text-right {
+		text-align: right;
+	}
+
+	.dis-input {
+		margin-top: -7px;
+		width: 65px !important;
+		float: right !important;
+		margin-left: 5px !important;
+	}
+
+	.dis-input-1 {
+		margin-top: 0px;
+		width: 200px !important;
+		float: right !important;
+		margin-left: 5px !important;
+	}
+
+	.fx-border {
+		border: 1px solid #e0e0e0;
+		padding: 5px 5px;
+		box-shadow: 0 4px 24px 0 rgb(34 41 47 / 10%);
+		background: #f4f8ff;
+		position: relative;
+		margin-bottom: 10px;
+	}
+
+	.jsr-no {
+		border: 1px dashed #4a4949;
+		display: inline-block;
+		padding: 0.3em 0.44em;
+		font-weight: 700;
+		line-height: 15px;
+		padding-right: 0.7em;
+		padding-left: 0.7em;
+		border-radius: 10rem;
+		position: absolute;
+		left: -10px;
+		top: -10px;
+		background: #4a4949;
+		color: #fff;
+		font-size: 12px;
+	}
+
+	.select2-results__option[aria-selected] {
+		cursor: pointer;
+		font-weight: 800;
+	}
+
+	.pl-0 {
+		padding-left: 0px !important;
+	}
+
+	.pr-0 {
+		padding-right: 0px !important;
+	}
+
+	#requirement_area .flex-grow-1 .form-group label {
+		font-size: 12px;
+	}
+
+	.mn-table td {
+		padding: 0px 10px !important;
+	}
+
+	.mn-table td .td-blank {
+		margin: 5px !important;
+	}
+
+	input {
+		height: 30px;
+	}
+
+	#requirement_area .select2-container--default .select2-selection--single .select2-selection__rendered {
+		color: #444;
+		line-height: normal;
+		font-weight: 800;
+	}
+
+	.select2-container--default .select2-selection--single .select2-selection__rendered {
+		line-height: 30px;
+		min-height: 30px;
+		line-height: normal;
+	}
+
+	.select2-container--default .select2-selection--single {
+		height: 30px;
+		min-height: 30px;
+		line-height: normal;
+	}
+
+	.select2-container--default .select2-selection--single .select2-selection__arrow {
+		height: 26px;
+		position: absolute;
+		top: -5px;
+		right: 1px;
+		width: 20px;
+	}
+
+	.f-title {
+		border-bottom: 1px dashed #3d3d3d;
+		width: max-content;
+		margin-top: 10px;
+	}
+
+	.sales-line-item {
+		background: #f8fbff;
+		border: 1px solid #dbe6f5;
+		border-radius: 10px;
+		padding: 10px 0px;
+	}
+
+	.sales-line-item .form-group {
+		margin-bottom: 6px;
+	}
+
+	.sales-line-item .form-group label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #2f3b52;
+		margin-bottom: 4px;
+		line-height: 1.2;
+	}
+
+	.sales-line-item .form-control,
+	.sales-line-item .input-group-text {
+		min-height: 34px;
+		font-size: 13px;
+	}
+
+	.sales-line-item input[readonly] {
+		background: #eef3fa;
+	}
+
+	.sales-line-item .input-group-text {
+		background: #eef3fa;
+		border-color: #d3deef;
+	}
+
+	.sales-line-item .btn-remove-line,
+	.sales-line-item .btn-add-line,
+	.charge-line-item .btn-remove-charge,
+	.charge-line-item .btn-add-charge {
+		width: 34px;
+		height: 34px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.sales-line-item .btn-remove-line:focus,
+	.sales-line-item .btn-add-line:focus,
+	.charge-line-item .btn-remove-charge:focus,
+	.charge-line-item .btn-add-charge:focus {
+		box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.4) !important;
+		outline: none;
+	}
+
+	/* Compact Table Styles */
+	#requirement_area tr .btn-add-line {
+		display: none;
+	}
+	#requirement_area tr:last-child .btn-add-line {
+		display: inline-flex;
+	}
+	#charges_area tr .btn-add-charge {
+		display: none;
+	}
+	#charges_area tr:last-child .btn-add-charge {
+		display: inline-flex;
+	}
+	.compact-table th, .compact-table td {
+		padding: 4px !important;
+		vertical-align: middle;
+	}
+	.compact-table .form-control {
+		height: 32px;
+		min-height: 32px;
+		padding: 4px 8px;
+		font-size: 13px;
+		border-radius: 3px;
+	}
+	.compact-table .input-group-text {
+		height: 32px;
+		min-height: 32px;
+		padding: 0 8px !important;
+	}
+	.compact-table select.form-control {
+		width: 100%;
+	}
+	.compact-table th {
+		font-size: 12px;
+		white-space: nowrap;
+	}
+</style>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body py-1 my-0">
+
+        <?php echo form_open('inventory/customer-quotations/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
+        <div class="row">
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Quotation No <span class="required">*</span></label>
+              <input type="text" class="form-control" placeholder="Quotation No" name="order_no"
+                value="<?php echo $order_no;?>" required="" readonly>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
+                value="<?php echo date('Y-m-d');?>" id="date_picker">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 mb-1">
+            <label class="form-label" for="customer_id">Customer <span class="required">*</span></label>
+            <select class="form-select select2" name="customer_id" id="customer_id" required>
+              <option value="">Select Customer </option>
+              <?php foreach($customer_list as $item){?>
+              	<option value="<?php echo $item['id'];?>"><?php echo $item['company_name'];?></option>
+              <?php }?>
+            </select>
+          </div>
+
+          <input type="hidden" name="warehouse_id" value="0">
+          <input type="hidden" name="company_id" value="<?php echo $this->session->userdata('company_id'); ?>">
+          <input type="hidden" name="narration" value="">
+
+          <div class="col-12 col-sm-12 mb-1">
+            <div class="form-group">
+              <label>Remark</label>
+              <textarea class="form-control" placeholder="Enter Remark" rows="2" name="remark" id="remark"></textarea>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <h6 class="mb-1">Products</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm compact-table">
+                <thead class="table-light text-center">
+                  <tr>
+                    <th style="min-width:220px;">Product <span class="text-danger">*</span></th>
+                    <th style="min-width:60px;">Qty <span class="text-danger">*</span></th>
+                    <th style="min-width:140px;">Per Qty Amt <span class="text-danger">*</span></th>
+                    <th style="min-width:100px;">Total Amt</th>
+                    <th style="min-width:120px;">Per Qty Bill <span class="text-danger">*</span></th>
+                    <th style="min-width:100px;">Total Bill</th>
+                    <th style="min-width:60px;">GST % <span class="text-danger">*</span></th>
+                    <th style="min-width:100px;">GST Amt</th>
+                    <th style="min-width:120px;">Total Bill GST</th>
+                    <th style="min-width:110px;">Per Qty Black</th>
+                    <th style="min-width:100px;">Total Black</th>
+                    <th style="min-width:120px;">Final Total</th>
+                    <th style="min-width:50px;">Act</th>
+                  </tr>
+                </thead>
+                <tbody id="requirement_area">
+                  <tr class="element-1 sales-line-item" id="product_1" data-id="1">
+                    <td>
+                      <input type="hidden" name="x_value[]" id="x_value_1" value="1">
+                      <select class="form-control select2 product_id" name="product_id[]" id="product_id_1" data-toggle="select2" onchange="get_details_by_product(this.value,'1');" required>
+                        <option value="">Select Product</option>
+                      </select>
+                    </td>
+                    <td><input type="number" step="any" id="quantity_1" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('1')" value="1" class="form-control" required=""></td>
+                    <td>
+                      <div class="input-group">
+                        <input type="number" step="any" id="master_amount_1" name="master_amount[]" onkeyup="calculate_amt('1')" value="" class="form-control" required="">
+                        <span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="1" onclick="showPriceHistory('1')"><i class="fa fa-history px-1"></i></span>
+                      </div>
+                    </td>
+                    <td><input type="number" step="any" id="total_amount_1" name="total_amount[]" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="bill_amount_1" name="bill_amount[]" onkeyup="markManual('1'); calculate_amt('1')" value="" class="form-control" data-manual="false"></td>
+                    <td><input type="number" step="any" id="bill_total_1" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('1')"></td>
+                    <td><input type="number" step="any" id="gst_1" name="gst[]" onkeyup="calculate_amt('1')" value="" class="form-control"></td>
+                    <td><input type="number" step="any" id="gst_amount_1" name="gst_amount[]" value="" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="total_bill_gst_amount_1" name="total_bill_gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="black_amount_per_unit_1" name="black_amt[]" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="black_amount_1" name="black_total[]" value="" class="form-control" tabindex="-1" readonly></td>
+                    <td>
+                      <input type="number" step="any" id="final_total_1" name="final_total[]" class="form-control" tabindex="-1" readonly>
+                      <input type="hidden" id="available_1" name="available[]" value="0">
+                    </td>
+                    <td class="text-center align-middle" style="white-space:nowrap;">
+                      <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+                      <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line" onclick="removeRequirement(this,1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="col-12 mt-1">
+            <h6 class="mb-1">Other Charges</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm compact-table">
+                <thead class="table-light text-center">
+                  <tr>
+                    <th style="min-width:200px;">Type</th>
+                    <th style="min-width:80px;">GST %</th>
+                    <th style="min-width:120px;">Amount</th>
+                    <th style="min-width:120px;">Total Amount</th>
+                    <th style="min-width:50px;">Act</th>
+                  </tr>
+                </thead>
+                <tbody id="charges_area">
+                  <tr class="element-charge-1 charge-line-item" id="charge_1" data-id="1">
+                    <td>
+                      <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_1" data-toggle="select2" onchange="get_charge_details(this.value, '1');">
+                        <option value="">Select Charges</option>
+                        <?php foreach($other_charges as $charge) { ?>
+                          <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
+                        <?php } ?>
+                      </select>
+                    </td>
+                    <td><input type="number" step="any" id="charge_gst_1" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+                    <td><input type="number" step="any" id="charge_price_1" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('1')" value="0"></td>
+                    <td><input type="number" step="any" id="charge_total_1" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+                    <td class="text-center align-middle" style="white-space:nowrap;">
+                      <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+                      <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, 1)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-12 mb-1">
+            <div class="table-responsive">
+              <div class="col-lg-12 no-pad">
+
+                <table class="table table-striped table-bordered mn-table mt-1">
+                  <tbody>
+                    <tr>
+                      <td colspan="4" class="text-right" style="width:80%">
+                        <label style="float:right;display: contents;">Total Bill Amt (Exc GST)</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value"
+                            value="0" placeholder="Total Bill Amt (Exc GST)" class="form-control" readonly></p>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td colspan="4" class="text-right align-middle">
+                        <div class="d-flex flex-column align-items-end">
+                          <span class="mb-0 text-capitalize">Select GST</span>
+                          <select class="form-control " name="gst_type" id="gst_type" onchange="change_gst(this.value); recalculate();" style="width : 200px !important;float:right !important">
+                            <option value="Central GST / State GST" selected>Central GST / State GST</option>
+                            <option value="IGST">IGST</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td colspan="1">
+                        <div id="cgst_sgst_inputs">
+                          <p class="td-blank mb-25">
+                            <input type="number" step="any" name="central_gst" id="central_gst" value="0" placeholder="CGST Amount" class="form-control" readonly>
+                          </p>
+                          <p class="td-blank mb-0">
+                            <input type="number" step="any" name="state_gst" id="state_gst" value="0" placeholder="SGST Amount" class="form-control" readonly>
+                          </p>
+                        </div>
+                        <div id="igst_input" class="hidden">
+                          <p class="td-blank mb-0">
+                            <input type="number" step="any" name="igst" id="igst" value="0" placeholder="IGST Amount" class="form-control" readonly>
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Total Bill Amt (Incl GST)</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="net_sales_value_1"
+                            id="net_sales_value_1" value="0" placeholder="Total Bill Amt (Incl GST)"
+                            class="form-control" readonly></p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Total Black Amt</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="total_black_amount_summary"
+                            id="total_black_amount_summary" value="0" placeholder="Total Black Amt"
+                            class="form-control" readonly></p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Final Total</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="net_sales_value_2"
+                            id="net_sales_value_2" value="0" placeholder="Final Total"
+                            class="form-control" readonly></p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Other Charges</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="other_charges_amount"
+                            id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="0" readonly></p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Round Of</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="round_of" id="round_of"
+                            placeholder="Round Of" class="form-control" value="0" onkeyup="recalculate()"></p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" class="text-right">
+                        <label>Grand Total</label>
+                      </td>
+                      <td colspan="1">
+                        <p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total" placeholder="" class="form-control" readonly></p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button type="submit"
+              class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify"
+              name="btn_verify"><?php echo get_phrase('submit'); ?></button>
+          </div>
+        </div>
+        <?php echo form_close(); ?>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function subtotal_cal() {
+  var gst_type = $('#gst_type').val();
+  var total_bill_amt_ex_gst = 0;
+  var total_gst_amount = 0;
+  var total_bill_amt_in_gst = 0;
+  var total_black_amount = 0;
+  var final_total_sum = 0;
+  var grand_total = 0;
+
+  let totalBillAmt = document.querySelectorAll('[name="bill_total[]"]');
+  let gstAmt = document.querySelectorAll('[name="gst_amount[]"]');
+  let totalBillGstAmt = document.querySelectorAll('[name="total_bill_gst_amount[]"]');
+  let totalBlackAmt = document.querySelectorAll('[name="black_total[]"]');
+  let finalTotalArr = document.querySelectorAll('[name="final_total[]"]');
+
+  totalBillAmt.forEach((element, index)=> {
+    var bill_total_val = Number(element.value) || 0;
+    var gst_amount_val = Number(gstAmt[index] ? gstAmt[index].value : 0) || 0;
+    total_bill_amt_ex_gst += bill_total_val;
+    total_gst_amount += gst_amount_val;
+  });
+
+  totalBillGstAmt.forEach((element) => {
+    total_bill_amt_in_gst += Number(element.value) || 0;
+  });
+
+  totalBlackAmt.forEach((element) => {
+    total_black_amount += Number(element.value) || 0;
+  });
+
+  finalTotalArr.forEach((element) => {
+    final_total_sum += Number(element.value) || 0;
+  });
+
+  $("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
+  $("#net_sales_value_1").val(total_bill_amt_in_gst.toFixed(2));
+  $("#total_black_amount_summary").val(total_black_amount.toFixed(2));
+  $("#net_sales_value_2").val(final_total_sum.toFixed(2));
+
+  if (gst_type === 'IGST') {
+    $('#igst').val(total_gst_amount.toFixed(2));
+    $('#central_gst').val('0.00');
+    $('#state_gst').val('0.00');
+  } else if (gst_type == 'Central GST / State GST') {
+    $('#central_gst').val((total_gst_amount / 2).toFixed(2));
+    $('#state_gst').val((total_gst_amount / 2).toFixed(2));
+    $('#igst').val('0.00');
+  } else {
+    $('#central_gst').val('0.00');
+    $('#state_gst').val('0.00');
+    $('#igst').val('0.00');
+  }
+
+  var total_charge_amt = 0;
+  let chargeTotalArr = document.querySelectorAll('[name="charge_total[]"]');
+  chargeTotalArr.forEach((element) => {
+    total_charge_amt += Number(element.value) || 0;
+  });
+
+  $("#other_charges_amount").val(total_charge_amt.toFixed(2));
+
+  var round_of = parseFloat($("#round_of").val()) || 0;
+
+  grand_total = final_total_sum + total_charge_amt + round_of;
+  $('#grand_total').val(grand_total.toFixed(2));
+}
+
+function recalculate() {
+  subtotal_cal();
+}
+
+function change_gst(value) {
+  let cgstSgstInputs = document.querySelector("#cgst_sgst_inputs");
+  let igstInput = document.querySelector("#igst_input");
+
+  if (value == "Central GST / State GST") {
+    cgstSgstInputs.classList.remove('hidden');
+    igstInput.classList.add('hidden');
+  } else if (value == "IGST") {
+    cgstSgstInputs.classList.add('hidden');
+    igstInput.classList.remove('hidden');
+  } else {
+    cgstSgstInputs.classList.add('hidden');
+    igstInput.classList.add('hidden');
+  }
+}
+
+function appendRequirement() {
+  var customer_id = $('#customer_id').find(":selected").val();
+
+  if (customer_id == '') {
+    Swal.fire({
+      title: "Error!",
+      text: "Please Select Customer !!",
+      icon: "error",
+      customClass: {
+        confirmButton: "btn btn-primary"
+      },
+      buttonsStyling: !1
+    });
+  } else {
+    var last_row = $("#requirement_area .element-1:last");
+    var nextindex = 1;
+    if (last_row.length > 0) {
+      var lastid = last_row.attr("id");
+      var split_id = lastid.split("_");
+      nextindex = Number(split_id[1]) + 1;
+      
+      var prev_product = $('#product_id_' + split_id[1]).val();
+      if (prev_product == '') {
+        Swal.fire({
+          title: "Error!",
+          text: "Please Select Previous Product !!",
+          icon: "error"
+        });
+        return;
+      }
+    }
+    
+    $(".loader").show();
+    
+    $('#requirement_area').append(`
+      <tr class="element-1 sales-line-item" id="product_${nextindex}" data-id="${nextindex}">
+        <td>
+          <input type="hidden" name="x_value[]" id="x_value_${nextindex}" value="${nextindex}">
+          <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
+            <option value="">Select Product</option>
+          </select>
+        </td>
+        <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
+        <td>
+          <div class="input-group">
+            <input type="number" step="any" id="master_amount_${nextindex}" name="master_amount[]" class="form-control" onkeyup="calculate_amt('${nextindex}')" required>
+            <span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="${nextindex}" onclick="showPriceHistory('${nextindex}')"><i class="fa fa-history px-1"></i></span>
+          </div>
+        </td>
+        <td><input type="number" step="any" id="total_amount_${nextindex}" name="total_amount[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="bill_amount_${nextindex}" name="bill_amount[]" class="form-control" onkeyup="markManual('${nextindex}'); calculate_amt('${nextindex}')" data-manual="false"></td>
+        <td><input type="number" step="any" id="bill_total_${nextindex}" name="bill_total[]" class="form-control" onkeyup="calculate_amt_reverse('${nextindex}')"></td>
+        <td><input type="number" step="any" id="gst_${nextindex}" name="gst[]" class="form-control" onkeyup="calculate_amt('${nextindex}')"></td>
+        <td><input type="number" step="any" id="gst_amount_${nextindex}" name="gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="total_bill_gst_amount_${nextindex}" name="total_bill_gst_amount[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="black_amount_per_unit_${nextindex}" name="black_amt[]" class="form-control" tabindex="-1" readonly></td>
+        <td><input type="number" step="any" id="black_amount_${nextindex}" name="black_total[]" class="form-control" tabindex="-1" readonly></td>
+        <td>
+          <input type="number" step="any" id="final_total_${nextindex}" name="final_total[]" class="form-control" tabindex="-1" readonly>
+          <input type="hidden" id="available_${nextindex}" name="available[]" value="0">
+        </td>
+        <td class="text-center align-middle" style="white-space:nowrap;">
+          <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()">
+            <i class="fa fa-plus"></i>
+          </button>
+          <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-line" onclick="removeRequirement(this,${nextindex})">
+            <i class="fa fa-times"></i>
+          </button>
+        </td>
+      </tr>
+    `);
+    
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url()?>inventory/get_product_by_company",
+      data: {},
+      success: function(res) {
+        var select = $('#product_id_' + nextindex);
+        select.html('<option value="">Select Product</option>' + res).trigger('change');
+        select.select2({ dropdownParent: $('body') });
+        select.select2('open');
+        $(".loader").fadeOut("slow");
+        
+        $('html, body').animate({
+          scrollTop: $("#product_" + nextindex).offset().top
+        }, 300);
+      },
+      error: function(xhr) {
+        $(".loader").fadeOut("slow");
+      }
+    });
+  }
+}
+
+function markManual(index) {
+    $('#bill_amount_' + index).attr('data-manual', 'true');
+}
+
+function calculate_amt(index) {
+    var activeId = document.activeElement.id;
+    var qty = Number($('#quantity_' + index).val()) || 0;
+    var amount = Number($('#master_amount_' + index).val()) || 0;
+    var bill_amt_el = $('#bill_amount_' + index);
+    var is_manual = bill_amt_el.attr('data-manual') === 'true';
+    
+    var total_amount = qty * amount;
+
+    if (!is_manual && activeId !== 'bill_amount_' + index) {
+        bill_amt_el.val(amount.toFixed(2));
+    }
+
+    var bill_amt = Number(bill_amt_el.val()) || 0;
+    var gst_per = Number($('#gst_' + index).val()) || 0;
+    var white_qty = qty;
+    var black_qty = 0;
+    var total_bill_amt = bill_amt * white_qty;
+    var gst_amt = (total_bill_amt * gst_per) / 100;
+    var total_bill_gst_amt = total_bill_amt + gst_amt;
+    var total_black_amt = ((amount * black_qty) + ((amount - bill_amt) * white_qty));
+    var black_amt = black_qty > 0 ? (total_black_amt / black_qty) : (amount - bill_amt);
+    var final_total = total_black_amt + total_bill_gst_amt;
+
+    $('#total_amount_' + index).val(total_amount.toFixed(2));
+    if (activeId !== 'bill_total_' + index) {
+        $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+    }
+    $('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
+    $('#black_amount_' + index).val(total_black_amt.toFixed(2));
+    $('#gst_amount_' + index).val(gst_amt.toFixed(2));
+    $('#total_bill_gst_amount_' + index).val(total_bill_gst_amt.toFixed(2));
+    $('#final_total_' + index).val(final_total.toFixed(2));
+
+    recalculate();
+}
+
+function calculate_amt_reverse(index) {
+    var activeId = document.activeElement.id;
+    var qty = Number($('#quantity_' + index).val()) || 0;
+    var bill_total = Number($('#bill_total_' + index).val()) || 0;
+    
+    markManual(index);
+
+    if (qty > 0) {
+        var bill_amt = bill_total / qty;
+        if (activeId !== 'bill_amount_' + index) {
+            $('#bill_amount_' + index).val(bill_amt.toFixed(2));
+        }
+    }
+
+    calculate_amt(index);
+}
+
+function isDuplicateProductSelection(product_id, index) {
+  var selectedId = String(product_id || '').split('|')[0];
+  var duplicateFound = false;
+
+  $('.product_id').each(function() {
+    var thisId = this.id || '';
+    if (thisId === ('product_id_' + index)) return;
+
+    var otherId = String($(this).val() || '').split('|')[0];
+    if (otherId !== '' && otherId === selectedId) {
+      duplicateFound = true;
+    }
+  });
+
+  return duplicateFound;
+}
+
+function resetLineItem(index) {
+  $('#available_' + index).val(0);
+  $('#master_amount_' + index).val('');
+  $('#bill_amount_' + index).val('');
+  $('#gst_' + index).val('');
+  $('#total_amount_' + index).val('');
+  $('#bill_total_' + index).val('');
+  $('#gst_amount_' + index).val('');
+  $('#total_bill_gst_amount_' + index).val('');
+  $('#black_amount_per_unit_' + index).val('');
+  $('#black_amount_' + index).val('');
+  $('#final_total_' + index).val('');
+  recalculate();
+}
+
+function get_details_by_product(product_id, index) {
+  if(!product_id) return;
+  if (isDuplicateProductSelection(product_id, index)) {
+    Swal.fire({
+      title: "Error!",
+      text: "Same product cannot be selected more than once.",
+      icon: "warning"
+    });
+    $('#product_id_' + index).val('').trigger('change');
+    resetLineItem(index);
+    return;
+  }
+
+  var customer_id = $('#customer_id').val();
+
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url()?>inventory/get_qty_by_product_company",
+    data: { product_id: product_id, customer_id: customer_id },
+    dataType: "json",
+    success: function(res) {
+        if(res.status == 200) {
+            $('#available_' + index).val(res.quantity);
+            $('#gst_' + index).val(res.tax ? parseFloat(res.tax) : 0);
+            $('#master_amount_' + index).val(res.rate);
+            $('#bill_amount_' + index).attr('data-manual', 'false');
+            $('#bill_amount_' + index).val(res.rate);
+            calculate_amt(index);
+        } else {
+            alert(res.message);
+        }
+    }
+  });
+}
+
+function showPriceHistory(index) {
+  var customer_id = $('#customer_id').val();
+  var product_id = $('#product_id_' + index).val();
+
+  if (!customer_id) {
+    alert('Please select a customer first');
+    return;
+  }
+
+  if (!product_id) {
+    alert('Please select a product first');
+    return;
+  }
+
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url()?>inventory/get_last_selling_price",
+    data: { customer_id: customer_id, product_id: product_id },
+    success: function(res) {
+        $('#priceHistoryModal').data('row-index', index);
+        $('#priceHistoryModalContent').html(res);
+        $('#priceHistoryModal').modal('show');
+    }
+  });
+}
+
+$(document).on('click', '#priceHistoryModal .apply-price-btn', function() {
+  var price = $(this).data('price');
+  var index = $('#priceHistoryModal').data('row-index');
+  if (index) {
+    $('#master_amount_' + index).val(price);
+    calculate_amt(index);
+    $('#priceHistoryModal').modal('hide');
+  }
+});
+
+$(document).on('keydown', '.price-history-btn', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    var idx = $(this).data('row-index');
+    showPriceHistory(idx);
+  }
+});
+
+$('#priceHistoryModal').on('shown.bs.modal', function() {
+  var firstBtn = $(this).find('.apply-price-btn').first();
+  if (firstBtn.length) { firstBtn.focus(); }
+});
+
+$('#priceHistoryModal').on('hidden.bs.modal', function() {
+  var index = $(this).data('row-index');
+  if (index) { $('#bill_amount_' + index).focus(); }
+});
+
+function removeRequirement(requirementElem) {
+  if(document.querySelector('#requirement_area').children.length > 1){
+    $(requirementElem).closest('tr').remove();
+    recalculate();
+  } else {
+    alert('At least one line item is required');
+  }
+}
+
+function get_charge_details(val, index) {
+  if (val == "") {
+    $('#charge_gst_' + index).val(0);
+    $('#charge_price_' + index).val(0);
+    calculate_charge(index);
+  } else {
+    var option = $('#charge_id_' + index).find('option:selected');
+    var gst = option.data('gst') || 0;
+    var price = option.data('price') || 0;
+    $('#charge_gst_' + index).val(gst);
+    $('#charge_price_' + index).val(price);
+    calculate_charge(index);
+  }
+}
+
+function calculate_charge(index) {
+  var charge_id = $('#charge_id_' + index).val();
+  var gst = parseFloat($('#charge_gst_' + index).val()) || 0;
+  var price = parseFloat($('#charge_price_' + index).val()) || 0;
+  
+  if (charge_id == "" && (gst > 0 || price > 0)) {
+    Swal.fire({
+      title: "Error!",
+      text: "select the charges first",
+      icon: "error"
+    });
+    $('#charge_gst_' + index).val(0);
+    $('#charge_price_' + index).val(0);
+    $('#charge_total_' + index).val(0);
+    recalculate();
+    return;
+  }
+  
+  var total = price + (price * gst / 100);
+  $('#charge_total_' + index).val(total.toFixed(2));
+  recalculate();
+}
+
+function appendCharge() {
+  var last_row = $("#charges_area .charge-line-item:last");
+  var nextindex = 1;
+  if (last_row.length > 0) {
+    var currentId = last_row.data("id") || 0;
+    nextindex = parseInt(currentId) + 1;
+    
+    var prev_charge = $('#charge_id_' + currentId).val();
+    if (prev_charge == '') {
+      Swal.fire({
+        title: "Error!",
+        text: "Please select previous charge !!",
+        icon: "error"
+      });
+      return;
+    }
+  }
+  
+  $('#charges_area').append(`
+    <tr class="element-charge-${nextindex} charge-line-item" id="charge_${nextindex}" data-id="${nextindex}">
+      <td>
+        <select class="form-control select2 charge_id" name="charge_id[]" id="charge_id_${nextindex}" data-toggle="select2" onchange="get_charge_details(this.value, '${nextindex}');">
+          <option value="">Select Charges</option>
+          <?php foreach($other_charges as $charge){ ?>
+            <option value="<?php echo $charge['id']; ?>" data-gst="<?php echo $charge['gst']; ?>" data-price="<?php echo $charge['price']; ?>"><?php echo $charge['name']; ?></option>
+          <?php } ?>
+        </select>
+      </td>
+      <td><input type="number" step="any" id="charge_gst_${nextindex}" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('${nextindex}')" value="0"></td>
+      <td><input type="number" step="any" id="charge_price_${nextindex}" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('${nextindex}')" value="0"></td>
+      <td><input type="number" step="any" id="charge_total_${nextindex}" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="0"></td>
+      <td class="text-center align-middle" style="white-space:nowrap;">
+        <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
+        <button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, ${nextindex})"> <i class="fa fa-times" aria-hidden="true"></i> </button>
+      </td>
+    </tr>
+  `);
+  
+  $('#charge_id_' + nextindex).select2({ dropdownParent: $('body') });
+  $('#charge_id_' + nextindex).select2('open');
+}
+
+function removeCharge(element, index) {
+  if(document.querySelector('#charges_area').children.length > 1){
+    $(element).closest('tr').remove();
+    recalculate();
+  } else {
+    $('#charge_id_' + index).val("").trigger('change');
+    $('#charge_gst_' + index).val(0);
+    $('#charge_price_' + index).val(0);
+    $('#charge_total_' + index).val(0);
+    recalculate();
+  }
+}
+
+$(document).ready(function ($) {
+  $('#product_id_1').select2({ dropdownParent: $('body') });
+  $('#charge_id_1').select2({ dropdownParent: $('body') });
+
+  $.ajax({
+    type: "POST",
+    url: "<?php echo base_url()?>inventory/get_product_by_company",
+    data: {},
+    success: function(res) {
+        $('.product_id').append(res);
+    }
+  });
+
+  change_gst($('#gst_type').val());
+  recalculate();
+
+  $(document).on('keydown', '.compact-table input, .compact-table select', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      var $focusable = $('.compact-table').find('input:not([readonly]), select').filter(':visible');
+      var index = $focusable.index(this);
+      if (index > -1 && index < $focusable.length - 1) {
+        var $next = $focusable.eq(index + 1);
+        if ($next.hasClass('select2-hidden-accessible')) {
+           $next.select2('focus');
+           $next.select2('open');
+        } else {
+           $next.focus();
+           $next.select();
+        }
+      }
+    }
+  });
+
+  $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
+    $(this).closest(".select2-container").siblings('select:enabled').select2('open');
+  });
+
+  $('select.select2').on('select2:closing', function (e) {
+    $(e.target).data('select2').$selection.one('focus focusin', function (e) {
+      e.stopPropagation();
+    });
+  });
+
+});
+</script>
+
+<!-- Price History Modal -->
+<div class="modal fade" id="priceHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Last Selling Prices</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="priceHistoryModalContent">
+                <!-- Content via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
