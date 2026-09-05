@@ -10,7 +10,7 @@
               <select class="form-select select2" name="parent_id" id="parent_id" required>
                 <option value="">Select Product</option>
                 <?php foreach($parent_products as $item){?>
-                  <option value="<?php echo $item['id'];?>"><?php echo htmlspecialchars($item['name']) . ' (' . htmlspecialchars($item['product_type']) . ')';?></option>
+                  <option value="<?php echo $item['id'];?>"><?php echo htmlspecialchars($item['name']) . (!empty($item['item_code']) ? ' (' . htmlspecialchars($item['item_code']) . ')' : '');?></option>
                 <?php }?>
               </select>
             </div>
@@ -144,7 +144,8 @@ function appendIngredientRow() {
   var optionsHtml = '<option value="">Select Ingredient</option>';
   $.each(ingredientProducts, function(i, prod) {
     var disabled = (parentId && prod.id == parentId) ? 'disabled' : '';
-    optionsHtml += '<option value="' + prod.id + '" ' + disabled + '>' + escapeHtml(prod.name) + ' (' + escapeHtml(prod.item_code) + ')</option>';
+    var itemCodeStr = (prod.item_code && String(prod.item_code).trim() !== '') ? ' (' + escapeHtml(prod.item_code) + ')' : '';
+    optionsHtml += '<option value="' + prod.id + '" ' + disabled + '>' + escapeHtml(prod.name) + itemCodeStr + '</option>';
   });
 
   var newRowHtml = `

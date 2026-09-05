@@ -111,6 +111,7 @@ $(document).ready(function($) {
       "type": "POST",
       "data": function(data) {
         data.date_range = $('#filter_date_range').val() || '';
+        data.type = $('#filter_type').val() || '';
         data.keywords = $('#filter_keywords').val() || '';
       },
       "beforeSend": function() {

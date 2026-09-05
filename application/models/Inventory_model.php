@@ -3097,7 +3097,7 @@ class Inventory_model extends CI_Model
 
 				$data[] = array(
 					"sr_no"       => ++$start,
-					"image"       => !empty($item['product_image']) ? '<img src="' . base_url() . $item['product_image'] . '" width="40" height="40" style="object-fit: cover; border-radius: 4px;">' : '-',
+					"image"       => !empty($item['product_image']) ? '<img src="' . base_url() . $item['product_image'] . '" width="50" height="50" style="object-fit: cover; border-radius: 4px;">' : '-',
 					"id"          => $item['id'],
 					"name"        => $item['name'],
 					"alias"        => $item['alias'],
@@ -3800,6 +3800,589 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
+	public function edit_local_purchase_order($po_id = "")
+	{
+		$this->db->trans_begin();
+
+		$resultpost = array(
+			"status" => 200,
+			"message" => get_phrase('purchase_order_updated_successfully'),
+			"url" => $this->session->userdata('previous_url') ?: base_url('inventory/purchase-order?type=local'),
+		);
+
+		if (empty($po_id)) {
+			$po_id = $this->input->post('po_id');
+		}
+		$po_id = intval($po_id);
+
+		if (empty($po_id)) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Purchase Order ID is required."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Check if PO exists
+		$existing_po = $this->db->query("SELECT * FROM purchase_order WHERE id = '$po_id' AND is_deleted = 0")->row_array();
+		if (empty($existing_po)) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Purchase Order not found."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		if (!empty($existing_po['is_locked'])) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => "This Purchase Order is locked and cannot be edited."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$old_po_log_data = $this->get_complete_purchase_order_log_data($po_id);
+
+		$voucher_no = clean_and_escape($this->input->post('voucher_no'));
+		if ($voucher_no != '') {
+			$check_voucher_no = $this->check_duplication('on_update', 'voucher_no', $voucher_no, 'purchase_order', $po_id);
+		} else {
+			$check_voucher_no = true;
+		}
+
+		if ($check_voucher_no == false) {
+			$this->db->trans_rollback();
+			$this->session->set_flashdata('error_message', get_phrase('voucher_no_duplication'));
+			$resultpost = array(
+				"status" => 400,
+				"message" => 'Voucher No Duplication'
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Basic form data
+		$method = clean_and_escape($this->input->post('input_method')) ?: 'local';
+		$warehouse_id = $this->input->post('warehouse_id');
+		$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+		$company_id = $this->input->post('company_id');
+		$company_name = $this->common_model->selectByidParam($company_id, 'company', 'name');
+		$supplier_id = $this->input->post('supplier_id');
+		$supplier_name = $this->common_model->selectByidParam($supplier_id, 'supplier', 'name');
+
+		$po_product_ids = $this->input->post('po_product_id');
+		$product_ids = $this->input->post('product_id');
+		$white_qtys = $this->input->post('white_qty');
+		$black_qtys = $this->input->post('black_qty');
+		$rates = $this->input->post('rate');
+		$per_qty_bill_amts = $this->input->post('per_qty_bill_amt');
+		$total_bill_amts = $this->input->post('total_bill_amt');
+		$gst_rates = $this->input->post('gst_rate');
+		$gst_amts = $this->input->post('gst_amt');
+		$total_bill_gst_amts = $this->input->post('total_bill_gst_amt');
+		$per_qty_black_amts = $this->input->post('per_qty_black_amt');
+		$total_black_amts = $this->input->post('total_black_amt');
+		$final_amts = $this->input->post('final_amt');
+
+		// Existing products in database
+		$existing_products = $this->db->query("SELECT * FROM purchase_order_product WHERE parent_id = '$po_id'")->result_array();
+		$existing_products_by_id = array();
+		$locked_existing_product_ids = array();
+
+		foreach ($existing_products as $ep) {
+			$ep_id = $ep['id'];
+			$existing_products_by_id[$ep_id] = $ep;
+
+			// Check if locked
+			$inv = $this->db->query("SELECT id, quantity FROM inventory WHERE po_row_id = '$ep_id'")->row_array();
+			if (empty($inv)) {
+				$inv = $this->db->query("SELECT id, quantity FROM inventory WHERE product_id = '{$ep['product_id']}' AND batch_no = '{$existing_po['voucher_no']}' AND warehouse_id = '{$existing_po['warehouse_id']}' AND company_id = '$company_id'")->row_array();
+			}
+
+			if (empty($inv) || floatval($inv['quantity']) != floatval($ep['quantity'])) {
+				$locked_existing_product_ids[$ep_id] = true;
+			}
+		}
+
+		// Submitted existing product IDs
+		$submitted_existing_pop_ids = array();
+		if (is_array($po_product_ids)) {
+			foreach ($po_product_ids as $p_pop_id) {
+				$p_pop_id = intval($p_pop_id);
+				if ($p_pop_id > 0) {
+					$submitted_existing_pop_ids[] = $p_pop_id;
+				}
+			}
+		}
+
+		// Validation 1: Check if any locked product was removed from the form
+		foreach ($locked_existing_product_ids as $locked_pop_id => $val) {
+			if (!in_array($locked_pop_id, $submitted_existing_pop_ids)) {
+				$this->db->trans_rollback();
+				$pname = $existing_products_by_id[$locked_pop_id]['product_name'] ?? ('Product #' . $locked_pop_id);
+				$resultpost = array(
+					"status" => 400,
+					"message" => "Cannot remove locked product [{$pname}]: stock has already been used from this batch."
+				);
+				return simple_json_output($resultpost);
+			}
+		}
+
+		// Validate products exist
+		$has_valid_product = false;
+		if (is_array($product_ids)) {
+			for ($i = 0; $i < count($product_ids); $i++) {
+				$product_id = intval($product_ids[$i]);
+				$white_qty = floatval($white_qtys[$i] ?? 0);
+				$black_qty = floatval($black_qtys[$i] ?? 0);
+				$quantity = $white_qty + $black_qty;
+				if ($product_id > 0 && $quantity > 0) {
+					$has_valid_product = true;
+				}
+			}
+		}
+
+		$charge_ids = $this->input->post('charge_id');
+		$has_valid_charge = false;
+		if (is_array($charge_ids)) {
+			foreach ($charge_ids as $cid) {
+				if (intval($cid) > 0) {
+					$has_valid_charge = true;
+				}
+			}
+		}
+
+		if (!$has_valid_product && !$has_valid_charge) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Please add at least one product or one expense."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// Pre-compute CBM totals
+		$total_cbm = 0.00;
+		if (is_array($product_ids)) {
+			for ($i = 0; $i < count($product_ids); $i++) {
+				$product_id = intval($product_ids[$i]);
+				$white_qty = floatval($white_qtys[$i] ?? 0);
+				$black_qty = floatval($black_qtys[$i] ?? 0);
+				$quantity = $white_qty + $black_qty;
+				if ($product_id > 0 && $quantity > 0) {
+					$product_details = $this->get_raw_products_by_id($product_id)->row_array();
+					if ($product_details) {
+						$cbm = floatval($product_details['cbm'] ?? 0);
+						$total_cbm += $cbm * $quantity;
+					}
+				}
+			}
+		}
+
+		// Prepare PO data for update
+		$delivery_address = $this->input->post('delivery_address');
+		$data = array(
+			'method' => $method,
+			'voucher_no' => $voucher_no,
+			'refrence_no' => $this->input->post('refrence_no'),
+			'date' => $this->input->post('date'),
+			'delivery_date' => $this->input->post('delivery_date'),
+			'company_id' => $company_id,
+			'company_name' => $company_name,
+			'supplier_id' => $supplier_id,
+			'supplier_name' => $supplier_name,
+			'warehouse_id' => $warehouse_id,
+			'warehouse_name' => $warehouse_name,
+			'billing_address' => $delivery_address,
+			'delivery_address' => $delivery_address,
+			'mode_of_payment' => $this->input->post('mode_of_payment'),
+			'dispatch' => $this->input->post('dispatch'),
+			'destination' => $this->input->post('destination'),
+			'other_refrence' => $this->input->post('other_refrence'),
+			'terms_of_delivery' => $this->input->post('terms_of_delivery'),
+			'narration' => $this->input->post('narration'),
+			'total_cbm' => $total_cbm,
+			'net_sales_value_1' => floatval($this->input->post('net_sales_value_1')),
+			'discount_type' => 'product',
+			'discount' => 0,
+			'discount_amount' => 0.00000,
+			'gst_type' => $this->input->post('gst_type'),
+			'cgst_amount' => floatval($this->input->post('central_gst')),
+			'sgst_amount' => floatval($this->input->post('state_gst')),
+			'igst_amount' => floatval($this->input->post('igst')),
+			'net_sales_value_2' => floatval($this->input->post('net_sales_value_2')),
+			'other_charges_amount' => floatval($this->input->post('other_charges_amount')),
+			'round_of' => floatval($this->input->post('round_of')),
+			'grand_total' => floatval($this->input->post('grand_total')),
+			'basic_value' => floatval($this->input->post('basic_value')),
+			'total_black_amount_summary' => floatval($this->input->post('total_black_amount_summary')),
+		);
+
+		$this->db->where('id', $po_id);
+		if (!$this->db->update('purchase_order', $data)) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('something_went_wrong')
+			);
+			return simple_json_output($resultpost);
+		}
+
+		// 1. Handle Removed Products (in DB but not in submitted existing IDs)
+		foreach ($existing_products as $ep) {
+			$ep_id = $ep['id'];
+			if (!in_array($ep_id, $submitted_existing_pop_ids)) {
+				// Delete inventory record
+				$inv = $this->db->query("SELECT id FROM inventory WHERE po_row_id = '$ep_id'")->row_array();
+				if (!empty($inv)) {
+					$this->db->where('id', $inv['id'])->delete('inventory');
+					$this->db->where('parent_id', $inv['id'])->delete('inventory_history');
+				} else {
+					$this->db->query("DELETE FROM inventory WHERE product_id = '{$ep['product_id']}' AND batch_no = '{$existing_po['voucher_no']}' AND warehouse_id = '{$existing_po['warehouse_id']}' AND company_id = '$company_id'");
+				}
+
+				// Delete inventory_history for this product under this order
+				$this->db->where('order_id', $po_id)->where('product_id', $ep['product_id'])->delete('inventory_history');
+
+				// Delete purchase_order_product
+				$this->db->where('id', $ep_id)->delete('purchase_order_product');
+			}
+		}
+
+		// 2. Handle Submitted Products (both existing and newly added)
+		if (is_array($product_ids)) {
+			for ($i = 0; $i < count($product_ids); $i++) {
+				$pop_id = intval($po_product_ids[$i] ?? 0);
+				$product_id = intval($product_ids[$i]);
+				$white_qty = floatval($white_qtys[$i] ?? 0);
+				$black_qty = floatval($black_qtys[$i] ?? 0);
+				$quantity = $white_qty + $black_qty;
+
+				if ($product_id <= 0 || $quantity <= 0) {
+					continue;
+				}
+
+				$product_details = $this->get_raw_products_by_id($product_id)->row_array();
+				if (!$product_details) {
+					$this->db->trans_rollback();
+					$resultpost = array(
+						"status" => 400,
+						"message" => "Product not found: ID " . $product_id
+					);
+					return simple_json_output($resultpost);
+				}
+
+				$rate = floatval($rates[$i] ?? 0);
+				$per_qty_bill_amt = floatval($per_qty_bill_amts[$i] ?? 0);
+				$total_bill_amt = floatval($total_bill_amts[$i] ?? 0);
+				$gst_rate = floatval($gst_rates[$i] ?? 0);
+				$gst_amt = floatval($gst_amts[$i] ?? 0);
+				$total_bill_gst_amt = floatval($total_bill_gst_amts[$i] ?? 0);
+				$per_qty_black_amt = floatval($per_qty_black_amts[$i] ?? 0);
+				$total_black_amt = floatval($total_black_amts[$i] ?? 0);
+				$final_amt = floatval($final_amts[$i] ?? 0);
+
+				$cbm = floatval($product_details['cbm'] ?? 0);
+				$total_cbm_item = $cbm * $quantity;
+
+				$data_p = array(
+					'parent_id' => $po_id,
+					'supplier_id' => $supplier_id,
+					'product_type' => $product_details['type'] ?: 'ready',
+					'product_id' => $product_id,
+					'categories' => $product_details['categories'] ?? NULL,
+					'sizes' => $product_details['sizes'] ?? NULL,
+					'group_id' => $product_details['group_id'] ?? NULL,
+					'color_id' => $product_details['color_id'] ?? NULL,
+					'color_name' => $product_details['color_name'] ?? NULL,
+					'product_name' => $product_details['name'] ?? '',
+					'hsn_code' => $product_details['hsn_code'] ?? NULL,
+					'item_code' => $product_details['item_code'] ?? NULL,
+					'unit' => $product_details['unit'] ?? NULL,
+					'quantity' => $quantity,
+					'white_qty' => $white_qty,
+					'black_qty' => $black_qty,
+					'cbm' => $cbm,
+					'total_cbm' => $total_cbm_item,
+					'pending_po_qty' => 0,
+					'loading_list_qty' => 0,
+					'in_stock_qty' => $quantity,
+					'current_company_qty' => 0,
+					'cartoon' => intval($product_details['cartoon_qty'] ?? 0),
+					'rate' => $rate,
+					'basic_amount' => $per_qty_bill_amt,
+					'discount' => 0,
+					'discount_amount' => 0.00000,
+					'gst' => $gst_rate,
+					'gst_amount' => $gst_amt,
+					'total_val' => $total_bill_gst_amt,
+					'black_amt' => $per_qty_black_amt,
+					'black_amt_total' => $total_black_amt,
+					'grand_total' => $final_amt,
+					'pending' => 0,
+					'received' => $quantity,
+					'received_date' => $data['date'],
+					'invoice_no' => $voucher_no,
+					'is_complete' => 1,
+				);
+
+				if ($pop_id > 0 && isset($existing_products_by_id[$pop_id])) {
+					// Existing line item: Update purchase_order_product
+					$this->db->where('id', $pop_id)->update('purchase_order_product', $data_p);
+
+					// If not locked, update inventory
+					if (!isset($locked_existing_product_ids[$pop_id])) {
+						$inv = $this->db->query("SELECT id FROM inventory WHERE po_row_id = '$pop_id'")->row_array();
+						$inv_data = array(
+							'supplier_id' => $supplier_id,
+							'company_id' => $company_id,
+							'warehouse_id' => $warehouse_id,
+							'warehouse_name' => $warehouse_name,
+							'product_id' => $product_id,
+							'product_name' => $product_details['name'] ?? '',
+							'categories' => $product_details['categories'] ?? '',
+							'sku' => $product_details['item_code'] ?? '',
+							'item_code' => $product_details['item_code'] ?? '',
+							'quantity' => $quantity,
+							'official_qty' => $white_qty,
+							'official_rate_rs' => $per_qty_bill_amt,
+							'official_total_rs' => $total_bill_amt,
+							'actual_inr' => $rate,
+							'black_qty' => $black_qty,
+							'taxable_value' => $total_bill_amt,
+							'gst_amt' => $gst_amt,
+							'total_amt' => $final_amt,
+							'batch_no' => $voucher_no,
+						);
+
+						if (!empty($inv)) {
+							$this->db->where('id', $inv['id'])->update('inventory', $inv_data);
+							$inv_id = $inv['id'];
+						} else {
+							$inv_data['po_row_id'] = $pop_id;
+							$this->db->insert('inventory', $inv_data);
+							$inv_id = $this->db->insert_id();
+						}
+
+						// Update inventory_history
+						$history_data = array(
+							'supplier_id' => $supplier_id,
+							'company_id' => $company_id,
+							'parent_id' => $inv_id,
+							'warehouse_id' => $warehouse_id,
+							'warehouse_name' => $warehouse_name,
+							'product_id' => $product_id,
+							'product_name' => $product_details['name'] ?? '',
+							'categories' => $product_details['categories'] ?? '',
+							'sku' => $product_details['item_code'] ?? '',
+							'item_code' => $product_details['item_code'] ?? '',
+							'order_id' => $po_id,
+							'status' => 'in',
+							'quantity' => $quantity,
+							'official_qty' => $white_qty,
+							'official_rate_rs' => $per_qty_bill_amt,
+							'official_total_rs' => $total_bill_amt,
+							'actual_inr' => $rate,
+							'black_qty' => $black_qty,
+							'black_rate_rs' => $per_qty_black_amt,
+							'black_total_rs' => $total_black_amt,
+							'taxable_value' => $total_bill_amt,
+							'gst_amt' => $gst_amt,
+							'total_amt' => $final_amt,
+							'received_date' => $data['date'],
+							'batch_no' => $voucher_no,
+							'invoice_no' => $voucher_no,
+						);
+
+						$hist = $this->db->query("SELECT id FROM inventory_history WHERE order_id = '$po_id' AND parent_id = '$inv_id'")->row_array();
+						if (!empty($hist)) {
+							$this->db->where('id', $hist['id'])->update('inventory_history', $history_data);
+						} else {
+							$history_data['added_date'] = date("Y-m-d H:i:s");
+							$history_data['added_by_id'] = $this->session->userdata('super_user_id');
+							$history_data['added_by_name'] = $this->session->userdata('super_name');
+							$this->db->insert('inventory_history', $history_data);
+						}
+					}
+				} else {
+					// Newly Added line item: Insert into purchase_order_product
+					if (!$this->db->insert('purchase_order_product', $data_p)) {
+						$this->db->trans_rollback();
+						$resultpost = array(
+							"status" => 400,
+							"message" => get_phrase('something_went_wrong')
+						);
+						return simple_json_output($resultpost);
+					}
+					$new_pop_id = $this->db->insert_id();
+
+					// Insert into inventory
+					$inv = array(
+						'supplier_id' => $supplier_id,
+						'company_id' => $company_id,
+						'warehouse_id' => $warehouse_id,
+						'warehouse_name' => $warehouse_name,
+						'product_id' => $product_id,
+						'product_name' => $product_details['name'] ?? '',
+						'categories' => $product_details['categories'] ?? '',
+						'sku' => $product_details['item_code'] ?? '',
+						'item_code' => $product_details['item_code'] ?? '',
+						'quantity' => $quantity,
+						'actual_rmb' => 0.00,
+						'total_rmb' => 0.00,
+						'actual_usd' => 0.00,
+						'official_qty' => $white_qty,
+						'official_rate_rs' => $per_qty_bill_amt,
+						'official_total_rs' => $total_bill_amt,
+						'actual_inr' => $rate,
+						'black_qty' => $black_qty,
+						'pending_qty' => 0,
+						'duty_percent' => 0.00,
+						'duty_amt' => 0.00,
+						'duty_surcharge' => 0.00,
+						'taxable_value' => $total_bill_amt,
+						'gst_amt' => $gst_amt,
+						'total_amt' => $final_amt,
+						'batch_no' => $voucher_no,
+						'po_row_id' => $new_pop_id,
+						'expiry_date' => NULL,
+					);
+					if (!$this->db->insert('inventory', $inv)) {
+						$this->db->trans_rollback();
+						$resultpost = array(
+							"status" => 400,
+							"message" => get_phrase('something_went_wrong')
+						);
+						return simple_json_output($resultpost);
+					}
+					$new_inv_id = $this->db->insert_id();
+
+					// Insert into inventory_history
+					$history = array(
+						'supplier_id' => $supplier_id,
+						'company_id' => $company_id,
+						'parent_id' => $new_inv_id,
+						'warehouse_id' => $warehouse_id,
+						'warehouse_name' => $warehouse_name,
+						'product_id' => $product_id,
+						'product_name' => $product_details['name'] ?? '',
+						'categories' => $product_details['categories'] ?? '',
+						'sku' => $product_details['item_code'] ?? '',
+						'item_code' => $product_details['item_code'] ?? '',
+						'order_id' => $po_id,
+						'status' => 'in',
+						'quantity' => $quantity,
+						'actual_rmb' => 0.00,
+						'total_rmb' => 0.00,
+						'actual_usd' => 0.00,
+						'official_qty' => $white_qty,
+						'official_rate_rs' => $per_qty_bill_amt,
+						'official_total_rs' => $total_bill_amt,
+						'actual_inr' => $rate,
+						'black_qty' => $black_qty,
+						'pending_qty' => 0,
+						'black_rate_rs' => $per_qty_black_amt,
+						'black_total_rs' => $total_black_amt,
+						'duty_percent' => 0.00,
+						'duty_amt' => 0.00,
+						'duty_surcharge' => 0.00,
+						'taxable_value' => $total_bill_amt,
+						'gst_amt' => $gst_amt,
+						'total_amt' => $final_amt,
+						'received_date' => $data['date'],
+						'batch_no' => $voucher_no,
+						'expiry_date' => NULL,
+						'invoice_no' => $voucher_no,
+						'is_deleted' => 0,
+						'added_date' => date("Y-m-d H:i:s"),
+						'added_by_id' => $this->session->userdata('super_user_id'),
+						'added_by_name' => $this->session->userdata('super_name'),
+					);
+					if (!$this->db->insert('inventory_history', $history)) {
+						$this->db->trans_rollback();
+						$resultpost = array(
+							"status" => 400,
+							"message" => get_phrase('something_went_wrong')
+						);
+						return simple_json_output($resultpost);
+					}
+				}
+			}
+		}
+
+		// 3. Update Other Charges
+		$this->db->where('order_id', $po_id)->delete('purchase_order_charges');
+		$charge_id_arr = $this->input->post('charge_id');
+		$charge_gst_arr = $this->input->post('charge_gst');
+		$charge_price_arr = $this->input->post('charge_price');
+		$charge_total_arr = $this->input->post('charge_total');
+
+		if (!empty($charge_id_arr)) {
+			for ($i = 0; $i < count($charge_id_arr); $i++) {
+				if (!empty($charge_id_arr[$i])) {
+					$type_id = $charge_id_arr[$i];
+					$other_charge = $this->db->get_where('other_charges', ['id' => $type_id])->row_array();
+					$type_name = $other_charge ? $other_charge['name'] : '';
+
+					$data_charge = array(
+						'order_id' => $po_id,
+						'type_id' => $type_id,
+						'type' => $type_name,
+						'gst' => (float)($charge_gst_arr[$i] ?? 0),
+						'amount' => (float)($charge_price_arr[$i] ?? 0),
+						'total_amt' => (float)($charge_total_arr[$i] ?? 0),
+					);
+					if (!$this->db->insert('purchase_order_charges', $data_charge)) {
+						$this->db->trans_rollback();
+						$resultpost = array(
+							"status" => 400,
+							"message" => get_phrase('something_went_wrong')
+						);
+						return simple_json_output($resultpost);
+					}
+				}
+			}
+		}
+
+		// Commit transaction
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('something_went_wrong')
+			);
+		} else {
+			$this->db->trans_commit();
+
+			// Insert audit log
+			$new_po_log_data = $this->get_complete_purchase_order_log_data($po_id);
+			$log_json = array(
+				'old_data' => $old_po_log_data,
+				'new_data' => $new_po_log_data
+			);
+			$log_data = array(
+				'parent_id' => $po_id,
+				'ref_id' => NULL,
+				'module' => 'purchase_order_local',
+				'action' => 'edit',
+				'message' => 'Local Purchase In edited by ' . $this->session->userdata('super_name'),
+				'json' => json_encode($log_json),
+				'table_name' => 'purchase_order',
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name' => $this->session->userdata('super_name'),
+				'added_by_type' => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			$this->session->set_flashdata('flash_message', get_phrase('purchase_order_updated_successfully'));
+		}
+
+		return simple_json_output($resultpost);
+	}
+
 	public function get_purchase_order_products_for_edit($po_id)
 	{
 		// Get all products grouped by supplier and product_type
@@ -4346,6 +4929,150 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
+	public function delete_local_purchase_order($id)
+	{
+		if ($this->session->userdata('inventory_login') != true) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Unauthorized"
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$id = intval($id);
+		if ($id <= 0) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Invalid Purchase Order ID."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$po = $this->db->query("SELECT * FROM purchase_order WHERE id = '$id' AND is_deleted = '0'")->row_array();
+		if (empty($po)) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Purchase In record not found or already deleted."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		if (!empty($po['is_locked'])) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "This Purchase In is locked and cannot be deleted."
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$company_id = $po['company_id'];
+		$warehouse_id = $po['warehouse_id'];
+		$batch_no = $po['voucher_no'];
+
+		// Capture products for validation and logging
+		$po_products = $this->db->query("SELECT * FROM purchase_order_product WHERE parent_id = '$id'")->result_array();
+
+		// Validation: check each product's quantity in inventory
+		$inv_ids_to_delete = array();
+		if (!empty($po_products)) {
+			foreach ($po_products as $product) {
+				$product_id = $product['product_id'];
+				$pop_id = $product['id'];
+				$stocked_qty = floatval($product['quantity']);
+				$product_name = !empty($product['product_name']) ? $product['product_name'] : ('Product ID ' . $product_id);
+
+				$inv = $this->db->query("SELECT * FROM inventory WHERE po_row_id = '$pop_id'")->row_array();
+				if (empty($inv)) {
+					$inv = $this->db->query("SELECT * FROM inventory WHERE product_id = '$product_id' AND batch_no = '$batch_no' AND warehouse_id = '$warehouse_id' AND company_id = '$company_id'")->row_array();
+				}
+
+				if (empty($inv)) {
+					$resultpost = array(
+						"status" => 400,
+						"message" => "Validation Failed: Product [{$product_name}] not found in inventory for batch {$batch_no}."
+					);
+					return simple_json_output($resultpost);
+				}
+
+				if (floatval($inv['quantity']) != $stocked_qty) {
+					$resultpost = array(
+						"status" => 400,
+						"message" => "Validation Failed: Product [{$product_name}] quantity mismatch. PO Quantity: {$stocked_qty}, Current Inventory: {$inv['quantity']}. Deletion blocked."
+					);
+					return simple_json_output($resultpost);
+				}
+
+				$inv_ids_to_delete[] = $inv['id'];
+			}
+		}
+
+		// Revert any replaced products if any
+		$replaced_products = $this->db->get_where('purchase_order_product', array(
+			'parent_id' => $id,
+			'is_replace' => 1
+		))->result_array();
+
+		foreach ($replaced_products as $rp) {
+			$this->common_model->revert_replace_products($id, $rp['product_id']);
+		}
+
+		// Begin transaction
+		$this->db->trans_begin();
+
+		// 1. Delete matching inventory records
+		if (!empty($inv_ids_to_delete)) {
+			$this->db->where_in('id', $inv_ids_to_delete)->delete('inventory');
+		}
+
+		// 2. Delete inventory history records for this PO
+		$this->db->where('order_id', $id)->delete('inventory_history');
+
+		if (!empty($inv_ids_to_delete)) {
+			$this->db->where_in('parent_id', $inv_ids_to_delete)->delete('inventory_history');
+		}
+
+		// 3. Soft delete purchase order
+		$this->db->where('id', $id)->update('purchase_order', array(
+			'is_deleted' => '1'
+		));
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('something_went_wrong')
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_commit();
+
+		// 4. Insert audit log
+		$log_data = array(
+			'parent_id'      => $id,
+			'ref_id'         => NULL,
+			'module'         => 'purchase_order_local',
+			'action'         => 'delete',
+			'message'        => 'Local Purchase In deleted by ' . $this->session->userdata('super_name'),
+			'json'           => json_encode(array(
+				'purchase_order' => $po,
+				'products'       => $po_products
+			)),
+			'table_name'     => 'purchase_order',
+			'added_by'       => $this->session->userdata('super_user_id'),
+			'added_by_email' => $this->session->userdata('super_email'),
+			'added_by_name'  => $this->session->userdata('super_name'),
+			'added_by_type'  => $this->session->userdata('super_type')
+		);
+		$this->db->insert('sys_logs', $log_data);
+
+		$resultpost = array(
+			"status" => 200,
+			"message" => get_phrase('purchase_order_deleted_successfully'),
+			"url" => $this->session->userdata('previous_url') ?: base_url('inventory/purchase-order?type=local')
+		);
+		return simple_json_output($resultpost);
+	}
 
 	public function get_po_voucher_no()
 	{
@@ -4549,7 +5276,7 @@ class Inventory_model extends CI_Model
 		$method = (isset($_REQUEST['type']) && $_REQUEST['type'] == 'company') ? 'company' : 'local';
 
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, method, supplier_id, supplier_name, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, method, supplier_id, supplier_name, warehouse_id, company_id, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -4614,12 +5341,51 @@ class Inventory_model extends CI_Model
 					}
 				}
 
+				$delete_action_html = '';
+				$edit_action_html = '';
+				if ($method == 'local') {
+					$edit_po_url = base_url('inventory/purchase-order/edit-local/' . $id);
+					$edit_action_html = '<a class="dropdown-item" href="' . $edit_po_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+
+					$can_delete = true;
+					$po_products_query = $this->db->query("SELECT id, product_id, product_name, quantity FROM purchase_order_product WHERE parent_id = '$id'");
+					$po_products = $po_products_query->result_array();
+
+					if (!empty($po_products)) {
+						$voucher_no = $item['voucher_no'];
+						$warehouse_id = !empty($item['warehouse_id']) ? $item['warehouse_id'] : 0;
+
+						foreach ($po_products as $pop) {
+							$product_id = $pop['product_id'];
+							$pop_id = $pop['id'];
+							$required_qty = floatval($pop['quantity']);
+
+							$inv = $this->db->query("SELECT id, quantity FROM inventory WHERE po_row_id = '$pop_id'")->row_array();
+							if (empty($inv)) {
+								$inv = $this->db->query("SELECT id, quantity FROM inventory WHERE product_id = '$product_id' AND batch_no = '$voucher_no' AND warehouse_id = '$warehouse_id' AND company_id = '$company_id'")->row_array();
+							}
+
+							if (empty($inv) || floatval($inv['quantity']) != $required_qty) {
+								$can_delete = false;
+								break;
+							}
+						}
+					}
+
+					if ($can_delete) {
+						$delete_local_po_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_local/" . $id . "','Are you sure want to delete this purchase in!')";
+						$delete_action_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_local_po_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+					}
+				}
+
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Details</a>
+						' . $edit_action_html . '
 						' . $receive_action_html . '
+						' . $delete_action_html . '
 					</div>
 				</div>';
 
@@ -4952,7 +5718,7 @@ class Inventory_model extends CI_Model
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
+			$keyword_filter .= " AND (voucher_no LIKE '%" . $keyword . "%' OR supplier_name LIKE '%" . $keyword . "%' OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%'))";
 		endif;
 
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""){
@@ -4971,6 +5737,17 @@ class Inventory_model extends CI_Model
 				$keyword_filter .= " AND (DATE(date) = '$from')";
 			} else {
 				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		if (isset($_REQUEST['loading_date_range']) && $_REQUEST['loading_date_range'] != "") {
+			$loading_added_date = explode(' - ', $_REQUEST['loading_date_range']);
+			$loading_from =  date('Y-m-d', strtotime($loading_added_date[0]));
+			$loading_to =  date('Y-m-d', strtotime($loading_added_date[1]));
+			if ($loading_from == $loading_to) {
+				$keyword_filter .= " AND (DATE(delivery_date) = '$loading_from')";
+			} else {
+				$keyword_filter .= " AND (DATE(delivery_date) BETWEEN '$loading_from' AND '$loading_to')";
 			}
 		}
 
@@ -15534,6 +16311,24 @@ class Inventory_model extends CI_Model
 					"message" => 'Order No Duplication'
 				);
 			} else {
+				$invoice_no = clean_and_escape($this->input->post('invoice_no'));
+				$invoice_date = clean_and_escape($this->input->post('invoice_date'));
+
+				if (empty($invoice_no)) {
+					throw new Exception(get_phrase('invoice_number_cannot_be_empty'));
+				}
+				if (empty($invoice_date)) {
+					throw new Exception(get_phrase('invoice_date_cannot_be_empty'));
+				}
+
+				// Check if invoice_no already exists in non-deleted invoice orders
+				$check_invoice_exists = $this->db->where('invoice_no', $invoice_no)
+												 ->where('is_deleted', '0')
+												 ->get('invoice_order');
+				if ($check_invoice_exists->num_rows() > 0) {
+					throw new Exception(get_phrase('invoice_no_has_already_been_used'));
+				}
+
 				$customer_id = $this->input->post('customer_id');
 				if ($customer_id != '') {
 					$customer_name = $this->common_model->selectByidParam($customer_id, 'customer', 'company_name');
@@ -15652,9 +16447,6 @@ class Inventory_model extends CI_Model
 				if ($this->db->insert('sales_order', $data)) {
 					$order_id = $this->db->insert_id();
 					$this->update_order_no($order_no);
-
-					$invoice_no = $this->get_invoice_no();
-					$invoice_date = $this->input->post('date');
 
 					$inv_order = [
 						"type" => "conversion",
@@ -21036,8 +21828,8 @@ class Inventory_model extends CI_Model
 		// }
 
 		if (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") {
-			$keyword = $_REQUEST['keywords'];
-			$keyword_filter = " AND (batch_no LIKE '%" . $keyword . "%')";
+			$keyword = clean_and_escape($_REQUEST['keywords']);
+			$keyword_filter = " AND (e.batch_no LIKE '%" . $keyword . "%' OR e.vendor_id IN (SELECT mc.id FROM my_companies mc WHERE mc.name LIKE '%" . $keyword . "%') OR e.expense_type IN (SELECT et.id FROM expense_type et WHERE et.name LIKE '%" . $keyword . "%'))";
 		}
 
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
@@ -21045,14 +21837,19 @@ class Inventory_model extends CI_Model
 			$from = date('Y-m-d', strtotime($date_range['0']));
 			$to = date('Y-m-d', strtotime($date_range['1']));
 
-			$keyword_filter .= " AND (DATE(expense_date) >= '" . $from . "' AND DATE(expense_date) <= '" . $to . "')";
+			$keyword_filter .= " AND (DATE(e.expense_date) >= '" . $from . "' AND DATE(e.expense_date) <= '" . $to . "')";
+		}
+
+		if (isset($_REQUEST['type']) && $_REQUEST['type'] != "") {
+			$type = clean_and_escape($_REQUEST['type']);
+			$keyword_filter .= " AND e.type = '" . $type . "'";
 		}
 
 		$company_id = $this->session->userdata('company_id');
 
-		$total_count = $this->db->query("SELECT id FROM po_expense WHERE company_id='" . $company_id . "' AND is_delete = '0' " . $keyword_filter)->num_rows();
+		$total_count = $this->db->query("SELECT e.id FROM po_expense e WHERE e.company_id='" . $company_id . "' AND e.is_delete = '0' " . $keyword_filter)->num_rows();
 		
-		$is_filtered = (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") || (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "");
+		$is_filtered = (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") || (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") || (isset($_REQUEST['type']) && $_REQUEST['type'] != "");
 		$limit_clause = $is_filtered ? "" : " LIMIT $start, $length";
 
 		$query = $this->db->query("SELECT e.id, e.batch_no, e.type, e.expense_type, e.vendor_id, e.sub_total, e.gst_total, e.grand_total, e.expense_date, po.is_locked FROM po_expense e LEFT JOIN purchase_order po ON po.voucher_no = e.batch_no AND po.company_id = e.company_id AND po.is_deleted = '0' WHERE e.company_id='" . $company_id . "' AND e.is_delete = '0' " . $keyword_filter . " ORDER BY e.id DESC" . $limit_clause);

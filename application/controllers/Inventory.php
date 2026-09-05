@@ -661,6 +661,94 @@ class Inventory extends CI_Controller
         echo json_encode($data);
     }
 
+    public function search_categories()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(array('result' => 0, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $keyword = trim($this->input->post('keyword', true) ?? '');
+        if ($keyword === '') {
+            echo json_encode(array('result' => 0, 'message' => 'Empty keyword'));
+            return;
+        }
+
+        $results = $this->category_model->search_categories($keyword);
+        $total_count = count($results);
+
+        $html_content = '';
+        if (!empty($results)) {
+            foreach ($results as $category) {
+                // Get ancestor hierarchy path if it's a subcategory
+                $path_text = '';
+                if ($category->parent_id > 0) {
+                    $parents = $this->category_model->get_parent_categories_array_by_category_id($category->parent_id);
+                    if (!empty($parents)) {
+                        $parent_names = array();
+                        foreach ($parents as $p) {
+                            $parent_names[] = category_name($p);
+                        }
+                        $path_text = implode(' &rsaquo; ', $parent_names);
+                    }
+                }
+
+                $delete_url = base_url() . 'inventory/category/delete/' . $category->id;
+                $edit_url = base_url() . 'inventory/category/edit/' . $category->id;
+                $has_sub = !empty($category->has_subcategory);
+
+                $html_content .= '<div class="panel-group" draggable="false">';
+                $html_content .= '  <div data-item-id="' . $category->id . '" class="panel panel-default">';
+                $html_content .= '    <div id="panel_heading_parent_' . $category->id . '" class="panel-heading ' . ($has_sub ? 'panel-heading-parent' : '') . '" data-item-id="' . $category->id . '" href="#collapse_' . $category->id . '">';
+                $html_content .= '      <div class="left">';
+                if ($has_sub) {
+                    $html_content .= '        <i class="fa fa-plus"></i>';
+                } else {
+                    $html_content .= '        <i class="fa fa-circle" style="font-size: 8px;"></i>';
+                }
+                $html_content .= '        ' . category_name($category);
+                if (!empty($path_text)) {
+                    $html_content .= '        <span class="badge bg-light-primary text-primary ms-1" style="font-size: 11px; font-weight: normal; vertical-align: middle;">';
+                    $html_content .= '          <i class="fa fa-folder-open-o me-25"></i>' . $path_text;
+                    $html_content .= '        </span>';
+                }
+                $html_content .= '      </div>';
+                $html_content .= '      <div class="right">';
+                $html_content .= '        <div class="btn-groups">';
+                $html_content .= '          <a href="' . $edit_url . '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"><button type="button" class="btn icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+                $html_content .= '          <a href="#" onclick="showDeleteConfirmation(\'' . $delete_url . '\')" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete"><button type="button" class="btn icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+                $html_content .= '        </div>';
+                $html_content .= '      </div>';
+                $html_content .= '    </div>';
+                if ($has_sub) {
+                    $html_content .= '    <div id="collapse_' . $category->id . '" class="panel-collapse collapse" aria-expanded="true">';
+                    $html_content .= '      <div class="panel-body" style="padding: 20px 0;">';
+                    $html_content .= '        <div class="spinner"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>';
+                    $html_content .= '      </div>';
+                    $html_content .= '    </div>';
+                }
+                $html_content .= '  </div>';
+                $html_content .= '</div>';
+            }
+        } else {
+            $html_content = '<div class="col-12 py-4 text-center">'
+                . '<div class="p-3 my-2" style="background-color: #f8f9fa; border-radius: 6px; border: 1px dashed #ced4da;">'
+                . '<i class="fa fa-search text-muted mb-2" style="font-size: 32px;"></i>'
+                . '<h6 class="text-muted fw-bold">No categories found matching "' . html_escape($keyword) . '"</h6>'
+                . '<p class="text-muted small mb-2">Try searching with a different term or clear the search to show all categories.</p>'
+                . '<button type="button" class="btn btn-sm btn-outline-primary btn_reset_search_trigger mt-1"><i class="fa fa-undo me-25"></i> Reset & Show All</button>'
+                . '</div></div>';
+        }
+
+        $data = array(
+            'result' => 1,
+            'count' => $total_count,
+            'count_text' => '(' . $total_count . ' found)',
+            'html_content' => $html_content,
+        );
+        echo json_encode($data);
+    }
+
     public function category($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -1446,8 +1534,12 @@ class Inventory extends CI_Controller
             $this->inventory_model->add_local_purchase_order($param2);
         } elseif ($param1 == "edit_post") {
             $this->inventory_model->edit_purchase_order($param2);
+        } elseif ($param1 == "edit_local_post") {
+            $this->inventory_model->edit_local_purchase_order($param2);
         } elseif ($param1 == "delete") {
             $this->inventory_model->delete_purchase_order($param2);
+        } elseif ($param1 == "delete_local") {
+            $this->inventory_model->delete_local_purchase_order($param2);
         } elseif ($param1 == "delete_inv") {
             $this->inventory_model->delete_inv_purchase_order($param2);
         } elseif ($param1 == "delete_priority_list") {
@@ -1498,6 +1590,7 @@ class Inventory extends CI_Controller
         $company_id = $this->session->userdata('company_id');
 
         $where = array('is_deleted' => '0');
+
         $page_data['warehouse_list']     = $this->common_model->selectWhere('warehouse', array('is_deleted' => '0', 'company_id' => $company_id), 'ASC', 'name');
         $page_data['supplier_list']     = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id, 'type' => 'import'), 'ASC', 'name');
         $page_data['company_list']     = $this->common_model->selectWhere('company', $where, 'ASC', 'name');
@@ -1524,6 +1617,53 @@ class Inventory extends CI_Controller
 
             $page_data['page_name']  = 'purchase_order_local_add';
             $page_data['page_title'] = 'Add Local Purchase In';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit_local') {
+            $po_id = $param2;
+            $data = $this->db->query("SELECT * FROM purchase_order WHERE id = '$po_id' AND is_deleted = 0")->row_array();
+            
+            if (empty($data)) {
+                $this->session->set_flashdata('error_message', 'Purchase In record not found.');
+                redirect(site_url('inventory/purchase-order?type=local'), 'refresh');
+            }
+
+            $page_data['po_id'] = $po_id;
+            $page_data['data'] = $data;
+            $page_data['navigation']  = 'purchase_order';
+            $page_data['type']      = 'local';
+            $page_data['products_list'] = $this->common_model->selectWhere('raw_products', array('is_deleted' => '0'), 'ASC', 'name');
+            $page_data['supplier_list'] = $this->common_model->selectWhere('supplier', array('is_deleted' => '0', 'company_id' => $company_id, 'type' => 'local'), 'ASC', 'name');
+            $page_data['other_charges'] = $this->db->get_where('other_charges', ['is_delete' => 0])->result_array();
+
+            // Fetch PO products and determine lock status per product
+            $po_products = $this->db->query("SELECT * FROM purchase_order_product WHERE parent_id = '$po_id' ORDER BY id ASC")->result_array();
+            foreach ($po_products as &$pop) {
+                $product_id = $pop['product_id'];
+                $pop_id = $pop['id'];
+                $stocked_qty = floatval($pop['quantity']);
+
+                $inv = $this->db->query("SELECT id, quantity FROM inventory WHERE po_row_id = '$pop_id'")->row_array();
+                if (empty($inv)) {
+                    $voucher_no = $data['voucher_no'];
+                    $warehouse_id = $data['warehouse_id'];
+                    $inv = $this->db->query("SELECT id, quantity FROM inventory WHERE product_id = '$product_id' AND batch_no = '$voucher_no' AND warehouse_id = '$warehouse_id' AND company_id = '$company_id'")->row_array();
+                }
+
+                if (empty($inv) || floatval($inv['quantity']) != $stocked_qty) {
+                    $pop['is_locked'] = 1;
+                    $pop['current_inventory_qty'] = !empty($inv) ? floatval($inv['quantity']) : 0;
+                } else {
+                    $pop['is_locked'] = 0;
+                    $pop['current_inventory_qty'] = floatval($inv['quantity']);
+                }
+            }
+            unset($pop);
+
+            $page_data['po_products'] = $po_products;
+            $page_data['po_charges'] = $this->db->query("SELECT * FROM purchase_order_charges WHERE order_id = '$po_id' ORDER BY id ASC")->result_array();
+
+            $page_data['page_name']  = 'purchase_order_local_edit';
+            $page_data['page_title'] = 'Edit Local Purchase In';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'add_import') {
             $page_data['voucher_no']  = $this->inventory_model->get_po_voucher_no();

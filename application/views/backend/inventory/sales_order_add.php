@@ -567,8 +567,7 @@
                         <label>Round Of</label>
                       </td>
                       <td colspan="1">
-                        <p class="td-blank"><input type="number" step="any" name="round_of" id="round_of"
-                            placeholder="Round Of" class="form-control" value="0" onkeyup="recalculate()"></p>
+                        <p class="td-blank"><input type="number" step="any" name="round_of" id="round_of" placeholder="Round Of" class="form-control" value="0" onkeyup="recalculate()"></p>
                       </td>
                     </tr>
                     <tr>

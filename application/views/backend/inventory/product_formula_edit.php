@@ -7,7 +7,7 @@
           <div class="col-12 col-sm-6 mb-1">
             <div class="form-group">
               <label class="form-label">Product Name</label>
-              <input type="text" class="form-control" value="<?php echo htmlspecialchars($parent_product['name']) . ' (' . htmlspecialchars($parent_product['item_code']) . ')'; ?>" disabled>
+              <input type="text" class="form-control" value="<?php echo htmlspecialchars($parent_product['name']) . (!empty($parent_product['item_code']) ? ' (' . htmlspecialchars($parent_product['item_code']) . ')' : ''); ?>" disabled>
               <input type="hidden" name="parent_id" id="parent_id" value="<?php echo $id; ?>">
             </div>
           </div>
@@ -46,7 +46,7 @@
                           <option value="">Select Ingredient</option>
                           <?php foreach($ingredient_products as $ing) { ?>
                             <option value="<?php echo $ing['id']; ?>" <?php if($ing['id'] == $item['product_id']) echo 'selected'; ?>>
-                              <?php echo htmlspecialchars($ing['name']) . ' (' . htmlspecialchars($ing['item_code']) . ')'; ?>
+                              <?php echo htmlspecialchars($ing['name']) . (!empty($ing['item_code']) ? ' (' . htmlspecialchars($ing['item_code']) . ')' : ''); ?>
                             </option>
                           <?php } ?>
                         </select>
@@ -188,7 +188,8 @@ function appendIngredientRow() {
   
   var optionsHtml = '<option value="">Select Ingredient</option>';
   $.each(ingredientProducts, function(i, prod) {
-    optionsHtml += '<option value="' + prod.id + '">' + escapeHtml(prod.name) + ' (' + escapeHtml(prod.item_code) + ')</option>';
+    var itemCodeStr = (prod.item_code && String(prod.item_code).trim() !== '') ? ' (' + escapeHtml(prod.item_code) + ')' : '';
+    optionsHtml += '<option value="' + prod.id + '">' + escapeHtml(prod.name) + itemCodeStr + '</option>';
   });
 
   var newRowHtml = `

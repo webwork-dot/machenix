@@ -44,11 +44,12 @@
             <a href="<?php echo site_url('inventory/conversion-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> Add Sales Conversion</span></a>   
           <table class="table leads-table" id="report-datatable">
                <thead>
-                  <tr>
+                   <tr>
 					<th>#</th>
 					<th>Date</th>
 					<th>Customer Name</th>
 					<th>Invoice No</th>
+					<th>Invoice Date</th>
 					<th>Warehouse</th>
 					<th>Total Qty</th>
 					<th>Total Products</th>
@@ -103,6 +104,7 @@
                 { "data": "date" },
                 { "data": "customer_name" },
                 { "data": "invoice_no" },
+                { "data": "invoice_date" },
                 { "data": "warehouse_name" },
                 { "data": "qty" },
                 { "data": "total_pro" },
@@ -116,7 +118,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7]
                     }
                 },
                 {
@@ -124,7 +126,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7]
                     }
                 }
             ], 

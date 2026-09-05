@@ -17,15 +17,24 @@
 							<div class="row">
 										<input type="hidden" name="search" value="true">
 
-										<div class="col-md-3 col-12">
+										<div class="col-lg-2 col-md-3 col-sm-6 col-12">
 												<div class="form-group mb-0">   
 														<label>Date</label>
 														<input type="text" autocomplete="off" class="form-control bg-white datepicker_report" name="date_range" id="filter_date_range" placeholder="Search Order Date">
 												</div>
 										</div>
 
+                    <?php if($page_name == "purchase_order" || $page_name == "priority_po" || $page_name == "loading_list_po" || $page_name == "pending_po" || $page_name == "po_purchase_in") {?>
+                    <div class="col-lg-2 col-md-3 col-sm-6 col-12">
+                        <div class="form-group mb-0">   
+                            <label>Loading Date</label>
+                            <input type="text" autocomplete="off" class="form-control bg-white datepicker_loading_report" name="loading_date_range" id="filter_loading_date_range" placeholder="Search Loading Date">
+                        </div>
+                    </div>
+                    <?php } ?>
+
                     <?php if($page_name == "purchase_order" || $page_name == "priority_po" || $page_name == "loading_list_po") {?>
-                      <div class="col-md-3 col-12">
+                      <div class="col-lg-2 col-md-3 col-sm-6 col-12">
                         <div class="form-group mb-0">   
                           <label>Status</label>
                           <div class="form-group">
@@ -50,7 +59,22 @@
                       </div>
                     <?php } ?>
 
-										<div class="col-md-3 col-12">
+                    <?php if($page_name == "po_expense") { ?>
+                      <div class="col-lg-2 col-md-3 col-sm-6 col-12">
+                        <div class="form-group mb-0">   
+                          <label>Type</label>
+                          <div class="form-group">
+                            <select name="type" id="filter_type" class="form-control" onchange="dataTable.draw()">
+                              <option value="">All</option>
+                              <option value="official">Official</option>
+                              <option value="unofficial">Unofficial</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    <?php } ?>
+
+										<div class="col-lg-3 col-md-3 col-sm-6 col-12">
 											<div class="form-group mb-0">   
 												<label>Keywords</label>
 												<div class="form-group">
@@ -60,7 +84,7 @@
 										</div>
 
 
-										<div class="col-md-3">
+										<div class="col-lg-2 col-md-3 col-sm-6 col-12">
 												<label style="display: block;">&nbsp; </label>
 												<div class="form-group mb-0">
 														<!-- <button type="button" id="btn_reset_filter" class="btn btn-outline-danger mr-1">Reset</button> -->
@@ -84,7 +108,7 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 <script>
-    //Date range picker
+    //Date range picker for Order Date
     $('.datepicker_report').daterangepicker({
         autoUpdateInput: false,
         autoApply: true,
@@ -93,15 +117,24 @@
         },  
         maxDate: moment().add(0, 'days'),
     });
+
+    //Date range picker for Loading Date
+    $('.datepicker_loading_report').daterangepicker({
+        autoUpdateInput: false,
+        autoApply: true,
+        locale: {
+            format: 'DD-MM-YYYY', 
+        }
+    });
     
-    $('.datepicker_report').on('apply.daterangepicker', function(ev, picker) {
+    $('.datepicker_report, .datepicker_loading_report').on('apply.daterangepicker', function(ev, picker) {
         $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
         if (typeof dataTable !== 'undefined') {
             dataTable.draw();
         }
     });
 
-    $('.datepicker_report').on('cancel.daterangepicker', function(ev, picker) {
+    $('.datepicker_report, .datepicker_loading_report').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
         if (typeof dataTable !== 'undefined') {
             dataTable.draw();
@@ -114,8 +147,15 @@
         }
     });
 
+    $(document).on('change', '#filter_type', function() {
+        if (typeof dataTable !== 'undefined') {
+            dataTable.draw();
+        }
+    });
+
     // $(document).on('click', '#btn_reset_filter', function() {
     //     $('#filter_date_range').val('');
+    //     $('#filter_loading_date_range').val('');
     //     $('#filter_keywords').val('');
     //     if (typeof dataTable !== 'undefined') {
     //         dataTable.draw();

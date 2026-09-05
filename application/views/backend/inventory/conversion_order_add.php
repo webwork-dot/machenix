@@ -219,6 +219,11 @@
 	.col-hide {
 		display: none !important;
 	}
+	.input-group #btn_missing_invoices {
+		height: 30px;
+		padding: 0 6px;
+		font-size: 11px;
+	}
 </style>
 
 <div class="row">
@@ -228,8 +233,11 @@
       <div class="card-body py-1 my-0">
 
         <?php echo form_open('inventory/conversion_order/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return validateForm() && checkForm(this);']);?>
+        <?php
+        $missing_invoices = $this->inventory_model->get_missing_invoice_numbers();
+        ?>
         <div class="row">
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Order No <span class="required">*</span></label>
               <input type="text" class="form-control" placeholder="Order No" name="order_no"
@@ -237,14 +245,14 @@
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Refrence Order No </label>
               <input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no">
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
@@ -252,8 +260,29 @@
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
-            <label class="form-label" for="state">Customer <span class="required">*</span></label>
+          <div class="col-12 col-sm-2 mb-1">
+            <div class="form-group">
+              <label for="invoice_no">Invoice No <span class="required">*</span></label>
+              <div class="input-group input-group-sm">
+                <input type="text" name="invoice_no" id="invoice_no" class="form-control form-control-sm font-monospace" value="<?= htmlspecialchars($this->inventory_model->get_invoice_no()); ?>" required>
+                <?php if (!empty($missing_invoices)): ?>
+                  <button type="button" class="btn btn-warning btn-sm waves-effect waves-float waves-light d-flex align-items-center gap-1 text-nowrap px-1" id="btn_missing_invoices" onclick="openMissingInvoicesModal();" title="<?= count($missing_invoices); ?> missing invoice numbers found. Click to view.">
+                    <i class="fa fa-exclamation-triangle"></i> <span class="d-none d-xl-inline">Missing</span> (<?= count($missing_invoices); ?>)
+                  </button>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-2 mb-1">
+            <div class="form-group">
+              <label for="invoice_date">Invoice Date <span class="required">*</span></label>
+              <input type="date" name="invoice_date" id="invoice_date" class="form-control" value="<?= date('Y-m-d'); ?>" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-2 mb-1">
+            <label class="form-label" for="customer_id">Customer <span class="required">*</span></label>
             <select class=" form-select select2" name="customer_id" id="customer_id" required>
               <option value="">Select Customer </option>
               <?php foreach($customer_list as $item){?>
@@ -1755,3 +1784,6 @@ function appendRequirement() {
         </div>
     </div>
 </div>
+
+<?php $this->load->view('backend/inventory/modal_missing_invoices', ['missing_invoices' => $missing_invoices, 'target_input_id' => 'invoice_no']); ?>
+

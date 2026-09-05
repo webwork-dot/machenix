@@ -376,4 +376,13 @@ class Category_model extends CI_Model{
         return $query->row();
     }
     
+    public function search_categories($keyword) {
+        $this->build_query(true);
+        $this->db->group_start();
+        $this->db->like('categories.name', $keyword);
+        $this->db->or_like('categories.slug', $keyword);
+        $this->db->group_end();
+        $this->order_by_categories();
+        return $this->db->get('categories')->result();
+    }
 }

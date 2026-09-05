@@ -15,12 +15,29 @@
    <div class="col-12">
       <div class="card">
          <div class="card-body">
-            <div class="row">
-               <div class="col-md-6 mt-10">
+            <div class="row align-items-center gy-1">
+               <div class="col-lg-3 col-md-12">
                   <h5 class="mb-0"><b>Total Categories <span id="total_count"> (<?= count($parent_categories);?>)</span></b></h5>
                </div>
-               <div class="col-md-6">
-                  <a href="<?php echo site_url('inventory/category/add'); ?>" class="pull-right btn mt-0 btn-primary waves-effect waves-float waves-light" aria-controls="DataTables_Table_0" ><span><i data-feather='plus'></i><?= get_phrase('add_new_category');?></span></a>
+               <div class="col-lg-6 col-md-8 col-12">
+                  <div class="d-flex align-items-center">
+                     <div class="input-group input-group-merge category-search-group me-1">
+                        <span class="input-group-text"><i class="fa fa-search text-muted"></i></span>
+                        <input type="text" id="category_search_input" class="form-control" placeholder="Search category by name..." autocomplete="off">
+                        <span class="input-group-text cursor-pointer" id="btn_category_clear" style="display: none;" title="Clear search">
+                           <i class="fa fa-times text-muted"></i>
+                        </span>
+                     </div>
+                     <button type="button" id="btn_category_search" class="btn btn-primary waves-effect waves-float waves-light text-nowrap me-1">
+                        <i class="fa fa-search"></i> Search
+                     </button>
+                     <button type="button" id="btn_category_reset" class="btn btn-outline-danger waves-effect waves-float waves-light text-nowrap" style="display: none;">
+                        <i class="fa fa-undo"></i> Reset
+                     </button>
+                  </div>
+               </div>
+               <div class="col-lg-3 col-md-4 col-12 text-md-end text-start">
+                  <a href="<?php echo site_url('inventory/category/add'); ?>" class="btn btn-primary waves-effect waves-float waves-light" aria-controls="DataTables_Table_0"><span><i data-feather='plus'></i><?= get_phrase('add_new_category');?></span></a>
                </div>
             </div>
          </div>
@@ -134,6 +151,140 @@
        });
    });
 </script>
+<script>
+   var initialCategoriesHtml = '';
+   var initialCountHtml = '';
+   var isCategorySearchActive = false;
+
+   $(document).ready(function () {
+       // Cache the initial parent categories HTML and count
+       initialCategoriesHtml = $('.categories-panel-group').html();
+       initialCountHtml = $('#total_count').html();
+
+       // Handle input change to toggle clear button
+       $('#category_search_input').on('input keyup', function (e) {
+           var val = $(this).val();
+           if (val.length > 0) {
+               $('#btn_category_clear').show();
+               $('.category-search-group').addClass('has-clear');
+           } else {
+               $('#btn_category_clear').hide();
+               $('.category-search-group').removeClass('has-clear');
+               if (isCategorySearchActive) {
+                   resetCategorySearch();
+               }
+           }
+
+           // If Enter key pressed, perform search
+           if (e.which === 13 || e.keyCode === 13) {
+               e.preventDefault();
+               performCategorySearch();
+           }
+       });
+
+       // Search button click
+       $('#btn_category_search').on('click', function () {
+           performCategorySearch();
+       });
+
+       // Clear button click
+       $('#btn_category_clear').on('click', function () {
+           $('#category_search_input').val('').focus();
+           $('#btn_category_clear').hide();
+           $('.category-search-group').removeClass('has-clear');
+           if (isCategorySearchActive) {
+               resetCategorySearch();
+           }
+       });
+
+       // Reset button click
+       $('#btn_category_reset').on('click', function () {
+           resetCategorySearch();
+       });
+
+       // Trigger reset from empty state click
+       $(document).on('click', '.btn_reset_search_trigger', function () {
+           resetCategorySearch();
+       });
+   });
+
+   function performCategorySearch() {
+       var keyword = $('#category_search_input').val().trim();
+       if (keyword === '') {
+           resetCategorySearch();
+           return;
+       }
+
+       // Show loading indicator
+       var origBtnHtml = $('#btn_category_search').html();
+       $('#btn_category_search').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...');
+       $('.categories-panel-group').css('opacity', '0.5');
+
+       $.ajax({
+           url: '<?= base_url(); ?>inventory/search_categories',
+           type: 'POST',
+           data: { keyword: keyword },
+           success: function (response) {
+               $('#btn_category_search').prop('disabled', false).html(origBtnHtml);
+               $('.categories-panel-group').css('opacity', '1');
+
+               try {
+                   var obj = (typeof response === 'object') ? response : JSON.parse(response);
+                   if (obj.result == 1) {
+                       isCategorySearchActive = true;
+                       $('.categories-panel-group').html(obj.html_content);
+                       $('#total_count').html(' ' + obj.count_text);
+                       $('#btn_category_reset').show();
+                       $('#btn_category_clear').show();
+                       $('.category-search-group').addClass('has-clear');
+
+                       // Re-initialize feather icons if available
+                       if (typeof feather !== 'undefined') {
+                           feather.replace({ width: 14, height: 14 });
+                       }
+
+                       // Re-initialize Bootstrap tooltips if available
+                       if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                           var tooltipTriggerList = [].slice.call(document.querySelectorAll('.categories-panel-group [data-bs-toggle="tooltip"]'));
+                           tooltipTriggerList.map(function (tooltipTriggerEl) {
+                               return new bootstrap.Tooltip(tooltipTriggerEl);
+                           });
+                       }
+                   }
+               } catch (e) {
+                   console.error('Error parsing search response', e);
+               }
+           },
+           error: function () {
+               $('#btn_category_search').prop('disabled', false).html(origBtnHtml);
+               $('.categories-panel-group').css('opacity', '1');
+           }
+       });
+   }
+
+   function resetCategorySearch() {
+       $('#category_search_input').val('');
+       $('#btn_category_clear').hide();
+       $('.category-search-group').removeClass('has-clear');
+       $('#btn_category_reset').hide();
+       $('.categories-panel-group').html(initialCategoriesHtml).css('opacity', '1');
+       $('#total_count').html(initialCountHtml);
+       isCategorySearchActive = false;
+
+       // Re-initialize feather icons
+       if (typeof feather !== 'undefined') {
+           feather.replace({ width: 14, height: 14 });
+       }
+
+       // Re-initialize Bootstrap tooltips
+       if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+           var tooltipTriggerList = [].slice.call(document.querySelectorAll('.categories-panel-group [data-bs-toggle="tooltip"]'));
+           tooltipTriggerList.map(function (tooltipTriggerEl) {
+               return new bootstrap.Tooltip(tooltipTriggerEl);
+           });
+       }
+   }
+</script>
 <style>
    .btn-group-option {
    display: inline-block !important;
@@ -148,5 +299,47 @@
    }
    .cursor-default {
    cursor: default !important;
+   }
+   .cursor-pointer {
+   cursor: pointer !important;
+   }
+   .category-search-group .input-group-text:first-child {
+   border-right: 0 !important;
+   border-top-left-radius: 0.357rem !important;
+   border-bottom-left-radius: 0.357rem !important;
+   border-color: #d8d6de;
+   }
+   .category-search-group .form-control {
+   border-left: 0 !important;
+   border-right: 1px solid #d8d6de !important;
+   border-top-right-radius: 0.357rem !important;
+   border-bottom-right-radius: 0.357rem !important;
+   border-color: #d8d6de;
+   }
+   .category-search-group.has-clear .form-control {
+   border-right: 0 !important;
+   border-top-right-radius: 0 !important;
+   border-bottom-right-radius: 0 !important;
+   }
+   .category-search-group #btn_category_clear {
+   border-left: 0 !important;
+   border-right: 1px solid #d8d6de !important;
+   border-top-right-radius: 0.357rem !important;
+   border-bottom-right-radius: 0.357rem !important;
+   border-color: #d8d6de;
+   }
+   .category-search-group:focus-within .input-group-text,
+   .category-search-group:focus-within .form-control {
+   border-color: #7367f0 !important;
+   box-shadow: none !important;
+   }
+   .bg-light-primary {
+   background-color: rgba(115, 103, 240, 0.12) !important;
+   color: #7367f0 !important;
+   }
+   .categories-panel-group .badge {
+   font-weight: 500;
+   padding: 0.35em 0.65em;
+   border-radius: 4px;
    }
 </style>
