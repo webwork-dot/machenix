@@ -72,41 +72,53 @@
 </style>
 
 <?php
+  $status = (isset($_GET['status']) && $_GET['status'] == 'approved') ? 'approved' : 'pending';
+  $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
-  $overall_payment_amount = 0;
+
+  $total_overall_amount = 0;
   if ($this->db->table_exists('customer_payment')) {
-    $cust_sql = "SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amt 
-                 FROM customer_payment 
-                 WHERE 1=1";
+    $rec_sql = "SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amt 
+                FROM customer_payment 
+                WHERE (LOWER(payment_method) != 'cash' OR payment_method IS NULL)";
     if (!empty($company_id)) {
-      $cust_sql .= " AND company_id = '$company_id'";
+      $rec_sql .= " AND company_id = '$company_id'";
     }
     if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-      $cust_sql .= " AND is_deleted = 0";
+      $rec_sql .= " AND is_deleted = 0";
     }
-    $res = $this->db->query($cust_sql)->row_array();
-    $overall_payment_amount = (float)($res['total_amt'] ?? 0);
+    if ($status == 'approved') {
+      $rec_sql .= " AND is_approved = 1";
+    } else {
+      $rec_sql .= " AND (is_approved = 0 OR is_approved IS NULL)";
+    }
+    $res = $this->db->query($rec_sql)->row_array();
+    $total_overall_amount = (float)($res['total_amt'] ?? 0);
   }
 ?>
 
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
+  <div class="col-12 d-flex">
+    <a href="<?php echo base_url('inventory/payment-reconciliation?status=pending' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">Pending</a>
+    <a href="<?php echo base_url('inventory/payment-reconciliation?status=approved' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'approved') ? 'active' : ''; ?>">Approved</a>
+  </div>
+
   <div class="col-12">
-    <div class="card">
+    <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
         <div class="row align-items-center">
           <div class="col-md-6 col-12 mt-10">
-            <h5 class="mb-0"><b>Total Payments<span id="total_count"> (0)</span></b>
+            <h5 class="mb-0"><b>Total <?= ($status == 'approved') ? 'Approved' : 'Pending'; ?> Payments<span id="total_count"> (0)</span></b>
             </h5>
           </div>
           <div class="col-md-6 col-12 mt-10 text-md-end">
-            <h5 class="mb-0"><b>Total Payment Amount: <span id="total_payment_amount" class="text-primary">₹ <?= number_format($overall_payment_amount, 2); ?></span></b></h5>
+            <h5 class="mb-0"><b>Total <?= ($status == 'approved') ? 'Approved' : 'Pending'; ?> Amount: <span id="total_reconciliation_amount" class="text-primary">₹ <?= number_format($total_overall_amount, 2); ?></span></b></h5>
           </div>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/payment-receipt/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_payment_receipt');?></span></a>     
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
@@ -121,7 +133,6 @@
               <th>Type</th>
               <th>Method</th>
               <th>Added By</th>
-              <th class="text-center">Status</th>
               <th style="width: 80px;" class="text-center">Action</th>
             </tr>
           </thead>
@@ -133,6 +144,10 @@
 
 <script type="text/javascript">
 $(document).ready(function($) {
+  if ($('#form_filter').length && !$('#form_filter input[name="status"]').length) {
+    $('#form_filter').append('<input type="hidden" name="status" value="<?php echo $status; ?>">');
+  }
+
   var dataTable = $('#report-datatable').DataTable({
     "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
@@ -151,15 +166,16 @@ $(document).ready(function($) {
     },
 
     "ajax": {
-      "url": "<?php echo base_url('inventory/get_customer_payments_ajax'); ?>",
+      "url": "<?php echo base_url('inventory/get_payment_reconciliation_ajax'); ?>",
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
         data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+        data.status = '<?php echo $status; ?>';
       },
       "dataSrc": function(json) {
         if (json.total_amount !== undefined) {
-          $('#total_payment_amount').html(json.total_amount);
+          $('#total_reconciliation_amount').html(json.total_amount);
         }
         return json.data;
       },
@@ -183,20 +199,19 @@ $(document).ready(function($) {
       { "data": "payment_type" },
       { "data": "payment_method" },
       { "data": "added_by_name" },
-      { "data": "status", "className": "text-center" },
       { "data": "actions", "className": "text-center" },
     ],
 
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
       }
     ],
 

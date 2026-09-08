@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 27, 2026 at 08:39 AM
+-- Generation Time: Sep 08, 2026 at 09:27 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 7.4.33
 
@@ -24,27 +24,18 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `customer_adjustments`
+-- Table structure for table `petty_cash`
 --
 
-CREATE TABLE `customer_adjustments` (
+CREATE TABLE `petty_cash` (
   `id` int(11) NOT NULL,
-  `parent_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
-  `customer_id` int(11) NOT NULL,
-  `customer_name` varchar(255) NOT NULL,
-  `date` date NOT NULL,
-  `inr` decimal(16,5) NOT NULL DEFAULT 0.00000,
-  `amt_type` enum('plus','minus','') NOT NULL,
-  `amt_type_id` int(11) DEFAULT NULL,
-  `amt_type_name` varchar(255) DEFAULT NULL,
-  `type` enum('official','unofficial','') NOT NULL,
+  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `remark` text DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
-  `added_by` varchar(255) DEFAULT NULL,
-  `added_by_id` varchar(255) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `added_by` int(11) DEFAULT NULL,
+  `added_by_name` varchar(255) DEFAULT NULL,
+  `added_date` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -52,9 +43,9 @@ CREATE TABLE `customer_adjustments` (
 --
 
 --
--- Indexes for table `customer_adjustments`
+-- Indexes for table `petty_cash`
 --
-ALTER TABLE `customer_adjustments`
+ALTER TABLE `petty_cash`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -62,9 +53,9 @@ ALTER TABLE `customer_adjustments`
 --
 
 --
--- AUTO_INCREMENT for table `customer_adjustments`
+-- AUTO_INCREMENT for table `petty_cash`
 --
-ALTER TABLE `customer_adjustments`
+ALTER TABLE `petty_cash`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 

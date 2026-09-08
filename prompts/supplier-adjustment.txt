@@ -23,3 +23,37 @@ This is the common basic flow. I want some additional behaviour in add form..
 These are just additional requirements just to showcase the amount difference. Do not change the basic flow.
 
 Now I want you to create this module by following existing coding patterns. Also make the edit adjustment entries editable.. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---- Changes ----
+
+I wanna make some changes in adjustment of customer and vendor adjustment module.. I have created a new table called adjustment which will store the common entry of single adjustment entry and store its parent id in customer and vendor adjustment table.. These are my following requirements:
+
+1. In [adjustment] table store the adjustment common data.
+2. In forms I wanna add remove the customer and vendor dropdown from above and create a table which should be appendable.. The table will have following column: 
+  - Customer/vendor (dropdown)
+  - Debit (Amount inr ,(vendor: rmb, vendor: usd))
+  - Credit (Amount inr ,(vendor: rmb, vendor: usd))
+  - Remark
+
+3. Can only add amount in one of the two columns.. for a single row..
+4. The debit and credit amount must match only if there are more than 1 entry.. 
+
+- Debit will be - and credit will be +, so while inserting data decide the type based on amount enter in debit or credit column..
+- Atleast one row is required for submitting form..
+- Create form for both  customer and vendor adjustment module.. Create a single form for both and saved the type in adjustments table..
+- Insert the children entry as it is.. no changes in children entry format except the parent_id. 
+- follow the existing pattern of create, edit and delete forms..

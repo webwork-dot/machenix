@@ -459,6 +459,27 @@
                 <span class="menu-title text-truncate">Payment Receipt</span>
             </a>
         </li>
+        <li class="nav-item <?php if($page_name == 'petty_cash' || $page_name == 'petty_cash_add' || $page_name == 'petty_cash_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/petty-cash">
+                <i class="feather icon-dollar-sign"></i>
+                <span class="menu-title text-truncate">Petty Cash</span>
+            </a>
+        </li>
+        <?php } ?>
+
+        <?php if($user_id == 4) { ?>
+        <li class="nav-item <?php if($page_name == 'payment_reconciliation') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payment-reconciliation">
+                <i class="feather icon-check-square"></i>
+                <span class="menu-title text-truncate">Payment Reconcilation</span>
+            </a>
+        </li>
+        <li class="nav-item <?php if($page_name == 'cash_collection') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/cash-collection">
+                <i class="feather icon-inbox"></i>
+                <span class="menu-title text-truncate">Cash Collection</span>
+            </a>
+        </li>
         <?php } ?>
 
     </ul>

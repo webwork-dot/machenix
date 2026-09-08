@@ -506,7 +506,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['vendors'] = $this->inventory_model->get_company_vendors();
+        $page_data['vendors']       = $this->inventory_model->get_company_vendors();
+        $page_data['other_charges'] = $this->inventory_model->get_other_charges_list();
 
         if ($param1 == 'add') {
             $page_data['page_name']  = 'vendor_adjustment_add';
@@ -519,6 +520,7 @@ class Inventory extends CI_Controller
                 redirect(site_url('inventory/vendor-adjustment'), 'refresh');
             }
             $page_data['data']       = $data;
+            $page_data['details']    = $this->inventory_model->get_vendor_adjustment_details_by_parent_id($param2);
             $page_data['id']         = $param2;
             $page_data['page_name']  = 'vendor_adjustment_edit';
             $page_data['page_title'] = 'Edit Vendor Adjustment';
@@ -582,7 +584,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['customers'] = $this->inventory_model->get_company_customers();
+        $page_data['customers']     = $this->inventory_model->get_company_customers();
+        $page_data['other_charges'] = $this->inventory_model->get_other_charges_list();
 
         if ($param1 == 'add') {
             $page_data['page_name']  = 'customer_adjustment_add';
@@ -595,6 +598,7 @@ class Inventory extends CI_Controller
                 redirect(site_url('inventory/customer-adjustment'), 'refresh');
             }
             $page_data['data']       = $data;
+            $page_data['details']    = $this->inventory_model->get_customer_adjustment_details_by_parent_id($param2);
             $page_data['id']         = $param2;
             $page_data['page_name']  = 'customer_adjustment_edit';
             $page_data['page_title'] = 'Edit Customer Adjustment';
@@ -1197,6 +1201,123 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_customer_payments();
+        }
+    }
+
+    // Payment Reconciliation Starts
+    public function payment_reconciliation($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "approve") {
+            $this->inventory_model->approve_customer_payment($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'payment_reconciliation';
+            $page_data['page_name']  = 'payment_reconciliation';
+            $page_data['page_title'] = 'Payment Reconcilation';
+            $page_data['status']     = (isset($_GET['status']) && $_GET['status'] == 'approved') ? 'approved' : 'pending';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_payment_reconciliation_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_payment_reconciliation();
+        }
+    }
+
+    // Cash Collection Starts
+    public function cash_collection($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "approve") {
+            $this->inventory_model->approve_cash_collection($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'cash_collection';
+            $page_data['page_name']  = 'cash_collection';
+            $page_data['page_title'] = 'Cash Collection';
+            $page_data['status']     = (isset($_GET['status']) && $_GET['status'] == 'received') ? 'received' : 'pending';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_cash_collection_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_cash_collection();
+        }
+    }
+
+    // Petty Cash Starts
+    public function petty_cash($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_petty_cash();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_petty_cash($param2);
+        } elseif ($param1 == "transfer_post") {
+            $this->inventory_model->add_transfer_cash();
+        } elseif ($param1 == "delete_transfer") {
+            $this->inventory_model->delete_transfer_cash($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_petty_cash($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'petty_cash';
+            $page_data['page_name']  = 'petty_cash';
+            $page_data['page_title'] = 'Petty Cash';
+            $page_data['tab']        = (isset($_GET['tab']) && $_GET['tab'] == 'transferred') ? 'transferred' : 'cash';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function petty_cash_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $company_id   = $this->session->userdata('company_id');
+        $cash_in_hand = $this->inventory_model->get_cash_in_hand($company_id);
+
+        if ($param1 == 'add') {
+            $page_data['cash_in_hand'] = $cash_in_hand;
+            $page_data['navigation']   = 'petty_cash';
+            $page_data['page_name']    = 'petty_cash_add';
+            $page_data['page_title']   = 'Add Petty Cash';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $data = $this->common_model->getRowById('petty_cash', '*', ['is_deleted' => '0', 'id' => $param2]);
+            $page_data['data'] = ($data != '') ? $data : [];
+            $page_data['id'] = $param2;
+            $existing_amount = (float)($data['amount'] ?? 0);
+            $page_data['cash_in_hand'] = $cash_in_hand + $existing_amount;
+            $page_data['navigation']  = 'petty_cash';
+            $page_data['page_name']   = 'petty_cash_edit';
+            $page_data['page_title']  = 'Edit Petty Cash';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_petty_cash_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_petty_cash();
         }
     }
 

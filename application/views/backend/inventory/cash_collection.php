@@ -59,69 +59,66 @@
     box-shadow: initial;
     font-weight: 600;
   }
-
-  .small-img {
-    max-height: 50px;
-    min-height: 50px;
-    object-fit: cover;
-    border-radius: 10px;
-    border: 1px solid #e7e6e6;
-    height: 50px;
-    max-width: 60px;
-  }
 </style>
 
 <?php
+  $status = (isset($_GET['status']) && $_GET['status'] == 'received') ? 'received' : 'pending';
+  $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
-  $overall_payment_amount = 0;
-  if ($this->db->table_exists('customer_payment')) {
-    $cust_sql = "SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amt 
-                 FROM customer_payment 
-                 WHERE 1=1";
+
+  $total_overall_amount = 0;
+  if ($this->db->table_exists('transferred_cash')) {
+    $coll_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt FROM transferred_cash WHERE 1=1";
     if (!empty($company_id)) {
-      $cust_sql .= " AND company_id = '$company_id'";
+      $coll_sql .= " AND company_id = '$company_id'";
     }
-    if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-      $cust_sql .= " AND is_deleted = 0";
+    if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
+      $coll_sql .= " AND is_deleted = 0";
     }
-    $res = $this->db->query($cust_sql)->row_array();
-    $overall_payment_amount = (float)($res['total_amt'] ?? 0);
+    if ($status == 'received') {
+      $coll_sql .= " AND is_approved = 1";
+    } else {
+      $coll_sql .= " AND (is_approved = 0 OR is_approved IS NULL)";
+    }
+    $res = $this->db->query($coll_sql)->row_array();
+    $total_overall_amount = (float)($res['total_amt'] ?? 0);
   }
 ?>
 
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
+  <div class="col-12 d-flex">
+    <a href="<?php echo base_url('inventory/cash-collection?status=pending' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">Pending</a>
+    <a href="<?php echo base_url('inventory/cash-collection?status=received' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'received') ? 'active' : ''; ?>">Received</a>
+  </div>
+
   <div class="col-12">
-    <div class="card">
+    <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
         <div class="row align-items-center">
           <div class="col-md-6 col-12 mt-10">
-            <h5 class="mb-0"><b>Total Payments<span id="total_count"> (0)</span></b>
+            <h5 class="mb-0"><b>Total <?= ($status == 'received') ? 'Received' : 'Pending'; ?> Cash Collections<span id="total_count"> (0)</span></b>
             </h5>
           </div>
           <div class="col-md-6 col-12 mt-10 text-md-end">
-            <h5 class="mb-0"><b>Total Payment Amount: <span id="total_payment_amount" class="text-primary">₹ <?= number_format($overall_payment_amount, 2); ?></span></b></h5>
+            <h5 class="mb-0"><b>Total <?= ($status == 'received') ? 'Received' : 'Pending'; ?> Amount: <span id="total_cash_collection_amount" class="text-primary">₹ <?= number_format($total_overall_amount, 2); ?></span></b></h5>
           </div>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/payment-receipt/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_payment_receipt');?></span></a>     
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
-              <th>#</th>
+              <th style="width: 50px;" class="text-center">#</th>
               <th>Date</th>
-              <th>Inv No</th>
-              <th>Customer Name</th>
-              <th>Total Tender</th>
-              <th>Allocated (Inv)</th>
-              <th>On Account</th>
-              <th>Adjustments</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Added By</th>
-              <th class="text-center">Status</th>
+              <th>Amount</th>
+              <th>Remark / Narration</th>
+              <th>Transferred By</th>
+              <?php if ($status == 'received'): ?>
+              <th>Approval Date</th>
+              <?php endif; ?>
+              <th>Status</th>
               <th style="width: 80px;" class="text-center">Action</th>
             </tr>
           </thead>
@@ -133,6 +130,10 @@
 
 <script type="text/javascript">
 $(document).ready(function($) {
+  if ($('#form_filter').length && !$('#form_filter input[name="status"]').length) {
+    $('#form_filter').append('<input type="hidden" name="status" value="<?php echo $status; ?>">');
+  }
+
   var dataTable = $('#report-datatable').DataTable({
     "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
@@ -151,15 +152,16 @@ $(document).ready(function($) {
     },
 
     "ajax": {
-      "url": "<?php echo base_url('inventory/get_customer_payments_ajax'); ?>",
+      "url": "<?php echo base_url('inventory/get_cash_collection_ajax'); ?>",
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
         data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+        data.status = '<?php echo $status; ?>';
       },
       "dataSrc": function(json) {
         if (json.total_amount !== undefined) {
-          $('#total_payment_amount').html(json.total_amount);
+          $('#total_cash_collection_amount').html(json.total_amount);
         }
         return json.data;
       },
@@ -172,31 +174,28 @@ $(document).ready(function($) {
     },
 
     "columns": [
-      { "data": "sr_no" },
+      { "data": "sr_no", "className": "text-center" },
       { "data": "date" },
-      { "data": "inv_no" },
-      { "data": "customer_name" },
-      { "data": "total_tender" },
-      { "data": "allocated_inv" },
-      { "data": "on_account" },
-      { "data": "adjustments" },
-      { "data": "payment_type" },
-      { "data": "payment_method" },
-      { "data": "added_by_name" },
-      { "data": "status", "className": "text-center" },
+      { "data": "amount" },
+      { "data": "remark" },
+      { "data": "transferred_by" },
+      <?php if ($status == 'received'): ?>
+      { "data": "approval_date" },
+      <?php endif; ?>
+      { "data": "status" },
       { "data": "actions", "className": "text-center" },
     ],
 
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, <?php echo ($status == 'received') ? '5, 6' : '5'; ?>] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, <?php echo ($status == 'received') ? '5, 6' : '5'; ?>] }
       }
     ],
 
@@ -215,5 +214,4 @@ $(document).ready(function($) {
     $(".loader").fadeOut("slow");
   });
 });
-
 </script>

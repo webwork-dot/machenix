@@ -1,5 +1,6 @@
 CREATE TABLE `customer_payment` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
   `customer_id` int(11) NOT NULL,
   `customer_name` varchar(255) DEFAULT NULL,
   `date` date NOT NULL,
@@ -16,6 +17,8 @@ CREATE TABLE `customer_payment` (
   `total_tender` decimal(16,2) NOT NULL DEFAULT 0.00,
   `on_account` decimal(16,2) NOT NULL DEFAULT 0.00,
   `adjustments` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `is_approved` tinyint(1) NOT NULL DEFAULT 0,
+  `approval_date` datetime DEFAULT NULL,
   `added_by` int(11) DEFAULT NULL,
   `added_by_name` varchar(255) DEFAULT NULL,
   `added_date` datetime NOT NULL DEFAULT current_timestamp(),

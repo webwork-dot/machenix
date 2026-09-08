@@ -4,6 +4,7 @@
       <div class="card-body py-1 my-0">
 
         <?php echo form_open('inventory/payment_receipt/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
+        <input type="hidden" name="company_id" value="<?php echo $this->session->userdata('company_id'); ?>">
         <div class="row">
 
           <div class="col-12 col-sm-3 mb-1">

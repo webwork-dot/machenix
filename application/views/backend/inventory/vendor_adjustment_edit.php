@@ -1,273 +1,721 @@
 <?php
 $row = $data ?? [];
 $id = $id ?? 0;
+$details = $details ?? [];
+if (empty($details) && !empty($row)) {
+  $details = [$row];
+}
 ?>
 
 <style>
-  .ledger-card-shell {
-    border: 1px solid #e8eaed;
+  .adj-card {
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     background: #ffffff;
   }
-  .card-soft-header { background: #fafbfc; border-bottom: 1px solid #f0f2f5; }
-  .fs-10 { font-size: 10px; }
-  .fs-11 { font-size: 11px; }
-  .fs-12 { font-size: 12px; }
-  .fs-13 { font-size: 13px; }
-  .fs-14 { font-size: 14px; }
-  .fs-15 { font-size: 15px; }
-  .fs-16 { font-size: 16px; }
-  .vendor-main-text { color: #111827; }
-  .vendor-soft-text { color: #1f2937; }
-  .mono-amount { font-family: "DM Mono", monospace; }
-  .summary-pill {
-    font-size: 11px;
-    font-weight: 500;
-    color: #4b5563;
-    padding: 3px 10px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
+  .adj-card .card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 16px 20px;
   }
-  .balance-pill {
+  .adj-table {
+    border: 1px solid #e2e8f0;
+    margin-bottom: 0;
+  }
+  .adj-table thead th {
+    background: #f8fafc;
+    color: #475569;
     font-size: 11px;
     font-weight: 700;
-    border-radius: 20px;
-    padding: 3px 12px;
-  }
-  .balance-pill-due { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-  .balance-pill-credit { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
-  .type-badge {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    border-radius: 4px;
-    padding: 2px 7px;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    vertical-align: middle;
   }
-  .type-badge-po { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
+  .adj-table thead tr:first-child th.group-header {
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .adj-table tbody td {
+    padding: 6px 8px;
+    vertical-align: middle;
+    border: 1px solid #f1f5f9;
+  }
+  .adj-table tfoot td {
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    border-left: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+    padding: 10px 8px;
+    vertical-align: middle;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .mono-amount {
+    font-family: "DM Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+  .table-input {
+    height: 35px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    font-size: 12.5px;
+    padding: 4px 8px;
+    transition: all 0.15s ease;
+  }
+  .table-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  .table-input-disabled {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed;
+  }
+  .btn-remove-row {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    background: #fff5f5;
+    color: #ef4444;
+    transition: all 0.15s ease;
+  }
+  .btn-remove-row:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+  }
+  .select2-container--default .select2-selection--single {
+    height: 35px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    position: relative;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 33px !important;
+    font-size: 12.5px;
+    padding-left: 10px;
+    padding-right: 25px;
+    color: #1e293b;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 33px !important;
+    position: absolute;
+    top: 1px;
+    right: 6px;
+    width: 20px;
+  }
+  .ledger-badge-due {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    padding: 1px 5px;
+    line-height: 1.3;
+  }
+  .ledger-badge-advance {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #16a34a;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 4px;
+    padding: 1px 5px;
+    line-height: 1.3;
+  }
+  .ledger-badge-zero {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 5px;
+    line-height: 1.3;
+  }
+  .ledger-info-box {
+    min-height: 16px;
+  }
 </style>
 
 <div class="row">
   <div class="col-12">
-    <!-- Compact Edit Adjustment Form Card -->
-    <div class="card mb-2">
-      <div class="card-body py-2">
+    <div class="card adj-card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold text-dark">Edit Vendor Adjustment #<?= $id ?></h5>
+      </div>
+      <div class="card-body p-3">
         <form action="<?= base_url('inventory/vendor-adjustment/edit_post/' . $id) ?>" method="post" id="adjustmentForm">
           
-          <div class="row g-2">
-            <!-- Select Vendor -->
-            <div class="col-md-12 mb-2">
-              <label for="vendor_id" class="form-label fw-semibold fs-12 mb-1">Select Vendor <span class="text-danger">*</span></label>
-              <select name="vendor_id" id="vendor_id" class="form-select select2" required>
-                <option value="">-- Select Vendor --</option>
-                <?php if (!empty($vendors)): ?>
-                  <?php foreach ($vendors as $v): 
-                    $selected_vendor_id = $row['vendor_id'] ?? $row['supplier_id'] ?? 0;
-                  ?>
-                    <option value="<?= $v['id'] ?>" <?= ($selected_vendor_id == $v['id']) ? 'selected' : '' ?>>
-                      <?= html_escape($v['name']) ?>
-                    </option>
+          <!-- Header Date & Type & Amount Type -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-3 col-sm-6">
+              <label for="date" class="form-label fw-semibold fs-12 text-secondary mb-1">Date <span class="text-danger">*</span></label>
+              <input type="date" name="date" id="date" class="form-control table-input" value="<?= html_escape($row['date'] ?? date('Y-m-d')) ?>" required>
+            </div>
+            <div class="col-md-3 col-sm-6">
+              <label for="type" class="form-label fw-semibold fs-12 text-secondary mb-1">Type <span class="text-danger">*</span></label>
+              <select name="type" id="type" class="form-select table-input" required>
+                <option value="unofficial" <?= (isset($row['type']) && $row['type'] == 'unofficial') ? 'selected' : '' ?>>Unofficial</option>
+                <option value="official" <?= (isset($row['type']) && $row['type'] == 'official') ? 'selected' : '' ?>>Official</option>
+              </select>
+            </div>
+            <div class="col-md-3 col-sm-6">
+              <label for="amt_type_id" class="form-label fw-semibold fs-12 text-secondary mb-1">Amount Type</label>
+              <select name="amt_type_id" id="amt_type_id" class="form-select table-input">
+                <option value="">-- Select Amount Type --</option>
+                <?php if (!empty($other_charges)): ?>
+                  <?php foreach ($other_charges as $oc): ?>
+                    <option value="<?= $oc['id'] ?>" <?= (isset($row['amt_type_id']) && $row['amt_type_id'] == $oc['id']) ? 'selected' : '' ?>><?= html_escape($oc['name']) ?></option>
                   <?php endforeach; ?>
                 <?php endif; ?>
               </select>
             </div>
           </div>
 
-          <div class="row g-2">
-            <!-- Date -->
-            <div class="col-md-4 mb-2">
-              <label for="date" class="form-label fw-semibold fs-12 mb-1">Date <span class="text-danger">*</span></label>
-              <input type="date" name="date" id="date" class="form-control" value="<?= html_escape($row['date'] ?? date('Y-m-d')) ?>" required>
-            </div>
-
-            <!-- Amount Type -->
-            <div class="col-md-4 mb-2">
-              <label for="amt_type" class="form-label fw-semibold fs-12 mb-1">Amount Type <span class="text-danger">*</span></label>
-              <select name="amt_type" id="amt_type" class="form-select" required>
-                <option value="plus" <?= (isset($row['amt_type']) && $row['amt_type'] == 'plus') ? 'selected' : '' ?>>Plus (+)</option>
-                <option value="minus" <?= (isset($row['amt_type']) && $row['amt_type'] == 'minus') ? 'selected' : '' ?>>Minus (-)</option>
-              </select>
-            </div>
-
-            <!-- Type -->
-            <div class="col-md-4 mb-2">
-              <label for="type" class="form-label fw-semibold fs-12 mb-1">Type <span class="text-danger">*</span></label>
-              <select name="type" id="type" class="form-select" required>
-                <option value="unofficial" <?= (isset($row['type']) && $row['type'] == 'unofficial') ? 'selected' : '' ?>>Unofficial</option>
-                <option value="official" <?= (isset($row['type']) && $row['type'] == 'official') ? 'selected' : '' ?>>Official</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row g-2">
-            <!-- Amounts (USD, RMB, INR) -->
-            <div class="col-md-4 mb-2" id="usd_col">
-              <label for="usd" class="form-label fw-semibold fs-12 mb-1">Amount (USD)</label>
-              <div class="input-group">
-                <span class="input-group-text">$</span>
-                <input type="number" step="0.00001" name="usd" id="usd" class="form-control amount-field" placeholder="0.00" value="<?= html_escape($row['usd'] ?? '0.00') ?>">
-              </div>
-            </div>
-
-            <div class="col-md-4 mb-2" id="rmb_col">
-              <label for="rmb" class="form-label fw-semibold fs-12 mb-1">Amount (RMB)</label>
-              <div class="input-group">
-                <span class="input-group-text">¥</span>
-                <input type="number" step="0.00001" name="rmb" id="rmb" class="form-control amount-field" placeholder="0.00" value="<?= html_escape($row['rmb'] ?? '0.00') ?>">
-              </div>
-            </div>
-
-            <div class="col-md-4 mb-2" id="inr_col">
-              <label for="inr" class="form-label fw-semibold fs-12 mb-1">Amount (INR)</label>
-              <div class="input-group">
-                <span class="input-group-text">₹</span>
-                <input type="number" step="0.00001" name="inr" id="inr" class="form-control amount-field" placeholder="0.00" value="<?= html_escape($row['inr'] ?? '0.00') ?>">
-              </div>
-            </div>
-          </div>
-
-          <!-- Remark -->
-          <div class="row g-2">
-            <div class="col-12 mb-2">
-              <label for="remark" class="form-label fw-semibold fs-12 mb-1">Remark</label>
-              <textarea name="remark" id="remark" class="form-control" rows="2" placeholder="Enter remarks..."><?= html_escape($row['remark'] ?? '') ?></textarea>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-end mb-1">
-            <button type="submit" class="btn btn-primary px-4 py-1">
-              <i class="feather icon-check"></i> Update
+          <!-- Dynamic Adjustment Table -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold text-dark fs-13">Adjustment Entries</div>
+            <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 px-3 py-1" id="btnAddRow" style="border-radius: 6px;">
+              <i class="feather icon-plus"></i> Add Row
             </button>
           </div>
+
+          <div class="table-responsive rounded-3 mb-4">
+            <table class="table adj-table align-middle" id="adjTable">
+              <thead>
+                <tr>
+                  <th rowspan="2" style="width: 40px;" class="text-center">#</th>
+                  <th rowspan="2" style="min-width: 220px;">Vendor <span class="text-danger">*</span></th>
+                  <th colspan="3" class="text-center group-header">Debit</th>
+                  <th colspan="3" class="text-center group-header">Credit</th>
+                  <th rowspan="2" style="min-width: 160px;">Remark</th>
+                  <th rowspan="2" style="width: 45px;" class="text-center"></th>
+                </tr>
+                <tr>
+                  <th style="width: 110px;" class="text-end">INR (₹)</th>
+                  <th style="width: 105px;" class="text-end">USD ($)</th>
+                  <th style="width: 105px;" class="text-end">RMB (¥)</th>
+                  <th style="width: 110px;" class="text-end">INR (₹)</th>
+                  <th style="width: 105px;" class="text-end">USD ($)</th>
+                  <th style="width: 105px;" class="text-end">RMB (¥)</th>
+                </tr>
+              </thead>
+              <tbody id="adjTableBody">
+                <?php if (!empty($details)): ?>
+                  <?php foreach ($details as $idx => $det): 
+                    $selected_ven = $det['vendor_id'] ?? 0;
+                    $is_debit = (isset($det['amt_type']) && $det['amt_type'] == 'minus');
+                    $is_credit = (isset($det['amt_type']) && $det['amt_type'] == 'plus');
+
+                    $inr_amt = (float)($det['inr'] ?? 0);
+                    $usd_amt = (float)($det['usd'] ?? 0);
+                    $rmb_amt = (float)($det['rmb'] ?? 0);
+
+                    $deb_inr = ($is_debit && $inr_amt > 0) ? number_format($inr_amt, 2, '.', '') : '';
+                    $deb_usd = ($is_debit && $usd_amt > 0) ? number_format($usd_amt, 5, '.', '') : '';
+                    $deb_rmb = ($is_debit && $rmb_amt > 0) ? number_format($rmb_amt, 5, '.', '') : '';
+
+                    $crd_inr = ($is_credit && $inr_amt > 0) ? number_format($inr_amt, 2, '.', '') : '';
+                    $crd_usd = ($is_credit && $usd_amt > 0) ? number_format($usd_amt, 5, '.', '') : '';
+                    $crd_rmb = ($is_credit && $rmb_amt > 0) ? number_format($rmb_amt, 5, '.', '') : '';
+
+                    $has_deb_entered = ($is_debit && ($inr_amt > 0 || $usd_amt > 0 || $rmb_amt > 0));
+                    $has_crd_entered = ($is_credit && ($inr_amt > 0 || $usd_amt > 0 || $rmb_amt > 0));
+                  ?>
+                    <tr class="adj-row">
+                      <td class="text-center row-index fw-semibold text-muted fs-12"><?= $idx + 1 ?></td>
+                      <td>
+                        <select name="vendor_id[]" class="form-select select2-dynamic vendor-select" required>
+                          <option value="">-- Select Vendor --</option>
+                          <?php if (!empty($vendors)): ?>
+                            <?php foreach ($vendors as $v): ?>
+                              <option value="<?= $v['id'] ?>" <?= ($selected_ven == $v['id']) ? 'selected' : '' ?>>
+                                <?= html_escape($v['name']) ?>
+                              </option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                        <div class="vendor-ledger-info ledger-info-box mt-1 d-none"></div>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end <?= $has_crd_entered ? 'table-input-disabled' : '' ?>" placeholder="0.00" value="<?= $deb_inr ?>" <?= $has_crd_entered ? 'disabled' : '' ?>>
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end <?= $has_crd_entered ? 'table-input-disabled' : '' ?>" placeholder="0.00" value="<?= $deb_usd ?>" <?= $has_crd_entered ? 'disabled' : '' ?>>
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end <?= $has_crd_entered ? 'table-input-disabled' : '' ?>" placeholder="0.00" value="<?= $deb_rmb ?>" <?= $has_crd_entered ? 'disabled' : '' ?>>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end <?= $has_deb_entered ? 'table-input-disabled' : '' ?>" placeholder="0.00" value="<?= $crd_inr ?>" <?= $has_deb_entered ? 'disabled' : '' ?>>
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end <?= $has_deb_entered ? 'table-input-disabled' : '' ?>" placeholder="0.00" value="<?= $crd_usd ?>" <?= $has_deb_entered ? 'disabled' : '' ?>>
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end <?= $has_deb_entered ? 'table-input-disabled' : '' ?>" placeholder="0.00" value="<?= $crd_rmb ?>" <?= $has_deb_entered ? 'disabled' : '' ?>>
+                      </td>
+                      <td>
+                        <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark..." value="<?= html_escape($det['remark'] ?? '') ?>">
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn-remove-row" title="Delete Row">
+                          <i class="feather icon-trash-2"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  <?php endforeach; ?>
+                <?php else: ?>
+                  <tr class="adj-row">
+                    <td class="text-center row-index fw-semibold text-muted fs-12">1</td>
+                    <td>
+                      <select name="vendor_id[]" class="form-select select2-dynamic vendor-select" required>
+                        <option value="">-- Select Vendor --</option>
+                        <?php if (!empty($vendors)): ?>
+                          <?php foreach ($vendors as $v): ?>
+                            <option value="<?= $v['id'] ?>"><?= html_escape($v['name']) ?></option>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </select>
+                      <div class="vendor-ledger-info ledger-info-box mt-1 d-none"></div>
+                    </td>
+                    <td>
+                      <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
+                    </td>
+                    <td>
+                      <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end" placeholder="0.00">
+                    </td>
+                    <td>
+                      <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end" placeholder="0.00">
+                    </td>
+                    <td>
+                      <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end" placeholder="0.00">
+                    </td>
+                    <td>
+                      <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end" placeholder="0.00">
+                    </td>
+                    <td>
+                      <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end" placeholder="0.00">
+                    </td>
+                    <td>
+                      <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
+                    </td>
+                    <td class="text-center">
+                      <button type="button" class="btn-remove-row" title="Delete Row">
+                        <i class="feather icon-trash-2"></i>
+                      </button>
+                    </td>
+                  </tr>
+                <?php endif; ?>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" class="text-end text-secondary fw-semibold">Total:</td>
+                  <td class="text-end mono-amount fw-bold" id="debTotINR">0.00</td>
+                  <td class="text-end mono-amount fw-bold" id="debTotUSD">0.00</td>
+                  <td class="text-end mono-amount fw-bold" id="debTotRMB">0.00</td>
+                  <td class="text-end mono-amount fw-bold" id="crdTotINR">0.00</td>
+                  <td class="text-end mono-amount fw-bold" id="crdTotUSD">0.00</td>
+                  <td class="text-end mono-amount fw-bold" id="crdTotRMB">0.00</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Bottom Actions -->
+          <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+            <a href="<?= base_url('inventory/vendor-adjustment') ?>" class="btn btn-light px-4 py-2" style="border-radius: 6px; font-weight: 500;">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4 py-2" id="btnSubmit" style="border-radius: 6px; font-weight: 500;">
+              <i class="feather icon-check me-1"></i> Update
+            </button>
+          </div>
+
         </form>
       </div>
     </div>
-
-    <!-- Vendor Outstanding / Balance Summary Card -->
-    <div id="vendor_summary_wrapper" style="display: none;">
-      <div class="ledger-card-shell mb-4">
-        
-        <!-- Header with Summary Pills -->
-        <div class="d-flex align-items-center justify-content-between px-3 py-2 card-soft-header flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold vendor-main-text fs-13"><i class="feather icon-user me-1 text-primary"></i> Vendor Balance: <span id="lbl_vendor_name"></span></span>
-          </div>
-          
-          <div class="d-flex align-items-center flex-wrap gap-2">
-            <div class="summary-pill" id="ven_opening_pill">Opening: <strong class="vendor-soft-text mono-amount" id="ven_hdr_open_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Expenses: <strong class="vendor-soft-text mono-amount" id="ven_hdr_exp_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Payments: <strong class="text-success mono-amount" id="ven_hdr_pay_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Adjustments: <strong class="text-info mono-amount" id="ven_hdr_adj_inr">₹ 0.00</strong></div>
-            <div class="balance-pill balance-pill-due" id="ven_hdr_bal_pill">Outstanding: ₹ 0.00</div>
-          </div>
-        </div>
-
-        <!-- Total Outstanding Balance Summary Boxes -->
-        <div class="p-3 bg-white">
-          <div class="row g-2">
-            <div class="col-md-4 col-12" id="ven_bal_box_inr">
-              <div class="p-2 rounded border" style="background-color: #fafbfc;">
-                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (INR)</div>
-                <div class="fs-16 fw-bold mono-amount" id="ven_bal_inr">₹ 0.00</div>
-              </div>
-            </div>
-            <div class="col-md-4 col-12" id="ven_bal_box_usd">
-              <div class="p-2 rounded border" style="background-color: #fafbfc;">
-                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (USD)</div>
-                <div class="fs-16 fw-bold mono-amount" id="ven_bal_usd">$ 0.00</div>
-              </div>
-            </div>
-            <div class="col-md-4 col-12 ven-rmb-col" id="ven_bal_box_rmb">
-              <div class="p-2 rounded border" style="background-color: #fafbfc;">
-                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (RMB)</div>
-                <div class="fs-16 fw-bold mono-amount" id="ven_bal_rmb">¥ 0.00</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
   </div>
 </div>
 
+<!-- Template for adding dynamic clean rows without select2 cloning conflicts -->
+<template id="emptyRowTemplate">
+  <tr class="adj-row">
+    <td class="text-center row-index fw-semibold text-muted fs-12"></td>
+    <td>
+      <select name="vendor_id[]" class="form-select select2-dynamic vendor-select" required>
+        <option value="">-- Select Vendor --</option>
+        <?php if (!empty($vendors)): ?>
+          <?php foreach ($vendors as $v): ?>
+            <option value="<?= $v['id'] ?>"><?= html_escape($v['name']) ?></option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+      <div class="vendor-ledger-info ledger-info-box mt-1 d-none"></div>
+    </td>
+    <td>
+      <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
+    </td>
+    <td class="text-center">
+      <button type="button" class="btn-remove-row" title="Delete Row">
+        <i class="feather icon-trash-2"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+
 <script type="text/javascript">
-  $(document).ready(function() {
-    var current_adj_id = <?= intval($id) ?>;
+$(document).ready(function() {
 
-    // Initial load summary
-    loadVendorSummary();
+  var currentAdjId = <?= json_encode((int)$id) ?>;
+  var vendorLedgerCache = {};
 
-    // Vendor Change -> Load Summary
-    $('#vendor_id').on('change', function() {
-      loadVendorSummary();
+  initSelect2();
+  calculateTotals();
+
+  // Load ledger info for existing pre-selected vendors
+  $('.vendor-select').each(function() {
+    if ($(this).val()) {
+      fetchVendorLedger($(this));
+    }
+  });
+
+  function initSelect2($context) {
+    var $targets = $context ? $context.find('.select2-dynamic') : $('.select2-dynamic');
+    $targets.each(function() {
+      if (!$(this).hasClass("select2-hidden-accessible")) {
+        $(this).select2({
+          placeholder: "-- Select Vendor --",
+          width: '100%'
+        });
+      }
+    });
+  }
+
+  function updateRowIndices() {
+    $('#adjTableBody tr').each(function(index) {
+      $(this).find('.row-index').text(index + 1);
+    });
+  }
+
+  // Fetch Vendor Ledger Summary on Select
+  function fetchVendorLedger($selectElem) {
+    var vendorId = $selectElem.val();
+    var $infoBox = $selectElem.closest('td').find('.vendor-ledger-info');
+
+    if (!vendorId) {
+      $infoBox.empty().addClass('d-none');
+      return;
+    }
+
+    if (vendorLedgerCache[vendorId]) {
+      renderVendorLedger($infoBox, vendorLedgerCache[vendorId]);
+      return;
+    }
+
+    $infoBox.removeClass('d-none').html('<span class="text-muted fs-11"><i class="feather icon-loader fa-spin"></i> Loading...</span>');
+
+    $.ajax({
+      url: '<?= base_url('inventory/get_vendor_ledger_summary_ajax') ?>',
+      type: 'POST',
+      dataType: 'json',
+      data: {
+        vendor_id: vendorId,
+        current_adj_id: currentAdjId
+      },
+      success: function(res) {
+        if (res.success && res.data) {
+          vendorLedgerCache[vendorId] = res.data;
+          renderVendorLedger($infoBox, res.data);
+        } else {
+          $infoBox.html('<span class="text-muted fs-11">No ledger data</span>');
+        }
+      },
+      error: function() {
+        $infoBox.html('<span class="text-danger fs-11">Failed to load</span>');
+      }
+    });
+  }
+
+  function renderVendorLedger($infoBox, data) {
+    var bal = data.balance || {};
+    var rmb = parseFloat(bal.rmb) || 0;
+    var usd = parseFloat(bal.usd) || 0;
+    var inr = parseFloat(bal.inr) || 0;
+
+    var badges = [];
+
+    // INR
+    if (inr > 0.005) {
+      badges.push('<span class="ledger-badge-due">Out: ₹ ' + formatMoney(inr, 2) + '</span>');
+    } else if (inr < -0.005) {
+      badges.push('<span class="ledger-badge-advance">Adv: ₹ ' + formatMoney(Math.abs(inr), 2) + '</span>');
+    }
+
+    // USD
+    if (usd > 0.00005) {
+      badges.push('<span class="ledger-badge-due">Out: $ ' + formatMoney(usd, 2) + '</span>');
+    } else if (usd < -0.00005) {
+      badges.push('<span class="ledger-badge-advance">Adv: $ ' + formatMoney(Math.abs(usd), 2) + '</span>');
+    }
+
+    // RMB
+    if (rmb > 0.00005) {
+      badges.push('<span class="ledger-badge-due">Out: ¥ ' + formatMoney(rmb, 2) + '</span>');
+    } else if (rmb < -0.00005) {
+      badges.push('<span class="ledger-badge-advance">Adv: ¥ ' + formatMoney(Math.abs(rmb), 2) + '</span>');
+    }
+
+    if (badges.length === 0) {
+      badges.push('<span class="ledger-badge-zero">Balance: Nil</span>');
+    }
+
+    var html = '<div class="d-flex flex-wrap gap-1 align-items-center">' + badges.join('') + '</div>';
+    $infoBox.removeClass('d-none').html(html);
+  }
+
+  $(document).on('change', '.vendor-select', function() {
+    fetchVendorLedger($(this));
+  });
+
+  // Handle Mutual Exclusion between Debit & Credit
+  $(document).on('input', '.debit-field', function() {
+    var $row = $(this).closest('tr');
+    var hasDebit = checkRowHasDebit($row);
+    var $creditFields = $row.find('.credit-field');
+
+    if (hasDebit) {
+      $creditFields.val('').prop('disabled', true).addClass('table-input-disabled');
+    } else {
+      $creditFields.prop('disabled', false).removeClass('table-input-disabled');
+    }
+    calculateTotals();
+  });
+
+  $(document).on('input', '.credit-field', function() {
+    var $row = $(this).closest('tr');
+    var hasCredit = checkRowHasCredit($row);
+    var $debitFields = $row.find('.debit-field');
+
+    if (hasCredit) {
+      $debitFields.val('').prop('disabled', true).addClass('table-input-disabled');
+    } else {
+      $debitFields.prop('disabled', false).removeClass('table-input-disabled');
+    }
+    calculateTotals();
+  });
+
+  function checkRowHasDebit($row) {
+    var inr = parseFloat($row.find('.debit-inr').val()) || 0;
+    var usd = parseFloat($row.find('.debit-usd').val()) || 0;
+    var rmb = parseFloat($row.find('.debit-rmb').val()) || 0;
+    return (inr > 0 || usd > 0 || rmb > 0);
+  }
+
+  function checkRowHasCredit($row) {
+    var inr = parseFloat($row.find('.credit-inr').val()) || 0;
+    var usd = parseFloat($row.find('.credit-usd').val()) || 0;
+    var rmb = parseFloat($row.find('.credit-rmb').val()) || 0;
+    return (inr > 0 || usd > 0 || rmb > 0);
+  }
+
+  // Add Row using clean template
+  $('#btnAddRow').on('click', function() {
+    var html = $('#emptyRowTemplate').html();
+    var $newRow = $(html);
+
+    $('#adjTableBody').append($newRow);
+    initSelect2($newRow);
+    updateRowIndices();
+    calculateTotals();
+  });
+
+  // Remove Row
+  $(document).on('click', '.btn-remove-row', function() {
+    if ($('#adjTableBody tr').length > 1) {
+      $(this).closest('tr').remove();
+      updateRowIndices();
+      calculateTotals();
+    } else {
+      alert('At least one adjustment row is required.');
+    }
+  });
+
+  // Calculate Totals
+  function calculateTotals() {
+    var debINR = 0, debUSD = 0, debRMB = 0;
+    var crdINR = 0, crdUSD = 0, crdRMB = 0;
+
+    $('#adjTableBody tr').each(function() {
+      var dINR = parseFloat($(this).find('.debit-inr').val()) || 0;
+      var dUSD = parseFloat($(this).find('.debit-usd').val()) || 0;
+      var dRMB = parseFloat($(this).find('.debit-rmb').val()) || 0;
+
+      var cINR = parseFloat($(this).find('.credit-inr').val()) || 0;
+      var cUSD = parseFloat($(this).find('.credit-usd').val()) || 0;
+      var cRMB = parseFloat($(this).find('.credit-rmb').val()) || 0;
+
+      debINR += dINR;
+      debUSD += dUSD;
+      debRMB += dRMB;
+
+      crdINR += cINR;
+      crdUSD += cUSD;
+      crdRMB += cRMB;
     });
 
-    function loadVendorSummary() {
-      var vendor_id = $('#vendor_id').val();
+    $('#debTotINR').text(formatMoney(debINR, 2));
+    $('#debTotUSD').text(formatMoney(debUSD, 2));
+    $('#debTotRMB').text(formatMoney(debRMB, 2));
 
-      if (!vendor_id) {
-        $('#vendor_summary_wrapper').slideUp();
-        return;
+    $('#crdTotINR').text(formatMoney(crdINR, 2));
+    $('#crdTotUSD').text(formatMoney(crdUSD, 2));
+    $('#crdTotRMB').text(formatMoney(crdRMB, 2));
+
+    var totalRows = $('#adjTableBody tr').length;
+    var diffINR = Math.abs(debINR - crdINR);
+    var diffUSD = Math.abs(debUSD - crdUSD);
+    var diffRMB = Math.abs(debRMB - crdRMB);
+
+    if (totalRows > 1 && diffINR >= 0.005) {
+      $('#debTotINR, #crdTotINR').addClass('text-danger');
+    } else {
+      $('#debTotINR, #crdTotINR').removeClass('text-danger');
+    }
+
+    if (totalRows > 1 && diffUSD >= 0.00005) {
+      $('#debTotUSD, #crdTotUSD').addClass('text-danger');
+    } else {
+      $('#debTotUSD, #crdTotUSD').removeClass('text-danger');
+    }
+
+    if (totalRows > 1 && diffRMB >= 0.00005) {
+      $('#debTotRMB, #crdTotRMB').addClass('text-danger');
+    } else {
+      $('#debTotRMB, #crdTotRMB').removeClass('text-danger');
+    }
+  }
+
+  function formatMoney(num, decimals) {
+    var val = parseFloat(num);
+    if (isNaN(val)) return (0).toFixed(decimals);
+    return val.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  // Form Submit Validation
+  $('#adjustmentForm').on('submit', function(e) {
+    var validRows = 0;
+    var debINR = 0, debUSD = 0, debRMB = 0;
+    var crdINR = 0, crdUSD = 0, crdRMB = 0;
+    var hasError = false;
+    var errorMessage = "";
+
+    $('#adjTableBody tr').each(function(idx) {
+      var rowNum = idx + 1;
+      var ven = $(this).find('.vendor-select').val();
+
+      var dINR = parseFloat($(this).find('.debit-inr').val()) || 0;
+      var dUSD = parseFloat($(this).find('.debit-usd').val()) || 0;
+      var dRMB = parseFloat($(this).find('.debit-rmb').val()) || 0;
+
+      var cINR = parseFloat($(this).find('.credit-inr').val()) || 0;
+      var cUSD = parseFloat($(this).find('.credit-usd').val()) || 0;
+      var cRMB = parseFloat($(this).find('.credit-rmb').val()) || 0;
+
+      var hasDeb = (dINR > 0 || dUSD > 0 || dRMB > 0);
+      var hasCrd = (cINR > 0 || cUSD > 0 || cRMB > 0);
+
+      if (!ven) {
+        hasError = true;
+        errorMessage = "Please select a vendor for row #" + rowNum;
+        return false;
       }
 
-      $.ajax({
-        url: '<?= base_url("inventory/get_vendor_ledger_summary_ajax") ?>',
-        type: 'POST',
-        data: {
-          vendor_id: vendor_id,
-          current_adj_id: current_adj_id
-        },
-        dataType: 'json',
-        success: function(res) {
-          if (res.success && res.data) {
-            var d = res.data;
+      if (!hasDeb && !hasCrd) {
+        hasError = true;
+        errorMessage = "Please enter either a Debit or Credit amount for row #" + rowNum;
+        return false;
+      }
 
-            $('#lbl_vendor_name').text(d.vendor_name);
+      if (hasDeb && hasCrd) {
+        hasError = true;
+        errorMessage = "Row #" + rowNum + " cannot contain both Debit and Credit amounts.";
+        return false;
+      }
 
-            $('#ven_hdr_open_inr').text('₹ ' + formatMoney(d.opening.inr));
-            $('#ven_hdr_exp_inr').text('₹ ' + formatMoney(d.totals.expenses.inr));
-            $('#ven_hdr_pay_inr').text('₹ ' + formatMoney(d.totals.payment.inr));
-            $('#ven_hdr_adj_inr').text('₹ ' + formatMoney(d.net_adj_inr));
+      validRows++;
+      debINR += dINR;
+      debUSD += dUSD;
+      debRMB += dRMB;
 
-            var isDueInr = (d.balance.inr > 0);
-            var isDueUsd = (d.balance.usd > 0);
-            var isDueRmb = (d.balance.rmb > 0);
+      crdINR += cINR;
+      crdUSD += cUSD;
+      crdRMB += cRMB;
+    });
 
-            $('#ven_bal_inr')
-              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueInr ? 'text-danger' : 'text-success'))
-              .text('₹ ' + formatMoney(d.balance.inr));
-
-            $('#ven_bal_usd')
-              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueUsd ? 'text-danger' : 'text-success'))
-              .text('$ ' + formatMoney(d.balance.usd));
-
-            $('#ven_bal_rmb')
-              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueRmb ? 'text-danger' : 'text-success'))
-              .text('¥ ' + formatMoney(d.balance.rmb));
-
-            var isOverallDue = (d.balance.inr > 0 || d.balance.usd > 0 || d.balance.rmb > 0);
-            $('#ven_hdr_bal_pill')
-              .removeClass('balance-pill-due balance-pill-credit')
-              .addClass(isOverallDue ? 'balance-pill-due' : 'balance-pill-credit')
-              .text('Outstanding: ₹ ' + formatMoney(d.balance.inr));
-
-            $('#vendor_summary_wrapper').slideDown();
-          }
-        }
-      });
+    if (hasError) {
+      e.preventDefault();
+      alert(errorMessage);
+      return false;
     }
 
-    function formatMoney(num) {
-      var val = parseFloat(num);
-      if (isNaN(val)) return '0.00';
-      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (validRows < 1) {
+      e.preventDefault();
+      alert("Please add at least one valid adjustment row.");
+      return false;
     }
 
+    if (validRows > 1) {
+      var diffINR = Math.abs(debINR - crdINR);
+      var diffUSD = Math.abs(debUSD - crdUSD);
+      var diffRMB = Math.abs(debRMB - crdRMB);
+
+      if (diffINR >= 0.005 || diffUSD >= 0.00005 || diffRMB >= 0.00005) {
+        e.preventDefault();
+        alert("Debit and Credit totals must match across all currencies when there are multiple entries.");
+        return false;
+      }
+    }
+
+    // Enable all inputs before submit so POST data is complete
+    $('.debit-field, .credit-field').prop('disabled', false);
   });
+
+});
 </script>

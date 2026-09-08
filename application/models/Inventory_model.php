@@ -24549,6 +24549,11 @@ public function get_sales_return_reports()
 
 	public function add_customer_payment()
 	{
+		if (!$this->db->field_exists('company_id', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_id int(11) NOT NULL DEFAULT 0 AFTER id");
+		}
+
+		$data['company_id'] = $this->session->userdata('company_id') ?: 0;
 		$data['customer_id'] = $this->input->post('customer_id');
 		$data['date'] = $this->input->post('payment_date');
 		$data['inv_no'] = $this->input->post('invoice_no');
@@ -24655,6 +24660,33 @@ public function get_sales_return_reports()
 		exit();
 	}
 
+	public function approve_customer_payment($id)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Payment receipt approved successfully",
+			"url"     => base_url('inventory/payment-reconciliation?status=pending'),
+		);
+
+		if (!$this->db->field_exists('is_approved', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_approved tinyint(1) NOT NULL DEFAULT 0 AFTER adjustments");
+		}
+		if (!$this->db->field_exists('approval_date', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN approval_date datetime DEFAULT NULL AFTER is_approved");
+		}
+
+		$update_data = [
+			'is_approved'   => 1,
+			'approval_date' => date('Y-m-d H:i:s'),
+		];
+
+		$this->db->where('id', $id);
+		$this->db->update('customer_payment', $update_data);
+
+		echo json_encode($resultpost);
+		exit();
+	}
+
 	public function get_customer_payments()
 	{
 		$params['draw'] = $_REQUEST['draw'];
@@ -24667,7 +24699,7 @@ public function get_sales_return_reports()
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
 			$keyword = $filter_data['keywords'];
-			$keyword_filter = " AND (customer_name LIKE '%" . $keyword . "%' OR inv_no LIKE '%" . $keyword . "%')";
+			$keyword_filter .= " AND (customer_name LIKE '%" . $keyword . "%' OR inv_no LIKE '%" . $keyword . "%')";
 		}
 
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
@@ -24678,13 +24710,35 @@ public function get_sales_return_reports()
 			$keyword_filter .= " AND (DATE(date) >= '" . $from . "' AND DATE(date) <= '" . $to . "')";
 		}
 
-		// $company_id = $this->session->userdata('company_id');
+		$company_id = $this->session->userdata('company_id');
+		if (!empty($company_id)) {
+			$keyword_filter .= " AND company_id = '$company_id'";
+		}
+
 		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
+		$amount_query = $this->db->query("SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amount FROM customer_payment WHERE 1=1" . $keyword_filter)->row_array();
+		$total_payment_amount = (float)($amount_query['total_amount'] ?? 0);
+
 		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 		
 		if (!empty($query)) {
 			$sr_no = $start;
 			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/payment_receipt_view_modal/" . $id . "','Payment Details - " . htmlspecialchars($item['inv_no'], ENT_QUOTES) . "')";
+
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>
+					</div>
+				</div>';
+
+				$status_badge = (!empty($item['is_approved']) && $item['is_approved'] == 1)
+					? '<span class="badge bg-light-success text-success">Approved</span>'
+					: '<span class="badge bg-light-warning text-warning">Pending</span>';
+
 				$data[] = array(
 					"sr_no"         => ++$sr_no,
 					"date"          => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
@@ -24697,7 +24751,8 @@ public function get_sales_return_reports()
 					"payment_type"  => ucfirst($item['payment_type']),
 					"payment_method" => ucfirst($item['payment_method']),
 					"added_by_name" => $item['added_by_name'],
-					"actions"       => '' // Hidden for now as per request
+					"status"        => $status_badge,
+					"actions"       => $action
 				);
 			}
 		}
@@ -24706,10 +24761,660 @@ public function get_sales_return_reports()
 			"draw"            => intval($params['draw']),
 			"recordsTotal"    => $total_count,
 			"recordsFiltered" => $total_count,
+			"total_amount"    => '₹ ' . number_format($total_payment_amount, 2),
 			"data"            => $data
 		);
 
 		echo json_encode($json_data);
+	}
+
+	public function get_payment_reconciliation()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		$company_id = $this->session->userdata('company_id');
+		if (!empty($company_id)) {
+			$keyword_filter .= " AND company_id = '$company_id'";
+		}
+
+		$status = isset($_REQUEST['status']) ? clean_and_escape($_REQUEST['status']) : 'pending';
+		if ($status === 'approved' || (isset($_REQUEST['is_approved']) && $_REQUEST['is_approved'] == '1')) {
+			$keyword_filter .= " AND is_approved = 1";
+		} else {
+			$keyword_filter .= " AND (is_approved = 0 OR is_approved IS NULL)";
+		}
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $filter_data['keywords'];
+			$keyword_filter .= " AND (customer_name LIKE '%" . $keyword . "%' OR inv_no LIKE '%" . $keyword . "%')";
+		}
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$date_range = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($date_range['0']));
+			$to = date('Y-m-d', strtotime($date_range['1']));
+
+			$keyword_filter .= " AND (DATE(date) >= '" . $from . "' AND DATE(date) <= '" . $to . "')";
+		}
+
+		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
+		$amount_query = $this->db->query("SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amount FROM customer_payment WHERE 1=1" . $keyword_filter)->row_array();
+		$total_payment_amount = (float)($amount_query['total_amount'] ?? 0);
+		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		
+		if (!empty($query)) {
+			$sr_no = $start;
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/payment_receipt_view_modal/" . $id . "','Payment Details - " . htmlspecialchars($item['inv_no'], ENT_QUOTES) . "')";
+				$approve_url = "confirm_modal('" . base_url() . "inventory/payment_reconciliation/approve/" . $id . "','Are you sure want to approve this payment receipt!')";
+
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
+
+				if (empty($item['is_approved']) || $item['is_approved'] == 0) {
+					$action .= '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
+				}
+
+				$action .= '</div>
+				</div>';
+
+				$data[] = array(
+					"sr_no"         => ++$sr_no,
+					"date"          => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
+					"inv_no"        => $item['inv_no'],
+					"customer_name" => $item['customer_name'],
+					"total_tender"  => '₹' . number_format($item['total_tender'], 2),
+					"allocated_inv" => '₹' . number_format($item['allocated_inv'], 2),
+					"on_account"    => '₹' . number_format($item['on_account'], 2),
+					"adjustments"   => '₹' . number_format($item['adjustments'], 2),
+					"payment_type"  => ucfirst($item['payment_type']),
+					"payment_method" => ucfirst($item['payment_method']),
+					"added_by_name" => $item['added_by_name'],
+					"actions"       => $action
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"total_amount"    => '₹ ' . number_format($total_payment_amount, 2),
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+	}
+
+	public function approve_cash_collection($id)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Cash collection approved successfully",
+			"url"     => base_url('inventory/cash-collection?status=pending'),
+		);
+
+		if (!$this->db->table_exists('transferred_cash')) {
+			$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `company_id` int(11) NOT NULL DEFAULT 0,
+			  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+			  `remark` text DEFAULT NULL,
+			  `is_approved` tinyint(1) NOT NULL DEFAULT 0,
+			  `approval_date` datetime DEFAULT NULL,
+			  `added_by` int(11) DEFAULT NULL,
+			  `added_by_name` text DEFAULT NULL,
+			  `added_date` datetime DEFAULT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+		}
+
+		if (!$this->db->field_exists('is_approved', 'transferred_cash')) {
+			$this->db->query("ALTER TABLE transferred_cash ADD COLUMN is_approved tinyint(1) NOT NULL DEFAULT 0");
+		}
+		if (!$this->db->field_exists('approval_date', 'transferred_cash')) {
+			$this->db->query("ALTER TABLE transferred_cash ADD COLUMN approval_date datetime DEFAULT NULL");
+		}
+
+		$update_data = [
+			'is_approved'   => 1,
+			'approval_date' => date('Y-m-d H:i:s'),
+		];
+
+		$this->db->where('id', $id);
+		$this->db->update('transferred_cash', $update_data);
+
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function get_cash_collection()
+	{
+		$params['draw'] = $_REQUEST['draw'] ?? 1;
+		$start  = $_REQUEST['start'] ?? 0;
+		$length = $_REQUEST['length'] ?? 10;
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
+		$data = array();
+		$keyword_filter = "";
+
+		if (!$this->db->table_exists('transferred_cash')) {
+			$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `company_id` int(11) NOT NULL DEFAULT 0,
+			  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+			  `remark` text DEFAULT NULL,
+			  `is_approved` tinyint(1) NOT NULL DEFAULT 0,
+			  `approval_date` datetime DEFAULT NULL,
+			  `added_by` int(11) DEFAULT NULL,
+			  `added_by_name` text DEFAULT NULL,
+			  `added_date` datetime DEFAULT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+		}
+
+		if (!$this->db->field_exists('is_approved', 'transferred_cash')) {
+			$this->db->query("ALTER TABLE transferred_cash ADD COLUMN is_approved tinyint(1) NOT NULL DEFAULT 0");
+		}
+		if (!$this->db->field_exists('approval_date', 'transferred_cash')) {
+			$this->db->query("ALTER TABLE transferred_cash ADD COLUMN approval_date datetime DEFAULT NULL");
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		if (!empty($company_id)) {
+			$keyword_filter .= " AND company_id = '$company_id'";
+		}
+
+		if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
+			$keyword_filter .= " AND is_deleted = 0";
+		}
+
+		$status = isset($_REQUEST['status']) ? clean_and_escape($_REQUEST['status']) : 'pending';
+		if ($status === 'received' || (isset($_REQUEST['is_approved']) && $_REQUEST['is_approved'] == '1')) {
+			$keyword_filter .= " AND is_approved = 1";
+		} else {
+			$keyword_filter .= " AND (is_approved = 0 OR is_approved IS NULL)";
+		}
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $filter_data['keywords'];
+			$keyword_filter .= " AND (remark LIKE '%" . $keyword . "%' OR added_by_name LIKE '%" . $keyword . "%' OR amount LIKE '%" . $keyword . "%')";
+		}
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$date_range = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($date_range['0']));
+			$to = date('Y-m-d', strtotime($date_range['1']));
+
+			$keyword_filter .= " AND (DATE(added_date) >= '" . $from . "' AND DATE(added_date) <= '" . $to . "')";
+		}
+
+		$total_count = $this->db->query("SELECT id FROM transferred_cash WHERE 1=1" . $keyword_filter)->num_rows();
+		$amount_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amount FROM transferred_cash WHERE 1=1" . $keyword_filter)->row_array();
+		$total_collection_amount = (float)($amount_query['total_amount'] ?? 0);
+		$query = $this->db->query("SELECT * FROM transferred_cash WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			$sr_no = $start;
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$approve_url = "confirm_modal('" . base_url('inventory/cash_collection/approve/' . $id) . "', 'Are you sure want to approve this cash collection!')";
+
+				$action = '';
+				if (empty($item['is_approved']) || $item['is_approved'] == 0) {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>
+						</div>
+					</div>';
+				} else {
+					$action = '<span class="badge bg-light-success text-success"><i class="fa fa-check"></i> Approved</span>';
+				}
+
+				$status_badge = (!empty($item['is_approved']) && $item['is_approved'] == 1)
+					? '<span class="badge bg-light-success text-success">Received</span>'
+					: '<span class="badge bg-light-warning text-warning">Pending</span>';
+
+				$data[] = array(
+					"sr_no"          => ++$sr_no,
+					"date"           => $item['added_date'] ? date('d M, Y', strtotime($item['added_date'])) : '-',
+					"amount"         => '₹' . number_format((float)$item['amount'], 2),
+					"remark"         => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
+					"transferred_by" => $item['added_by_name'] ?: '-',
+					"approval_date"  => (!empty($item['approval_date']) && $item['approval_date'] != '0000-00-00 00:00:00') ? date('d M, Y h:i A', strtotime($item['approval_date'])) : '-',
+					"status"         => $status_badge,
+					"actions"        => $action
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"total_amount"    => '₹ ' . number_format($total_collection_amount, 2),
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+	}
+
+	public function get_petty_cash()
+	{
+		$tab    = $_REQUEST['tab'] ?? 'cash';
+		$params['draw'] = $_REQUEST['draw'] ?? 1;
+		$start  = $_REQUEST['start'] ?? 0;
+		$length = $_REQUEST['length'] ?? 10;
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
+		$data = array();
+		$company_id = $this->session->userdata('company_id');
+
+		if ($tab == 'transferred') {
+			if (!$this->db->table_exists('transferred_cash')) {
+				$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
+				  `id` int(11) NOT NULL AUTO_INCREMENT,
+				  `company_id` int(11) NOT NULL DEFAULT 0,
+				  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+				  `remark` text DEFAULT NULL,
+				  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+				  `added_by` int(11) DEFAULT NULL,
+				  `added_by_name` text DEFAULT NULL,
+				  `added_date` datetime DEFAULT NULL,
+				  PRIMARY KEY (`id`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+			}
+
+			$where_conditions = "WHERE 1=1";
+			if (!empty($company_id)) {
+				$where_conditions .= " AND company_id = '$company_id'";
+			}
+
+			if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
+				$where_conditions .= " AND is_deleted = 0";
+			}
+
+			if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+				$keyword = $filter_data['keywords'];
+				$where_conditions .= " AND (remark LIKE '%" . $keyword . "%' OR added_by_name LIKE '%" . $keyword . "%' OR amount LIKE '%" . $keyword . "%')";
+			}
+
+			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+				$date_range = explode(' - ', $_REQUEST['date_range']);
+				$from = date('Y-m-d', strtotime($date_range['0']));
+				$to = date('Y-m-d', strtotime($date_range['1']));
+
+				$where_conditions .= " AND (DATE(added_date) >= '" . $from . "' AND DATE(added_date) <= '" . $to . "')";
+			}
+
+			$total_count = $this->db->query("SELECT id FROM transferred_cash " . $where_conditions)->num_rows();
+			$amount_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amount FROM transferred_cash " . $where_conditions)->row_array();
+			$total_amount_val = (float)($amount_query['total_amount'] ?? 0);
+			$query = $this->db->query("SELECT * FROM transferred_cash " . $where_conditions . " ORDER BY id DESC LIMIT $start, $length");
+
+			if (!empty($query)) {
+				$sr_no = $start;
+				foreach ($query->result_array() as $item) {
+					$id = $item['id'];
+					$delete_url = "confirm_modal('" . base_url('inventory/petty_cash/delete_transfer/' . $id) . "', 'Are you sure want to delete!')";
+
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+						</div>
+					</div>';
+
+					$data[] = array(
+						"sr_no"         => ++$sr_no,
+						"date"          => $item['added_date'] ? date('d M, Y', strtotime($item['added_date'])) : '-',
+						"amount"        => '₹' . number_format((float)$item['amount'], 2),
+						"remark"        => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
+						"added_by_name" => $item['added_by_name'] ?: '-',
+						"actions"       => $action
+					);
+				}
+			}
+		} else {
+			if (!$this->db->table_exists('petty_cash')) {
+				$this->db->query("CREATE TABLE IF NOT EXISTS `petty_cash` (
+				  `id` int(11) NOT NULL AUTO_INCREMENT,
+				  `company_id` int(11) NOT NULL DEFAULT 0,
+				  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+				  `remark` text DEFAULT NULL,
+				  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+				  `added_by` int(11) DEFAULT NULL,
+				  `added_by_name` varchar(255) DEFAULT NULL,
+				  `added_date` datetime NOT NULL DEFAULT current_timestamp(),
+				  PRIMARY KEY (`id`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+			}
+
+			$where_conditions = "WHERE is_deleted = 0";
+			if (!empty($company_id)) {
+				$where_conditions .= " AND company_id = '$company_id'";
+			}
+
+			if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+				$keyword = $filter_data['keywords'];
+				$where_conditions .= " AND (remark LIKE '%" . $keyword . "%' OR added_by_name LIKE '%" . $keyword . "%' OR amount LIKE '%" . $keyword . "%')";
+			}
+
+			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+				$date_range = explode(' - ', $_REQUEST['date_range']);
+				$from = date('Y-m-d', strtotime($date_range['0']));
+				$to = date('Y-m-d', strtotime($date_range['1']));
+
+				$where_conditions .= " AND (DATE(added_date) >= '" . $from . "' AND DATE(added_date) <= '" . $to . "')";
+			}
+
+			$total_count = $this->db->query("SELECT id FROM petty_cash " . $where_conditions)->num_rows();
+			$amount_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amount FROM petty_cash " . $where_conditions)->row_array();
+			$total_amount_val = (float)($amount_query['total_amount'] ?? 0);
+			$query = $this->db->query("SELECT * FROM petty_cash " . $where_conditions . " ORDER BY id DESC LIMIT $start, $length");
+
+			if (!empty($query)) {
+				$sr_no = $start;
+				foreach ($query->result_array() as $item) {
+					$id = $item['id'];
+					$delete_url = "confirm_modal('" . base_url('inventory/petty_cash/delete/' . $id) . "', 'Are you sure want to delete!')";
+					$edit_url = base_url('inventory/petty-cash/edit/' . $id);
+
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+							<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+						</div>
+					</div>';
+
+					$data[] = array(
+						"sr_no"         => ++$sr_no,
+						"date"          => $item['added_date'] ? date('d M, Y', strtotime($item['added_date'])) : '-',
+						"amount"        => '₹' . number_format((float)$item['amount'], 2),
+						"remark"        => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
+						"added_by_name" => $item['added_by_name'] ?: '-',
+						"actions"       => $action
+					);
+				}
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"total_amount"    => '₹ ' . number_format($total_amount_val, 2),
+			"data"            => $data
+		);
+
+		echo json_encode($json_data);
+	}
+
+	public function get_cash_in_hand($company_id = null)
+	{
+		if (empty($company_id)) {
+			$company_id = $this->session->userdata('company_id') ?: 0;
+		}
+		$company_id = (int)$company_id;
+
+		// Ensure transferred_cash table exists
+		if (!$this->db->table_exists('transferred_cash')) {
+			$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `company_id` int(11) NOT NULL DEFAULT 0,
+			  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+			  `remark` text DEFAULT NULL,
+			  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+			  `added_by` int(11) DEFAULT NULL,
+			  `added_by_name` text DEFAULT NULL,
+			  `added_date` datetime DEFAULT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+		}
+
+		// Ensure petty_cash table exists
+		if (!$this->db->table_exists('petty_cash')) {
+			$this->db->query("CREATE TABLE IF NOT EXISTS `petty_cash` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `company_id` int(11) NOT NULL DEFAULT 0,
+			  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+			  `remark` text DEFAULT NULL,
+			  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+			  `added_by` int(11) DEFAULT NULL,
+			  `added_by_name` varchar(255) DEFAULT NULL,
+			  `added_date` datetime NOT NULL DEFAULT current_timestamp(),
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+		}
+
+		// 1. Total Current company Customer Payments (Cash)
+		$total_customer_cash = 0;
+		if ($this->db->table_exists('customer_payment')) {
+			$cust_sql = "SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_cash 
+			             FROM customer_payment 
+			             WHERE company_id = '$company_id' 
+			               AND LOWER(payment_method) = 'cash'";
+			if ($this->db->field_exists('is_deleted', 'customer_payment')) {
+				$cust_sql .= " AND is_deleted = 0";
+			}
+			$res = $this->db->query($cust_sql)->row_array();
+			$total_customer_cash = (float)($res['total_cash'] ?? 0);
+		}
+
+		// 2. Total Transferred Amount for current company
+		$total_transferred = 0;
+		if ($this->db->table_exists('transferred_cash')) {
+			$trans_sql = "SELECT IFNULL(SUM(amount), 0) as total_transferred 
+			              FROM transferred_cash 
+			              WHERE company_id = '$company_id'";
+			if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
+				$trans_sql .= " AND is_deleted = 0";
+			}
+			$res = $this->db->query($trans_sql)->row_array();
+			$total_transferred = (float)($res['total_transferred'] ?? 0);
+		}
+
+		// 3. Total Current company Petty Cash
+		$total_petty = 0;
+		if ($this->db->table_exists('petty_cash')) {
+			$petty_sql = "SELECT IFNULL(SUM(amount), 0) as total_petty 
+			              FROM petty_cash 
+			              WHERE company_id = '$company_id'";
+			if ($this->db->field_exists('is_deleted', 'petty_cash')) {
+				$petty_sql .= " AND is_deleted = 0";
+			}
+			$res = $this->db->query($petty_sql)->row_array();
+			$total_petty = (float)($res['total_petty'] ?? 0);
+		}
+
+		$cash_in_hand = $total_customer_cash - $total_transferred - $total_petty;
+		return max(0, (float)$cash_in_hand);
+	}
+
+	public function add_petty_cash()
+	{
+		$company_id = $this->session->userdata('company_id') ?: 0;
+		$amount     = (float)$this->input->post('amount');
+		$cash_in_hand = $this->get_cash_in_hand($company_id);
+
+		if ($amount <= 0) {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Please enter an amount greater than 0",
+			);
+			echo json_encode($resultpost);
+			exit();
+		}
+
+		if ($amount > $cash_in_hand) {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Amount cannot exceed available cash in hand (₹" . number_format($cash_in_hand, 2) . ")",
+			);
+			echo json_encode($resultpost);
+			exit();
+		}
+
+		$data['amount']        = $amount;
+		$data['remark']        = $this->input->post('remark') ?: $this->input->post('narration');
+		$data['company_id']    = $company_id;
+		$data['added_by']      = $this->session->userdata('super_user_id');
+		$data['added_by_name'] = $this->session->userdata('super_name');
+
+		$this->db->insert('petty_cash', $data);
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Petty cash added successfully",
+			"url"     => base_url('inventory/petty-cash'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function edit_petty_cash($id)
+	{
+		$company_id = $this->session->userdata('company_id') ?: 0;
+		$amount     = (float)$this->input->post('amount');
+
+		$existing_record = $this->db->get_where('petty_cash', ['id' => $id])->row_array();
+		$existing_amount = (float)($existing_record['amount'] ?? 0);
+
+		$cash_in_hand = $this->get_cash_in_hand($company_id);
+		$available_cash = $cash_in_hand + $existing_amount;
+
+		if ($amount <= 0) {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Please enter an amount greater than 0",
+			);
+			echo json_encode($resultpost);
+			exit();
+		}
+
+		if ($amount > $available_cash) {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Amount cannot exceed available cash in hand (₹" . number_format($available_cash, 2) . ")",
+			);
+			echo json_encode($resultpost);
+			exit();
+		}
+
+		$data['amount'] = $amount;
+		$data['remark'] = $this->input->post('remark') ?: $this->input->post('narration');
+
+		$this->db->where('id', $id)->update('petty_cash', $data);
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Petty cash updated successfully",
+			"url"     => base_url('inventory/petty-cash'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function delete_petty_cash($id)
+	{
+		$this->db->where('id', $id)->update('petty_cash', ['is_deleted' => 1]);
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Petty cash deleted successfully",
+			"url"     => base_url('inventory/petty-cash'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function add_transfer_cash()
+	{
+		$company_id   = $this->session->userdata('company_id') ?: 0;
+		$amount       = (float)$this->input->post('amount');
+		$cash_in_hand = $this->get_cash_in_hand($company_id);
+
+		if ($amount <= 0) {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Please enter an amount greater than 0",
+			);
+			echo json_encode($resultpost);
+			exit();
+		}
+
+		if ($amount > $cash_in_hand) {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Amount cannot exceed available cash in hand (₹" . number_format($cash_in_hand, 2) . ")",
+			);
+			echo json_encode($resultpost);
+			exit();
+		}
+
+		// Ensure transferred_cash table exists
+		if (!$this->db->table_exists('transferred_cash')) {
+			$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `company_id` int(11) NOT NULL DEFAULT 0,
+			  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
+			  `remark` text DEFAULT NULL,
+			  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+			  `added_by` int(11) DEFAULT NULL,
+			  `added_by_name` text DEFAULT NULL,
+			  `added_date` datetime DEFAULT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+		}
+
+		$data['company_id']    = $company_id;
+		$data['amount']        = $amount;
+		$data['remark']        = $this->input->post('remark') ?: $this->input->post('narration');
+		$data['added_by']      = $this->session->userdata('super_user_id');
+		$data['added_by_name'] = $this->session->userdata('super_name');
+		$data['added_date']    = date('Y-m-d H:i:s');
+
+		$this->db->insert('transferred_cash', $data);
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Cash transferred successfully",
+			"url"     => base_url('inventory/petty-cash?tab=transferred'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function delete_transfer_cash($id)
+	{
+		if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
+			$this->db->where('id', $id)->update('transferred_cash', ['is_deleted' => 1]);
+		} else {
+			$this->db->where('id', $id)->delete('transferred_cash');
+		}
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Transferred cash deleted successfully",
+			"url"     => base_url('inventory/petty-cash?tab=transferred'),
+		);
+		echo json_encode($resultpost);
+		exit();
 	}
 
 	public function get_customer_payments_by_id($customer_id)
@@ -27134,6 +27839,12 @@ public function get_sales_return_reports()
 	}
 
 	/* Vendor Adjustments Starts */
+	public function get_other_charges_list()
+	{
+		$query = $this->db->query("SELECT id, name FROM other_charges WHERE is_delete = 0 ORDER BY name ASC");
+		return $query ? $query->result_array() : [];
+	}
+
 	public function get_company_vendors()
 	{
 		$company_id = $this->session->userdata('company_id');
@@ -27151,85 +27862,379 @@ public function get_sales_return_reports()
 		$user_id = $this->session->userdata('super_user_id');
 		$user_name = $this->session->userdata('super_name');
 
-		$vendor_id = clean_and_escape($this->input->post('vendor_id') ? $this->input->post('vendor_id') : $this->input->post('supplier_id'));
 		$date = clean_and_escape($this->input->post('date'));
-		$rmb = clean_and_escape($this->input->post('rmb'));
-		$usd = clean_and_escape($this->input->post('usd'));
-		$inr = clean_and_escape($this->input->post('inr'));
-		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$date = !empty($date) ? $date : date('Y-m-d');
 		$type = clean_and_escape($this->input->post('type'));
-		$remark = clean_and_escape($this->input->post('remark'));
+		$type = in_array($type, ['official', 'unofficial']) ? $type : 'unofficial';
 
-		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
-		$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+		$amt_type_id = intval($this->input->post('amt_type_id'));
+		$amt_type_name = null;
+		if ($amt_type_id > 0) {
+			$charge = $this->db->get_where('other_charges', ['id' => $amt_type_id])->row_array();
+			if ($charge) {
+				$amt_type_name = $charge['name'];
+			} else {
+				$amt_type_id = null;
+			}
+		} else {
+			$amt_type_id = null;
+		}
 
-		$data = array(
-			'company_id'    => $company_id ? $company_id : 0,
-			'vendor_id'     => $vendor_id,
-			'vendor_name'   => $vendor_name,
-			'date'          => $date ? $date : date('Y-m-d'),
-			'rmb'           => !empty($rmb) ? $rmb : 0.00,
-			'usd'           => !empty($usd) ? $usd : 0.00,
-			'inr'           => !empty($inr) ? $inr : 0.00,
-			'amt_type'      => $amt_type,
+		$vendor_ids  = (array) $this->input->post('vendor_id');
+		$debit_inrs  = (array) $this->input->post('debit_inr');
+		$debit_usds  = (array) $this->input->post('debit_usd');
+		$debit_rmbs  = (array) $this->input->post('debit_rmb');
+		$credit_inrs = (array) $this->input->post('credit_inr');
+		$credit_usds = (array) $this->input->post('credit_usd');
+		$credit_rmbs = (array) $this->input->post('credit_rmb');
+		$remarks     = (array) $this->input->post('remark');
+
+		$valid_rows = [];
+		$total_deb_inr = 0.0;
+		$total_deb_usd = 0.0;
+		$total_deb_rmb = 0.0;
+		$total_crd_inr = 0.0;
+		$total_crd_usd = 0.0;
+		$total_crd_rmb = 0.0;
+
+		$row_count = count($vendor_ids);
+		for ($i = 0; $i < $row_count; $i++) {
+			$vid = isset($vendor_ids[$i]) ? intval($vendor_ids[$i]) : 0;
+			if ($vid <= 0) continue;
+
+			$d_inr = isset($debit_inrs[$i]) ? (float)$debit_inrs[$i] : 0.0;
+			$d_usd = isset($debit_usds[$i]) ? (float)$debit_usds[$i] : 0.0;
+			$d_rmb = isset($debit_rmbs[$i]) ? (float)$debit_rmbs[$i] : 0.0;
+
+			$c_inr = isset($credit_inrs[$i]) ? (float)$credit_inrs[$i] : 0.0;
+			$c_usd = isset($credit_usds[$i]) ? (float)$credit_usds[$i] : 0.0;
+			$c_rmb = isset($credit_rmbs[$i]) ? (float)$credit_rmbs[$i] : 0.0;
+
+			$has_debit  = ($d_inr > 0 || $d_usd > 0 || $d_rmb > 0);
+			$has_credit = ($c_inr > 0 || $c_usd > 0 || $c_rmb > 0);
+
+			if ($has_debit && $has_credit) {
+				$this->session->set_flashdata('error_message', 'Each row can only contain either Debit or Credit amount, not both.');
+				redirect(site_url('inventory/add-vendor-adjustment'), 'refresh');
+				return;
+			}
+
+			if (!$has_debit && !$has_credit) {
+				continue;
+			}
+
+			$amt_type = $has_debit ? 'minus' : 'plus';
+			$inr = $has_debit ? $d_inr : $c_inr;
+			$usd = $has_debit ? $d_usd : $c_usd;
+			$rmb = $has_debit ? $d_rmb : $c_rmb;
+			$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+			if ($has_debit) {
+				$total_deb_inr += $d_inr;
+				$total_deb_usd += $d_usd;
+				$total_deb_rmb += $d_rmb;
+			} else {
+				$total_crd_inr += $c_inr;
+				$total_crd_usd += $c_usd;
+				$total_crd_rmb += $c_rmb;
+			}
+
+			$valid_rows[] = [
+				'vendor_id' => $vid,
+				'inr'       => $inr,
+				'usd'       => $usd,
+				'rmb'       => $rmb,
+				'amt_type'  => $amt_type,
+				'remark'    => $row_remark
+			];
+		}
+
+		if (empty($valid_rows)) {
+			$this->session->set_flashdata('error_message', 'Please add at least one valid vendor adjustment entry.');
+			redirect(site_url('inventory/add-vendor-adjustment'), 'refresh');
+			return;
+		}
+
+		if (count($valid_rows) > 1) {
+			if (abs($total_deb_inr - $total_crd_inr) > 0.01 || abs($total_deb_usd - $total_crd_usd) > 0.0001 || abs($total_deb_rmb - $total_crd_rmb) > 0.0001) {
+				$this->session->set_flashdata('error_message', 'Debit and Credit amounts must match when there are more than 1 entries.');
+				redirect(site_url('inventory/add-vendor-adjustment'), 'refresh');
+				return;
+			}
+		}
+
+		$this->db->trans_begin();
+
+		$parent_data = array(
+			'date'          => $date,
+			'adjust_type'   => 'vendors',
 			'type'          => $type,
-			'remark'        => $remark,
+			'amt_type_id'   => $amt_type_id,
+			'amt_type_name' => $amt_type_name,
 			'is_deleted'    => 0,
 			'added_by'      => $user_name,
 			'added_by_id'   => $user_id,
 			'created_at'    => date('Y-m-d H:i:s'),
 			'updated_at'    => date('Y-m-d H:i:s')
 		);
+		$this->db->insert('adjustments', $parent_data);
+		$parent_id = $this->db->insert_id();
 
-		$this->db->insert('vendor_adjustments', $data);
+		$child_amt_type_id   = (count($valid_rows) === 1) ? $amt_type_id : null;
+		$child_amt_type_name = (count($valid_rows) === 1) ? $amt_type_name : null;
+
+		foreach ($valid_rows as $row) {
+			$vendor = $this->db->get_where('my_companies', array('id' => $row['vendor_id']))->row_array();
+			$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+
+			$child_data = array(
+				'parent_id'     => $parent_id,
+				'company_id'    => $company_id ? $company_id : 0,
+				'vendor_id'     => $row['vendor_id'],
+				'vendor_name'   => $vendor_name,
+				'date'          => $date,
+				'rmb'           => $row['rmb'],
+				'usd'           => $row['usd'],
+				'inr'           => $row['inr'],
+				'amt_type'      => $row['amt_type'],
+				'amt_type_id'   => $child_amt_type_id,
+				'amt_type_name' => $child_amt_type_name,
+				'type'          => $type,
+				'remark'        => $row['remark'],
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('vendor_adjustments', $child_data);
+		}
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$this->session->set_flashdata('error_message', 'Failed to save Vendor Adjustment. Please try again.');
+			redirect(site_url('inventory/add-vendor-adjustment'), 'refresh');
+			return;
+		}
+
+		$this->db->trans_commit();
 		$this->session->set_flashdata('flash_message', 'Vendor Adjustment Added Successfully');
 		redirect(site_url('inventory/vendor-adjustment'), 'refresh');
 	}
 
 	public function edit_vendor_adjustment($id)
 	{
-		$vendor_id = clean_and_escape($this->input->post('vendor_id') ? $this->input->post('vendor_id') : $this->input->post('supplier_id'));
+		$id = intval($id);
+		$company_id = $this->session->userdata('company_id');
+		$user_id = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
 		$date = clean_and_escape($this->input->post('date'));
-		$rmb = clean_and_escape($this->input->post('rmb'));
-		$usd = clean_and_escape($this->input->post('usd'));
-		$inr = clean_and_escape($this->input->post('inr'));
-		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$date = !empty($date) ? $date : date('Y-m-d');
 		$type = clean_and_escape($this->input->post('type'));
-		$remark = clean_and_escape($this->input->post('remark'));
+		$type = in_array($type, ['official', 'unofficial']) ? $type : 'unofficial';
 
-		$vendor = $this->db->get_where('my_companies', array('id' => $vendor_id))->row_array();
-		$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+		$amt_type_id = intval($this->input->post('amt_type_id'));
+		$amt_type_name = null;
+		if ($amt_type_id > 0) {
+			$charge = $this->db->get_where('other_charges', ['id' => $amt_type_id])->row_array();
+			if ($charge) {
+				$amt_type_name = $charge['name'];
+			} else {
+				$amt_type_id = null;
+			}
+		} else {
+			$amt_type_id = null;
+		}
 
-		$data = array(
-			'vendor_id'   => $vendor_id,
-			'vendor_name' => $vendor_name,
-			'date'          => $date ? $date : date('Y-m-d'),
-			'rmb'           => !empty($rmb) ? $rmb : 0.00,
-			'usd'           => !empty($usd) ? $usd : 0.00,
-			'inr'           => !empty($inr) ? $inr : 0.00,
-			'amt_type'      => $amt_type,
-			'type'          => $type,
-			'remark'        => $remark,
-			'updated_at'    => date('Y-m-d H:i:s')
-		);
+		$vendor_ids  = (array) $this->input->post('vendor_id');
+		$debit_inrs  = (array) $this->input->post('debit_inr');
+		$debit_usds  = (array) $this->input->post('debit_usd');
+		$debit_rmbs  = (array) $this->input->post('debit_rmb');
+		$credit_inrs = (array) $this->input->post('credit_inr');
+		$credit_usds = (array) $this->input->post('credit_usd');
+		$credit_rmbs = (array) $this->input->post('credit_rmb');
+		$remarks     = (array) $this->input->post('remark');
 
-		$this->db->where('id', $id);
-		$this->db->update('vendor_adjustments', $data);
+		$valid_rows = [];
+		$total_deb_inr = 0.0;
+		$total_deb_usd = 0.0;
+		$total_deb_rmb = 0.0;
+		$total_crd_inr = 0.0;
+		$total_crd_usd = 0.0;
+		$total_crd_rmb = 0.0;
+
+		$row_count = count($vendor_ids);
+		for ($i = 0; $i < $row_count; $i++) {
+			$vid = isset($vendor_ids[$i]) ? intval($vendor_ids[$i]) : 0;
+			if ($vid <= 0) continue;
+
+			$d_inr = isset($debit_inrs[$i]) ? (float)$debit_inrs[$i] : 0.0;
+			$d_usd = isset($debit_usds[$i]) ? (float)$debit_usds[$i] : 0.0;
+			$d_rmb = isset($debit_rmbs[$i]) ? (float)$debit_rmbs[$i] : 0.0;
+
+			$c_inr = isset($credit_inrs[$i]) ? (float)$credit_inrs[$i] : 0.0;
+			$c_usd = isset($credit_usds[$i]) ? (float)$credit_usds[$i] : 0.0;
+			$c_rmb = isset($credit_rmbs[$i]) ? (float)$credit_rmbs[$i] : 0.0;
+
+			$has_debit  = ($d_inr > 0 || $d_usd > 0 || $d_rmb > 0);
+			$has_credit = ($c_inr > 0 || $c_usd > 0 || $c_rmb > 0);
+
+			if ($has_debit && $has_credit) {
+				$this->session->set_flashdata('error_message', 'Each row can only contain either Debit or Credit amount, not both.');
+				redirect(site_url('inventory/edit-vendor-adjustment/' . $id), 'refresh');
+				return;
+			}
+
+			if (!$has_debit && !$has_credit) {
+				continue;
+			}
+
+			$amt_type = $has_debit ? 'minus' : 'plus';
+			$inr = $has_debit ? $d_inr : $c_inr;
+			$usd = $has_debit ? $d_usd : $c_usd;
+			$rmb = $has_debit ? $d_rmb : $c_rmb;
+			$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+			if ($has_debit) {
+				$total_deb_inr += $d_inr;
+				$total_deb_usd += $d_usd;
+				$total_deb_rmb += $d_rmb;
+			} else {
+				$total_crd_inr += $c_inr;
+				$total_crd_usd += $c_usd;
+				$total_crd_rmb += $c_rmb;
+			}
+
+			$valid_rows[] = [
+				'vendor_id' => $vid,
+				'inr'       => $inr,
+				'usd'       => $usd,
+				'rmb'       => $rmb,
+				'amt_type'  => $amt_type,
+				'remark'    => $row_remark
+			];
+		}
+
+		if (empty($valid_rows)) {
+			$this->session->set_flashdata('error_message', 'Please add at least one valid vendor adjustment entry.');
+			redirect(site_url('inventory/edit-vendor-adjustment/' . $id), 'refresh');
+			return;
+		}
+
+		if (count($valid_rows) > 1) {
+			if (abs($total_deb_inr - $total_crd_inr) > 0.01 || abs($total_deb_usd - $total_crd_usd) > 0.0001 || abs($total_deb_rmb - $total_crd_rmb) > 0.0001) {
+				$this->session->set_flashdata('error_message', 'Debit and Credit amounts must match when there are more than 1 entries.');
+				redirect(site_url('inventory/edit-vendor-adjustment/' . $id), 'refresh');
+				return;
+			}
+		}
+
+		$this->db->trans_begin();
+
+		// Update or insert parent
+		$existing_parent = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'vendors'))->row_array();
+		if ($existing_parent) {
+			$this->db->where('id', $id);
+			$this->db->update('adjustments', array(
+				'date'          => $date,
+				'type'          => $type,
+				'amt_type_id'   => $amt_type_id,
+				'amt_type_name' => $amt_type_name,
+				'updated_at'    => date('Y-m-d H:i:s')
+			));
+		} else {
+			$parent_data = array(
+				'id'            => $id,
+				'date'          => $date,
+				'adjust_type'   => 'vendors',
+				'type'          => $type,
+				'amt_type_id'   => $amt_type_id,
+				'amt_type_name' => $amt_type_name,
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('adjustments', $parent_data);
+		}
+
+		// Delete existing child rows for parent
+		$this->db->where('parent_id', $id)->delete('vendor_adjustments');
+
+		$child_amt_type_id   = (count($valid_rows) === 1) ? $amt_type_id : null;
+		$child_amt_type_name = (count($valid_rows) === 1) ? $amt_type_name : null;
+
+		foreach ($valid_rows as $row) {
+			$vendor = $this->db->get_where('my_companies', array('id' => $row['vendor_id']))->row_array();
+			$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+
+			$child_data = array(
+				'parent_id'     => $id,
+				'company_id'    => $company_id ? $company_id : 0,
+				'vendor_id'     => $row['vendor_id'],
+				'vendor_name'   => $vendor_name,
+				'date'          => $date,
+				'rmb'           => $row['rmb'],
+				'usd'           => $row['usd'],
+				'inr'           => $row['inr'],
+				'amt_type'      => $row['amt_type'],
+				'amt_type_id'   => $child_amt_type_id,
+				'amt_type_name' => $child_amt_type_name,
+				'type'          => $type,
+				'remark'        => $row['remark'],
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('vendor_adjustments', $child_data);
+		}
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$this->session->set_flashdata('error_message', 'Failed to update Vendor Adjustment. Please try again.');
+			redirect(site_url('inventory/edit-vendor-adjustment/' . $id), 'refresh');
+			return;
+		}
+
+		$this->db->trans_commit();
 		$this->session->set_flashdata('flash_message', 'Vendor Adjustment Updated Successfully');
 		redirect(site_url('inventory/vendor-adjustment'), 'refresh');
 	}
 
 	public function delete_vendor_adjustment($id)
 	{
-		$this->db->where('id', $id);
-		$this->db->update('vendor_adjustments', array('is_deleted' => 1));
+		$id = intval($id);
+		$this->db->trans_begin();
+		$this->db->where('id', $id)->update('adjustments', array('is_deleted' => 1));
+		$this->db->where('parent_id', $id)->update('vendor_adjustments', array('is_deleted' => 1));
+		$this->db->trans_commit();
+
 		$this->session->set_flashdata('flash_message', 'Vendor Adjustment Deleted Successfully');
 		redirect(site_url('inventory/vendor-adjustment'), 'refresh');
 	}
 
 	public function get_vendor_adjustment_by_id($id)
 	{
-		return $this->db->get_where('vendor_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+		$id = intval($id);
+		$adj = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'vendors', 'is_deleted' => 0))->row_array();
+		if (empty($adj)) {
+			$adj = $this->db->get_where('vendor_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+		}
+		return $adj;
+	}
+
+	public function get_vendor_adjustment_details_by_parent_id($parent_id)
+	{
+		$parent_id = intval($parent_id);
+		$details = $this->db->get_where('vendor_adjustments', array('parent_id' => $parent_id, 'is_deleted' => 0))->result_array();
+		if (empty($details)) {
+			$details = $this->db->get_where('vendor_adjustments', array('id' => $parent_id, 'is_deleted' => 0))->result_array();
+		}
+		return $details;
 	}
 
 	public function get_vendor_adjustment_datatable()
@@ -27239,26 +28244,49 @@ public function get_sales_return_reports()
 		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
 
 		$search_val = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
-		$where = "va.is_deleted = '0'";
+		$where = "a.is_deleted = 0 AND a.adjust_type = 'vendors'";
 
 		$company_id = $this->session->userdata('company_id');
 		if ($company_id) {
-			$where .= " AND va.company_id = '" . $company_id . "'";
+			$where .= " AND (va.company_id = '" . $company_id . "' OR va.company_id = 0 OR va.company_id IS NULL)";
 		}
 
 		if ($search_val != '') {
-			$where .= " AND (va.vendor_name LIKE '%" . $search_val . "%' OR va.remark LIKE '%" . $search_val . "%' OR va.amt_type LIKE '%" . $search_val . "%' OR va.type LIKE '%" . $search_val . "%')";
+			$where .= " AND (va.vendor_name LIKE '%" . $search_val . "%' OR va.remark LIKE '%" . $search_val . "%' OR a.type LIKE '%" . $search_val . "%' OR a.date LIKE '%" . $search_val . "%')";
 		}
 
-		$total_count = $this->db->query("SELECT va.id FROM vendor_adjustments va WHERE $where")->num_rows();
+		$total_count_query = $this->db->query("SELECT COUNT(DISTINCT a.id) as cnt 
+												FROM adjustments a 
+												LEFT JOIN vendor_adjustments va ON va.parent_id = a.id AND va.is_deleted = 0
+												WHERE $where");
+		$total_count = $total_count_query ? $total_count_query->row()->cnt : 0;
 
 		$query = $this->db->query("SELECT 
-										va.*,
-										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
-									FROM vendor_adjustments va
-									LEFT JOIN sys_users u ON va.added_by_id = u.id
+										a.id,
+										a.date,
+										a.type,
+										a.adjust_type,
+										a.added_by,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name,
+										GROUP_CONCAT(DISTINCT va.vendor_name ORDER BY va.id ASC SEPARATOR ', ') as vendor_name,
+										COUNT(va.id) as row_count,
+										MAX(va.amt_type) as single_amt_type,
+										SUM(CASE WHEN va.amt_type = 'minus' THEN va.usd ELSE 0 END) as deb_usd,
+										SUM(CASE WHEN va.amt_type = 'plus' THEN va.usd ELSE 0 END) as crd_usd,
+										SUM(CASE WHEN va.amt_type = 'minus' THEN va.rmb ELSE 0 END) as deb_rmb,
+										SUM(CASE WHEN va.amt_type = 'plus' THEN va.rmb ELSE 0 END) as crd_rmb,
+										SUM(CASE WHEN va.amt_type = 'minus' THEN va.inr ELSE 0 END) as deb_inr,
+										SUM(CASE WHEN va.amt_type = 'plus' THEN va.inr ELSE 0 END) as crd_inr,
+										SUM(va.usd) as total_usd,
+										SUM(va.rmb) as total_rmb,
+										SUM(va.inr) as total_inr,
+										GROUP_CONCAT(DISTINCT NULLIF(va.remark, '') SEPARATOR '; ') as remark
+									FROM adjustments a
+									LEFT JOIN vendor_adjustments va ON va.parent_id = a.id AND va.is_deleted = 0
+									LEFT JOIN sys_users u ON a.added_by_id = u.id
 									WHERE $where
-									ORDER BY va.id DESC
+									GROUP BY a.id
+									ORDER BY a.id DESC
 									LIMIT $start, $length");
 
 		$data = array();
@@ -27271,9 +28299,20 @@ public function get_sales_return_reports()
 				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
 
-				$amt_type_badge = ($item['amt_type'] == 'plus') 
-					? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
-					: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+				$row_cnt = intval($item['row_count']);
+				if ($row_cnt > 1) {
+					$amt_type_badge = '<span class="badge bg-primary" style="font-size:11px;">Balanced (±)</span>';
+					$show_usd = max((float)$item['deb_usd'], (float)$item['crd_usd']);
+					$show_rmb = max((float)$item['deb_rmb'], (float)$item['crd_rmb']);
+					$show_inr = max((float)$item['deb_inr'], (float)$item['crd_inr']);
+				} else {
+					$amt_type_badge = ($item['single_amt_type'] == 'plus') 
+						? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
+						: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+					$show_usd = (float)$item['total_usd'];
+					$show_rmb = (float)$item['total_rmb'];
+					$show_inr = (float)$item['total_inr'];
+				}
 
 				$type_badge = ($item['type'] == 'official')
 					? '<span class="badge bg-info" style="font-size:11px;">Official</span>'
@@ -27283,10 +28322,10 @@ public function get_sales_return_reports()
 					"sr_no"         => ++$start,
 					"id"            => $item['id'],
 					"date"          => date('d M Y', strtotime($item['date'])),
-					"vendor_name"   => html_escape($item['vendor_name']),
-					"usd"           => number_format((float)$item['usd'], 2),
-					"rmb"           => number_format((float)$item['rmb'], 2),
-					"inr"           => number_format((float)$item['inr'], 2),
+					"vendor_name"   => html_escape($item['vendor_name'] ? $item['vendor_name'] : '—'),
+					"usd"           => number_format($show_usd, 2),
+					"rmb"           => number_format($show_rmb, 2),
+					"inr"           => number_format($show_inr, 2),
 					"amt_type"      => $amt_type_badge,
 					"type"          => $type_badge,
 					"remark"        => html_escape($item['remark'] ? $item['remark'] : '—'),
@@ -27339,7 +28378,7 @@ public function get_sales_return_reports()
 
 		$adj_where = "vendor_id = '$vendor_id' AND is_deleted = 0";
 		if ($current_adj_id) {
-			$adj_where .= " AND id != " . intval($current_adj_id);
+			$adj_where .= " AND (id != " . intval($current_adj_id) . " AND parent_id != " . intval($current_adj_id) . ")";
 		}
 		$adjustments = $this->db->query("SELECT * FROM vendor_adjustments WHERE $adj_where")->result_array();
 
@@ -27406,77 +28445,332 @@ public function get_sales_return_reports()
 		$user_id = $this->session->userdata('super_user_id');
 		$user_name = $this->session->userdata('super_name');
 
-		$customer_id = clean_and_escape($this->input->post('customer_id'));
 		$date = clean_and_escape($this->input->post('date'));
-		$inr = clean_and_escape($this->input->post('inr'));
-		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$date = !empty($date) ? $date : date('Y-m-d');
 		$type = clean_and_escape($this->input->post('type'));
-		$remark = clean_and_escape($this->input->post('remark'));
+		$type = in_array($type, ['official', 'unofficial']) ? $type : 'unofficial';
 
-		$customer = $this->db->get_where('customer', array('id' => $customer_id))->row_array();
-		$customer_name = !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '');
+		$amt_type_id = intval($this->input->post('amt_type_id'));
+		$amt_type_name = null;
+		if ($amt_type_id > 0) {
+			$charge = $this->db->get_where('other_charges', ['id' => $amt_type_id])->row_array();
+			if ($charge) {
+				$amt_type_name = $charge['name'];
+			} else {
+				$amt_type_id = null;
+			}
+		} else {
+			$amt_type_id = null;
+		}
 
-		$data = array(
-			'company_id'    => $company_id ? $company_id : 0,
-			'customer_id'   => $customer_id,
-			'customer_name' => $customer_name,
-			'date'          => $date ? $date : date('Y-m-d'),
-			'inr'           => !empty($inr) ? $inr : 0.00,
-			'amt_type'      => $amt_type,
+		$customer_ids = (array) $this->input->post('customer_id');
+		$debit_inrs   = (array) $this->input->post('debit_inr');
+		$credit_inrs  = (array) $this->input->post('credit_inr');
+		$remarks      = (array) $this->input->post('remark');
+
+		$valid_rows = [];
+		$total_deb_inr = 0.0;
+		$total_crd_inr = 0.0;
+
+		$row_count = count($customer_ids);
+		for ($i = 0; $i < $row_count; $i++) {
+			$cid = isset($customer_ids[$i]) ? intval($customer_ids[$i]) : 0;
+			if ($cid <= 0) continue;
+
+			$d_inr = isset($debit_inrs[$i]) ? (float)$debit_inrs[$i] : 0.0;
+			$c_inr = isset($credit_inrs[$i]) ? (float)$credit_inrs[$i] : 0.0;
+
+			$has_debit  = ($d_inr > 0);
+			$has_credit = ($c_inr > 0);
+
+			if ($has_debit && $has_credit) {
+				$this->session->set_flashdata('error_message', 'Each row can only contain either Debit or Credit amount, not both.');
+				redirect(site_url('inventory/add-customer-adjustment'), 'refresh');
+				return;
+			}
+
+			if (!$has_debit && !$has_credit) {
+				continue;
+			}
+
+			$amt_type = $has_debit ? 'minus' : 'plus';
+			$inr = $has_debit ? $d_inr : $c_inr;
+			$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+			if ($has_debit) {
+				$total_deb_inr += $d_inr;
+			} else {
+				$total_crd_inr += $c_inr;
+			}
+
+			$valid_rows[] = [
+				'customer_id' => $cid,
+				'inr'         => $inr,
+				'amt_type'    => $amt_type,
+				'remark'      => $row_remark
+			];
+		}
+
+		if (empty($valid_rows)) {
+			$this->session->set_flashdata('error_message', 'Please add at least one valid customer adjustment entry.');
+			redirect(site_url('inventory/add-customer-adjustment'), 'refresh');
+			return;
+		}
+
+		if (count($valid_rows) > 1) {
+			if (abs($total_deb_inr - $total_crd_inr) > 0.01) {
+				$this->session->set_flashdata('error_message', 'Debit and Credit amounts must match when there are more than 1 entries.');
+				redirect(site_url('inventory/add-customer-adjustment'), 'refresh');
+				return;
+			}
+		}
+
+		$this->db->trans_begin();
+
+		$parent_data = array(
+			'date'          => $date,
+			'adjust_type'   => 'customers',
 			'type'          => $type,
-			'remark'        => $remark,
+			'amt_type_id'   => $amt_type_id,
+			'amt_type_name' => $amt_type_name,
 			'is_deleted'    => 0,
 			'added_by'      => $user_name,
 			'added_by_id'   => $user_id,
 			'created_at'    => date('Y-m-d H:i:s'),
 			'updated_at'    => date('Y-m-d H:i:s')
 		);
+		$this->db->insert('adjustments', $parent_data);
+		$parent_id = $this->db->insert_id();
 
-		$this->db->insert('customer_adjustments', $data);
+		$child_amt_type_id   = (count($valid_rows) === 1) ? $amt_type_id : null;
+		$child_amt_type_name = (count($valid_rows) === 1) ? $amt_type_name : null;
+
+		foreach ($valid_rows as $row) {
+			$customer = $this->db->get_where('customer', array('id' => $row['customer_id']))->row_array();
+			$customer_name = !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '');
+
+			$child_data = array(
+				'parent_id'     => $parent_id,
+				'company_id'    => $company_id ? $company_id : 0,
+				'customer_id'   => $row['customer_id'],
+				'customer_name' => $customer_name,
+				'date'          => $date,
+				'inr'           => $row['inr'],
+				'amt_type'      => $row['amt_type'],
+				'amt_type_id'   => $child_amt_type_id,
+				'amt_type_name' => $child_amt_type_name,
+				'type'          => $type,
+				'remark'        => $row['remark'],
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('customer_adjustments', $child_data);
+		}
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$this->session->set_flashdata('error_message', 'Failed to save Customer Adjustment. Please try again.');
+			redirect(site_url('inventory/add-customer-adjustment'), 'refresh');
+			return;
+		}
+
+		$this->db->trans_commit();
 		$this->session->set_flashdata('flash_message', 'Customer Adjustment Added Successfully');
 		redirect(site_url('inventory/customer-adjustment'), 'refresh');
 	}
 
 	public function edit_customer_adjustment($id)
 	{
-		$customer_id = clean_and_escape($this->input->post('customer_id'));
+		$id = intval($id);
+		$company_id = $this->session->userdata('company_id');
+		$user_id = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
 		$date = clean_and_escape($this->input->post('date'));
-		$inr = clean_and_escape($this->input->post('inr'));
-		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$date = !empty($date) ? $date : date('Y-m-d');
 		$type = clean_and_escape($this->input->post('type'));
-		$remark = clean_and_escape($this->input->post('remark'));
+		$type = in_array($type, ['official', 'unofficial']) ? $type : 'unofficial';
 
-		$customer = $this->db->get_where('customer', array('id' => $customer_id))->row_array();
-		$customer_name = !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '');
+		$amt_type_id = intval($this->input->post('amt_type_id'));
+		$amt_type_name = null;
+		if ($amt_type_id > 0) {
+			$charge = $this->db->get_where('other_charges', ['id' => $amt_type_id])->row_array();
+			if ($charge) {
+				$amt_type_name = $charge['name'];
+			} else {
+				$amt_type_id = null;
+			}
+		} else {
+			$amt_type_id = null;
+		}
 
-		$data = array(
-			'customer_id'   => $customer_id,
-			'customer_name' => $customer_name,
-			'date'          => $date ? $date : date('Y-m-d'),
-			'inr'           => !empty($inr) ? $inr : 0.00,
-			'amt_type'      => $amt_type,
-			'type'          => $type,
-			'remark'        => $remark,
-			'updated_at'    => date('Y-m-d H:i:s')
-		);
+		$customer_ids = (array) $this->input->post('customer_id');
+		$debit_inrs   = (array) $this->input->post('debit_inr');
+		$credit_inrs  = (array) $this->input->post('credit_inr');
+		$remarks      = (array) $this->input->post('remark');
 
-		$this->db->where('id', $id);
-		$this->db->update('customer_adjustments', $data);
+		$valid_rows = [];
+		$total_deb_inr = 0.0;
+		$total_crd_inr = 0.0;
+
+		$row_count = count($customer_ids);
+		for ($i = 0; $i < $row_count; $i++) {
+			$cid = isset($customer_ids[$i]) ? intval($customer_ids[$i]) : 0;
+			if ($cid <= 0) continue;
+
+			$d_inr = isset($debit_inrs[$i]) ? (float)$debit_inrs[$i] : 0.0;
+			$c_inr = isset($credit_inrs[$i]) ? (float)$credit_inrs[$i] : 0.0;
+
+			$has_debit  = ($d_inr > 0);
+			$has_credit = ($c_inr > 0);
+
+			if ($has_debit && $has_credit) {
+				$this->session->set_flashdata('error_message', 'Each row can only contain either Debit or Credit amount, not both.');
+				redirect(site_url('inventory/edit-customer-adjustment/' . $id), 'refresh');
+				return;
+			}
+
+			if (!$has_debit && !$has_credit) {
+				continue;
+			}
+
+			$amt_type = $has_debit ? 'minus' : 'plus';
+			$inr = $has_debit ? $d_inr : $c_inr;
+			$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+			if ($has_debit) {
+				$total_deb_inr += $d_inr;
+			} else {
+				$total_crd_inr += $c_inr;
+			}
+
+			$valid_rows[] = [
+				'customer_id' => $cid,
+				'inr'         => $inr,
+				'amt_type'    => $amt_type,
+				'remark'      => $row_remark
+			];
+		}
+
+		if (empty($valid_rows)) {
+			$this->session->set_flashdata('error_message', 'Please add at least one valid customer adjustment entry.');
+			redirect(site_url('inventory/edit-customer-adjustment/' . $id), 'refresh');
+			return;
+		}
+
+		if (count($valid_rows) > 1) {
+			if (abs($total_deb_inr - $total_crd_inr) > 0.01) {
+				$this->session->set_flashdata('error_message', 'Debit and Credit amounts must match when there are more than 1 entries.');
+				redirect(site_url('inventory/edit-customer-adjustment/' . $id), 'refresh');
+				return;
+			}
+		}
+
+		$this->db->trans_begin();
+
+		$existing_parent = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'customers'))->row_array();
+		if ($existing_parent) {
+			$this->db->where('id', $id);
+			$this->db->update('adjustments', array(
+				'date'          => $date,
+				'type'          => $type,
+				'amt_type_id'   => $amt_type_id,
+				'amt_type_name' => $amt_type_name,
+				'updated_at'    => date('Y-m-d H:i:s')
+			));
+		} else {
+			$parent_data = array(
+				'id'            => $id,
+				'date'          => $date,
+				'adjust_type'   => 'customers',
+				'type'          => $type,
+				'amt_type_id'   => $amt_type_id,
+				'amt_type_name' => $amt_type_name,
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('adjustments', $parent_data);
+		}
+
+		// Delete existing child rows for parent
+		$this->db->where('parent_id', $id)->delete('customer_adjustments');
+
+		$child_amt_type_id   = (count($valid_rows) === 1) ? $amt_type_id : null;
+		$child_amt_type_name = (count($valid_rows) === 1) ? $amt_type_name : null;
+
+		foreach ($valid_rows as $row) {
+			$customer = $this->db->get_where('customer', array('id' => $row['customer_id']))->row_array();
+			$customer_name = !empty($customer['company_name']) ? $customer['company_name'] : (!empty($customer['owner_name']) ? $customer['owner_name'] : '');
+
+			$child_data = array(
+				'parent_id'     => $id,
+				'company_id'    => $company_id ? $company_id : 0,
+				'customer_id'   => $row['customer_id'],
+				'customer_name' => $customer_name,
+				'date'          => $date,
+				'inr'           => $row['inr'],
+				'amt_type'      => $row['amt_type'],
+				'amt_type_id'   => $child_amt_type_id,
+				'amt_type_name' => $child_amt_type_name,
+				'type'          => $type,
+				'remark'        => $row['remark'],
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('customer_adjustments', $child_data);
+		}
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$this->session->set_flashdata('error_message', 'Failed to update Customer Adjustment. Please try again.');
+			redirect(site_url('inventory/edit-customer-adjustment/' . $id), 'refresh');
+			return;
+		}
+
+		$this->db->trans_commit();
 		$this->session->set_flashdata('flash_message', 'Customer Adjustment Updated Successfully');
 		redirect(site_url('inventory/customer-adjustment'), 'refresh');
 	}
 
 	public function delete_customer_adjustment($id)
 	{
-		$this->db->where('id', $id);
-		$this->db->update('customer_adjustments', array('is_deleted' => 1));
+		$id = intval($id);
+		$this->db->trans_begin();
+		$this->db->where('id', $id)->update('adjustments', array('is_deleted' => 1));
+		$this->db->where('parent_id', $id)->update('customer_adjustments', array('is_deleted' => 1));
+		$this->db->trans_commit();
+
 		$this->session->set_flashdata('flash_message', 'Customer Adjustment Deleted Successfully');
 		redirect(site_url('inventory/customer-adjustment'), 'refresh');
 	}
 
 	public function get_customer_adjustment_by_id($id)
 	{
-		return $this->db->get_where('customer_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+		$id = intval($id);
+		$adj = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'customers', 'is_deleted' => 0))->row_array();
+		if (empty($adj)) {
+			$adj = $this->db->get_where('customer_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+		}
+		return $adj;
+	}
+
+	public function get_customer_adjustment_details_by_parent_id($parent_id)
+	{
+		$parent_id = intval($parent_id);
+		$details = $this->db->get_where('customer_adjustments', array('parent_id' => $parent_id, 'is_deleted' => 0))->result_array();
+		if (empty($details)) {
+			$details = $this->db->get_where('customer_adjustments', array('id' => $parent_id, 'is_deleted' => 0))->result_array();
+		}
+		return $details;
 	}
 
 	public function get_customer_adjustment_datatable()
@@ -27486,26 +28780,43 @@ public function get_sales_return_reports()
 		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
 
 		$search_val = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
-		$where = "ca.is_deleted = '0'";
+		$where = "a.is_deleted = 0 AND a.adjust_type = 'customers'";
 
 		$company_id = $this->session->userdata('company_id');
 		if ($company_id) {
-			$where .= " AND ca.company_id = '" . $company_id . "'";
+			$where .= " AND (ca.company_id = '" . $company_id . "' OR ca.company_id = 0 OR ca.company_id IS NULL)";
 		}
 
 		if ($search_val != '') {
-			$where .= " AND (ca.customer_name LIKE '%" . $search_val . "%' OR ca.remark LIKE '%" . $search_val . "%' OR ca.amt_type LIKE '%" . $search_val . "%' OR ca.type LIKE '%" . $search_val . "%')";
+			$where .= " AND (ca.customer_name LIKE '%" . $search_val . "%' OR ca.remark LIKE '%" . $search_val . "%' OR a.type LIKE '%" . $search_val . "%' OR a.date LIKE '%" . $search_val . "%')";
 		}
 
-		$total_count = $this->db->query("SELECT ca.id FROM customer_adjustments ca WHERE $where")->num_rows();
+		$total_count_query = $this->db->query("SELECT COUNT(DISTINCT a.id) as cnt 
+												FROM adjustments a 
+												LEFT JOIN customer_adjustments ca ON ca.parent_id = a.id AND ca.is_deleted = 0
+												WHERE $where");
+		$total_count = $total_count_query ? $total_count_query->row()->cnt : 0;
 
 		$query = $this->db->query("SELECT 
-										ca.*,
-										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
-									FROM customer_adjustments ca
-									LEFT JOIN sys_users u ON ca.added_by_id = u.id
+										a.id,
+										a.date,
+										a.type,
+										a.adjust_type,
+										a.added_by,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name,
+										GROUP_CONCAT(DISTINCT ca.customer_name ORDER BY ca.id ASC SEPARATOR ', ') as customer_name,
+										COUNT(ca.id) as row_count,
+										MAX(ca.amt_type) as single_amt_type,
+										SUM(CASE WHEN ca.amt_type = 'minus' THEN ca.inr ELSE 0 END) as deb_inr,
+										SUM(CASE WHEN ca.amt_type = 'plus' THEN ca.inr ELSE 0 END) as crd_inr,
+										SUM(ca.inr) as total_inr,
+										GROUP_CONCAT(DISTINCT NULLIF(ca.remark, '') SEPARATOR '; ') as remark
+									FROM adjustments a
+									LEFT JOIN customer_adjustments ca ON ca.parent_id = a.id AND ca.is_deleted = 0
+									LEFT JOIN sys_users u ON a.added_by_id = u.id
 									WHERE $where
-									ORDER BY ca.id DESC
+									GROUP BY a.id
+									ORDER BY a.id DESC
 									LIMIT $start, $length");
 
 		$data = array();
@@ -27518,9 +28829,16 @@ public function get_sales_return_reports()
 				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
 
-				$amt_type_badge = ($item['amt_type'] == 'plus') 
-					? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
-					: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+				$row_cnt = intval($item['row_count']);
+				if ($row_cnt > 1) {
+					$amt_type_badge = '<span class="badge bg-primary" style="font-size:11px;">Balanced (±)</span>';
+					$show_inr = max((float)$item['deb_inr'], (float)$item['crd_inr']);
+				} else {
+					$amt_type_badge = ($item['single_amt_type'] == 'plus') 
+						? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
+						: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+					$show_inr = (float)$item['total_inr'];
+				}
 
 				$type_badge = ($item['type'] == 'official')
 					? '<span class="badge bg-info" style="font-size:11px;">Official</span>'
@@ -27530,8 +28848,8 @@ public function get_sales_return_reports()
 					"sr_no"         => ++$start,
 					"id"            => $item['id'],
 					"date"          => date('d M Y', strtotime($item['date'])),
-					"customer_name" => html_escape($item['customer_name']),
-					"inr"           => '₹ ' . number_format((float)$item['inr'], 2),
+					"customer_name" => html_escape($item['customer_name'] ? $item['customer_name'] : '—'),
+					"inr"           => '₹ ' . number_format($show_inr, 2),
 					"amt_type"      => $amt_type_badge,
 					"type"          => $type_badge,
 					"remark"        => html_escape($item['remark'] ? $item['remark'] : '—'),
@@ -27580,7 +28898,7 @@ public function get_sales_return_reports()
 
 		$adj_where = "customer_id = '$customer_id' AND is_deleted = 0";
 		if ($current_adj_id) {
-			$adj_where .= " AND id != " . intval($current_adj_id);
+			$adj_where .= " AND (id != " . intval($current_adj_id) . " AND parent_id != " . intval($current_adj_id) . ")";
 		}
 		$adjustments = $this->db->query("SELECT * FROM customer_adjustments WHERE $adj_where")->result_array();
 
