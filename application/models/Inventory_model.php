@@ -5247,13 +5247,37 @@ class Inventory_model extends CI_Model
 		$length = $_REQUEST['length'];
 		$company_id = $this->session->userdata('company_id');
 
-		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$filter_data['keywords'] = '';
+		if (isset($_REQUEST['search']['value']) && $_REQUEST['search']['value'] != '') {
+			$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		} elseif (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != '') {
+			$filter_data['keywords'] = clean_and_escape($_REQUEST['keywords']);
+		}
+
 		$data = array();
 		$keyword_filter = "";
+		$method = (isset($_REQUEST['type']) && $_REQUEST['type'] == 'company') ? 'company' : 'local';
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
+			if ($method == 'company') {
+				$keyword_filter .= " AND (
+					voucher_no LIKE '%" . $keyword . "%' 
+					OR supplier_name LIKE '%" . $keyword . "%' 
+					OR company_name LIKE '%" . $keyword . "%' 
+					OR supplier_id IN (SELECT c.id FROM company c WHERE c.name LIKE '%" . $keyword . "%')
+					OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN company c ON pop.supplier_id = c.id WHERE c.name LIKE '%" . $keyword . "%')
+					OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.item_code LIKE '%" . $keyword . "%')
+				)";
+			} else {
+				$keyword_filter .= " AND (
+					voucher_no LIKE '%" . $keyword . "%' 
+					OR supplier_name LIKE '%" . $keyword . "%' 
+					OR supplier_id IN (SELECT s.id FROM supplier s WHERE s.name LIKE '%" . $keyword . "%')
+					OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
+					OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.item_code LIKE '%" . $keyword . "%')
+				)";
+			}
 		endif;
 
 		if (count($delivery_status) > 0) {
@@ -5272,8 +5296,6 @@ class Inventory_model extends CI_Model
 				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
 			}
 		}
-
-		$method = (isset($_REQUEST['type']) && $_REQUEST['type'] == 'company') ? 'company' : 'local';
 
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id ASC")->num_rows();
 		$query = $this->db->query("SELECT id, method, supplier_id, supplier_name, warehouse_id, company_id, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
@@ -5718,7 +5740,18 @@ class Inventory_model extends CI_Model
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (voucher_no LIKE '%" . $keyword . "%' OR supplier_name LIKE '%" . $keyword . "%' OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%'))";
+			$keyword_filter .= " AND (
+				voucher_no LIKE '%" . $keyword . "%' 
+				OR supplier_name LIKE '%" . $keyword . "%' 
+				OR warehouse_name LIKE '%" . $keyword . "%' 
+				OR boe_no LIKE '%" . $keyword . "%' 
+				OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
+				OR id IN (SELECT lpop.parent_id FROM loading_po_product lpop JOIN supplier s ON lpop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
+				OR id IN (SELECT prpop.parent_id FROM po_products prpop JOIN supplier s ON prpop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
+				OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.item_code LIKE '%" . $keyword . "%')
+				OR id IN (SELECT lpop2.parent_id FROM loading_po_product lpop2 WHERE lpop2.product_name LIKE '%" . $keyword . "%' OR lpop2.item_code LIKE '%" . $keyword . "%')
+				OR id IN (SELECT prpop2.parent_id FROM po_products prpop2 WHERE prpop2.product_name LIKE '%" . $keyword . "%' OR prpop2.item_code LIKE '%" . $keyword . "%')
+			)";
 		endif;
 
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""){
@@ -5745,9 +5778,20 @@ class Inventory_model extends CI_Model
 			$loading_from =  date('Y-m-d', strtotime($loading_added_date[0]));
 			$loading_to =  date('Y-m-d', strtotime($loading_added_date[1]));
 			if ($loading_from == $loading_to) {
-				$keyword_filter .= " AND (DATE(delivery_date) = '$loading_from')";
+				$keyword_filter .= " AND (DATE(expected_date) = '$loading_from' OR DATE(loading_date) = '$loading_from' OR DATE(delivery_date) = '$loading_from')";
 			} else {
-				$keyword_filter .= " AND (DATE(delivery_date) BETWEEN '$loading_from' AND '$loading_to')";
+				$keyword_filter .= " AND ((DATE(expected_date) BETWEEN '$loading_from' AND '$loading_to') OR (DATE(loading_date) BETWEEN '$loading_from' AND '$loading_to') OR (DATE(delivery_date) BETWEEN '$loading_from' AND '$loading_to'))";
+			}
+		}
+
+		if (isset($_REQUEST['expected_date_range']) && $_REQUEST['expected_date_range'] != "") {
+			$exp_added_date = explode(' - ', $_REQUEST['expected_date_range']);
+			$exp_from =  date('Y-m-d', strtotime($exp_added_date[0]));
+			$exp_to =  date('Y-m-d', strtotime($exp_added_date[1]));
+			if ($exp_from == $exp_to) {
+				$keyword_filter .= " AND (DATE(arrival_date) = '$exp_from')";
+			} else {
+				$keyword_filter .= " AND (DATE(arrival_date) BETWEEN '$exp_from' AND '$exp_to')";
 			}
 		}
 
@@ -5897,6 +5941,10 @@ class Inventory_model extends CI_Model
 					$status = '<span class="badge badge-success">Purchase In</span>';
 				}
 
+				if (!empty($item['is_locked'])) {
+					$status .= ' <span class="badge badge-danger bg-danger"><i class="fa fa-lock"></i> Locked</span>';
+				}
+
 				// PO Action
 				$action ='-';
 				$export_excel_url="generate_excel('".$id."')";
@@ -6019,12 +6067,12 @@ class Inventory_model extends CI_Model
 				$data[] = array(
 					"sr_no"       						=> ++$start,
 					"id"          						=> $item['id'],
-					"date"       							=> date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
+					"date"       							=> (!empty($item['date']) && $item['date'] != '0000-00-00') ? date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'] : '-' . $item['voucher_no'],
 					"boe_no"									=> $item['boe_no'],
-					"boe_date"								=> date('d M, Y', strtotime($item['boe_date'])),
-					"arrival_date"								=> date('d M, Y', strtotime($item['expected_date'])),
-					"expected_arrival_date"								=> date('d M, Y', strtotime($item['arrival_date'])),
-					"delivery_date"       		=> date('d M, Y', strtotime($delivery_date)),
+					"boe_date"								=> (!empty($item['boe_date']) && $item['boe_date'] != '0000-00-00' && $item['boe_date'] != '0000-00-00 00:00:00') ? date('d M, Y', strtotime($item['boe_date'])) : '-',
+					"arrival_date"								=> (!empty($item['expected_date']) && $item['expected_date'] != '0000-00-00') ? date('d M, Y', strtotime($item['expected_date'])) : '-',
+					"expected_arrival_date"								=> (!empty($item['arrival_date']) && $item['arrival_date'] != '0000-00-00') ? date('d M, Y', strtotime($item['arrival_date'])) : '-',
+					"delivery_date"       		=> (!empty($delivery_date) && $delivery_date != '0000-00-00') ? date('d M, Y', strtotime($delivery_date)) : '-',
 					"suppliers"        				=> array_to_list($po['supplier']),
 					"spare_parts_count"       => array_to_list($po['spare']),
 					"ready_goods_count"       => array_to_list($po['ready']),
@@ -6071,7 +6119,13 @@ class Inventory_model extends CI_Model
 		if ($type === 'product') {
 			if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 				$keyword        = $filter_data['keywords'];
-				$keyword_filter .= " AND (po.voucher_no like '%" . $keyword . "%' OR pop.product_name like '%" . $keyword . "%' OR pop.item_code like '%" . $keyword . "%')";
+				$keyword_filter .= " AND (
+					po.voucher_no LIKE '%" . $keyword . "%' 
+					OR po.supplier_name LIKE '%" . $keyword . "%' 
+					OR pop.product_name LIKE '%" . $keyword . "%' 
+					OR pop.item_code LIKE '%" . $keyword . "%'
+					OR pop.supplier_id IN (SELECT s.id FROM supplier s WHERE s.name LIKE '%" . $keyword . "%')
+				)";
 			endif;
 
 			$keyword_filter .= " AND (po.delivery_status = 'purchase_in')";
@@ -6085,6 +6139,17 @@ class Inventory_model extends CI_Model
 					$keyword_filter .= " AND (DATE(po.date) = '$from')";
 				} else {
 					$keyword_filter .= " AND (DATE(po.date) BETWEEN '$from' AND '$to')";
+				}
+			}
+
+			if (isset($_REQUEST['loading_date_range']) && $_REQUEST['loading_date_range'] != "") {
+				$loading_added_date = explode(' - ', $_REQUEST['loading_date_range']);
+				$loading_from =  date('Y-m-d', strtotime($loading_added_date[0]));
+				$loading_to =  date('Y-m-d', strtotime($loading_added_date[1]));
+				if ($loading_from == $loading_to) {
+					$keyword_filter .= " AND (DATE(po.expected_date) = '$loading_from' OR DATE(po.loading_date) = '$loading_from' OR DATE(po.delivery_date) = '$loading_from')";
+				} else {
+					$keyword_filter .= " AND ((DATE(po.expected_date) BETWEEN '$loading_from' AND '$loading_to') OR (DATE(po.loading_date) BETWEEN '$loading_from' AND '$loading_to') OR (DATE(po.delivery_date) BETWEEN '$loading_from' AND '$loading_to'))";
 				}
 			}
 
@@ -6142,7 +6207,12 @@ class Inventory_model extends CI_Model
 		} else {
 			if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 				$keyword        = $filter_data['keywords'];
-				$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%')";
+				$keyword_filter .= " AND (
+					voucher_no LIKE '%" . $keyword . "%' 
+					OR supplier_name LIKE '%" . $keyword . "%' 
+					OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
+					OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.item_code LIKE '%" . $keyword . "%')
+				)";
 			endif;
 
 			$keyword_filter .= " AND (delivery_status = 'purchase_in')";
@@ -6156,6 +6226,17 @@ class Inventory_model extends CI_Model
 					$keyword_filter .= " AND (DATE(date) = '$from')";
 				} else {
 					$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
+				}
+			}
+
+			if (isset($_REQUEST['loading_date_range']) && $_REQUEST['loading_date_range'] != "") {
+				$loading_added_date = explode(' - ', $_REQUEST['loading_date_range']);
+				$loading_from =  date('Y-m-d', strtotime($loading_added_date[0]));
+				$loading_to =  date('Y-m-d', strtotime($loading_added_date[1]));
+				if ($loading_from == $loading_to) {
+					$keyword_filter .= " AND (DATE(expected_date) = '$loading_from' OR DATE(loading_date) = '$loading_from' OR DATE(delivery_date) = '$loading_from')";
+				} else {
+					$keyword_filter .= " AND ((DATE(expected_date) BETWEEN '$loading_from' AND '$loading_to') OR (DATE(loading_date) BETWEEN '$loading_from' AND '$loading_to') OR (DATE(delivery_date) BETWEEN '$loading_from' AND '$loading_to'))";
 				}
 			}
 
@@ -15589,6 +15670,7 @@ class Inventory_model extends CI_Model
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
 			$keyword_filter .= " AND (so.company_name like '%" . $keyword . "%' 
+            OR so.customer_name like '%" . $keyword . "%'
             OR so.refrence_no like '%" . $keyword . "%'
             OR so.order_no like '%" . $keyword . "%')";
 		endif;
@@ -15710,6 +15792,8 @@ class Inventory_model extends CI_Model
 
 				$action = '';
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
+				$history_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_sales_order_history/" . $id . "', 'Sales Order History')";
+				$history_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
 
 				$delete_html = '';
 				if ($this->session->userdata('super_type_id') != 7) {
@@ -15730,6 +15814,7 @@ class Inventory_model extends CI_Model
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+							' . $history_html . '
 						</div>
 					</div>';
 				} else if($item['is_approved'] == 0 && $item['is_generated'] == 0) {
@@ -15749,6 +15834,7 @@ class Inventory_model extends CI_Model
 						   ' . $approve_html . '
 							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
 							' . $delete_html . '
+							' . $history_html . '
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 0) {
@@ -15763,6 +15849,7 @@ class Inventory_model extends CI_Model
 							' . $gen_invoice_html . '
 							' . $delete_html . '
 							' . $edit_order_html . '
+							' . $history_html . '
 						</div>
 					</div>';
 				} else if($item['is_generated'] == 1 && $item['is_approved'] == 1) {
@@ -20474,6 +20561,13 @@ class Inventory_model extends CI_Model
 				"message" => 'company Name Duplication'
 			);
 		} else {
+			$country_id = $this->input->post('country_id');
+			if ($country_id != '') {
+				$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+			} else {
+				$country_name = '';
+			}
+
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
 				$state_name = $this->common_model->get_state_name($state_id);
@@ -20504,6 +20598,8 @@ class Inventory_model extends CI_Model
 			$data['state_code']       = clean_and_escape($this->input->post('state_code'));
 			$user_id                = $this->session->userdata('super_user_id');
 			$user_name              = $this->session->userdata('super_name');
+			$data['country_id']    = $country_id;
+			$data['country_name']  = $country_name;
 			$data['state_id']    = $state_id;
 			$data['state_name']    = $state_name;
 			$data['city_id']    = $city_id;
@@ -20543,6 +20639,13 @@ class Inventory_model extends CI_Model
 			);
 		} else {
 
+			$country_id = $this->input->post('country_id');
+			if ($country_id != '') {
+				$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+			} else {
+				$country_name = '';
+			}
+
 			$state_id = $this->input->post('state_id');
 			if ($state_id != '') {
 				$state_name = $this->common_model->get_state_name($state_id);
@@ -20571,6 +20674,8 @@ class Inventory_model extends CI_Model
 			$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
 			$data['gst_name']       = clean_and_escape($this->input->post('gst_name'));
 			$data['state_code']       = clean_and_escape($this->input->post('state_code'));
+			$data['country_id']   = $country_id;
+			$data['country_name'] = $country_name;
 			$data['state_id']    = $state_id;
 			$data['state_name']    = $state_name;
 			$data['city_id']    = $city_id;
@@ -21139,6 +21244,16 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (DATE(payment_date) >= '" . $from . "' AND DATE(payment_date) <= '" . $to . "')";
 		}
 
+		if (isset($_REQUEST['type']) && in_array($_REQUEST['type'], ['official', 'unofficial'])) {
+			$type = clean_and_escape($_REQUEST['type']);
+			$keyword_filter .= " AND payment_type = '" . $type . "'";
+		} elseif (isset($_REQUEST['payment_type']) && in_array($_REQUEST['payment_type'], ['official', 'unofficial'])) {
+			$type = clean_and_escape($_REQUEST['payment_type']);
+			$keyword_filter .= " AND payment_type = '" . $type . "'";
+		} else {
+			$keyword_filter .= " AND payment_type IN ('official', 'unofficial')";
+		}
+
 		$company_id = $this->session->userdata('company_id');
 		$total_count = $this->db->query("SELECT id FROM payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter)->num_rows();
 		$query = $this->db->query("SELECT id, batch_no, supplier_name, payment_type, invoice_no, amount_dollar, amount_rs, amount_rmb, payment_type, payment_date FROM payments WHERE is_delete = '0' AND company_id='" . $company_id . "'" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
@@ -21147,7 +21262,6 @@ class Inventory_model extends CI_Model
 		if (!empty($query)) {
 			$sr_no = $start;
 			foreach ($query->result_array() as $item) {
-
 				$actions = '';
 				$actions .= '<a href="' . base_url() . 'inventory/payments/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
 				$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/payments/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
@@ -21840,9 +21954,11 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (DATE(e.expense_date) >= '" . $from . "' AND DATE(e.expense_date) <= '" . $to . "')";
 		}
 
-		if (isset($_REQUEST['type']) && $_REQUEST['type'] != "") {
+		if (isset($_REQUEST['type']) && in_array($_REQUEST['type'], ['official', 'unofficial'])) {
 			$type = clean_and_escape($_REQUEST['type']);
 			$keyword_filter .= " AND e.type = '" . $type . "'";
+		} else {
+			$keyword_filter .= " AND e.type IN ('official', 'unofficial')";
 		}
 
 		$company_id = $this->session->userdata('company_id');
@@ -22572,13 +22688,26 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 
 		if (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != ""):
 			$keyword        = $_REQUEST['keywords'];
-			$keyword_filter .= " AND (first_name like '%" . $keyword . "%')";
+			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($keyword) . "%' OR last_name like '%" . $this->db->escape_like_str($keyword) . "%' OR email like '%" . $this->db->escape_like_str($keyword) . "%' OR phone like '%" . $this->db->escape_like_str($keyword) . "%')";
 		endif;
+
+		if (isset($_REQUEST['search']['value']) && $_REQUEST['search']['value'] != ""):
+			$search_val     = $_REQUEST['search']['value'];
+			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($search_val) . "%' OR last_name like '%" . $this->db->escape_like_str($search_val) . "%' OR email like '%" . $this->db->escape_like_str($search_val) . "%' OR phone like '%" . $this->db->escape_like_str($search_val) . "%')";
+		endif;
+
+		$tab = $this->input->post('tab') ?: ($this->input->get('tab') ?: ($_REQUEST['tab'] ?? 'my'));
+		if ($tab == 'my') {
+			$super_user_id = $this->session->userdata('super_user_id');
+			if (!empty($super_user_id)) {
+				$keyword_filter .= " AND added_by = '" . $this->db->escape_str($super_user_id) . "'";
+			}
+		}
 
 		$keyword_filter .= " AND id!= 4 ";
 
 		$total_count = $this->db->query("Select id,is_deleted FROM sys_users WHERE (id<>'') and is_deleted ='0' $keyword_filter ORDER BY id desc")->num_rows();
-		$query = $this->db->query("SELECT id, first_name, last_name, email, phone, staff_access, status FROM sys_users WHERE (id<>'') and is_deleted='0' $keyword_filter ORDER BY id desc LIMIT $start,$length");
+		$query = $this->db->query("SELECT id, first_name, last_name, email, phone, staff_access, company_id, profile_img, status FROM sys_users WHERE (id<>'') and is_deleted='0' $keyword_filter ORDER BY id desc LIMIT $start,$length");
 		//echo $this->db->last_query();
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
@@ -22602,15 +22731,39 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 					$staff_type_name = $access['name'] ?? '-';
 				}
 
+				// Company
+				$company_names = [];
+				if (!empty($item['company_id'])) {
+					$comp_ids = explode(',', $item['company_id']);
+					foreach ($comp_ids as $c_id) {
+						$c_name = $this->common_model->selectByidParam($c_id, 'company', 'name');
+						if ($c_name) {
+							$company_names[] = $c_name;
+						}
+					}
+				}
+				$company_name_str = !empty($company_names) ? implode(', ', $company_names) : '-';
+
+				// Photo
+				$photo = '-';
+				if (!empty($item['profile_img']) && file_exists(FCPATH . $item['profile_img'])) {
+					$photo = '<img src="' . base_url($item['profile_img']) . '" class="small-img rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" alt="Photo">';
+				} elseif (!empty($item['profile_img'])) {
+					$photo = '<img src="' . base_url($item['profile_img']) . '" class="small-img rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" alt="Photo">';
+				}
+
 				$data[] = array(
-					"sr_no" => (++$start),
-					"id" => $item['id'],
-					"name"    => $item['first_name'] . ' ' . $item['last_name'],
-					"phone"  => $item['phone'],
-					"email"   => $item['email'],
-					"staff_type"   => $staff_type_name,
-					"status"   => $item['status'],
-					"action"        => $action,
+					"sr_no"       => (++$start),
+					"id"          => $item['id'],
+					"photo"       => $photo,
+					"name"        => trim($item['first_name'] . ' ' . $item['last_name']),
+					"designation" => $staff_type_name,
+					"staff_type"  => $staff_type_name,
+					"company"     => $company_name_str,
+					"email"       => !empty($item['email']) ? $item['email'] : '-',
+					"phone"       => !empty($item['phone']) ? $item['phone'] : '-',
+					"status"      => $item['status'],
+					"action"      => $action,
 				);
 			}
 		}

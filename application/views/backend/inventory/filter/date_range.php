@@ -16,6 +16,20 @@
 							<div class="form-body">
 							<div class="row">
 										<input type="hidden" name="search" value="true">
+										<?php
+										// Preserve existing GET parameters like status, tab, type, customer_id, etc.
+										foreach ($_GET as $key => $val) {
+											if (!in_array($key, ['date_range', 'search', 'keywords', 'supplier_id', 'company_id'])) {
+												if (is_array($val)) {
+													foreach ($val as $subVal) {
+														echo '<input type="hidden" name="' . htmlspecialchars($key) . '[]" value="' . htmlspecialchars($subVal) . '">';
+													}
+												} else {
+													echo '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($val) . '">';
+												}
+											}
+										}
+										?>
 										<div class="col-md-3 col-12">
 												<div class="form-group mb-0">   
 														<label>Date</label>
@@ -23,12 +37,12 @@
 												</div>
 										</div>
 
-										<?php if ($page_name == 'po_expense') {?>
+										<?php if ($page_name == 'po_expense' || $page_name == 'purchase_order_local') {?>
 											<div class="col-md-3 col-12">
 												<div class="form-group mb-0">   
 													<label>Keywords</label>
 													<div class="form-group">
-														<input name="keywords" class="form-control" placeholder="Keywords" type="keywords" value="<?php if(isset($_GET['keywords'])) { echo $_GET['keywords']; }?>">
+														<input name="keywords" class="form-control" placeholder="Keywords" type="text" value="<?php if(isset($_GET['keywords'])) { echo $_GET['keywords']; }?>">
 													</div>
 												</div>
 											</div>
@@ -74,8 +88,13 @@
 												<label style="display: block;">&nbsp; </label>
 												<div class="form-group mb-0">
 														<button type="submit" name="search" value="true" id="btn_verify" class="btn btn-primary btn_verify mr-1 mb-0 waves-effect waves-float waves-light">Search</button>
-														<?php if(isset($_GET['search'])): ?>
-																<a href="<?php echo currentUrl($_SERVER["REQUEST_URI"]); ?>"><button type="button" class="btn btn-outline-danger mr-1">Reset</button></a>
+														<?php if(isset($_GET['search'])): 
+															$reset_params = $_GET;
+															unset($reset_params['search'], $reset_params['date_range'], $reset_params['keywords'], $reset_params['supplier_id'], $reset_params['company_id']);
+															$reset_query = http_build_query($reset_params);
+															$reset_url = currentUrl(true) . ($reset_query ? '?' . $reset_query : '');
+														?>
+																<a href="<?php echo $reset_url; ?>"><button type="button" class="btn btn-outline-danger mr-1">Reset</button></a>
 														<?php endif; ?>
 												</div>
 										</div>

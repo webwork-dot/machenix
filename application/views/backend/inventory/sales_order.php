@@ -48,6 +48,13 @@
     $staff_access = (int)$this->session->userdata('super_type_id');
 
     $status = (isset($_GET['status']) && $_GET['status'] != '') ? $_GET['status'] : 'pending';
+    $date_range_param = '';
+    if (isset($_GET['date_range']) && $_GET['date_range'] != '') {
+        $date_range_param .= '&date_range=' . urlencode($_GET['date_range']);
+        if (isset($_GET['search'])) {
+            $date_range_param .= '&search=' . urlencode($_GET['search']);
+        }
+    }
 ?>
 	
 <div class="row" id="table-bordered">
@@ -58,25 +65,25 @@
                 <ul class="nav nav-pills bg-nav-pills nav-justified ">
                     
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=pending" class="nav-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=pending<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">Pending</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=invoice" class="nav-link <?php echo ($status == 'invoice') ? 'active' : ''; ?>">
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=invoice<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'invoice') ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">Generate Invoice</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=complete" class="nav-link <?php echo ($status == 'complete') ? 'active' : ''; ?>">
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=complete<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'complete') ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">Complete</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=all" class="nav-link <?php echo ($status == 'all') ? 'active' : ''; ?>">
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=all<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'all') ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">All Orders</span>
                         </a>

@@ -25,12 +25,21 @@
 										</div>
 
                     <?php if($page_name == "purchase_order" || $page_name == "priority_po" || $page_name == "loading_list_po" || $page_name == "pending_po" || $page_name == "po_purchase_in") {?>
-                    <div class="col-lg-2 col-md-3 col-sm-6 col-12">
-                        <div class="form-group mb-0">   
-                            <label>Loading Date</label>
-                            <input type="text" autocomplete="off" class="form-control bg-white datepicker_loading_report" name="loading_date_range" id="filter_loading_date_range" placeholder="Search Loading Date">
-                        </div>
-                    </div>
+                      <div class="col-lg-2 col-md-3 col-sm-6 col-12">
+                          <div class="form-group mb-0">   
+                              <label>Loading Date</label>
+                              <input type="text" autocomplete="off" class="form-control bg-white datepicker_loading_report" name="loading_date_range" id="filter_loading_date_range" placeholder="Search Loading Date">
+                          </div>
+                      </div>
+                    <?php } ?>
+
+                    <?php if($page_name == "loading_list_po") { ?>
+                      <div class="col-lg-2 col-md-3 col-sm-6 col-12">
+                          <div class="form-group mb-0">   
+                              <label>Expected Date</label>
+                              <input type="text" autocomplete="off" class="form-control bg-white datepicker_expected_report" name="expected_date_range" id="filter_expected_date_range" placeholder="Search Expected Date">
+                          </div>
+                      </div>
                     <?php } ?>
 
                     <?php if($page_name == "purchase_order" || $page_name == "priority_po" || $page_name == "loading_list_po") {?>
@@ -74,7 +83,7 @@
                       </div>
                     <?php } ?>
 
-										<div class="col-lg-3 col-md-3 col-sm-6 col-12">
+										<div class="<?php echo ($page_name == 'loading_list_po') ? 'col-lg-2' : 'col-lg-3'; ?> col-md-3 col-sm-6 col-12">
 											<div class="form-group mb-0">   
 												<label>Keywords</label>
 												<div class="form-group">
@@ -83,12 +92,10 @@
 											</div>
 										</div>
 
-
 										<div class="col-lg-2 col-md-3 col-sm-6 col-12">
 												<label style="display: block;">&nbsp; </label>
 												<div class="form-group mb-0">
-														<!-- <button type="button" id="btn_reset_filter" class="btn btn-outline-danger mr-1">Reset</button> -->
-                            <a href="<?php echo currentUrl($_SERVER["REQUEST_URI"]); ?>"><button type="button" class="btn btn-outline-danger mr-1">Reset</button></a>
+                          <button type="button" id="btn_reset_filter" class="btn btn-outline-danger mr-1">Reset</button>
 												</div>
 										</div>
 								</div>
@@ -126,15 +133,24 @@
             format: 'DD-MM-YYYY', 
         }
     });
+
+    //Date range picker for Expected Date
+    $('.datepicker_expected_report').daterangepicker({
+        autoUpdateInput: false,
+        autoApply: true,
+        locale: {
+            format: 'DD-MM-YYYY', 
+        }
+    });
     
-    $('.datepicker_report, .datepicker_loading_report').on('apply.daterangepicker', function(ev, picker) {
+    $('.datepicker_report, .datepicker_loading_report, .datepicker_expected_report').on('apply.daterangepicker', function(ev, picker) {
         $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
         if (typeof dataTable !== 'undefined') {
             dataTable.draw();
         }
     });
 
-    $('.datepicker_report, .datepicker_loading_report').on('cancel.daterangepicker', function(ev, picker) {
+    $('.datepicker_report, .datepicker_loading_report, .datepicker_expected_report').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
         if (typeof dataTable !== 'undefined') {
             dataTable.draw();
@@ -153,12 +169,22 @@
         }
     });
 
-    // $(document).on('click', '#btn_reset_filter', function() {
-    //     $('#filter_date_range').val('');
-    //     $('#filter_loading_date_range').val('');
-    //     $('#filter_keywords').val('');
-    //     if (typeof dataTable !== 'undefined') {
-    //         dataTable.draw();
-    //     }
-    // });
+    $(document).on('click', '#btn_reset_filter', function() {
+        $('#filter_date_range').val('');
+        $('#filter_loading_date_range').val('');
+        $('#filter_expected_date_range').val('');
+        $('#filter_keywords').val('');
+        <?php if($page_name == "purchase_order") { ?>
+            $('#filter_status').val('pending');
+        <?php } elseif($page_name == "priority_po") { ?>
+            $('#filter_status').val('priority');
+        <?php } elseif($page_name == "loading_list_po") { ?>
+            $('#filter_status').val('loading');
+        <?php } else { ?>
+            $('#filter_status').val('');
+        <?php } ?>
+        if (typeof dataTable !== 'undefined') {
+            dataTable.draw();
+        }
+    });
 </script>

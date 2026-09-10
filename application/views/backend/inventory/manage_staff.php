@@ -42,7 +42,30 @@
 	
 </style>
 
+<?php
+$tab = isset($_GET['tab']) ? $_GET['tab'] : 'my';
+?>
+
 <div class="row" id="table-bordered">
+
+    <div class="col-md-12 mb-1">
+        <div class="fixedElement new-fix" id="fixedElement">
+            <ul class="nav nav-pills bg-nav-pills nav-justified">
+                <li class="nav-item">
+                    <a href="<?php echo base_url('inventory/manage-staff?tab=my'); ?>" class="nav-link <?php echo ($tab != 'all') ? 'active' : ''; ?>">
+                        <i class="feather icon-users d-md-none d-block"></i>
+                        <span class="d-none d-md-block">My Staff</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?php echo base_url('inventory/manage-staff?tab=all'); ?>" class="nav-link <?php echo ($tab == 'all') ? 'active' : ''; ?>">
+                        <i class="feather icon-globe d-md-none d-block"></i>
+                        <span class="d-none d-md-block">All Staff</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
 
    <div class="col-12">
       <div class="card">
@@ -62,10 +85,12 @@
                <thead>
                   <tr>
                     <th>#</th>
+                    <th>Photo</th>
                     <th>Name</th>
-                    <th>Staff Type</th>
+                    <th>Designation</th>
+                    <th>Company</th>
                     <th>Email</th>
-                    <th>Mobile No.</th>
+                    <th>Mobile</th>
                     <th>Action</th>
                   </tr>
                </thead>
@@ -100,6 +125,7 @@
                 "type": "POST",
                 "data": function(data){
                        data.status = '';		
+                       data.tab = '<?php echo $tab; ?>';
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -111,8 +137,10 @@
                      
             "columns": [
                 { "data": "sr_no" },
+                { "data": "photo" },
                 { "data": "name" },
-                { "data": "staff_type" },
+                { "data": "designation" },
+                { "data": "company" },
                 { "data": "email" },
                 { "data": "phone" },
                 { "data": "action" },
@@ -123,7 +151,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,2,3,4,5,6]
                     }
                 },
                 {
@@ -131,7 +159,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,2,3,4,5,6]
                     }
                 }
             ],
@@ -149,7 +177,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": [0, 1, 7],
                     "className": "text-center",
                 },
             ]

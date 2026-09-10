@@ -13,6 +13,8 @@ CREATE TABLE `company` (
   `address_2` mediumtext DEFAULT NULL,
   `address_3` mediumtext DEFAULT NULL,
   `pincode` varchar(250) DEFAULT NULL,
+  `country_id` int(11) DEFAULT NULL,
+  `country_name` varchar(255) DEFAULT NULL,
   `state_id` int(11) DEFAULT NULL,
   `state_name` varchar(50) DEFAULT NULL,
   `city_id` int(11) DEFAULT NULL,

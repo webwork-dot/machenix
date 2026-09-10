@@ -113,6 +113,7 @@ $(document).ready(function($) {
       "data": function(data) {
         data.date_range = $('#filter_date_range').val() || '';
         data.loading_date_range = $('#filter_loading_date_range').val() || '';
+        data.expected_date_range = $('#filter_expected_date_range').val() || '';
         data.search.value = $('#filter_keywords').val() || '';
         data.status = $('#filter_status').val() || '';
       },

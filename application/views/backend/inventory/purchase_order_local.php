@@ -104,7 +104,7 @@
 <script type="text/javascript">       
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
-    	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+    	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6">>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
             "sDom": 'rt<"dtPagination"lp><"clear">',
             "pagingType": "simple_numbers",
@@ -127,6 +127,7 @@
                 "data": function(data){
                        data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                        data.type = '<?php echo $type; ?>';
+                       data.keywords = '<?php echo (isset($_GET['keywords'])) ? addslashes($_GET['keywords']):'' ?>';
                 },
                 "beforeSend": function() {
                     $('.loader').show();

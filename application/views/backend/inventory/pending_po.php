@@ -135,6 +135,7 @@
                 "type": "POST",
                 "data": function(data){
                     data.date_range = $('#filter_date_range').val() || '';
+                    data.loading_date_range = $('#filter_loading_date_range').val() || '';
                     data.search.value = $('#filter_keywords').val() || '';
                     data.status = $('#filter_status').val() || '';
                     data.type = '<?php echo $type; ?>';

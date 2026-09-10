@@ -4907,18 +4907,20 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['states']     = $this->crud_model->get_states_by_country(101);
+        $page_data['countries']     = $this->crud_model->get_countries();
 
         if ($param1 == 'company_add') {
+            $page_data['states']      = array();
             $page_data['navigation']  = 'company';
-            $page_data['page_name']  = 'company_add';
-            $page_data['page_title'] = 'Add Supplier';
+            $page_data['page_name']   = 'company_add';
+            $page_data['page_title']  = 'Add Supplier';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'company_edit') {
             $data                    = $this->inventory_model->get_company_by_id($param2)->row_array();
             $page_data['data']       = $data;
-            $page_data['citys']      = $this->crud_model->get_city_by_state($data['state_id']);
-            $page_data['navigation']  = 'company';
+            $page_data['states']     = !empty($data['country_id']) ? $this->crud_model->get_states_by_country($data['country_id']) : (!empty($data['state_id']) ? $this->crud_model->get_states_by_country(101) : array());
+            $page_data['citys']      = !empty($data['state_id']) ? $this->crud_model->get_city_by_state($data['state_id']) : array();
+            $page_data['navigation'] = 'company';
             $page_data['page_name']  = 'company_edit';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Edit Supplier';
