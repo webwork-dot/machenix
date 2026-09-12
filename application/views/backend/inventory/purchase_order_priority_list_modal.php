@@ -1,6 +1,12 @@
 <style>
+  #large-modal .modal-dialog {
+    max-width: 95vw !important;
+    width: 95vw !important;
+  }
+
   .full-width-modal {
-    max-width: 1400px !important;
+    max-width: 95vw !important;
+    width: 95vw !important;
   }
 
   input:read-only {
@@ -13,15 +19,93 @@
   }
 
   .table-responsive {
-    max-height: 500px;
-    overflow-y: auto;
+    max-height: 550px;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #dee2e6;
+    margin-bottom: 12px;
+  }
+
+  /* Distinct and visible scrollbars */
+  .table-responsive::-webkit-scrollbar {
+    height: 12px !important;
+    width: 12px !important;
+  }
+
+  .table-responsive::-webkit-scrollbar-track {
+    background: #f1f3f5 !important;
+    border-radius: 6px !important;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb {
+    background: #6c757d !important;
+    border-radius: 6px !important;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #495057 !important;
+  }
+
+  .priority-table {
+    min-width: 2300px !important;
+    width: 2300px !important;
+    table-layout: fixed !important;
+    margin-bottom: 0 !important;
   }
 
   .priority-table th {
     position: sticky;
     top: 0;
-    background-color: #fff;
+    background-color: #f8f9fa;
     z-index: 10;
+    white-space: nowrap;
+    vertical-align: middle;
+    box-shadow: inset 0 1px 0 #dee2e6, inset 0 -1px 0 #dee2e6;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .priority-table td {
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 6px 8px;
+  }
+
+  .priority-table .form-control {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 12px;
+    height: 31px;
+  }
+
+  .priority-table .select2-container {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .priority-table .select2-container .select2-selection--single {
+    height: 31px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #d8d6de;
+  }
+
+  .priority-table .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 28px;
+    padding-left: 8px;
+    padding-right: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .priority-table .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 28px;
   }
 </style>
 
@@ -77,19 +161,19 @@
       <table class="table table-bordered table-striped priority-table" id="priority_table">
         <thead>
           <tr>
-            <th style="width: 40px;">Sr</th>
-            <th style="width: 120px;">Supplier Name</th>
-            <th style="width: 100px;">Type</th>
-            <th style="width: 150px;">Product Name</th>
-            <th style="width: 100px;">Model No</th>
-            <th style="width: 80px;">Quantity</th>
-            <th style="width: 80px;">CBM</th>
-            <th style="width: 100px;">Total CBM</th>
-            <th style="width: 100px;">Pending PO Qty</th>
-            <th style="width: 100px;">Loading List Qty</th>
-            <th style="width: 100px;">In Stock Qty</th>
-            <th style="width: 120px;">Selected Company Stock</th>
-            <th style="width: 80px;">Action</th>
+            <th style="width: 60px; min-width: 60px;">Sr</th>
+            <th style="width: 400px; min-width: 400px;">Supplier Name</th>
+            <th style="width: 160px; min-width: 160px;">Type</th>
+            <th style="width: 450px; min-width: 450px;">Product Name</th>
+            <th style="width: 160px; min-width: 160px;">Model No</th>
+            <th style="width: 110px; min-width: 110px;">Quantity</th>
+            <th style="width: 110px; min-width: 110px;">CBM</th>
+            <th style="width: 130px; min-width: 130px;">Total CBM</th>
+            <th style="width: 140px; min-width: 140px;">Pending PO Qty</th>
+            <th style="width: 140px; min-width: 140px;">Loading List Qty</th>
+            <th style="width: 130px; min-width: 130px;">In Stock Qty</th>
+            <th style="width: 210px; min-width: 210px;">Selected Company Stock</th>
+            <th style="width: 80px; min-width: 80px;">Action</th>
           </tr>
         </thead>
         <tbody id="priority_tbody">
@@ -235,19 +319,19 @@
         <table class="table table-bordered table-striped priority-table" id="loading_products_table">
           <thead>
             <tr>
-              <th style="width: 40px;">Sr</th>
-              <th style="width: 120px;">Supplier Name</th>
-              <th style="width: 100px;">Type</th>
-              <th style="width: 150px;">Product Name</th>
-              <th style="width: 100px;">Model No</th>
-              <th style="width: 80px;">Quantity</th>
-              <th style="width: 80px;">CBM</th>
-              <th style="width: 100px;">Total CBM</th>
-              <th style="width: 100px;">Pending PO Qty</th>
-              <th style="width: 100px;">Loading List Qty</th>
-              <th style="width: 100px;">In Stock Qty</th>
-              <th style="width: 120px;">Selected Company Stock</th>
-              <th style="width: 80px;">Action</th>
+              <th style="width: 60px; min-width: 60px;">Sr</th>
+              <th style="width: 400px; min-width: 400px;">Supplier Name</th>
+              <th style="width: 160px; min-width: 160px;">Type</th>
+              <th style="width: 450px; min-width: 450px;">Product Name</th>
+              <th style="width: 160px; min-width: 160px;">Model No</th>
+              <th style="width: 110px; min-width: 110px;">Quantity</th>
+              <th style="width: 110px; min-width: 110px;">CBM</th>
+              <th style="width: 130px; min-width: 130px;">Total CBM</th>
+              <th style="width: 140px; min-width: 140px;">Pending PO Qty</th>
+              <th style="width: 140px; min-width: 140px;">Loading List Qty</th>
+              <th style="width: 130px; min-width: 130px;">In Stock Qty</th>
+              <th style="width: 210px; min-width: 210px;">Selected Company Stock</th>
+              <th style="width: 80px; min-width: 80px;">Action</th>
             </tr>
           </thead>
           <tbody id="loading_products_tbody">
@@ -1051,7 +1135,8 @@ function addNewRow() {
   // Insert new row before the Total CBM row (at the end of tbody)
   $('#priority_tbody').append(newRow);
   $('.select2').select2({
-    dropdownParent: $('#large-modal .modal-content')
+    dropdownParent: $('#large-modal .modal-content'),
+    width: '100%'
   });
 
   $(document).on('focus', '.supplier-' + newRowId + ' + .select2 .select2-selection', function () {
@@ -1645,8 +1730,9 @@ function addLoadingProductRow() {
 
   $('#loading_products_tbody').append(loadingRow);
   $('.select2').select2({
-    dropdownParent: $('#large-modal .modal-content')
-  })
+    dropdownParent: $('#large-modal .modal-content'),
+    width: '100%'
+  });
 
   $(document).on('focus', '.l-supplier-' + loadingRowId + ' + .select2 .select2-selection', function () {
       $('.l-supplier-' + loadingRowId).select2('open');

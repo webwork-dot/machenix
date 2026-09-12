@@ -307,6 +307,7 @@ $route[$r_inventory . '/customer-quotations/delete/(:num)']    = 'inventory/cust
 $route[$r_inventory . '/get_customer_quotations']              = 'inventory/get_customer_quotations';
 
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
+$route[$r_inventory . '/get_sales_order_product_wise'] = 'inventory/get_sales_order_product_wise';
 $route[$r_inventory . '/sales-commission'] = 'inventory/sales_commission';
 $route[$r_inventory . '/get_sales_commission'] = 'inventory/get_sales_commission';
 $route[$r_inventory . '/get_completed_sales_commission'] = 'inventory/get_completed_sales_commission';

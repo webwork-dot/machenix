@@ -37,6 +37,7 @@
           <thead>
             <tr>
               <th>#</th>
+              <th>Name</th>
               <th>Commission (%)</th>
               <th>Actions</th>
             </tr>
@@ -86,6 +87,9 @@ $(document).ready(function($) {
       },
       {
         data: 'name'
+      },
+      {
+        data: 'commission'
       },
       {
         data: 'action'

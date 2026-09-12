@@ -93,14 +93,14 @@
                <thead>
                   <tr>
 					<th><?php if ($status == 'pending') { echo '<input type="checkbox" id="select-all" class="form-check-input">'; } else { echo '#'; } ?></th>
-					<th>Date</th>
-					<th>Customer Name</th>
-					<th>Order NO</th>
+					<th>Batch No</th>
+					<th>Product Name</th>
+					<th>Order No</th>
 					<th>Warehouse</th>
-					<th>Total Qty</th>
-					<th>Total Products</th>
-					<th>Total Amount</th>
-					<th>Commission Amount</th>
+					<th>Quantity</th>
+					<th>Total Commission</th>
+					<th>Commission</th>
+					<th>Shared Commission</th>
                     <th>Actions</th>
                   </tr>
                </thead>
@@ -112,14 +112,7 @@
 
 <script type="text/javascript">
 <?php
-$num_cols = 8;
-if ($status == 'complete') {
-    $num_cols += 2;
-}
-if ($staff_access !== 7) {
-    $num_cols += 1;
-}
-$export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
+$export_cols = '[0,1,2,3,4,5,6,7,8]';
 ?>
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
@@ -154,18 +147,18 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 "complete": function() {
                     $('.loader').hide();
                 }
-            },   
+            },
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "customer_name" },
+                { "data": "batch_no" },
+                { "data": "product_name" },
                 { "data": "order_no" },
                 { "data": "warehouse_name" },
                 { "data": "qty" },
-                { "data": "total_pro" },
-                { "data": "grand_total" },
-                { "data": "total_comm" },
+                { "data": "total_commission" },
+                { "data": "my_commission" },
+                { "data": "shared_commission" },
                 { "data": "action" },
              ],
             
@@ -204,7 +197,7 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": [0, 1, 3, 4, 5, 6, 7, 8, 9],
                     "className": "text-center",
                 },
             ] 

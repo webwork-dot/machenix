@@ -39,7 +39,31 @@
 		height: 50px;
 		max-width: 60px;
 	}
-	
+    .subtabs-bar {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 16px;
+    }
+    .subtabs-nav .nav-link {
+        color: #4b5563;
+        background: #f1f5f9;
+        border-radius: 6px;
+        padding: 7px 18px;
+        font-weight: 600;
+        margin-right: 8px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+    .subtabs-nav .nav-link:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    .subtabs-nav .nav-link.active {
+        background: #7367f0 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(115, 103, 240, 0.35);
+    }
 </style>
 
 <?php
@@ -48,6 +72,8 @@
     $staff_access = (int)$this->session->userdata('super_type_id');
 
     $status = (isset($_GET['status']) && $_GET['status'] != '') ? $_GET['status'] : 'pending';
+    $sub_tab = (isset($_GET['sub_tab']) && $_GET['sub_tab'] != '') ? $_GET['sub_tab'] : 'order';
+
     $date_range_param = '';
     if (isset($_GET['date_range']) && $_GET['date_range'] != '') {
         $date_range_param .= '&date_range=' . urlencode($_GET['date_range']);
@@ -55,51 +81,76 @@
             $date_range_param .= '&search=' . urlencode($_GET['search']);
         }
     }
+    if (isset($_GET['customer_id']) && $_GET['customer_id'] != '') {
+        $date_range_param .= '&customer_id=' . urlencode($_GET['customer_id']);
+    }
 ?>
 	
 <div class="row" id="table-bordered">
     
-    <?php // if ($staff_access == 7) { ?>
+    <div class="col-md-12 mb-1">
+        <div class="fixedElement" id="fixedElement">
+            <ul class="nav nav-pills bg-nav-pills nav-justified ">
+                
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/sales-order?status=pending<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">Pending</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/sales-order?status=invoice<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'invoice') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">Generate Invoice</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/sales-order?status=complete<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'complete') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">Complete</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/sales-order?status=all<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'all') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">All Orders</span>
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+
+    <?php if ($status == 'all') { ?>
         <div class="col-md-12 mb-1">
-            <div class="fixedElement" id="fixedElement">
-                <ul class="nav nav-pills bg-nav-pills nav-justified ">
-                    
+            <div class="fixedElement subtabs-bar">
+                <ul class="nav nav-pills subtabs-nav">
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=pending<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">
-                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                            <span class="d-none d-md-block">Pending</span>
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=all&sub_tab=order<?php echo $date_range_param; ?>" class="nav-link <?php echo ($sub_tab != 'product') ? 'active' : ''; ?>">
+                            <i class="fa fa-list me-1"></i> Order Wise
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=invoice<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'invoice') ? 'active' : ''; ?>">
-                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                            <span class="d-none d-md-block">Generate Invoice</span>
+                        <a href="<?php echo base_url();?>inventory/sales-order?status=all&sub_tab=product<?php echo $date_range_param; ?>" class="nav-link <?php echo ($sub_tab == 'product') ? 'active' : ''; ?>">
+                            <i class="fa fa-cubes me-1"></i> Product Wise
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=complete<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'complete') ? 'active' : ''; ?>">
-                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                            <span class="d-none d-md-block">Complete</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-order?status=all<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'all') ? 'active' : ''; ?>">
-                            <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                            <span class="d-none d-md-block">All Orders</span>
-                        </a>
-                    </li>
-                    
                 </ul>
             </div>
         </div>
-    <?php // } ?>
+    <?php } ?>
 
    <div class="col-12">
       <div class="card">
          <div class="card-body">
              <div class="row">
                 <div class="col-md-12 mt-10">
-                   <h5 class="mb-0"><b>Total Sales Order <span id="total_count"> (0)</span></b>
+                   <h5 class="mb-0">
+                   <?php if ($status == 'all' && $sub_tab == 'product') { ?>
+                       <b>Total Product Batches <span id="total_count"> (0)</span></b>
+                   <?php } else { ?>
+                       <b>Total Sales Order <span id="total_count"> (0)</span></b>
+                   <?php } ?>
                    <?php if ($status == 'complete' && $staff_access !== 7) { ?>
                       &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
                    <?php } ?>
@@ -108,7 +159,6 @@
              </div>
          </div>
         <div class="card-datatable d-report mb-2">
-            <!-- <a href="<?php echo site_url('inventory/import-order'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-upload"></i> <?= get_phrase('upload_via_excel');?></span></a>    -->
             <?php if($status == 'pending' && $this->session->userdata('super_type_id') == 7) { ?>
                 <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
             <?php } elseif ($status == 'pending' && $staff_access !== 7) { ?>
@@ -118,27 +168,42 @@
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
+                  <?php if ($status == 'all' && $sub_tab == 'product') { ?>
+					<th>#</th>
+					<th>Batch No</th>
+					<th>Order No</th>
+					<th>Order Date</th>
+					<th>Party Name</th>
+					<th>Product Name</th>
+					<th>Model No., Rate</th>
+					<th>Bill amt</th>
+					<th>CGST</th>
+					<th>SGST</th>
+					<th>IGST</th>
+					<th>Total Bill Amt</th>
+					<th>Cash Amt</th>
+					<th>Total Amt</th>
+					<th>Comm Amt</th>
+					<th>Comm Name</th>
+					<th>Profit</th>
+                  <?php } else { ?>
 					<th>#</th>
 					<th>Date</th>
                     <?php if ($status == 'complete') { ?>
                     <th>Invoice No</th>
                     <th>Invoice Date</th>
                     <?php } ?>
-					<!-- <th>Company Name</th> -->
-					<!--<th>Reference Number</th>-->
 					<th>Customer Name</th>
 					<th>Order NO</th>
 					<th>Warehouse</th>
 					<th>Total Qty</th>
 					<th>Total Products</th>
 					<th>Total Amount</th>
-				    <!--<th>Remark</th>-->
                     <?php if ($staff_access !== 7) { ?>
                         <th>Added By</th>
                     <?php } ?>
-                    <?php // if ($staff_access !== 7) { ?>
                     <th>Actions</th>
-                    <?php // } ?>
+                  <?php } ?>
                   </tr>
                </thead>
             </table>
@@ -149,12 +214,16 @@
 
 <script type="text/javascript">
 <?php
-$num_cols = 8;
-if ($status == 'complete') {
-    $num_cols += 2;
-}
-if ($staff_access !== 7) {
-    $num_cols += 1;
+if ($status == 'all' && $sub_tab == 'product') {
+    $num_cols = 17;
+} else {
+    $num_cols = 8;
+    if ($status == 'complete') {
+        $num_cols += 2;
+    }
+    if ($staff_access !== 7) {
+        $num_cols += 1;
+    }
 }
 $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
 ?>
@@ -177,7 +246,9 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             },
       
             "ajax":{
-                <?php if ($status != 'complete') { ?>
+                <?php if ($status == 'all' && $sub_tab == 'product') { ?>
+                "url": "<?php echo base_url('inventory/get_sales_order_product_wise'); ?>",
+                <?php } elseif ($status != 'complete') { ?>
                 "url": "<?php echo base_url('inventory/get_sales_order'); ?>",
                 <?php } else { ?>
                 "url": "<?php echo base_url('inventory/get_completed_sales_order'); ?>",
@@ -198,27 +269,42 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             },   
                      
             "columns": [
+                <?php if ($status == 'all' && $sub_tab == 'product') { ?>
+                { "data": "sr_no" },
+                { "data": "batch_no" },
+                { "data": "order_no" },
+                { "data": "order_date" },
+                { "data": "party_name" },
+                { "data": "product_name" },
+                { "data": "model_rate" },
+                { "data": "bill_amt" },
+                { "data": "cgst" },
+                { "data": "sgst" },
+                { "data": "igst" },
+                { "data": "total_bill_amt" },
+                { "data": "cash_amt" },
+                { "data": "total_amt" },
+                { "data": "comm_amt" },
+                { "data": "comm_name" },
+                { "data": "profit" }
+                <?php } else { ?>
                 { "data": "sr_no" },
                 { "data": "date" },
                 <?php if ($status == 'complete') { ?>
                 { "data": "invoice_no" },
                 { "data": "invoice_date" },
                 <?php } ?>
-                // { "data": "company_name" },
-                // { "data": "refrence_no" },
                 { "data": "customer_name" },
                 { "data": "order_no" },
                 { "data": "warehouse_name" },
                 { "data": "qty" },
                 { "data": "total_pro" },
                 { "data": "grand_total" },
-                // { "data": "remark" },
                  <?php if ($staff_access !== 7) { ?>
                  { "data": "added_by" },
                  <?php } ?>
-                 <?php // if ($staff_access !== 7) { ?>
-                    { "data": "action" },
-                 <?php // } ?>
+                 { "data": "action" }
+                <?php } ?>
              ],
             
              "buttons": [
@@ -257,10 +343,17 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             },
            
             'columnDefs': [
+                <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                 {
-                    "targets": 0, // your case first column
+                    "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
                     "className": "text-center",
-                },
+                }
+                <?php } else { ?>
+                {
+                    "targets": 0,
+                    "className": "text-center",
+                }
+                <?php } ?>
             ] 
             
         }).on('draw.dt', function () { 

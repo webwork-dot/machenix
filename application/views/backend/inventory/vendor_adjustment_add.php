@@ -1,18 +1,45 @@
 <style>
   .adj-card {
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     background: #ffffff;
   }
   .adj-card .card-header {
     background: #ffffff;
-    border-bottom: 1px solid #f1f5f9;
-    padding: 16px 20px;
+    border-bottom: 1px solid #edf2f7;
+    padding: 10px 16px;
+  }
+  .adj-nav-pills {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 2px;
+    border-radius: 6px;
+    gap: 2px;
+  }
+  .adj-nav-pills .nav-link {
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 4px 12px;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+  }
+  .adj-nav-pills .nav-link:hover {
+    color: #1e293b;
+  }
+  .adj-nav-pills .nav-link.active {
+    background: #3b82f6;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.25);
   }
   .adj-table {
     border: 1px solid #e2e8f0;
     margin-bottom: 0;
+    width: 100%;
   }
   .adj-table thead th {
     background: #f8fafc;
@@ -20,19 +47,20 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     border: 1px solid #e2e8f0;
-    padding: 8px 10px;
+    padding: 5px 7px;
     vertical-align: middle;
+    white-space: nowrap;
   }
   .adj-table thead tr:first-child th.group-header {
     background: #f1f5f9;
     color: #334155;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
   }
   .adj-table tbody td {
-    padding: 6px 8px;
+    padding: 4px 6px;
     vertical-align: middle;
     border: 1px solid #f1f5f9;
   }
@@ -42,26 +70,27 @@
     border-bottom: 1px solid #e2e8f0;
     border-left: 1px solid #f1f5f9;
     border-right: 1px solid #f1f5f9;
-    padding: 10px 8px;
+    padding: 6px 7px;
     vertical-align: middle;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11px;
+    white-space: nowrap;
   }
   .mono-amount {
     font-family: "DM Mono", Menlo, Consolas, monospace;
-    font-size: 12.5px;
+    font-size: 12px;
   }
   .table-input {
-    height: 35px;
-    border-radius: 6px;
+    height: 32px;
+    border-radius: 4px;
     border: 1px solid #cbd5e1;
-    font-size: 12.5px;
-    padding: 4px 8px;
+    font-size: 12px;
+    padding: 2px 7px;
     transition: all 0.15s ease;
   }
   .table-input:focus {
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
   }
   .table-input-disabled {
     background-color: #f1f5f9 !important;
@@ -70,16 +99,22 @@
     cursor: not-allowed;
   }
   .btn-remove-row {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid #fecaca;
     background: #fff5f5;
     color: #ef4444;
     transition: all 0.15s ease;
+    padding: 0;
+    cursor: pointer;
+  }
+  .btn-remove-row i {
+    pointer-events: none;
+    font-size: 13px;
   }
   .btn-remove-row:hover {
     background: #ef4444;
@@ -87,206 +122,287 @@
     border-color: #ef4444;
   }
   .select2-container--default .select2-selection--single {
-    height: 35px !important;
+    height: 32px !important;
     border: 1px solid #cbd5e1 !important;
-    border-radius: 6px !important;
+    border-radius: 4px !important;
     position: relative;
   }
   .select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 33px !important;
-    font-size: 12.5px;
-    padding-left: 10px;
-    padding-right: 25px;
+    line-height: 30px !important;
+    font-size: 12px;
+    padding-left: 8px;
+    padding-right: 22px;
     color: #1e293b;
   }
   .select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 33px !important;
+    height: 30px !important;
     position: absolute;
     top: 1px;
-    right: 6px;
-    width: 20px;
+    right: 4px;
+    width: 18px;
   }
   .ledger-badge-due {
     display: inline-flex;
     align-items: center;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 600;
     color: #dc2626;
     background: #fef2f2;
     border: 1px solid #fecaca;
-    border-radius: 4px;
-    padding: 1px 5px;
+    border-radius: 3px;
+    padding: 0 4px;
     line-height: 1.3;
   }
   .ledger-badge-advance {
     display: inline-flex;
     align-items: center;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 600;
     color: #16a34a;
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
-    border-radius: 4px;
-    padding: 1px 5px;
+    border-radius: 3px;
+    padding: 0 4px;
     line-height: 1.3;
   }
   .ledger-badge-zero {
     display: inline-flex;
     align-items: center;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 500;
     color: #64748b;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    padding: 1px 5px;
+    border-radius: 3px;
+    padding: 0 4px;
     line-height: 1.3;
   }
-  .ledger-info-box {
-    min-height: 16px;
+  .vendor-ledger-info {
+    margin-top: 2px;
+    line-height: 1;
   }
 </style>
 
 <div class="row">
   <div class="col-12">
     <div class="card adj-card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold text-dark">Add Vendor Adjustment</h5>
-      </div>
-      <div class="card-body p-3">
-        <form action="<?= base_url('inventory/vendor-adjustment/add_post') ?>" method="post" id="adjustmentForm">
-          
-          <!-- Header Date & Type & Amount Type -->
-          <div class="row g-3 mb-4">
-            <div class="col-md-3 col-sm-6">
-              <label for="date" class="form-label fw-semibold fs-12 text-secondary mb-1">Date <span class="text-danger">*</span></label>
-              <input type="date" name="date" id="date" class="form-control table-input" value="<?= date('Y-m-d') ?>" required>
+      <form action="<?= base_url('inventory/vendor-adjustment/add_post') ?>" method="post" id="adjustmentForm" novalidate>
+        
+        <!-- Header Bar with Title, Tabs, Date, Type & Add Row Button -->
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-3">
+            <h5 class="mb-0 fw-bold text-dark fs-14">Add Vendor Adjustment</h5>
+            
+            <ul class="nav adj-nav-pills" id="adjustmentTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-to-vendors-btn" data-bs-toggle="pill" data-bs-target="#tab-to-vendors" type="button" role="tab" aria-controls="tab-to-vendors" aria-selected="true">
+                  <i class="feather icon-users me-1"></i> To Vendors
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-ledger-btn" data-bs-toggle="pill" data-bs-target="#tab-ledger" type="button" role="tab" aria-controls="tab-ledger" aria-selected="false">
+                  <i class="feather icon-book me-1"></i> Ledger
+                </button>
+              </li>
+            </ul>
+            <input type="hidden" name="adjustment_mode" id="adjustment_mode" value="to_vendors">
+          </div>
+
+          <!-- Date & Type & Add Row Button on Right -->
+          <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-1">
+              <label for="date" class="form-label fw-semibold fs-11 text-secondary mb-0 text-nowrap">Date <span class="text-danger">*</span>:</label>
+              <input type="date" name="date" id="date" class="form-control table-input" style="width: 135px;" value="<?= date('Y-m-d') ?>">
             </div>
-            <div class="col-md-3 col-sm-6">
-              <label for="type" class="form-label fw-semibold fs-12 text-secondary mb-1">Type <span class="text-danger">*</span></label>
-              <select name="type" id="type" class="form-select table-input" required>
+            <div class="d-flex align-items-center gap-1">
+              <label for="type" class="form-label fw-semibold fs-11 text-secondary mb-0 text-nowrap">Type <span class="text-danger">*</span>:</label>
+              <select name="type" id="type" class="form-select table-input" style="width: 115px;">
                 <option value="unofficial" selected>Unofficial</option>
                 <option value="official">Official</option>
               </select>
             </div>
-            <div class="col-md-3 col-sm-6">
-              <label for="amt_type_id" class="form-label fw-semibold fs-12 text-secondary mb-1">Amount Type</label>
-              <select name="amt_type_id" id="amt_type_id" class="form-select table-input">
-                <option value="">-- Select Amount Type --</option>
-                <?php if (!empty($other_charges)): ?>
-                  <?php foreach ($other_charges as $oc): ?>
-                    <option value="<?= $oc['id'] ?>"><?= html_escape($oc['name']) ?></option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
-            </div>
-          </div>
-
-          <!-- Dynamic Adjustment Table -->
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="fw-bold text-dark fs-13">Adjustment Entries</div>
-            <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 px-3 py-1" id="btnAddRow" style="border-radius: 6px;">
+            <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 px-2 py-1 fs-12 ms-1" id="btnAddRowBtn" style="border-radius: 4px; height: 32px;">
               <i class="feather icon-plus"></i> Add Row
             </button>
           </div>
+        </div>
 
-          <div class="table-responsive rounded-3 mb-4">
-            <table class="table adj-table align-middle" id="adjTable">
-              <thead>
-                <tr>
-                  <th rowspan="2" style="width: 40px;" class="text-center">#</th>
-                  <th rowspan="2" style="min-width: 220px;">Vendor <span class="text-danger">*</span></th>
-                  <th colspan="3" class="text-center group-header">Debit</th>
-                  <th colspan="3" class="text-center group-header">Credit</th>
-                  <th rowspan="2" style="min-width: 160px;">Remark</th>
-                  <th rowspan="2" style="width: 45px;" class="text-center"></th>
-                </tr>
-                <tr>
-                  <th style="width: 110px;" class="text-end">INR (₹)</th>
-                  <th style="width: 105px;" class="text-end">USD ($)</th>
-                  <th style="width: 105px;" class="text-end">RMB (¥)</th>
-                  <th style="width: 110px;" class="text-end">INR (₹)</th>
-                  <th style="width: 105px;" class="text-end">USD ($)</th>
-                  <th style="width: 105px;" class="text-end">RMB (¥)</th>
-                </tr>
-              </thead>
-              <tbody id="adjTableBody">
-                <tr class="adj-row">
-                  <td class="text-center row-index fw-semibold text-muted fs-12">1</td>
-                  <td>
-                    <select name="vendor_id[]" class="form-select select2-dynamic vendor-select" required>
-                      <option value="">-- Select Vendor --</option>
-                      <?php if (!empty($vendors)): ?>
-                        <?php foreach ($vendors as $v): ?>
-                          <option value="<?= $v['id'] ?>"><?= html_escape($v['name']) ?></option>
-                        <?php endforeach; ?>
-                      <?php endif; ?>
-                    </select>
-                    <div class="vendor-ledger-info ledger-info-box mt-1 d-none"></div>
-                  </td>
-                  <td>
-                    <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
-                  </td>
-                  <td>
-                    <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end" placeholder="0.00">
-                  </td>
-                  <td>
-                    <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end" placeholder="0.00">
-                  </td>
-                  <td>
-                    <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end" placeholder="0.00">
-                  </td>
-                  <td>
-                    <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end" placeholder="0.00">
-                  </td>
-                  <td>
-                    <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end" placeholder="0.00">
-                  </td>
-                  <td>
-                    <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
-                  </td>
-                  <td class="text-center">
-                    <button type="button" class="btn-remove-row" title="Delete Row">
-                      <i class="feather icon-trash-2"></i>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="2" class="text-end text-secondary fw-semibold">Total:</td>
-                  <td class="text-end mono-amount fw-bold" id="debTotINR">0.00</td>
-                  <td class="text-end mono-amount fw-bold" id="debTotUSD">0.00</td>
-                  <td class="text-end mono-amount fw-bold" id="debTotRMB">0.00</td>
-                  <td class="text-end mono-amount fw-bold" id="crdTotINR">0.00</td>
-                  <td class="text-end mono-amount fw-bold" id="crdTotUSD">0.00</td>
-                  <td class="text-end mono-amount fw-bold" id="crdTotRMB">0.00</td>
-                  <td colspan="2"></td>
-                </tr>
-              </tfoot>
-            </table>
+        <div class="card-body p-3">
+          <!-- Tab Content -->
+          <div class="tab-content" id="adjustmentTabsContent">
+            
+            <!-- Tab 1: To Vendors -->
+            <div class="tab-pane fade show active" id="tab-to-vendors" role="tabpanel" aria-labelledby="tab-to-vendors-btn">
+              <div class="table-responsive rounded-2">
+                <table class="table adj-table align-middle" id="toVendorsTable">
+                  <thead>
+                    <tr>
+                      <th rowspan="2" style="width: 35px;" class="text-center">#</th>
+                      <th rowspan="2" style="min-width: 220px;">Vendor <span class="text-danger">*</span></th>
+                      <th colspan="3" class="text-center group-header">Debit</th>
+                      <th colspan="3" class="text-center group-header">Credit</th>
+                      <th rowspan="2" style="min-width: 160px;">Remark</th>
+                      <th rowspan="2" style="width: 38px;" class="text-center"></th>
+                    </tr>
+                    <tr>
+                      <th style="width: 110px;" class="text-end">INR (₹)</th>
+                      <th style="width: 105px;" class="text-end">USD ($)</th>
+                      <th style="width: 105px;" class="text-end">RMB (¥)</th>
+                      <th style="width: 110px;" class="text-end">INR (₹)</th>
+                      <th style="width: 105px;" class="text-end">USD ($)</th>
+                      <th style="width: 105px;" class="text-end">RMB (¥)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="toVendorsTableBody">
+                    <tr class="adj-row">
+                      <td class="text-center row-index fw-semibold text-muted fs-12">1</td>
+                      <td>
+                        <select name="vendor_id[]" class="form-select select2-dynamic vendor-select">
+                          <option value="">-- Select Vendor --</option>
+                          <?php if (!empty($vendors)): ?>
+                            <?php foreach ($vendors as $v): ?>
+                              <option value="<?= $v['id'] ?>"><?= html_escape($v['name']) ?></option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                        <div class="vendor-ledger-info d-none"></div>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn-remove-row btn-remove-row-tovendors" title="Delete / Clear Row">
+                          <i class="feather icon-trash-2"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="2" class="text-end text-secondary fw-semibold">Total:</td>
+                      <td class="text-end mono-amount fw-bold" id="totalDebitINR">₹ 0.00</td>
+                      <td class="text-end mono-amount fw-bold" id="totalDebitUSD">$ 0.00</td>
+                      <td class="text-end mono-amount fw-bold" id="totalDebitRMB">¥ 0.00</td>
+                      <td class="text-end mono-amount fw-bold" id="totalCreditINR">₹ 0.00</td>
+                      <td class="text-end mono-amount fw-bold" id="totalCreditUSD">$ 0.00</td>
+                      <td class="text-end mono-amount fw-bold" id="totalCreditRMB">¥ 0.00</td>
+                      <td colspan="2"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tab 2: Ledger -->
+            <div class="tab-pane fade" id="tab-ledger" role="tabpanel" aria-labelledby="tab-ledger-btn">
+              <div class="table-responsive rounded-2">
+                <table class="table adj-table align-middle" id="ledgerTable">
+                  <thead>
+                    <tr>
+                      <th style="width: 35px;" class="text-center">#</th>
+                      <th style="min-width: 220px;">Vendor <span class="text-danger">*</span></th>
+                      <th style="width: 180px;">Amount Type</th>
+                      <th style="width: 120px;">Type <span class="text-danger">*</span></th>
+                      <th style="width: 110px;" class="text-end">INR (₹)</th>
+                      <th style="width: 105px;" class="text-end">USD ($)</th>
+                      <th style="width: 105px;" class="text-end">RMB (¥)</th>
+                      <th style="min-width: 160px;">Remark</th>
+                      <th style="width: 38px;" class="text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="ledgerTableBody">
+                    <tr class="adj-row">
+                      <td class="text-center row-index fw-semibold text-muted fs-12">1</td>
+                      <td>
+                        <select name="ledger_vendor_id[]" class="form-select select2-dynamic vendor-select">
+                          <option value="">-- Select Vendor --</option>
+                          <?php if (!empty($vendors)): ?>
+                            <?php foreach ($vendors as $v): ?>
+                              <option value="<?= $v['id'] ?>"><?= html_escape($v['name']) ?></option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                        <div class="vendor-ledger-info d-none"></div>
+                      </td>
+                      <td>
+                        <select name="ledger_amt_type_id[]" class="form-select table-input select2-dynamic amt-type-select">
+                          <option value="">-- Select Amount Type --</option>
+                          <?php if (!empty($other_charges)): ?>
+                            <?php foreach ($other_charges as $oc): ?>
+                              <option value="<?= $oc['id'] ?>"><?= html_escape($oc['name']) ?></option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                      </td>
+                      <td>
+                        <select name="ledger_amt_type[]" class="form-select table-input">
+                          <option value="plus">Plus (+)</option>
+                          <option value="minus">Minus (-)</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="ledger_inr[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="ledger_usd[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.00001" min="0" name="ledger_rmb[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="text" name="ledger_remark[]" class="form-control table-input" placeholder="Enter remark...">
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn-remove-row btn-remove-row-ledger" title="Delete / Clear Row">
+                          <i class="feather icon-trash-2"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
           <!-- Bottom Actions -->
-          <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
-            <a href="<?= base_url('inventory/vendor-adjustment') ?>" class="btn btn-light px-4 py-2" style="border-radius: 6px; font-weight: 500;">Cancel</a>
-            <button type="submit" class="btn btn-primary px-4 py-2" id="btnSubmit" style="border-radius: 6px; font-weight: 500;">
+          <div class="d-flex justify-content-end align-items-center gap-2 pt-3 mt-2 border-top">
+            <a href="<?= base_url('inventory/vendor-adjustment') ?>" class="btn btn-light px-3 py-1 fs-13" style="border-radius: 4px; font-weight: 500;">Cancel</a>
+            <button type="submit" class="btn btn-primary px-3 py-1 fs-13" id="btnSubmit" style="border-radius: 4px; font-weight: 500;">
               <i class="feather icon-check me-1"></i> Submit
             </button>
           </div>
+        </div>
 
-        </form>
-      </div>
+      </form>
     </div>
   </div>
 </div>
 
-<!-- Template for adding dynamic clean rows without select2 cloning conflicts -->
-<template id="emptyRowTemplate">
+<!-- Template for dynamic clean rows in To Vendors Tab -->
+<template id="toVendorsRowTemplate">
   <tr class="adj-row">
     <td class="text-center row-index fw-semibold text-muted fs-12"></td>
     <td>
-      <select name="vendor_id[]" class="form-select select2-dynamic vendor-select" required>
+      <select name="vendor_id[]" class="form-select select2-dynamic vendor-select">
         <option value="">-- Select Vendor --</option>
         <?php if (!empty($vendors)): ?>
           <?php foreach ($vendors as $v): ?>
@@ -294,7 +410,7 @@
           <?php endforeach; ?>
         <?php endif; ?>
       </select>
-      <div class="vendor-ledger-info ledger-info-box mt-1 d-none"></div>
+      <div class="vendor-ledger-info d-none"></div>
     </td>
     <td>
       <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
@@ -318,7 +434,58 @@
       <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
     </td>
     <td class="text-center">
-      <button type="button" class="btn-remove-row" title="Delete Row">
+      <button type="button" class="btn-remove-row btn-remove-row-tovendors" title="Delete / Clear Row">
+        <i class="feather icon-trash-2"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+
+<!-- Template for dynamic clean rows in Ledger Tab -->
+<template id="ledgerRowTemplate">
+  <tr class="adj-row">
+    <td class="text-center row-index fw-semibold text-muted fs-12"></td>
+    <td>
+      <select name="ledger_vendor_id[]" class="form-select select2-dynamic vendor-select">
+        <option value="">-- Select Vendor --</option>
+        <?php if (!empty($vendors)): ?>
+          <?php foreach ($vendors as $v): ?>
+            <option value="<?= $v['id'] ?>"><?= html_escape($v['name']) ?></option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+      <div class="vendor-ledger-info d-none"></div>
+    </td>
+    <td>
+      <select name="ledger_amt_type_id[]" class="form-select table-input select2-dynamic amt-type-select">
+        <option value="">-- Select Amount Type --</option>
+        <?php if (!empty($other_charges)): ?>
+          <?php foreach ($other_charges as $oc): ?>
+            <option value="<?= $oc['id'] ?>"><?= html_escape($oc['name']) ?></option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+    </td>
+    <td>
+      <select name="ledger_amt_type[]" class="form-select table-input">
+        <option value="plus">Plus (+)</option>
+        <option value="minus">Minus (-)</option>
+      </select>
+    </td>
+    <td>
+      <input type="number" step="0.01" min="0" name="ledger_inr[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.00001" min="0" name="ledger_usd[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.00001" min="0" name="ledger_rmb[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="text" name="ledger_remark[]" class="form-control table-input" placeholder="Enter remark...">
+    </td>
+    <td class="text-center">
+      <button type="button" class="btn-remove-row btn-remove-row-ledger" title="Delete / Clear Row">
         <i class="feather icon-trash-2"></i>
       </button>
     </td>
@@ -337,16 +504,49 @@ $(document).ready(function() {
     var $targets = $context ? $context.find('.select2-dynamic') : $('.select2-dynamic');
     $targets.each(function() {
       if (!$(this).hasClass("select2-hidden-accessible")) {
+        var placeholderText = $(this).hasClass('vendor-select') ? "-- Select Vendor --" : "-- Select Amount Type --";
         $(this).select2({
-          placeholder: "-- Select Vendor --",
+          placeholder: placeholderText,
           width: '100%'
         });
       }
     });
   }
 
-  function updateRowIndices() {
-    $('#adjTableBody tr').each(function(index) {
+  // Handle Tab Switching
+  $('button[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+    var target = $(e.target).attr("data-bs-target");
+    if (target === '#tab-ledger') {
+      $('#adjustment_mode').val('ledger');
+      initSelect2($('#tab-ledger'));
+    } else {
+      $('#adjustment_mode').val('to_vendors');
+      initSelect2($('#tab-to-vendors'));
+      calculateTotals();
+    }
+  });
+
+  // Master Add Row button in Header Bar
+  $('#btnAddRowBtn').on('click', function() {
+    var mode = $('#adjustment_mode').val();
+    if (mode === 'ledger') {
+      var html = $('#ledgerRowTemplate').html();
+      var $newRow = $(html);
+      $('#ledgerTableBody').append($newRow);
+      initSelect2($newRow);
+      updateRowIndices('#ledgerTableBody');
+    } else {
+      var html = $('#toVendorsRowTemplate').html();
+      var $newRow = $(html);
+      $('#toVendorsTableBody').append($newRow);
+      initSelect2($newRow);
+      updateRowIndices('#toVendorsTableBody');
+      calculateTotals();
+    }
+  });
+
+  function updateRowIndices(tableBodyId) {
+    $(tableBodyId + ' tr').each(function(index) {
       $(this).find('.row-index').text(index + 1);
     });
   }
@@ -366,7 +566,7 @@ $(document).ready(function() {
       return;
     }
 
-    $infoBox.removeClass('d-none').html('<span class="text-muted fs-11"><i class="feather icon-loader fa-spin"></i> Loading...</span>');
+    $infoBox.removeClass('d-none').html('<span class="text-muted fs-10"><i class="feather icon-loader fa-spin"></i> Loading...</span>');
 
     $.ajax({
       url: '<?= base_url('inventory/get_vendor_ledger_summary_ajax') ?>',
@@ -381,63 +581,55 @@ $(document).ready(function() {
           vendorLedgerCache[vendorId] = res.data;
           renderVendorLedger($infoBox, res.data);
         } else {
-          $infoBox.html('<span class="text-muted fs-11">No ledger data</span>');
+          $infoBox.html('<span class="text-muted fs-10">No ledger data</span>');
         }
       },
       error: function() {
-        $infoBox.html('<span class="text-danger fs-11">Failed to load</span>');
+        $infoBox.html('<span class="text-danger fs-10">Failed to load</span>');
       }
     });
   }
 
   function renderVendorLedger($infoBox, data) {
-    var bal = data.balance || {};
-    var rmb = parseFloat(bal.rmb) || 0;
-    var usd = parseFloat(bal.usd) || 0;
-    var inr = parseFloat(bal.inr) || 0;
+    var balINR = parseFloat(data.balance.inr) || 0;
+    var balUSD = parseFloat(data.balance.usd) || 0;
+    var balRMB = parseFloat(data.balance.rmb) || 0;
 
     var badges = [];
-
-    // INR
-    if (inr > 0.005) {
-      badges.push('<span class="ledger-badge-due">Out: ₹ ' + formatMoney(inr, 2) + '</span>');
-    } else if (inr < -0.005) {
-      badges.push('<span class="ledger-badge-advance">Adv: ₹ ' + formatMoney(Math.abs(inr), 2) + '</span>');
+    if (Math.abs(balINR) > 0.005) {
+      badges.push(balINR > 0 ? '₹ ' + formatMoney(balINR, 2) + ' Due' : '₹ ' + formatMoney(Math.abs(balINR), 2) + ' Adv');
     }
-
-    // USD
-    if (usd > 0.00005) {
-      badges.push('<span class="ledger-badge-due">Out: $ ' + formatMoney(usd, 2) + '</span>');
-    } else if (usd < -0.00005) {
-      badges.push('<span class="ledger-badge-advance">Adv: $ ' + formatMoney(Math.abs(usd), 2) + '</span>');
+    if (Math.abs(balUSD) > 0.0001) {
+      badges.push(balUSD > 0 ? '$ ' + formatMoney(balUSD, 2) + ' Due' : '$ ' + formatMoney(Math.abs(balUSD), 2) + ' Adv');
     }
-
-    // RMB
-    if (rmb > 0.00005) {
-      badges.push('<span class="ledger-badge-due">Out: ¥ ' + formatMoney(rmb, 2) + '</span>');
-    } else if (rmb < -0.00005) {
-      badges.push('<span class="ledger-badge-advance">Adv: ¥ ' + formatMoney(Math.abs(rmb), 2) + '</span>');
+    if (Math.abs(balRMB) > 0.0001) {
+      badges.push(balRMB > 0 ? '¥ ' + formatMoney(balRMB, 2) + ' Due' : '¥ ' + formatMoney(Math.abs(balRMB), 2) + ' Adv');
     }
 
     if (badges.length === 0) {
-      badges.push('<span class="ledger-badge-zero">Balance: Nil</span>');
+      $infoBox.removeClass('d-none').html('<span class="ledger-badge-zero">Balance: 0.00</span>');
+    } else {
+      var isDue = (balINR > 0 || balUSD > 0 || balRMB > 0);
+      var badgeClass = isDue ? 'ledger-badge-due' : 'ledger-badge-advance';
+      var iconClass = isDue ? 'feather icon-alert-circle' : 'feather icon-check-circle';
+      $infoBox.removeClass('d-none').html('<span class="' + badgeClass + '"><i class="' + iconClass + ' me-1"></i>' + badges.join(' | ') + '</span>');
     }
-
-    var html = '<div class="d-flex flex-wrap gap-1 align-items-center">' + badges.join('') + '</div>';
-    $infoBox.removeClass('d-none').html(html);
   }
 
   $(document).on('change', '.vendor-select', function() {
     fetchVendorLedger($(this));
   });
 
-  // Handle Mutual Exclusion between Debit & Credit
+  // Mutual exclusion: Debit vs Credit in To Vendors Tab
   $(document).on('input', '.debit-field', function() {
     var $row = $(this).closest('tr');
-    var hasDebit = checkRowHasDebit($row);
-    var $creditFields = $row.find('.credit-field');
+    var hasVal = false;
+    $row.find('.debit-field').each(function() {
+      if (parseFloat($(this).val()) > 0) hasVal = true;
+    });
 
-    if (hasDebit) {
+    var $creditFields = $row.find('.credit-field');
+    if (hasVal) {
       $creditFields.val('').prop('disabled', true).addClass('table-input-disabled');
     } else {
       $creditFields.prop('disabled', false).removeClass('table-input-disabled');
@@ -447,10 +639,13 @@ $(document).ready(function() {
 
   $(document).on('input', '.credit-field', function() {
     var $row = $(this).closest('tr');
-    var hasCredit = checkRowHasCredit($row);
-    var $debitFields = $row.find('.debit-field');
+    var hasVal = false;
+    $row.find('.credit-field').each(function() {
+      if (parseFloat($(this).val()) > 0) hasVal = true;
+    });
 
-    if (hasCredit) {
+    var $debitFields = $row.find('.debit-field');
+    if (hasVal) {
       $debitFields.val('').prop('disabled', true).addClass('table-input-disabled');
     } else {
       $debitFields.prop('disabled', false).removeClass('table-input-disabled');
@@ -458,180 +653,209 @@ $(document).ready(function() {
     calculateTotals();
   });
 
-  function checkRowHasDebit($row) {
-    var inr = parseFloat($row.find('.debit-inr').val()) || 0;
-    var usd = parseFloat($row.find('.debit-usd').val()) || 0;
-    var rmb = parseFloat($row.find('.debit-rmb').val()) || 0;
-    return (inr > 0 || usd > 0 || rmb > 0);
-  }
+  // Universal Responsive Remove / Clear Row Handler
+  $(document).on('click', '.btn-remove-row, .btn-remove-row-tovendors, .btn-remove-row-ledger', function(e) {
+    e.preventDefault();
+    var $row = $(this).closest('tr');
+    var $tbody = $row.closest('tbody');
+    var isLedger = $tbody.attr('id') === 'ledgerTableBody';
 
-  function checkRowHasCredit($row) {
-    var inr = parseFloat($row.find('.credit-inr').val()) || 0;
-    var usd = parseFloat($row.find('.credit-usd').val()) || 0;
-    var rmb = parseFloat($row.find('.credit-rmb').val()) || 0;
-    return (inr > 0 || usd > 0 || rmb > 0);
-  }
-
-  // Add Row using clean template
-  $('#btnAddRow').on('click', function() {
-    var html = $('#emptyRowTemplate').html();
-    var $newRow = $(html);
-
-    $('#adjTableBody').append($newRow);
-    initSelect2($newRow);
-    updateRowIndices();
-    calculateTotals();
-  });
-
-  // Remove Row
-  $(document).on('click', '.btn-remove-row', function() {
-    if ($('#adjTableBody tr').length > 1) {
-      $(this).closest('tr').remove();
-      updateRowIndices();
-      calculateTotals();
+    if ($tbody.find('tr').length > 1) {
+      $row.remove();
+      if (isLedger) {
+        updateRowIndices('#ledgerTableBody');
+      } else {
+        updateRowIndices('#toVendorsTableBody');
+        calculateTotals();
+      }
     } else {
-      alert('At least one adjustment row is required.');
+      $row.find('.vendor-select').val('').trigger('change');
+      $row.find('.vendor-ledger-info').empty().addClass('d-none');
+      if (isLedger) {
+        $row.find('.amt-type-select').val('').trigger('change');
+        $row.find('select[name="ledger_amt_type[]"]').val('plus');
+        $row.find('input[name="ledger_inr[]"]').val('');
+        $row.find('input[name="ledger_usd[]"]').val('');
+        $row.find('input[name="ledger_rmb[]"]').val('');
+        $row.find('input[name="ledger_remark[]"]').val('');
+      } else {
+        $row.find('.debit-field, .credit-field').val('').prop('disabled', false).removeClass('table-input-disabled');
+        $row.find('input[name="remark[]"]').val('');
+        calculateTotals();
+      }
     }
   });
 
-  // Calculate Totals
+  // Calculate Totals for To Vendors Tab
   function calculateTotals() {
-    var debINR = 0, debUSD = 0, debRMB = 0;
-    var crdINR = 0, crdUSD = 0, crdRMB = 0;
+    var dINR = 0, dUSD = 0, dRMB = 0;
+    var cINR = 0, cUSD = 0, cRMB = 0;
 
-    $('#adjTableBody tr').each(function() {
-      var dINR = parseFloat($(this).find('.debit-inr').val()) || 0;
-      var dUSD = parseFloat($(this).find('.debit-usd').val()) || 0;
-      var dRMB = parseFloat($(this).find('.debit-rmb').val()) || 0;
-
-      var cINR = parseFloat($(this).find('.credit-inr').val()) || 0;
-      var cUSD = parseFloat($(this).find('.credit-usd').val()) || 0;
-      var cRMB = parseFloat($(this).find('.credit-rmb').val()) || 0;
-
-      debINR += dINR;
-      debUSD += dUSD;
-      debRMB += dRMB;
-
-      crdINR += cINR;
-      crdUSD += cUSD;
-      crdRMB += cRMB;
+    $('#toVendorsTableBody tr').each(function() {
+      dINR += parseFloat($(this).find('.debit-inr').val()) || 0;
+      dUSD += parseFloat($(this).find('.debit-usd').val()) || 0;
+      dRMB += parseFloat($(this).find('.debit-rmb').val()) || 0;
+      cINR += parseFloat($(this).find('.credit-inr').val()) || 0;
+      cUSD += parseFloat($(this).find('.credit-usd').val()) || 0;
+      cRMB += parseFloat($(this).find('.credit-rmb').val()) || 0;
     });
 
-    $('#debTotINR').text(formatMoney(debINR, 2));
-    $('#debTotUSD').text(formatMoney(debUSD, 2));
-    $('#debTotRMB').text(formatMoney(debRMB, 2));
+    $('#totalDebitINR').text('₹ ' + formatMoney(dINR));
+    $('#totalDebitUSD').text('$ ' + formatMoney(dUSD));
+    $('#totalDebitRMB').text('¥ ' + formatMoney(dRMB));
+    $('#totalCreditINR').text('₹ ' + formatMoney(cINR));
+    $('#totalCreditUSD').text('$ ' + formatMoney(cUSD));
+    $('#totalCreditRMB').text('¥ ' + formatMoney(cRMB));
 
-    $('#crdTotINR').text(formatMoney(crdINR, 2));
-    $('#crdTotUSD').text(formatMoney(crdUSD, 2));
-    $('#crdTotRMB').text(formatMoney(crdRMB, 2));
+    var totalRows = $('#toVendorsTableBody tr').length;
+    var diffINR = Math.abs(dINR - cINR);
+    var diffUSD = Math.abs(dUSD - cUSD);
+    var diffRMB = Math.abs(dRMB - cRMB);
 
-    var totalRows = $('#adjTableBody tr').length;
-    var diffINR = Math.abs(debINR - crdINR);
-    var diffUSD = Math.abs(debUSD - crdUSD);
-    var diffRMB = Math.abs(debRMB - crdRMB);
-
-    if (totalRows > 1 && diffINR >= 0.005) {
-      $('#debTotINR, #crdTotINR').addClass('text-danger');
+    if (totalRows > 1 && (diffINR >= 0.005 || diffUSD >= 0.0001 || diffRMB >= 0.0001)) {
+      $('#totalDebitINR, #totalCreditINR, #totalDebitUSD, #totalCreditUSD, #totalDebitRMB, #totalCreditRMB').addClass('text-danger');
     } else {
-      $('#debTotINR, #crdTotINR').removeClass('text-danger');
-    }
-
-    if (totalRows > 1 && diffUSD >= 0.00005) {
-      $('#debTotUSD, #crdTotUSD').addClass('text-danger');
-    } else {
-      $('#debTotUSD, #crdTotUSD').removeClass('text-danger');
-    }
-
-    if (totalRows > 1 && diffRMB >= 0.00005) {
-      $('#debTotRMB, #crdTotRMB').addClass('text-danger');
-    } else {
-      $('#debTotRMB, #crdTotRMB').removeClass('text-danger');
+      $('#totalDebitINR, #totalCreditINR, #totalDebitUSD, #totalCreditUSD, #totalDebitRMB, #totalCreditRMB').removeClass('text-danger');
     }
   }
 
   function formatMoney(num, decimals) {
     var val = parseFloat(num);
-    if (isNaN(val)) return (0).toFixed(decimals);
-    return val.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    if (isNaN(val)) return '0.00';
+    var dec = (decimals !== undefined) ? decimals : 2;
+    return val.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
 
   // Form Submit Validation
   $('#adjustmentForm').on('submit', function(e) {
-    var validRows = 0;
-    var debINR = 0, debUSD = 0, debRMB = 0;
-    var crdINR = 0, crdUSD = 0, crdRMB = 0;
-    var hasError = false;
-    var errorMessage = "";
-
-    $('#adjTableBody tr').each(function(idx) {
-      var rowNum = idx + 1;
-      var ven = $(this).find('.vendor-select').val();
-
-      var dINR = parseFloat($(this).find('.debit-inr').val()) || 0;
-      var dUSD = parseFloat($(this).find('.debit-usd').val()) || 0;
-      var dRMB = parseFloat($(this).find('.debit-rmb').val()) || 0;
-
-      var cINR = parseFloat($(this).find('.credit-inr').val()) || 0;
-      var cUSD = parseFloat($(this).find('.credit-usd').val()) || 0;
-      var cRMB = parseFloat($(this).find('.credit-rmb').val()) || 0;
-
-      var hasDeb = (dINR > 0 || dUSD > 0 || dRMB > 0);
-      var hasCrd = (cINR > 0 || cUSD > 0 || cRMB > 0);
-
-      if (!ven) {
-        hasError = true;
-        errorMessage = "Please select a vendor for row #" + rowNum;
-        return false;
-      }
-
-      if (!hasDeb && !hasCrd) {
-        hasError = true;
-        errorMessage = "Please enter either a Debit or Credit amount for row #" + rowNum;
-        return false;
-      }
-
-      if (hasDeb && hasCrd) {
-        hasError = true;
-        errorMessage = "Row #" + rowNum + " cannot contain both Debit and Credit amounts.";
-        return false;
-      }
-
-      validRows++;
-      debINR += dINR;
-      debUSD += dUSD;
-      debRMB += dRMB;
-
-      crdINR += cINR;
-      crdUSD += cUSD;
-      crdRMB += cRMB;
-    });
-
-    if (hasError) {
+    var dateVal = $('#date').val();
+    if (!dateVal) {
       e.preventDefault();
-      alert(errorMessage);
+      alert("Please select a date.");
+      $('#date').focus();
       return false;
     }
 
-    if (validRows < 1) {
-      e.preventDefault();
-      alert("Please add at least one valid adjustment row.");
-      return false;
-    }
+    var mode = $('#adjustment_mode').val();
 
-    if (validRows > 1) {
-      var diffINR = Math.abs(debINR - crdINR);
-      var diffUSD = Math.abs(debUSD - crdUSD);
-      var diffRMB = Math.abs(debRMB - crdRMB);
+    if (mode === 'ledger') {
+      $('#tab-to-vendors').find('input, select').prop('disabled', true);
+      $('#tab-ledger').find('input, select').prop('disabled', false);
 
-      if (diffINR >= 0.005 || diffUSD >= 0.00005 || diffRMB >= 0.00005) {
+      var validRows = 0;
+      var hasError = false;
+      var errorMessage = "";
+
+      $('#ledgerTableBody tr').each(function(idx) {
+        var rowNum = idx + 1;
+        var vendor = $(this).find('.vendor-select').val();
+        var inr = parseFloat($(this).find('input[name="ledger_inr[]"]').val()) || 0;
+        var usd = parseFloat($(this).find('input[name="ledger_usd[]"]').val()) || 0;
+        var rmb = parseFloat($(this).find('input[name="ledger_rmb[]"]').val()) || 0;
+
+        if (!vendor) {
+          hasError = true;
+          errorMessage = "Please select a vendor for row #" + rowNum;
+          return false;
+        }
+
+        if (inr <= 0 && usd <= 0 && rmb <= 0) {
+          hasError = true;
+          errorMessage = "Please enter at least one amount (INR, USD, or RMB) greater than 0 for row #" + rowNum;
+          return false;
+        }
+
+        validRows++;
+      });
+
+      if (hasError) {
         e.preventDefault();
-        alert("Debit and Credit totals must match across all currencies when there are multiple entries.");
+        $('#tab-to-vendors').find('input, select').prop('disabled', false);
+        alert(errorMessage);
         return false;
       }
-    }
 
-    // Enable all inputs before submit so POST data is complete
-    $('.debit-field, .credit-field').prop('disabled', false);
+      if (validRows < 1) {
+        e.preventDefault();
+        $('#tab-to-vendors').find('input, select').prop('disabled', false);
+        alert("Please add at least one valid adjustment row.");
+        return false;
+      }
+
+      return true;
+
+    } else {
+      $('#tab-ledger').find('input, select').prop('disabled', true);
+      $('#tab-to-vendors').find('input, select').prop('disabled', false);
+
+      var validRows = 0;
+      var dINR = 0, dUSD = 0, dRMB = 0;
+      var cINR = 0, cUSD = 0, cRMB = 0;
+      var hasError = false;
+      var errorMessage = "";
+
+      $('#toVendorsTableBody tr').each(function(idx) {
+        var rowNum = idx + 1;
+        var vendor = $(this).find('.vendor-select').val();
+        var debINR = parseFloat($(this).find('.debit-inr').val()) || 0;
+        var debUSD = parseFloat($(this).find('.debit-usd').val()) || 0;
+        var debRMB = parseFloat($(this).find('.debit-rmb').val()) || 0;
+        var crdINR = parseFloat($(this).find('.credit-inr').val()) || 0;
+        var crdUSD = parseFloat($(this).find('.credit-usd').val()) || 0;
+        var crdRMB = parseFloat($(this).find('.credit-rmb').val()) || 0;
+
+        var hasDeb = (debINR > 0 || debUSD > 0 || debRMB > 0);
+        var hasCrd = (crdINR > 0 || crdUSD > 0 || crdRMB > 0);
+
+        if (!vendor) {
+          hasError = true;
+          errorMessage = "Please select a vendor for row #" + rowNum;
+          return false;
+        }
+
+        if (!hasDeb && !hasCrd) {
+          hasError = true;
+          errorMessage = "Please enter either Debit or Credit amount for row #" + rowNum;
+          return false;
+        }
+
+        if (hasDeb && hasCrd) {
+          hasError = true;
+          errorMessage = "Row #" + rowNum + " cannot contain both Debit and Credit amounts.";
+          return false;
+        }
+
+        validRows++;
+        dINR += debINR; dUSD += debUSD; dRMB += debRMB;
+        cINR += crdINR; cUSD += crdUSD; cRMB += crdRMB;
+      });
+
+      if (hasError) {
+        e.preventDefault();
+        $('#tab-ledger').find('input, select').prop('disabled', false);
+        alert(errorMessage);
+        return false;
+      }
+
+      if (validRows < 1) {
+        e.preventDefault();
+        $('#tab-ledger').find('input, select').prop('disabled', false);
+        alert("Please add at least one valid adjustment row.");
+        return false;
+      }
+
+      if (validRows > 1) {
+        if (Math.abs(dINR - cINR) >= 0.005 || Math.abs(dUSD - cUSD) >= 0.0001 || Math.abs(dRMB - cRMB) >= 0.0001) {
+          e.preventDefault();
+          $('#tab-ledger').find('input, select').prop('disabled', false);
+          alert("Total Debit amounts must match Total Credit amounts when there are multiple entries.");
+          return false;
+        }
+      }
+
+      $('.debit-field, .credit-field').prop('disabled', false);
+      return true;
+    }
   });
 
 });

@@ -24,7 +24,7 @@
   }
 
   // commissions
-  $commissions = $this->db->query("SELECT * FROM sales_commission WHERE order_id = '$sales_order_id'")->result_array();
+  $commissions = $this->db->query("SELECT * FROM sales_commission WHERE order_id = '$sales_order_id' AND is_deleted = 0")->result_array();
   
   $is_distributor = isset($sales_order['is_distributor']) ? (int)$sales_order['is_distributor'] : 0;
 
@@ -471,9 +471,9 @@
                                             ->row_array();
                       $actual_cost_with_exp = isset($inventory['actual_cost_with_exp']) ? floatval($inventory['actual_cost_with_exp']) : 0.00;
                       $sale_product_price = floatval($b['amount']);
-                      $b_qty = floatval($b['white_qty'] + $b['black_qty']);
-                      if ($b_qty <= 0) {
-                        $b_qty = floatval($b['qty'] ?? 0);
+                      $b_qty = floatval($b['qty'] ?? 0) - floatval($b['return_qty'] ?? 0) - floatval($b['return_black_qty'] ?? 0);
+                      if ($b_qty < 0) {
+                        $b_qty = 0;
                       }
 
                       $profit_pct = 0.00;

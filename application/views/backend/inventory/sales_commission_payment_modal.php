@@ -2,6 +2,7 @@
   <div class="col-12">
       <?php echo form_open('inventory/make_sales_commission_payment', ['id' => 'sales_commission_payment_form', 'onsubmit' => 'return submitPaymentForm(event);']); ?>
       
+      <input type="hidden" name="commission_ids" value="<?php echo urldecode($param2); ?>">
       <input type="hidden" name="order_ids" value="<?php echo urldecode($param2); ?>">
       
       <div class="row">
