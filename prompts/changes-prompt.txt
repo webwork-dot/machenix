@@ -1,0 +1,13 @@
+
+Invoice Action Menu:
+  In Complete [sale_order] page where I am showing all the sales invoice from [tax_invoice] tables.. I want to add some options in the action menu:
+
+  1. Delete - After confirmation mark this column [is_delete] = 1.. and also I wanna revert the received quantity of the invoice product from sale order batch product.. You can use [batch_id] = [sale_order_batch_id] to get the rows and then deduct the [received_qty] from the invoice order product quantity [product_quantity]
+
+  2. Cancel - After confirmation mark this column [is_cancel] = 1.. No need to revert quantity
+
+  3. Edit - After clicking edit button open the invoice product list in a new page and there I can only edit the quantity of the product and the amount.. Also I cannot increase the quantity.. I can only decrease the quantity or remove the product.. If I decrease quantity or remove the product then I want to revert the [received_qty] in sale order batch product..
+
+  Follow the existing coding patterns to develop these functionalities.. 
+
+

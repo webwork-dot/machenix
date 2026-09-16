@@ -9,35 +9,594 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
 
 <style>
-	.fixedElement{
-		background : white;
-		border-radius: .428rem;
+	/* Global compact typography & baseline */
+	.inventory-page-wrapper {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 	}
-	.nav-pills.nav-justified .nav-item {
+
+	/* Warehouse Tabs Navigation */
+	.warehouse-nav-container {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 5px 8px;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+	}
+	.warehouse-nav-container .nav-pills {
+		gap: 6px;
+	}
+	.warehouse-nav-container .nav-link {
+		color: #475569;
+		font-weight: 500;
+		font-size: 12.5px;
+		padding: 6px 14px;
+		border-radius: 6px;
+		transition: all 0.15s ease-in-out;
+		border: 1px solid transparent;
+		display: inline-flex;
+		align-items: center;
+		background: transparent;
+	}
+	.warehouse-nav-container .nav-link:hover {
+		color: #0f172a;
+		background: #f1f5f9;
+	}
+	.warehouse-nav-container .nav-link.active {
+		color: #15803d !important;
+		background: #f0fdf4 !important;
+		border-color: #bbf7d0 !important;
+		font-weight: 600;
+		box-shadow: none !important;
+	}
+
+	/* Top Metric KPI Cards - Ultra Compact & Aesthetic */
+	.kpi-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 8px 12px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+	.kpi-card:hover {
+		border-color: #cbd5e1;
+		box-shadow: 0 3px 6px -1px rgba(0, 0, 0, 0.05);
+	}
+	.kpi-icon {
+		width: 36px;
+		height: 36px;
+		border-radius: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 17px;
+		flex-shrink: 0;
+	}
+	.kpi-icon-blue { background: #eff6ff; color: #2563eb; }
+	.kpi-icon-emerald { background: #ecfdf5; color: #059669; }
+	.kpi-icon-indigo { background: #eef2ff; color: #4f46e5; }
+	.kpi-icon-slate { background: #f1f5f9; color: #475569; }
+	.kpi-content { overflow: hidden; }
+	.kpi-label {
+		font-size: 10.5px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.4px;
+		color: #64748b;
+		margin-bottom: 1px;
+	}
+	.kpi-value {
+		font-size: 17px;
+		font-weight: 700;
+		color: #0f172a;
+		line-height: 1.2;
+	}
+
+	/* Main Table Card & DataTable Layout */
+	.stock-table-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+		overflow: hidden;
+	}
+	/* Column & Data Filter Toolbar */
+	.stock-filter-toolbar {
+		background: #ffffff;
+		padding: 8px 14px;
+		border-bottom: 1px solid #f1f5f9;
 		display: flex;
 		align-items: center;
 	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
-		color: #1e652e;
-		border: 1px solid #1e652e !important;
-		background: white;
-		box-shadow: initial;
+	.filter-section-title {
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.4px;
+		color: #64748b;
+		margin-right: 4px;
+		display: inline-flex;
+		align-items: center;
+	}
+	.filter-chip {
+		cursor: pointer;
+		margin-bottom: 0;
+		user-select: none;
+		display: inline-flex;
+		align-items: center;
+		padding: 3px 9px;
+		border-radius: 5px;
+		font-size: 11.5px;
+		font-weight: 500;
+		color: #64748b;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		transition: all 0.15s ease-in-out;
+		gap: 6px;
+	}
+	.filter-chip:hover {
+		border-color: #cbd5e1;
+		color: #1e293b;
+		background: #f1f5f9;
+	}
+	.filter-chip.active {
+		background: #f0fdf4;
+		color: #15803d;
+		border-color: #bbf7d0;
 		font-weight: 600;
 	}
-	.small-img{
-		max-height: 50px;
-		min-height: 50px;
-		object-fit: cover;
-		border-radius: 10px;
-		border: 1px solid #e7e6e6;
-		height: 50px;
-		max-width: 60px;
+	.filter-chip input[type="checkbox"] {
+		display: none;
 	}
-	
+	.filter-chip .chip-box {
+		width: 13px;
+		height: 13px;
+		border-radius: 3px;
+		border: 1px solid #cbd5e1;
+		background: #ffffff;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 9px;
+		color: transparent;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+	.filter-chip.active .chip-box {
+		background: #16a34a;
+		border-color: #16a34a;
+		color: #ffffff;
+	}
+	.btn-reset-filters {
+		background: transparent;
+		border: 1px solid #e2e8f0;
+		border-radius: 5px;
+		color: #64748b;
+		font-size: 11px;
+		font-weight: 500;
+		padding: 3px 8px;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		display: inline-flex;
+		align-items: center;
+	}
+	.btn-reset-filters:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #cbd5e1;
+	}
+	.dt-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		border-bottom: 1px solid #f1f5f9;
+		gap: 10px;
+	}
+	.dataTables_length select {
+		border: 1px solid #cbd5e1 !important;
+		border-radius: 6px !important;
+		padding: 4px 22px 4px 8px !important;
+		font-size: 12px !important;
+		color: #334155 !important;
+		background-color: #ffffff !important;
+		outline: none !important;
+	}
+	.dataTables_filter input {
+		border: 1px solid #cbd5e1 !important;
+		border-radius: 6px !important;
+		padding: 5px 12px !important;
+		font-size: 12px !important;
+		color: #0f172a !important;
+		background-color: #ffffff !important;
+		outline: none !important;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+		min-width: 220px;
+		margin-left: 6px !important;
+	}
+	.dataTables_filter input:focus {
+		border-color: #6366f1 !important;
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+	}
+	.btn-export-custom {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 4px 10px;
+		font-size: 11.5px;
+		font-weight: 600;
+		border-radius: 5px;
+		border: 1px solid #e2e8f0;
+		background: #ffffff;
+		color: #334155;
+		transition: all 0.15s ease;
+	}
+	.btn-export-custom:hover {
+		background: #f8fafc;
+		border-color: #cbd5e1;
+		color: #0f172a;
+	}
+	.btn-export-custom.btn-excel:hover {
+		color: #15803d;
+		border-color: #bbf7d0;
+		background: #f0fdf4;
+	}
+	.btn-export-custom.btn-pdf:hover {
+		color: #dc2626;
+		border-color: #fecaca;
+		background: #fef2f2;
+	}
+	.dt-buttons {
+		display: none !important;
+	}
+
+	/* Main Table Head & Body */
+	#report-datatable {
+		width: 100% !important;
+		border-collapse: separate !important;
+		border-spacing: 0;
+		margin-bottom: 0 !important;
+	}
+	#report-datatable thead th {
+		background: #f8fafc !important;
+		color: #475569 !important;
+		font-size: 11px !important;
+		font-weight: 700 !important;
+		text-transform: uppercase !important;
+		letter-spacing: 0.4px !important;
+		padding: 0px 10px !important;
+		border-bottom: 1px solid #cbd5e1 !important;
+		border-top: none !important;
+		white-space: nowrap !important;
+		vertical-align: middle !important;
+	}
+	#report-datatable tbody td {
+		padding: 6px 10px !important;
+		font-size: 12.5px !important;
+		color: #334155;
+		border-bottom: 1px solid #f1f5f9 !important;
+		border-top: none !important;
+		vertical-align: middle !important;
+	}
+	#report-datatable tbody tr:hover {
+		background-color: #f8fafc !important;
+	}
+	tr.shown {
+		background-color: #f8faff !important;
+	}
+	tr.shown td {
+		border-bottom: none !important;
+	}
+
+	/* Expand Button */
+	.btn-expand-row {
+		width: 20px;
+		height: 20px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		border: 1px solid #cbd5e1;
+		background: #ffffff;
+		color: #64748b;
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.15s ease-in-out;
+	}
+	.btn-expand-row:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
+	}
+	tr.shown .btn-expand-row {
+		background: #fee2e2;
+		color: #dc2626;
+		border-color: #fca5a5;
+	}
+	.btn-expand-row.disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+		pointer-events: none;
+	}
+	.stk-sr-num {
+		font-size: 11.5px;
+		font-weight: 600;
+		color: #475569;
+		min-width: 18px;
+		display: inline-block;
+		text-align: center;
+	}
+
+	/* Unified Stock Badges */
+	.stk-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 26px;
+		padding: 2px 6px;
+		font-size: 11.5px;
+		font-weight: 600;
+		line-height: 1.3;
+		border-radius: 4px;
+		text-decoration: none !important;
+		font-variant-numeric: tabular-nums;
+	}
+	.stk-badge-zero {
+		color: #94a3b8;
+		font-weight: 400;
+		font-size: 11.5px;
+	}
+	.stk-qty-main {
+		font-weight: 700;
+		color: #0f172a;
+		font-size: 12.5px;
+		font-variant-numeric: tabular-nums;
+	}
+	.stk-badge-black {
+		background-color: #f1f5f9;
+		color: #334155;
+		border: 1px solid #e2e8f0;
+	}
+	.stk-badge-white {
+		background-color: #eff6ff;
+		color: #1d4ed8;
+		border: 1px solid #dbeafe;
+	}
+	.stk-badge-pending {
+		background-color: #fffbeb;
+		color: #b45309;
+		border: 1px solid #fef3c7;
+	}
+	.stk-badge-total-white {
+		background-color: #e0e7ff;
+		color: #4338ca;
+		border: 1px solid #c7d2fe;
+		font-weight: 700;
+	}
+	.stk-badge-booked {
+		background-color: #fff1f2;
+		color: #e11d48;
+		border: 1px solid #ffe4e6;
+		transition: all 0.15s ease-in-out;
+		cursor: pointer;
+	}
+	.stk-badge-booked:hover {
+		background-color: #ffe4e6;
+		color: #be123c;
+		transform: translateY(-1px);
+	}
+	.stk-badge-po {
+		background-color: #f0fdf4;
+		color: #15803d;
+		border: 1px solid #dcfce7;
+		transition: all 0.15s ease-in-out;
+		cursor: pointer;
+	}
+	.stk-badge-po:hover {
+		background-color: #dcfce7;
+		color: #166534;
+		transform: translateY(-1px);
+	}
+	.stk-badge-priority {
+		background-color: #fff7ed;
+		color: #c2410c;
+		border: 1px solid #ffedd5;
+		transition: all 0.15s ease-in-out;
+		cursor: pointer;
+	}
+	.stk-badge-priority:hover {
+		background-color: #ffedd5;
+		color: #9a3412;
+		transform: translateY(-1px);
+	}
+	.stk-badge-loading {
+		background-color: #f0fdfa;
+		color: #0f766e;
+		border: 1px solid #ccfbf1;
+		transition: all 0.15s ease-in-out;
+		cursor: pointer;
+	}
+	.stk-badge-loading:hover {
+		background-color: #ccfbf1;
+		color: #115e59;
+		transform: translateY(-1px);
+	}
+
+	/* Cost Amounts */
+	.stk-cost {
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+	.stk-cost.stk-zero {
+		color: #94a3b8;
+		font-weight: 400;
+	}
+	.stk-cost-accent {
+		font-weight: 600;
+		color: #0f172a;
+	}
+
+	/* Table Action Buttons */
+	.btn-table-action {
+		width: 26px;
+		height: 26px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 5px;
+		font-size: 12px;
+		border: 1px solid #e2e8f0;
+		background: #ffffff;
+		color: #475569;
+		transition: all 0.15s ease;
+		text-decoration: none !important;
+		margin: 0 2px;
+	}
+	.btn-table-action:hover {
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #cbd5e1;
+		transform: translateY(-1px);
+	}
+	.btn-table-action.btn-action-view:hover {
+		color: #4f46e5;
+		border-color: #c7d2fe;
+		background: #eef2ff;
+	}
+	.btn-table-action.btn-action-barcode:hover {
+		color: #16a34a;
+		border-color: #86efac;
+		background: #f0fdf4;
+	}
+
+	/* Child Row Batch Breakdown Card */
+	.batch-breakdown-card {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 8px 12px;
+		margin: 4px 2px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+	}
+	.batch-card-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 6px;
+		padding-bottom: 6px;
+		border-bottom: 1px solid #e2e8f0;
+	}
+	.batch-tag-icon {
+		width: 20px;
+		height: 20px;
+		background: #eef2ff;
+		color: #4f46e5;
+		border-radius: 4px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 11px;
+	}
+	.batch-title {
+		font-size: 12px;
+		font-weight: 700;
+		color: #1e293b;
+	}
+	.batch-prod-name {
+		font-size: 12px;
+		font-weight: 500;
+		color: #64748b;
+	}
+	.badge-batch-count {
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		color: #475569;
+		font-size: 11px;
+		font-weight: 600;
+		padding: 1px 7px;
+		border-radius: 12px;
+	}
+	.sub-batch-table {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		overflow: hidden;
+		margin-bottom: 0;
+		width: 100% !important;
+	}
+	.sub-batch-table thead th {
+		background: #f1f5f9 !important;
+		color: #475569 !important;
+		font-size: 10.5px !important;
+		font-weight: 600 !important;
+		text-transform: uppercase !important;
+		letter-spacing: 0.3px !important;
+		padding: 6px 8px !important;
+		border-bottom: 1px solid #cbd5e1 !important;
+		border-top: none !important;
+		white-space: nowrap !important;
+	}
+	.sub-batch-table tbody td {
+		padding: 5px 8px !important;
+		font-size: 11.5px !important;
+		border-bottom: 1px solid #f1f5f9 !important;
+		vertical-align: middle !important;
+		white-space: nowrap !important;
+	}
+	.sub-batch-table tbody tr:last-child td {
+		border-bottom: none !important;
+	}
+	.sub-batch-table tbody tr:hover {
+		background-color: #f8fafc !important;
+	}
+	.batch-no-tag {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-size: 11px;
+		font-weight: 600;
+		color: #0284c7;
+		background: #f0f9ff;
+		border: 1px solid #e0f2fe;
+		padding: 1px 6px;
+		border-radius: 3px;
+		display: inline-block;
+	}
+	.btn-micro-action {
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		font-size: 11px;
+		border: 1px solid #e2e8f0;
+		background: #ffffff;
+		color: #475569;
+		transition: all 0.15s ease;
+		text-decoration: none !important;
+	}
+	.btn-micro-action:hover {
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #cbd5e1;
+	}
+	.btn-micro-action.btn-barcode:hover {
+		color: #16a34a;
+		border-color: #86efac;
+		background: #f0fdf4;
+	}
 </style>
+
 <?php  
     if(empty($this->input->get('warehouse', true))){
-       $warehouse_id = $warehouse_list[0]['id'];
+       $warehouse_id = $warehouse_list[0]['id'] ?? 'All';
     }
     else{
        $warehouse_id = $this->input->get('warehouse', true);
@@ -50,81 +609,196 @@
     }
 ?>
 
-<div class="row" id="table-bordered">
-	<div class="col-md-12 mb-1">
-		<div class="fixedElement" id="fixedElement">
-			<ul class="nav nav-pills bg-nav-pills nav-justified ">
-				<?php
-                 $active='active';
-                 foreach($warehouse_list as $warehouse){?>
-                <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/my-stock?warehouse=<?php echo $warehouse['id'];?>" class="nav-link <?php echo ($warehouse_id == $warehouse['id']) ? 'active' : ''; ?>">
-                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                        <span class="d-none d-md-block"><?php echo $warehouse['name'];?></span>
-                    </a>
-                </li>
-                <?php $active='';}?>	
+<div class="row inventory-page-wrapper" id="table-bordered">
+	<!-- Warehouse Filter Navigation -->
+	<div class="col-md-12 mb-2">
+		<div class="warehouse-nav-container">
+			<ul class="nav nav-pills mb-0">
+				<?php if(!empty($warehouse_list)) {
+					foreach($warehouse_list as $warehouse){?>
+					<li class="nav-item">
+						<a href="<?php echo base_url();?>inventory/my-stock?warehouse=<?php echo $warehouse['id'];?>" class="nav-link <?php echo ($warehouse_id == $warehouse['id']) ? 'active' : ''; ?>">
+							<i class="feather icon-home me-1"></i><?php echo htmlspecialchars($warehouse['name']);?>
+						</a>
+					</li>
+					<?php }
+				}?>	
 			</ul>
 		</div>
 	</div>
+
+	<!-- Top KPI Metric Cards -->
+	<div class="col-12 mb-2">
+		<div class="row g-1">
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="kpi-card">
+					<div class="kpi-icon kpi-icon-blue">
+						<i class="feather icon-package"></i>
+					</div>
+					<div class="kpi-content">
+						<div class="kpi-label">Total Products</div>
+						<div class="kpi-value" id="total_count">0</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="kpi-card">
+					<div class="kpi-icon kpi-icon-emerald">
+						<i class="feather icon-layers"></i>
+					</div>
+					<div class="kpi-content">
+						<div class="kpi-label">Total Stock Quantity</div>
+						<div class="kpi-value" id="total_qty"><?php echo number_format($total['qty'] ?? 0); ?></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="kpi-card">
+					<div class="kpi-icon kpi-icon-indigo">
+						<i class="feather icon-check-circle"></i>
+					</div>
+					<div class="kpi-content">
+						<div class="kpi-label">Company White Qty</div>
+						<div class="kpi-value" id="total_white_stat"><?php echo number_format($total['white_qty'] ?? 0); ?></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="kpi-card">
+					<div class="kpi-icon kpi-icon-slate">
+						<i class="feather icon-archive"></i>
+					</div>
+					<div class="kpi-content">
+						<div class="kpi-label">Company Black Qty</div>
+						<div class="kpi-value" id="total_black_stat"><?php echo number_format($total['black_qty'] ?? 0); ?></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	
+	<!-- Main Data Table -->
     <div class="col-12">
-      <div class="card">
-         <div class="card-body">
-            <div class="row">
-               <div class="col-md-12 mt-10">
-                  <h5 class="mb-0">
-                    <b>Total Product <span id="total_count">(0)</span></b> |
-                    <b>Total Qty: <span id="total_qty"><?php echo $total['qty']; ?></span></b> 
-                    <!-- |
-                    <b>Total Amount: ₹<span id="total_amount"><?php echo $total['total']; ?></span></b> -->
-				  </h5>
-               </div>
-            </div>
-         </div>
-         
-        <div class="card-datatable d-report mb-2">
-          <!-- <button onclick="showAjaxModal('<?php echo site_url('modal/popup_inventory/modal_add_product_stock/' . $warehouse_id); ?>', 'Add Product Stock')" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" style="margin-right: 10px;">
-              <span><i class="feather icon-plus"></i> Add Product</span>
-          </button> -->
-          <!--<a href="<?php echo site_url('inventory/stock-transfer'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-repeat"></i> <?= get_phrase('stock_transfer');?></span></a>         -->
-            <table class="table leads-table" id="report-datatable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Category</th>
-                        <th>Product Name</th>
-                        <th>Quantity</th>
-                        <th>Black Qty</th>
-                        <th>White Qty</th>
-                        <th>PO Qty</th>
-                        <th>Priority Qty</th>
-                        <th>Loading Qty</th>
-                        <th>Cost</th>
-                        <th>Cost with Expense</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-            </table>
-         </div>
-      </div>
+		<div class="stock-table-card">
+			<!-- Column Visibility & Data Filter Toolbar -->
+			<div class="stock-filter-toolbar">
+				<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+					<div class="d-flex align-items-center flex-wrap gap-1" id="column-filters-container">
+						<span class="filter-section-title">
+							<i class="feather icon-filter me-1"></i>Filters:
+						</span>
+						<label class="filter-chip" for="toggle-stock-batch" title="Expand or collapse all products with batches">
+							<input type="checkbox" id="toggle-stock-batch">
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Stock with Batch</span>
+						</label>
+						<label class="filter-chip" for="toggle-zero-qty" title="Show products and batches with zero quantity">
+							<input type="checkbox" id="toggle-zero-qty">
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Show Item/Batch with Zero Qty</span>
+						</label>
+						<label class="filter-chip active" for="toggle-booked-qty" title="Toggle Booked Quantity column">
+							<input type="checkbox" id="toggle-booked-qty" class="column-filter-checkbox" checked>
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Booked Qty</span>
+						</label>
+						<label class="filter-chip" for="toggle-po-qty" title="Toggle PO, Priority, Loading Quantity columns">
+							<input type="checkbox" id="toggle-po-qty" class="column-filter-checkbox">
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">PO/Priority/Loading Qty</span>
+						</label>
+						<label class="filter-chip active" for="toggle-act-cost-exp" title="Toggle Actual Cost with Expense column">
+							<input type="checkbox" id="toggle-act-cost-exp" class="column-filter-checkbox" checked>
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Actual Cost Exp</span>
+						</label>
+						<label class="filter-chip active" for="toggle-act-cost-amt" title="Toggle Actual Cost Net Amount column">
+							<input type="checkbox" id="toggle-act-cost-amt" class="column-filter-checkbox" checked>
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Actual Cost Amt</span>
+						</label>
+						<label class="filter-chip active" for="toggle-off-cost-exp" title="Toggle Official Cost with Expense column">
+							<input type="checkbox" id="toggle-off-cost-exp" class="column-filter-checkbox" checked>
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Official Cost Exp</span>
+						</label>
+						<label class="filter-chip active" for="toggle-off-cost-amt" title="Toggle Official Cost Net Amount column">
+							<input type="checkbox" id="toggle-off-cost-amt" class="column-filter-checkbox" checked>
+							<span class="chip-box"><i class="feather icon-check"></i></span>
+							<span class="chip-text">Official Cost Amt</span>
+						</label>
+					</div>
+					<div class="d-flex align-items-center">
+						<button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
+							<i class="feather icon-rotate-ccw me-1"></i> Reset
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="table-responsive">
+				<table class="table leads-table w-100" id="report-datatable">
+					<thead>
+						<tr>
+							<th class="text-center" style="width: 50px;">#</th>
+							<th>Product Name</th>
+							<th class="text-end">Quantity</th>
+							<th class="text-end">Black Qty</th>
+							<th class="text-end">White Qty</th>
+							<th class="text-end">Pending Qty</th>
+							<th class="text-end">Total White Qty</th>
+							<th class="text-end">Booked Qty</th>
+							<th class="text-end">PO Qty</th>
+							<th class="text-end">Priority Qty</th>
+							<th class="text-end">Loading Qty</th>
+							<th class="text-end">Actual Cost with Exp</th>
+							<th class="text-end">Actual Cost Net Amt</th>
+							<th class="text-end">Official Cost with Exp</th>
+							<th class="text-end">Official Cost Net Amt</th>
+							<th class="text-center" style="width: 75px;">Action</th>
+						</tr>
+					</thead>
+				</table>
+			</div>
+		</div>
     </div>
 </div>
 
 <!-- PO List Modal -->
 <div class="modal fade" id="poListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-transparent">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-2">
+				<h5 class="modal-title fw-bolder text-dark" id="poListModalTitle">PO List</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body px-sm-5 mx-50 pb-5">
-                <h1 class="text-center mb-1" id="poListModalTitle">PO List</h1>
-                <p class="text-center" id="poListModalSubTitle">Details of Purchase Orders</p>
-                <div id="poListContent" class="mt-2">
-                    <!-- Dynamic Content -->
-                    <div class="text-center py-3">
+            <div class="modal-body p-3">
+                <p class="text-muted font-small-2 mb-2" id="poListModalSubTitle">Details of Purchase Orders</p>
+                <div id="poListContent">
+                    <div class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booked Orders Modal -->
+<div class="modal fade" id="bookedListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-2">
+                <h5 class="modal-title fw-bolder text-danger" id="bookedListModalTitle"><i class="feather icon-shopping-cart me-1"></i>Booked Sales Orders</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <p class="text-muted font-small-2 mb-2">Unapproved Sales Orders currently booking stock for this product</p>
+                <div id="bookedListContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-danger" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
@@ -137,7 +811,7 @@
 <script type="text/javascript">       
     function showProductPOList(productId, companyId, status, warehouseId = '') {
         $('#poListModal').modal('show');
-        $('#poListContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+        $('#poListContent').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>');
 
         let statusTitle = status.charAt(0).toUpperCase() + status.slice(1);
         $('#poListModalTitle').text(statusTitle + ' Purchase Orders');
@@ -155,29 +829,178 @@
                 $('#poListContent').html(response);
             },
             error: function () {
-                $('#poListContent').html('<div class="alert alert-danger">Failed to load data. Please try again.</div>');
+                $('#poListContent').html('<div class="alert alert-danger font-small-2">Failed to load data. Please try again.</div>');
             }
         });
     }
 
+    function showProductBookedList(productId, companyId) {
+        $('#bookedListModal').modal('show');
+        $('#bookedListContent').html('<div class="text-center py-4"><div class="spinner-border text-danger" role="status"></div></div>');
+
+        $.ajax({
+            url: "<?php echo base_url('inventory/get_product_booked_list'); ?>",
+            type: "POST",
+            data: {
+                product_id: productId,
+                company_id: companyId
+            },
+            success: function (response) {
+                $('#bookedListContent').html(response);
+            },
+            error: function () {
+                $('#bookedListContent').html('<div class="alert alert-danger font-small-2">Failed to load data. Please try again.</div>');
+            }
+        });
+    }
+
+    function formatChildRow(rowData) {
+        var showZeroQty = $('#toggle-zero-qty').is(':checked');
+        var allBatches = rowData.batches || [];
+        var batches = showZeroQty ? allBatches : allBatches.filter(function (b) {
+            return Number(b.quantity) > 0;
+        });
+
+        var html = '<div class="batch-breakdown-card">';
+        html += '<div class="batch-card-header">';
+        html += '  <div class="d-flex align-items-center gap-1">';
+        html += '    <span class="batch-tag-icon"><i class="feather icon-layers"></i></span>';
+        html += '    <span class="batch-title">Batch Breakdown</span>';
+        html += '    <span class="batch-prod-name ms-1">— ' + (rowData.raw_product_name || '') + '</span>';
+        html += '  </div>';
+        html += '  <span class="badge-batch-count">' + batches.length + ' ' + (batches.length === 1 ? 'batch' : 'batches') + '</span>';
+        html += '</div>';
+
+        if (batches.length === 0) {
+            html += '<div class="text-center py-2 text-muted font-small-2">' + (showZeroQty ? 'No individual batches recorded for this product.' : 'No active batches with stock for this product.') + '</div>';
+        } else {
+            var showBooked = $('#toggle-booked-qty').is(':checked');
+            var showPo = $('#toggle-po-qty').is(':checked');
+            var showActExp = $('#toggle-act-cost-exp').is(':checked');
+            var showActAmt = $('#toggle-act-cost-amt').is(':checked');
+            var showOffExp = $('#toggle-off-cost-exp').is(':checked');
+            var showOffAmt = $('#toggle-off-cost-amt').is(':checked');
+
+            var styleBooked = showBooked ? '' : 'style="display:none;"';
+            var stylePo = showPo ? '' : 'style="display:none;"';
+            var styleActExp = showActExp ? '' : 'style="display:none;"';
+            var styleActAmt = showActAmt ? '' : 'style="display:none;"';
+            var styleOffExp = showOffExp ? '' : 'style="display:none;"';
+            var styleOffAmt = showOffAmt ? '' : 'style="display:none;"';
+
+            html += '<div class="table-responsive">';
+            html += '  <table class="table sub-batch-table align-middle">';
+            html += '    <thead>';
+            html += '      <tr>';
+            html += '        <th class="text-center" style="width: 35px;">#</th>';
+            html += '        <th>Batch No</th>';
+            html += '        <th class="text-end">Quantity</th>';
+            html += '        <th class="text-end">Black Qty</th>';
+            html += '        <th class="text-end">White Qty</th>';
+            html += '        <th class="text-end">Pending Qty</th>';
+            html += '        <th class="text-end">Total White Qty</th>';
+            html += '        <th class="text-end col-batch-booked" ' + styleBooked + '>Booked Qty</th>';
+            html += '        <th class="text-end col-batch-po" ' + stylePo + '>PO Qty</th>';
+            html += '        <th class="text-end col-batch-po" ' + stylePo + '>Priority Qty</th>';
+            html += '        <th class="text-end col-batch-po" ' + stylePo + '>Loading Qty</th>';
+            html += '        <th class="text-end col-batch-act-exp" ' + styleActExp + '>Actual Cost Per Pc with Exp</th>';
+            html += '        <th class="text-end col-batch-act-exp" ' + styleActExp + '>Actual Cost with Exp</th>';
+            html += '        <th class="text-end col-batch-act-amt" ' + styleActAmt + '>Actual Cost Per Pc Net Amt</th>';
+            html += '        <th class="text-end col-batch-act-amt" ' + styleActAmt + '>Actual Cost Net Amt</th>';
+            html += '        <th class="text-end col-batch-off-exp" ' + styleOffExp + '>Official Cost Per Pc with Exp</th>';
+            html += '        <th class="text-end col-batch-off-exp" ' + styleOffExp + '>Official Cost with Exp</th>';
+            html += '        <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Per Pc Net Amt</th>';
+            html += '        <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Net Amt</th>';
+            html += '        <th class="text-center" style="width: 70px;">Action</th>';
+            html += '      </tr>';
+            html += '    </thead>';
+            html += '    <tbody>';
+
+            for (var i = 0; i < batches.length; i++) {
+                var b = batches[i];
+                var bQty = Number(b.quantity);
+                var bBlack = Number(b.black_qty);
+                var bWhite = Number(b.white_qty);
+                var bPending = Number(b.pending_qty);
+                var bTotWhite = Number(b.total_white_qty);
+                var bBooked = Number(b.booked_qty);
+
+                var badgeBlack = bBlack > 0 ? '<span class="stk-badge stk-badge-black">' + bBlack.toLocaleString() + '</span>' : '<span class="stk-badge-zero">-</span>';
+                var badgeWhite = bWhite > 0 ? '<span class="stk-badge stk-badge-white">' + bWhite.toLocaleString() + '</span>' : '<span class="stk-badge-zero">-</span>';
+                var badgePending = bPending > 0 ? '<span class="stk-badge stk-badge-pending">' + bPending.toLocaleString() + '</span>' : '<span class="stk-badge-zero">-</span>';
+                var badgeTotWhite = bTotWhite > 0 ? '<span class="stk-badge stk-badge-total-white">' + bTotWhite.toLocaleString() + '</span>' : '<span class="stk-badge-zero">-</span>';
+                var badgeBooked = bBooked > 0 ? '<span class="stk-badge stk-badge-booked">' + bBooked.toLocaleString() + '</span>' : '<span class="stk-badge-zero">-</span>';
+
+                html += '      <tr>';
+                html += '        <td class="text-center fw-bold text-muted">' + b.sr_no + '</td>';
+                html += '        <td><span class="batch-no-tag">' + b.batch_no + '</span></td>';
+                html += '        <td class="text-end stk-qty-main">' + bQty.toLocaleString() + '</td>';
+                html += '        <td class="text-end">' + badgeBlack + '</td>';
+                html += '        <td class="text-end">' + badgeWhite + '</td>';
+                html += '        <td class="text-end">' + badgePending + '</td>';
+                html += '        <td class="text-end">' + badgeTotWhite + '</td>';
+                html += '        <td class="text-end col-batch-booked" ' + styleBooked + '>' + badgeBooked + '</td>';
+                html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
+                html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
+                html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
+                html += '        <td class="text-end stk-cost col-batch-act-exp ' + (parseFloat(b.actual_cost_per_pc_with_exp) > 0 ? '' : 'stk-zero') + '" ' + styleActExp + '>₹' + b.actual_cost_per_pc_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-exp ' + (parseFloat(b.actual_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleActExp + '>₹' + b.actual_cost_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-amt ' + (parseFloat(b.actual_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleActAmt + '>₹' + b.actual_cost_per_pc_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-amt ' + (parseFloat(b.actual_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleActAmt + '>₹' + b.actual_cost_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-exp ' + (parseFloat(b.official_cost_per_pc_with_exp) > 0 ? '' : 'stk-zero') + '" ' + styleOffExp + '>₹' + b.official_cost_per_pc_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-exp ' + (parseFloat(b.official_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffExp + '>₹' + b.official_cost_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_per_pc_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_net + '</td>';
+                html += '        <td class="text-center">' + b.action + '</td>';
+                html += '      </tr>';
+            }
+
+            html += '    </tbody>';
+            html += '  </table>';
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
-    	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+    	    "dom": '<"dt-toolbar"<"d-flex align-items-center"l><"dt-search"f>>t<"d-flex justify-content-between align-items-center p-1"ip>',
             "ordering": false,
-            "sDom": 'rt<"dtPagination"lp><"clear">',
             "pagingType": "simple_numbers",
             "processing": true,
-            'scrollX': true,
+            "scrollX": true,
             "serverSide": true, 
 			"pageLength": 25,
             "lengthChange": true,
-			"lengthMenu": [10,25, 50, 100, 250, 500,1000,2000],
+			"lengthMenu": [10, 25, 50, 100, 250, 500, 1000],
             "language" :{
-                    sLengthMenu: "_MENU_",
-                    'processing': $('.loader').show()
+                sLengthMenu: "Show _MENU_ entries",
+                search: "",
+                searchPlaceholder: "Search product name, code...",
+                processing: '<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
             },	
-            "drawCallback": function (settings, json) {
+            "drawCallback": function (settings) {
                 $('[data-toggle="tooltip"]').tooltip('update');
+
+                // Update overall company totals from server response
+                if (settings.json) {
+                    if (settings.json.total_white_qty !== undefined) {
+                        $('#total_white_stat').text(settings.json.total_white_qty);
+                    }
+                    if (settings.json.total_black_qty !== undefined) {
+                        $('#total_black_stat').text(settings.json.total_black_qty);
+                    }
+                    if (settings.json.total_qty !== undefined) {
+                        $('#total_qty').text(settings.json.total_qty);
+                    }
+                }
+
+                // Auto-expand batches if Stock with Batch filter is active
+                if ($('#toggle-stock-batch').is(':checked')) {
+                    expandAllBatches();
+                }
             },
       
             "ajax":{
@@ -187,6 +1010,7 @@
                 "data": function(data){
                        data.warehouse_id = '<?php echo $warehouse_id; ?>';			
                        data.type = '<?php echo $type; ?>';			
+                       data.show_zero_qty = $('#toggle-zero-qty').is(':checked') ? 1 : 0;
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -197,57 +1021,172 @@
             },   
                      
             "columns": [
-                { "data": "sr_no" },
-                { "data": "category" },
-                { "data": "product_name" },
-                { "data": "quantity" },
-                { "data": "black_qty" },
-                { "data": "white_qty" },
-                { "data": "po_qty" },
-                { "data": "priority_qty" },
-                { "data": "loading_qty" },
-                { "data": "no_expense_amt" },
-                { "data": "expense_amt" },
-                { "data": "action" },
+                { "data": "sr_no", "className": "text-center text-nowrap align-middle" },
+                { "data": "product_name", "className": "text-start align-middle" },
+                { "data": "quantity", "className": "text-end text-nowrap align-middle" },
+                { "data": "black_qty", "className": "text-end text-nowrap align-middle" },
+                { "data": "white_qty", "className": "text-end text-nowrap align-middle" },
+                { "data": "pending_qty", "className": "text-end text-nowrap align-middle" },
+                { "data": "total_white_qty", "className": "text-end text-nowrap align-middle" },
+                { "data": "booked_qty", "className": "text-end text-nowrap align-middle" },
+                { "data": "po_qty", "className": "text-end text-nowrap align-middle", "visible": false },
+                { "data": "priority_qty", "className": "text-end text-nowrap align-middle", "visible": false },
+                { "data": "loading_qty", "className": "text-end text-nowrap align-middle", "visible": false },
+                { "data": "actual_cost_with_exp", "className": "text-end text-nowrap align-middle" },
+                { "data": "actual_cost_net", "className": "text-end text-nowrap align-middle" },
+                { "data": "official_cost_with_exp", "className": "text-end text-nowrap align-middle" },
+                { "data": "official_cost_net", "className": "text-end text-nowrap align-middle" },
+                { "data": "action", "className": "text-center text-nowrap align-middle" }
             ], 
            
-            "buttons": [
-                {
-                    "extend": 'excel',
-                    "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8,9,10,11]
-                    }
-                },
-                {
-                    "extend": 'pdfHtml5',
-                    "orientation": 'landscape',
-                    "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8,9,10,11]
-                    }
-                }
-            ], 
+            "buttons": [], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
                 $(".loader").fadeOut("slow"); 
-                $('#total_count').html('('+total+')');
-                return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
-            }, 
-           
-            'columnDefs': [
-                {
-                    "targets": 0, // your case first column
-                    "className": "text-center",
-                },
-				{
-                    "targets": 1, // your case first column
-                    "className": "text-center",
-                },
-            ] 
+                $('#total_count').html(total.toLocaleString());
+                return 'Showing ' + start + ' to ' + end + ' of ' + total + ' products';
+            }
             
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 
+        });
+
+        // Stock with Batch expand/collapse functions
+        function expandAllBatches() {
+            var showZeroQty = $('#toggle-zero-qty').is(':checked');
+            dataTable.rows({ page: 'current' }).every(function () {
+                var row = this;
+                var rowData = row.data();
+                if (rowData && rowData.batches) {
+                    var activeBatches = showZeroQty ? rowData.batches : rowData.batches.filter(function (b) {
+                        return Number(b.quantity) > 0;
+                    });
+                    if (activeBatches.length > 0) {
+                        if (!row.child.isShown()) {
+                            row.child(formatChildRow(rowData)).show();
+                            var tr = $(row.node());
+                            tr.addClass('shown');
+                            tr.find('.btn-expand-row i').removeClass('icon-plus').addClass('icon-minus');
+                        }
+                    }
+                }
+            });
+            $('[data-toggle="tooltip"]').tooltip();
+        }
+
+        function collapseAllBatches() {
+            dataTable.rows().every(function () {
+                var row = this;
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    var tr = $(row.node());
+                    tr.removeClass('shown');
+                    tr.find('.btn-expand-row i').removeClass('icon-minus').addClass('icon-plus');
+                }
+            });
+        }
+
+        // Dynamic Column Visibility Filters Function
+        function applyColumnFilters() {
+            var showBooked = $('#toggle-booked-qty').is(':checked');
+            var showPo = $('#toggle-po-qty').is(':checked');
+            var showActExp = $('#toggle-act-cost-exp').is(':checked');
+            var showActAmt = $('#toggle-act-cost-amt').is(':checked');
+            var showOffExp = $('#toggle-off-cost-exp').is(':checked');
+            var showOffAmt = $('#toggle-off-cost-amt').is(':checked');
+
+            // Toggle main table columns without reload
+            dataTable.column(7).visible(showBooked, false);
+            dataTable.column(8).visible(showPo, false);
+            dataTable.column(9).visible(showPo, false);
+            dataTable.column(10).visible(showPo, false);
+            dataTable.column(11).visible(showActExp, false);
+            dataTable.column(12).visible(showActAmt, false);
+            dataTable.column(13).visible(showOffExp, false);
+            dataTable.column(14).visible(showOffAmt, false);
+            dataTable.columns.adjust();
+
+            // Toggle columns in any currently expanded sub-batch tables
+            $('.sub-batch-table .col-batch-booked').toggle(showBooked);
+            $('.sub-batch-table .col-batch-po').toggle(showPo);
+            $('.sub-batch-table .col-batch-act-exp').toggle(showActExp);
+            $('.sub-batch-table .col-batch-act-amt').toggle(showActAmt);
+            $('.sub-batch-table .col-batch-off-exp').toggle(showOffExp);
+            $('.sub-batch-table .col-batch-off-amt').toggle(showOffAmt);
+        }
+
+        // Stock with Batch Toggle Handler
+        $('#toggle-stock-batch').on('change', function () {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            if (isChecked) {
+                expandAllBatches();
+            } else {
+                collapseAllBatches();
+            }
+        });
+
+        // Show Item with Zero Qty Toggle Handler
+        $('#toggle-zero-qty').on('change', function () {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            dataTable.ajax.reload();
+        });
+
+        // Column Filter Checkbox Change Handler
+        $('.column-filter-checkbox').on('change', function() {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            applyColumnFilters();
+        });
+
+        // Reset Filter Handler
+        $('#btn-reset-col-filters').on('click', function(e) {
+            e.preventDefault();
+            $('#toggle-stock-batch').prop('checked', false).closest('.filter-chip').removeClass('active');
+            collapseAllBatches();
+
+            var zeroWasChecked = $('#toggle-zero-qty').is(':checked');
+            $('#toggle-zero-qty').prop('checked', false).closest('.filter-chip').removeClass('active');
+
+            $('#toggle-booked-qty').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-po-qty').prop('checked', false).closest('.filter-chip').removeClass('active');
+            $('#toggle-act-cost-exp').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-act-cost-amt').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-off-cost-exp').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-off-cost-amt').prop('checked', true).closest('.filter-chip').addClass('active');
+            applyColumnFilters();
+
+            if (zeroWasChecked) {
+                dataTable.ajax.reload();
+            }
+        });
+
+        // Row Child Details Expansion Listener
+        $('#report-datatable tbody').on('click', '.btn-expand-row', function (e) {
+            e.stopPropagation();
+            var tr = $(this).closest('tr');
+            var row = dataTable.row(tr);
+            var icon = $(this).find('i');
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+                icon.removeClass('icon-minus').addClass('icon-plus');
+            } else {
+                var rowData = row.data();
+                var showZeroQty = $('#toggle-zero-qty').is(':checked');
+                var allBatches = rowData ? (rowData.batches || []) : [];
+                var activeBatches = showZeroQty ? allBatches : allBatches.filter(function (b) {
+                    return Number(b.quantity) > 0;
+                });
+                if (activeBatches.length > 0) {
+                    row.child(formatChildRow(rowData)).show();
+                    tr.addClass('shown');
+                    icon.removeClass('icon-plus').addClass('icon-minus');
+                    $('[data-toggle="tooltip"]').tooltip();
+                }
+            }
         });
     });
 </script>

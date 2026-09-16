@@ -3149,6 +3149,7 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
         
+        $page_data['total']      = $this->inventory_model->get_overall_stock_totals();
         $page_data['page_name']  = 'overall_stock';
         $page_data['page_title'] = 'Overall Stock';
         $this->load->view('backend/index', $page_data);
@@ -3205,6 +3206,21 @@ class Inventory extends CI_Controller
         $data['status'] = $status;
         
         $this->load->view('backend/inventory/modal_product_po_list', $data);
+    }
+
+    public function get_product_booked_list()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            return;
+        }
+
+        $product_id = $this->input->post('product_id');
+        $company_id = $this->input->post('company_id');
+
+        $data['orders'] = $this->inventory_model->get_product_booked_list($product_id, $company_id);
+        
+        $this->load->view('backend/inventory/modal_product_booked_list', $data);
     }
 
     public function qc_pending($param1 = "", $param2 = "")

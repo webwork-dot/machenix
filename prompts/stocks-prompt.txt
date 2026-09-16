@@ -1,0 +1,43 @@
+
+My Stock Changes:
+
+  In My Stock page I wanna change the overall UI while preserving the current logic and some additional changes as follows:
+  - In My Stock page show these following columns in the table:
+    1). # (Sr no.. It will also have a '+' button which will expand some data.. I'll explain it later)
+    2). Product Name [product_name]
+    3). Quantity (Actual Qty [act_qty])
+    4). Black Qty [black_qty]
+    5). White Qty [white_qty]
+    6). Pending Qty [pending_qty]
+    7). Total White Qty (White + Pending)
+    8). Booked Qty (Current Company Sales Booked Qty of the product.. [sale order with is_approve = 0])
+    9). PO Qty (Currently Purchase order qty of this product company wise [po_status = pending])
+    10). Priority Qty (Currently Purchase order qty of this product company wise [po_status = priority])
+    11). Loading Qty (Currently Purchase order qty of this product company wise [po_status = loading])
+    12). Actual Cost with Exp ([amt cal])
+    13). Actual Cost Net Amt ([amt cal])
+    14). Official Cost with Exp ([amt cal])
+    15). Official Cost Net Amt ([amt cal])
+    16). Action [View Batch Button and Barcode like current]
+
+  - While clicking on the + button in the Sr. No. Column of any row it should expand the row and show the following details in a table below in that row:
+    1). Sr No
+    2). Batch No [batch_code] (if multiple batches exist then show all batches in separate rows)
+    3). Quantity (Actual Qty [act_qty])
+    4). Black Qty [black_qty]
+    5). White Qty [white_qty]
+    6). Pending Qty [pending_qty]
+    7). Total White Qty (White + Pending)
+    8). Booked Qty (Current Company Sales Booked Qty of the product.. [sale order with is_approve = 0])
+    9). Actual Cost Per Pc with Exp ([amt cal])
+    10). Actual Cost with Exp ([amt cal])
+    11). Actual Cost Per Pc Net Amt ([amt cal])
+    12). Actual Cost Net Amt ([amt cal])
+    13). Official Cost Per Pc with Exp ([amt cal])
+    14). Official Cost with Exp ([amt cal])
+    15). Official Cost Per Pc Net Amt ([amt cal])
+    16). Official Cost Net Amt ([amt cal])
+    17). Action [View History Button and Barcode like current]
+
+
+   
