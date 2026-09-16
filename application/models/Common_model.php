@@ -851,8 +851,10 @@ class Common_model extends CI_Model{
         $total_batch = $this->db->query("SELECT id FROM sales_order_product_batch WHERE order_id='$id'")->num_rows();
         $completed_batch = $this->db->query("SELECT id FROM sales_order_product_batch WHERE order_id='$id' AND (white_qty = recieved_qty AND black_qty = recieved_black_qty)")->num_rows();
 
-        if($total_batch == $completed_batch){
+        if($total_batch > 0 && $total_batch == $completed_batch){
             $this->db->where('id', $id)->update('sales_order', array('is_generated' => '1'));
+        } else {
+            $this->db->where('id', $id)->update('sales_order', array('is_generated' => '0'));
         }
     }
 

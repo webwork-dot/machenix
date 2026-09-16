@@ -262,7 +262,7 @@
                                 <th style="width: 110px;">Duty Surcharge 10%</th>
                                 <th style="width: 100px;">Taxable Value</th>
                                 <th style="width: 90px;">GST Amt</th>
-                                <th style="width: 110px;">Total Duty/GST</th>
+                                <th style="width: 110px;">Total Duty/Surge/GST</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -380,7 +380,7 @@
                                 <td class="text-right">-</td>
                                 <td class="text-right"><?php echo number_format($t_total_rmb, 2); ?></td>
                                 <td class="text-right">-</td>
-                                <td class="text-right"><?php echo number_format($t_total_usd, 5); ?></td>
+                                <td class="text-right"><?php echo number_format($t_total_usd, 2); ?></td>
                                 <td class="text-right">-</td>
                                 <td class="text-right"><?php echo number_format($t_total_inr, 2); ?></td>
                                 <td class="text-center"><?php echo number_format($t_official_qty, 0); ?></td>
@@ -412,7 +412,7 @@
                 </div>
                 <div class="total-block">
                     <div class="total-title">Total USD</div>
-                    <div class="total-value"><?php echo number_format($g_total_usd, 5); ?></div>
+                    <div class="total-value"><?php echo number_format($g_total_usd, 2); ?></div>
                 </div>
                 <div class="total-block">
                     <div class="total-title">Total INR</div>
@@ -431,7 +431,7 @@
                     <div class="total-value"><?php echo number_format($g_duty_amt, 2); ?></div>
                 </div>
                 <div class="total-block">
-                    <div class="total-title">Total Duty/GST</div>
+                    <div class="total-title">Total Duty/Surge/GST</div>
                     <div class="total-value"><?php echo number_format($g_total_amt, 2); ?></div>
                 </div>
             </div>

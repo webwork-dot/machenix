@@ -57,6 +57,7 @@ CREATE TABLE `sales_order` (
   `is_paid` tinyint(1) NOT NULL DEFAULT 0,
   `is_approved` tinyint(1) NOT NULL DEFAULT 0,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `is_cancelled` tinyint(1) NOT NULL DEFAULT 0,
   `added_by_id` int(11) NOT NULL,
   `added_by_name` varchar(250) NOT NULL,
   `added_date` datetime NOT NULL,

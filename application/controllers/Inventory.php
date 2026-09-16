@@ -210,7 +210,22 @@ class Inventory extends CI_Controller
 
         // $page_data['staff_type']  = $this->inventory_model->get_staff_type()->result_array();
         $page_data['staff_access']  = $this->inventory_model->get_staff_access()->result_array();
-        $page_data['company_list']     = $this->common_model->selectWhere('company', array('is_deleted' => '0'), 'ASC', 'name');
+        
+        $super_user_id = $this->session->userdata('super_user_id');
+        if ($super_user_id == 4) {
+            $page_data['company_list'] = $this->common_model->selectWhere('company', array('is_deleted' => '0'), 'ASC', 'name');
+        } else {
+            $current_user = $this->db->get_where('sys_users', ['id' => $super_user_id])->row_array();
+            $user_company_ids = !empty($current_user['company_id']) ? array_filter(explode(',', $current_user['company_id'])) : [];
+            if (!empty($user_company_ids)) {
+                $this->db->where_in('id', $user_company_ids);
+                $this->db->where('is_deleted', '0');
+                $this->db->order_by('name', 'ASC');
+                $page_data['company_list'] = $this->db->get('company')->result();
+            } else {
+                $page_data['company_list'] = [];
+            }
+        }
         $page_data['commissions'] = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
         $page_data['profit_slabs'] = $this->common_model->getResultById('profit_commission_slab', 'id, name, comm_from, comm_to', ['is_deleted' => '0']);
         if ($param1 == 'staff_add') {
@@ -4150,6 +4165,67 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function sales_invoice_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        if ($param1 == 'edit') {
+            $invoice_id = $param2;
+            $invoice_order = $this->db->get_where('invoice_order', ['id' => $invoice_id, 'is_deleted' => 0])->row_array();
+            if (empty($invoice_order)) {
+                $this->session->set_flashdata('error_message', 'Sales invoice not found or has been deleted.');
+                redirect(base_url('inventory/sales-order?status=complete'), 'refresh');
+            }
+
+            if ($invoice_order['is_cancelled'] == 1) {
+                $this->session->set_flashdata('error_message', 'Cancelled invoices cannot be edited.');
+                redirect(base_url('inventory/sales-order?status=complete'), 'refresh');
+            }
+
+            $products = $this->db->query("
+                SELECT iop.*, sopb.batch_no, sopb.recieved_qty as batch_recieved_qty, sopb.white_qty as batch_white_qty
+                FROM invoice_order_products AS iop
+                LEFT JOIN sales_order_product_batch AS sopb ON sopb.id = iop.batch_id
+                WHERE iop.parent_id = '$invoice_id'
+                ORDER BY iop.id ASC
+            ")->result_array();
+
+            $page_data['invoice_order'] = $invoice_order;
+            $page_data['products']      = $products;
+            $page_data['page_name']     = 'sales_invoice_edit';
+            $page_data['navigation']    = 'sales_order';
+            $page_data['id']            = $param2;
+            $page_data['page_title']    = 'Edit Sales Invoice';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function sales_invoice_edit_post($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        return $this->inventory_model->sales_invoice_edit_post($id);
+    }
+
+    public function sales_invoice_delete($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        return $this->inventory_model->sales_invoice_delete($id);
+    }
+
+    public function sales_invoice_cancel($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        return $this->inventory_model->sales_invoice_cancel($id);
+    }
+
     public function get_product_batch()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -5451,7 +5527,7 @@ class Inventory extends CI_Controller
         }
     }
     
-    // sales_return_reports 
+    // stock_reports 
 
     public function stock_reports($param1 = "", $param2 = "")
     {
@@ -5488,7 +5564,6 @@ class Inventory extends CI_Controller
             $this->load->view('backend/index', $page_data);
         }
     }
-
 
     public function get_sales_return_reports()
     {

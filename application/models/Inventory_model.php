@@ -16012,22 +16012,37 @@ class Inventory_model extends CI_Model
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
 				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
 				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $first_order_id;
+				$edit_url = base_url('inventory/sales-invoice/edit/' . $id);
+				$is_cancelled = !empty($item['is_cancelled']) && $item['is_cancelled'] == 1;
 
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
-						<!-- <a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank" style="display: none;"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a> -->
+						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>';
+
+				if (!$is_cancelled) {
+					$action .= '
+						<a class="dropdown-item" href="' . $edit_url . '"><i class="feather icon-edit" aria-hidden="true"></i> Edit</a>
+						<a href="javascript:void(0)" class="dropdown-item text-warning" onclick="cancelSalesInvoice(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+				}
+
+				$action .= '
+						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="deleteSalesInvoice(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>
 					</div>
 				</div>';
+
+				$invoice_no_display = $item['invoice_no'] ? $item['invoice_no'] : '-';
+				if ($is_cancelled) {
+					$invoice_no_display .= ' <span class="badge bg-danger">Cancelled</span>';
+				}
 
 				$data[] = array(
 					"sr_no"          => $start + $i + 1,
 					"id"             => $id,
 					"order_no"       => $item['order_no'],
-					"invoice_no"     => $item['invoice_no'] ? $item['invoice_no'] : '-',
+					"invoice_no"     => $invoice_no_display,
 					"invoice_date"   => ($item['invoice_date'] != '0000-00-00' && $item['invoice_date'] != null) ? date('d M, Y', strtotime($item['invoice_date'])) : '-',
 					"refrence_no"    => $item['refrence_no'],
 					"customer_name"  => $item['customer_name'],
@@ -16061,6 +16076,361 @@ class Inventory_model extends CI_Model
 			"total_amount" => $total_amount_formatted
 		);
 		echo json_encode($json_data);
+	}
+
+	public function sales_invoice_delete($invoice_order_id)
+	{
+		$this->db->trans_start();
+		try {
+			$invoice_order = $this->db->where('id', $invoice_order_id)
+									 ->where('is_deleted', '0')
+									 ->get('invoice_order')
+									 ->row_array();
+			if (empty($invoice_order)) {
+				throw new Exception('Sales invoice not found or already deleted.');
+			}
+
+			// Get all products in this invoice
+			$invoice_products = $this->db->where('parent_id', $invoice_order_id)
+										 ->get('invoice_order_products')
+										 ->result_array();
+
+			$affected_orders = array();
+			if (!empty($invoice_order['unique_id'])) {
+				$affected_orders = array_filter(explode(',', $invoice_order['unique_id']));
+			}
+
+			foreach ($invoice_products as $iop) {
+				$batch_id = $iop['batch_id'];
+				$qty = (float)$iop['qty'];
+
+				if ($batch_id > 0 && $qty > 0) {
+					$batch = $this->db->where('id', $batch_id)->get('sales_order_product_batch')->row_array();
+					if (!empty($batch)) {
+						$new_recieved_qty = max(0, (float)$batch['recieved_qty'] - $qty);
+						$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
+							'recieved_qty' => $new_recieved_qty
+						));
+						if (!empty($batch['order_id'])) {
+							$affected_orders[] = $batch['order_id'];
+						}
+					}
+				}
+			}
+
+			// Mark invoice as deleted
+			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+				'is_deleted' => 1
+			));
+
+			// Recalculate is_generated for all affected orders
+			$affected_orders = array_unique($affected_orders);
+			foreach ($affected_orders as $ord_id) {
+				if (!empty($ord_id)) {
+					$this->common_model->markInvoiceGenerated($ord_id);
+				}
+			}
+
+			// Log action
+			$log_data = array(
+				'parent_id'      => $invoice_order_id,
+				'ref_id'         => NULL,
+				'module'         => 'sales',
+				'action'         => 'delete_sales_invoice',
+				'message'        => 'Sales invoice ' . $invoice_order['invoice_no'] . ' deleted and quantities reverted by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($invoice_order),
+				'table_name'     => 'invoice_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			$this->db->trans_commit();
+			$resultpost = array(
+				"status" => 200,
+				"message" => "Sales invoice deleted successfully and quantities reverted."
+			);
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => $e->getMessage()
+			);
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	public function sales_invoice_cancel($invoice_order_id)
+	{
+		$this->db->trans_start();
+		try {
+			$invoice_order = $this->db->where('id', $invoice_order_id)
+									 ->where('is_deleted', '0')
+									 ->get('invoice_order')
+									 ->row_array();
+			if (empty($invoice_order)) {
+				throw new Exception('Sales invoice not found or already deleted.');
+			}
+
+			if ($invoice_order['is_cancelled'] == 1) {
+				throw new Exception('Sales invoice is already cancelled.');
+			}
+
+			// Mark invoice as cancelled (no need to revert quantity per requirements)
+			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+				'is_cancelled' => 1
+			));
+
+			// Log action
+			$log_data = array(
+				'parent_id'      => $invoice_order_id,
+				'ref_id'         => NULL,
+				'module'         => 'sales',
+				'action'         => 'cancel_sales_invoice',
+				'message'        => 'Sales invoice ' . $invoice_order['invoice_no'] . ' marked as cancelled by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($invoice_order),
+				'table_name'     => 'invoice_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			$this->db->trans_commit();
+			$resultpost = array(
+				"status" => 200,
+				"message" => "Sales invoice marked as cancelled successfully."
+			);
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => $e->getMessage()
+			);
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	public function sales_invoice_edit_post($invoice_order_id)
+	{
+		$this->db->trans_start();
+		try {
+			$invoice_order = $this->db->where('id', $invoice_order_id)
+									 ->where('is_deleted', '0')
+									 ->get('invoice_order')
+									 ->row_array();
+			if (empty($invoice_order)) {
+				throw new Exception('Sales invoice not found or already deleted.');
+			}
+
+			if ($invoice_order['is_cancelled'] == 1) {
+				throw new Exception('Cancelled invoices cannot be edited.');
+			}
+
+			// Get all existing products in this invoice
+			$existing_products = $this->db->where('parent_id', $invoice_order_id)
+										  ->get('invoice_order_products')
+										  ->result_array();
+			if (empty($existing_products)) {
+				throw new Exception('No products found for this invoice.');
+			}
+
+			$existing_products_map = array();
+			foreach ($existing_products as $p) {
+				$existing_products_map[$p['id']] = $p;
+			}
+
+			$submitted_iop_ids = $this->input->post('invoice_product_id');
+			$submitted_qtys    = $this->input->post('qty');
+			$submitted_amounts = $this->input->post('amount');
+			$round_of          = (float)($this->input->post('round_of') ?? 0);
+			$narration         = clean_and_escape($this->input->post('narration'));
+			$remark            = clean_and_escape($this->input->post('remark'));
+
+			if (empty($submitted_iop_ids) || !is_array($submitted_iop_ids) || count($submitted_iop_ids) == 0) {
+				throw new Exception('At least one product must remain in the invoice. If you wish to delete the entire invoice, use the Delete option.');
+			}
+
+			$affected_orders = array();
+			if (!empty($invoice_order['unique_id'])) {
+				$affected_orders = array_filter(explode(',', $invoice_order['unique_id']));
+			}
+
+			// 1. Handle Removed Products (in DB but not in submitted list)
+			$submitted_ids_lookup = array_flip($submitted_iop_ids);
+			foreach ($existing_products_map as $iop_id => $existing_item) {
+				if (!isset($submitted_ids_lookup[$iop_id])) {
+					// Revert full original quantity
+					$revert_qty = (float)$existing_item['qty'];
+					$batch_id = $existing_item['batch_id'];
+
+					if ($batch_id > 0 && $revert_qty > 0) {
+						$batch = $this->db->where('id', $batch_id)->get('sales_order_product_batch')->row_array();
+						if (!empty($batch)) {
+							$new_recieved_qty = max(0, (float)$batch['recieved_qty'] - $revert_qty);
+							$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
+								'recieved_qty' => $new_recieved_qty
+							));
+							if (!empty($batch['order_id'])) {
+								$affected_orders[] = $batch['order_id'];
+							}
+						}
+					}
+
+					// Delete this product from invoice_order_products
+					$this->db->where('id', $iop_id)->delete('invoice_order_products');
+				}
+			}
+
+			// 2. Handle Retained Products & Quantities
+			$total_basic_value = 0;
+			$total_gst_amount  = 0;
+			$total_grand       = 0;
+
+			for ($k = 0; $k < count($submitted_iop_ids); $k++) {
+				$iop_id     = $submitted_iop_ids[$k];
+				$new_qty    = (float)$submitted_qtys[$k];
+				$new_amount = (float)$submitted_amounts[$k];
+
+				if (!isset($existing_products_map[$iop_id])) {
+					continue;
+				}
+
+				$existing_item = $existing_products_map[$iop_id];
+				$original_qty  = (float)$existing_item['qty'];
+
+				if ($new_qty <= 0) {
+					throw new Exception('Product quantity must be greater than 0 for ' . $existing_item['product_name']);
+				}
+
+				if ($new_qty > $original_qty) {
+					throw new Exception('Quantity cannot be increased for ' . $existing_item['product_name'] . '. (Maximum allowed: ' . $original_qty . ', Provided: ' . $new_qty . ')');
+				}
+
+				if ($new_amount < 0) {
+					throw new Exception('Product amount cannot be negative for ' . $existing_item['product_name']);
+				}
+
+				// If quantity decreased, revert the difference from batch recieved_qty
+				if ($new_qty < $original_qty) {
+					$qty_diff = $original_qty - $new_qty;
+					$batch_id = $existing_item['batch_id'];
+
+					if ($batch_id > 0 && $qty_diff > 0) {
+						$batch = $this->db->where('id', $batch_id)->get('sales_order_product_batch')->row_array();
+						if (!empty($batch)) {
+							$new_recieved_qty = max(0, (float)$batch['recieved_qty'] - $qty_diff);
+							$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
+								'recieved_qty' => $new_recieved_qty
+							));
+							if (!empty($batch['order_id'])) {
+								$affected_orders[] = $batch['order_id'];
+							}
+						}
+					}
+				}
+
+				// Recalculate line totals
+				$line_total = $new_qty * $new_amount;
+				$gst_per = (float)($existing_item['gst'] ?? 0);
+				$gst_amt = ($line_total * $gst_per) / 100;
+				$total_bill_gst = $line_total + $gst_amt;
+
+				$total_basic_value += $line_total;
+				$total_gst_amount  += $gst_amt;
+				$total_grand       += $total_bill_gst;
+
+				$this->db->where('id', $iop_id)->update('invoice_order_products', array(
+					'qty'                   => $new_qty,
+					'amount'                => $new_amount,
+					'total_amount'          => $line_total,
+					'bill_amount'           => $new_amount,
+					'bill_total'            => $line_total,
+					'gst_amount'            => $gst_amt,
+					'total_bill_gst_amount' => $total_bill_gst,
+					'final_total'           => $total_bill_gst
+				));
+			}
+
+			// 3. Update invoice_order totals
+			$calculated_grand_total = $total_grand + $round_of;
+
+			$gst_type = $invoice_order['gst_type'] ?? '';
+			if ($gst_type == 'IGST') {
+				$central_gst = 0.00;
+				$state_gst   = 0.00;
+				$igst        = $total_gst_amount;
+			} else {
+				$central_gst = $total_gst_amount / 2;
+				$state_gst   = $total_gst_amount / 2;
+				$igst        = 0.00;
+			}
+
+			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+				'basic_value'       => $total_basic_value,
+				'net_sales_value_1' => $total_basic_value,
+				'gst_total'         => $total_gst_amount,
+				'central_gst'       => $central_gst,
+				'state_gst'         => $state_gst,
+				'igst'              => $igst,
+				'net_sales_value_2' => $total_grand,
+				'round_of'          => $round_of,
+				'grand_total'       => $calculated_grand_total,
+				'narration'         => $narration,
+				'remark'            => $remark
+			));
+
+			// Recalculate is_generated for all affected orders
+			$affected_orders = array_unique($affected_orders);
+			foreach ($affected_orders as $ord_id) {
+				if (!empty($ord_id)) {
+					$this->common_model->markInvoiceGenerated($ord_id);
+				}
+			}
+
+			// Log action
+			$log_data = array(
+				'parent_id'      => $invoice_order_id,
+				'ref_id'         => NULL,
+				'module'         => 'sales',
+				'action'         => 'edit_sales_invoice',
+				'message'        => 'Sales invoice ' . $invoice_order['invoice_no'] . ' updated by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode(array(
+					'submitted_products' => $submitted_iop_ids,
+					'basic_value'        => $total_basic_value,
+					'grand_total'        => $calculated_grand_total
+				)),
+				'table_name'     => 'invoice_order',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			$this->db->trans_commit();
+			$resultpost = array(
+				"status" => 200,
+				"message" => "Sales invoice updated successfully.",
+				"url"     => base_url('inventory/sales-order?status=complete')
+			);
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				"status" => 400,
+				"message" => $e->getMessage()
+			);
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
 	}
 
 	public function get_sales_order_product_wise()
@@ -23013,19 +23383,19 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 
 		if (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != ""):
 			$keyword        = $_REQUEST['keywords'];
-			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($keyword) . "%' OR last_name like '%" . $this->db->escape_like_str($keyword) . "%' OR email like '%" . $this->db->escape_like_str($keyword) . "%' OR phone like '%" . $this->db->escape_like_str($keyword) . "%')";
+			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($keyword) . "%' OR last_name like '%" . $this->db->escape_like_str($keyword) . "%' OR CONCAT(first_name, ' ', last_name) like '%" . $this->db->escape_like_str($keyword) . "%' OR email like '%" . $this->db->escape_like_str($keyword) . "%' OR phone like '%" . $this->db->escape_like_str($keyword) . "%' OR EXISTS (SELECT 1 FROM company WHERE FIND_IN_SET(company.id, sys_users.company_id) AND company.name like '%" . $this->db->escape_like_str($keyword) . "%') OR EXISTS (SELECT 1 FROM access WHERE access.id = sys_users.staff_access AND access.name like '%" . $this->db->escape_like_str($keyword) . "%'))";
 		endif;
 
 		if (isset($_REQUEST['search']['value']) && $_REQUEST['search']['value'] != ""):
 			$search_val     = $_REQUEST['search']['value'];
-			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($search_val) . "%' OR last_name like '%" . $this->db->escape_like_str($search_val) . "%' OR email like '%" . $this->db->escape_like_str($search_val) . "%' OR phone like '%" . $this->db->escape_like_str($search_val) . "%')";
+			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($search_val) . "%' OR last_name like '%" . $this->db->escape_like_str($search_val) . "%' OR CONCAT(first_name, ' ', last_name) like '%" . $this->db->escape_like_str($search_val) . "%' OR email like '%" . $this->db->escape_like_str($search_val) . "%' OR phone like '%" . $this->db->escape_like_str($search_val) . "%' OR EXISTS (SELECT 1 FROM company WHERE FIND_IN_SET(company.id, sys_users.company_id) AND company.name like '%" . $this->db->escape_like_str($search_val) . "%') OR EXISTS (SELECT 1 FROM access WHERE access.id = sys_users.staff_access AND access.name like '%" . $this->db->escape_like_str($search_val) . "%'))";
 		endif;
 
 		$tab = $this->input->post('tab') ?: ($this->input->get('tab') ?: ($_REQUEST['tab'] ?? 'my'));
 		if ($tab == 'my') {
-			$super_user_id = $this->session->userdata('super_user_id');
-			if (!empty($super_user_id)) {
-				$keyword_filter .= " AND added_by = '" . $this->db->escape_str($super_user_id) . "'";
+			$company_id = $this->session->userdata('company_id');
+			if (!empty($company_id)) {
+				$keyword_filter .= " AND FIND_IN_SET('" . $this->db->escape_str($company_id) . "', company_id)";
 			}
 		}
 

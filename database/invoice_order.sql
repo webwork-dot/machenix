@@ -48,6 +48,7 @@ CREATE TABLE `invoice_order` (
   `round_of` varchar(250) DEFAULT '0',
   `grand_total` decimal(16,2) NOT NULL DEFAULT 0.00,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `is_cancelled` tinyint(1) NOT NULL DEFAULT 0,
   `added_by_id` int(11) NOT NULL,
   `added_by_name` varchar(250) NOT NULL,
   `added_date` datetime NOT NULL,

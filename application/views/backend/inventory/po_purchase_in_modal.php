@@ -257,7 +257,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                         <th style="width: 100px;">Duty Surcharge 10%</th>
                                         <th style="width: 100px;">Taxable Value</th>
                                         <th style="width: 100px;">GST Amt</th>
-                                        <th style="width: 100px;">Total Duty/GST</th>
+                                        <th style="width: 100px;">Total Duty/Surge/GST</th>
                                         <th style="width: 100px;">Action</th>
                                     </tr>
                                 </thead>
@@ -701,9 +701,9 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                          <td class="text-right"><span class="js-sum-actual-rmb"><?php // echo $t_actual_rmb; ?>-</span></td>
                                          <td class="text-right"><span class="js-sum-total-rmb"><?php echo $t_total_rmb; ?></span></td>
                                          <td class="text-right"><span class="js-sum-actual-usd"><?php // echo $t_actual_usd; ?>-</span></td>
-                                         <td class="text-right"><span class="js-sum-total-usd"><?php echo number_format($t_total_usd, 5, '.', ''); ?></span></td>
+                                         <td class="text-right"><span class="js-sum-total-usd"><?php echo number_format($t_total_usd, 2, '.', ''); ?></span></td>
                                          <td class="text-right"><span class="js-sum-actual-inr"><?php // echo $t_actual_inr; ?>-</span></td>
-                                         <td class="text-right"><span class="js-sum-total-inr"><?php echo $t_total_inr; ?></span></td>
+                                         <td class="text-right"><span class="js-sum-total-inr"><?php echo number_format($t_total_inr, 2, '.', ''); ?></span></td>
                                          <td class="text-right"><span class="js-sum-official-qty"><?php echo number_format($t_official_qty, 0); ?></span></td>
                                          <td class="text-right"><span class="js-sum-official-rate-usd"><?php // echo number_format($t_official_rate_usd, 2, '.', ''); ?>-</span></td>
                                          <td class="text-right"><span class="js-sum-official-rate-rs"><?php // echo number_format($t_official_rate_rs, 2, '.', ''); ?>-</span></td>
@@ -753,7 +753,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     <th style="width: 100px;">Duty Surcharge 10%</th>
                                     <th style="width: 100px;">Taxable Value</th>
                                     <th style="width: 100px;">GST Amt</th>
-                                    <th style="width: 200px;">Total Duty/GST</th>
+                                    <th style="width: 200px;">Total Duty/Surge/GST</th>
                                 </tr>
                             </thead>
                             <tfoot>
@@ -767,7 +767,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                     <td class="text-right"><span id="grand-sum-total-rmb"><?php echo number_format($g_total_rmb, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-actual-usd">-</span></td>
                                     <!-- <td class="text-right"><span id="grand-sum-actual-usd"><?php echo number_format($g_actual_usd, 2, '.', ''); ?></span></td> -->
-                                    <td class="text-right"><span id="grand-sum-total-usd"><?php echo number_format($g_total_usd, 5, '.', ''); ?></span></td>
+                                    <td class="text-right"><span id="grand-sum-total-usd"><?php echo number_format($g_total_usd, 2, '.', ''); ?></span></td>
                                     <td class="text-right"><span id="grand-sum-actual-inr">-</span></td>
                                     <!-- <td class="text-right"><span id="grand-sum-actual-inr"><?php echo number_format($g_actual_inr, 2, '.', ''); ?></span></td> -->
                                     <td class="text-right"><span id="grand-sum-total-inr"><?php echo number_format($g_total_inr, 2, '.', ''); ?></span></td>
@@ -996,9 +996,9 @@ function updateTableTotals($table) {
 //   $table.find('.js-sum-actual-rmb').text(sum.actual_rmb);
   $table.find('.js-sum-total-rmb').text(toNum(supplierTotalRmb));
 //   $table.find('.js-sum-actual-usd').text(sum.actual_usd);
-  $table.find('.js-sum-total-usd').text(fmtUsd(supplierTotalUsd));
+  $table.find('.js-sum-total-usd').text(fmtAmt(supplierTotalUsd));
 //   $table.find('.js-sum-actual-inr').text(sum.actual_inr);
-  $table.find('.js-sum-total-inr').text(toNum(supplierTotalInr));
+  $table.find('.js-sum-total-inr').text(fmtAmt(supplierTotalInr));
   $table.find('.js-sum-official-qty').text(fmtQty(sum.official_qty));
 //   $table.find('.js-sum-official-rate-usd').text(fmtUsd(sum.official_rate_usd));
 //   $table.find('.js-sum-official-rate-rs').text(fmtAmt(sum.official_rate_rs));
@@ -1040,7 +1040,7 @@ function updateTableTotals($table) {
 //   $('#grand-sum-actual-rmb').text(totalActualRmb.toFixed(2));
   $('#grand-sum-total-rmb').text(grandTotalRmb.toFixed(2));
 //   $('#grand-sum-actual-usd').text(fmtUsd(totalActualUsd));
-  $('#grand-sum-total-usd').text(fmtUsd(grandTotalUsd));
+  $('#grand-sum-total-usd').text(grandTotalUsd.toFixed(2));
 //   $('#grand-sum-actual-inr').text(totalActualInr.toFixed(2));
   $('#grand-sum-total-inr').text(grandTotalInr.toFixed(2));
   $('#grand-sum-official-qty').text(totalOfficialQty);
@@ -1462,7 +1462,7 @@ function createSupplierSection(supplierId, supplierName) {
                         <th style="width: 100px;">Duty Surcharge 10%</th>
                         <th style="width: 100px;">Taxable Value</th>
                         <th style="width: 100px;">GST Amt</th>
-                        <th style="width: 100px;">Total Amt</th>
+                        <th style="width: 100px;">Total Duty/Surge/GST</th>
                         <th style="width: 100px;">Action</th>
                     </tr>
                 </thead>
@@ -1523,9 +1523,9 @@ function createSupplierSection(supplierId, supplierName) {
                         <td class="text-right"><span class="js-sum-actual-rmb">-</span></td>
                         <td class="text-right"><span class="js-sum-total-rmb">0</span></td>
                         <td class="text-right"><span class="js-sum-actual-usd">-</span></td>
-                        <td class="text-right"><span class="js-sum-total-usd">0</span></td>
+                        <td class="text-right"><span class="js-sum-total-usd">0.00</span></td>
                         <td class="text-right"><span class="js-sum-actual-inr">-</span></td>
-                        <td class="text-right"><span class="js-sum-total-inr">0</span></td>
+                        <td class="text-right"><span class="js-sum-total-inr">0.00</span></td>
                         <td class="text-right"><span class="js-sum-official-qty">0</span></td>
                         <td class="text-right"><span class="js-sum-official-rate-usd">-</span></td>
                         <td class="text-right"><span class="js-sum-official-rate-rs">-</span></td>

@@ -360,4 +360,132 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             $(".loader").fadeOut("slow"); 
         });
     });
+
+    function deleteSalesInvoice(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will delete the sales invoice and revert the received quantities in the sales order batches!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-outline-danger ms-1'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.loader').show();
+                $.ajax({
+                    url: "<?php echo base_url('inventory/sales_invoice_delete/'); ?>" + id,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(res) {
+                        $('.loader').hide();
+                        if (res.status == 200 || res.status == '200') {
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: res.message,
+                                icon: 'success',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                $('#report-datatable').DataTable().ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: res.message,
+                                icon: 'error',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('.loader').hide();
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'An error occurred while deleting the sales invoice.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    function cancelSalesInvoice(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will mark the sales invoice as cancelled.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!',
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-outline-danger ms-1'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.loader').show();
+                $.ajax({
+                    url: "<?php echo base_url('inventory/sales_invoice_cancel/'); ?>" + id,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(res) {
+                        $('.loader').hide();
+                        if (res.status == 200 || res.status == '200') {
+                            Swal.fire({
+                                title: 'Cancelled!',
+                                text: res.message,
+                                icon: 'success',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                $('#report-datatable').DataTable().ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: res.message,
+                                icon: 'error',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('.loader').hide();
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'An error occurred while cancelling the sales invoice.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            }
+        });
+    }
 </script>

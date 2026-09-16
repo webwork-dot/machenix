@@ -20,20 +20,12 @@
                   <h5 class="mb-0"><b>Total Categories <span id="total_count"> (<?= count($parent_categories);?>)</span></b></h5>
                </div>
                <div class="col-lg-6 col-md-8 col-12">
-                  <div class="d-flex align-items-center">
-                     <div class="input-group input-group-merge category-search-group me-1">
-                        <span class="input-group-text"><i class="fa fa-search text-muted"></i></span>
-                        <input type="text" id="category_search_input" class="form-control" placeholder="Search category by name..." autocomplete="off">
-                        <span class="input-group-text cursor-pointer" id="btn_category_clear" style="display: none;" title="Clear search">
-                           <i class="fa fa-times text-muted"></i>
-                        </span>
-                     </div>
-                     <button type="button" id="btn_category_search" class="btn btn-primary waves-effect waves-float waves-light text-nowrap me-1">
-                        <i class="fa fa-search"></i> Search
-                     </button>
-                     <button type="button" id="btn_category_reset" class="btn btn-outline-danger waves-effect waves-float waves-light text-nowrap" style="display: none;">
-                        <i class="fa fa-undo"></i> Reset
-                     </button>
+                  <div class="input-group input-group-merge category-search-group">
+                     <span class="input-group-text"><i class="fa fa-search text-muted" id="search_icon"></i></span>
+                     <input type="text" id="category_search_input" class="form-control" placeholder="Type to search category..." autocomplete="off">
+                     <span class="input-group-text cursor-pointer" id="btn_category_clear" style="display: none;" title="Clear search">
+                        <i class="fa fa-times text-muted"></i>
+                     </span>
                   </div>
                </div>
                <div class="col-lg-3 col-md-4 col-12 text-md-end text-start">
@@ -155,78 +147,96 @@
    var initialCategoriesHtml = '';
    var initialCountHtml = '';
    var isCategorySearchActive = false;
+   var categorySearchTimer = null;
+   var categorySearchXhr = null;
 
    $(document).ready(function () {
        // Cache the initial parent categories HTML and count
        initialCategoriesHtml = $('.categories-panel-group').html();
        initialCountHtml = $('#total_count').html();
 
-       // Handle input change to toggle clear button
+       // Handle input & keyup for real-time live search
        $('#category_search_input').on('input keyup', function (e) {
-           var val = $(this).val();
-           if (val.length > 0) {
+           // If Escape key pressed, clear and reset
+           if (e.which === 27 || e.keyCode === 27) {
+               resetCategorySearch();
+               return;
+           }
+
+           var keyword = $(this).val();
+
+           if (keyword.length > 0) {
                $('#btn_category_clear').show();
                $('.category-search-group').addClass('has-clear');
            } else {
                $('#btn_category_clear').hide();
                $('.category-search-group').removeClass('has-clear');
+           }
+
+           if (keyword.trim() === '') {
+               if (categorySearchTimer) {
+                   clearTimeout(categorySearchTimer);
+               }
+               if (categorySearchXhr) {
+                   categorySearchXhr.abort();
+                   categorySearchXhr = null;
+               }
+               setSearchLoading(false);
                if (isCategorySearchActive) {
                    resetCategorySearch();
                }
+               return;
            }
 
-           // If Enter key pressed, perform search
-           if (e.which === 13 || e.keyCode === 13) {
-               e.preventDefault();
-               performCategorySearch();
+           // Debounce the keyup search
+           if (categorySearchTimer) {
+               clearTimeout(categorySearchTimer);
            }
-       });
 
-       // Search button click
-       $('#btn_category_search').on('click', function () {
-           performCategorySearch();
+           setSearchLoading(true);
+
+           categorySearchTimer = setTimeout(function () {
+               performCategorySearch(keyword.trim());
+           }, 250);
        });
 
        // Clear button click
        $('#btn_category_clear').on('click', function () {
-           $('#category_search_input').val('').focus();
-           $('#btn_category_clear').hide();
-           $('.category-search-group').removeClass('has-clear');
-           if (isCategorySearchActive) {
-               resetCategorySearch();
-           }
-       });
-
-       // Reset button click
-       $('#btn_category_reset').on('click', function () {
            resetCategorySearch();
+           $('#category_search_input').focus();
        });
 
        // Trigger reset from empty state click
        $(document).on('click', '.btn_reset_search_trigger', function () {
            resetCategorySearch();
+           $('#category_search_input').focus();
        });
    });
 
-   function performCategorySearch() {
-       var keyword = $('#category_search_input').val().trim();
-       if (keyword === '') {
-           resetCategorySearch();
-           return;
+   function setSearchLoading(isLoading) {
+       if (isLoading) {
+           $('#search_icon').removeClass('fa-search text-muted').addClass('fa-spinner fa-spin text-primary');
+           $('.categories-panel-group').css('opacity', '0.6');
+       } else {
+           $('#search_icon').removeClass('fa-spinner fa-spin text-primary').addClass('fa-search text-muted');
+           $('.categories-panel-group').css('opacity', '1');
+       }
+   }
+
+   function performCategorySearch(keyword) {
+       if (categorySearchXhr) {
+           categorySearchXhr.abort();
        }
 
-       // Show loading indicator
-       var origBtnHtml = $('#btn_category_search').html();
-       $('#btn_category_search').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...');
-       $('.categories-panel-group').css('opacity', '0.5');
+       setSearchLoading(true);
 
-       $.ajax({
+       categorySearchXhr = $.ajax({
            url: '<?= base_url(); ?>inventory/search_categories',
            type: 'POST',
            data: { keyword: keyword },
            success: function (response) {
-               $('#btn_category_search').prop('disabled', false).html(origBtnHtml);
-               $('.categories-panel-group').css('opacity', '1');
+               setSearchLoading(false);
+               categorySearchXhr = null;
 
                try {
                    var obj = (typeof response === 'object') ? response : JSON.parse(response);
@@ -234,9 +244,6 @@
                        isCategorySearchActive = true;
                        $('.categories-panel-group').html(obj.html_content);
                        $('#total_count').html(' ' + obj.count_text);
-                       $('#btn_category_reset').show();
-                       $('#btn_category_clear').show();
-                       $('.category-search-group').addClass('has-clear');
 
                        // Re-initialize feather icons if available
                        if (typeof feather !== 'undefined') {
@@ -255,18 +262,28 @@
                    console.error('Error parsing search response', e);
                }
            },
-           error: function () {
-               $('#btn_category_search').prop('disabled', false).html(origBtnHtml);
-               $('.categories-panel-group').css('opacity', '1');
+           error: function (xhr, status) {
+               if (status !== 'abort') {
+                   setSearchLoading(false);
+                   categorySearchXhr = null;
+               }
            }
        });
    }
 
    function resetCategorySearch() {
+       if (categorySearchTimer) {
+           clearTimeout(categorySearchTimer);
+       }
+       if (categorySearchXhr) {
+           categorySearchXhr.abort();
+           categorySearchXhr = null;
+       }
+       setSearchLoading(false);
+
        $('#category_search_input').val('');
        $('#btn_category_clear').hide();
        $('.category-search-group').removeClass('has-clear');
-       $('#btn_category_reset').hide();
        $('.categories-panel-group').html(initialCategoriesHtml).css('opacity', '1');
        $('#total_count').html(initialCountHtml);
        isCategorySearchActive = false;
@@ -286,60 +303,60 @@
    }
 </script>
 <style>
-   .btn-group-option {
-   display: inline-block !important;
-   }
-   .spinner {
-   visibility: hidden;
-   }
-   .spinner > div {
-   width: 16px;
-   height: 16px;
-   background-color: #999;
-   }
-   .cursor-default {
-   cursor: default !important;
-   }
-   .cursor-pointer {
-   cursor: pointer !important;
-   }
-   .category-search-group .input-group-text:first-child {
-   border-right: 0 !important;
-   border-top-left-radius: 0.357rem !important;
-   border-bottom-left-radius: 0.357rem !important;
-   border-color: #d8d6de;
-   }
-   .category-search-group .form-control {
-   border-left: 0 !important;
-   border-right: 1px solid #d8d6de !important;
-   border-top-right-radius: 0.357rem !important;
-   border-bottom-right-radius: 0.357rem !important;
-   border-color: #d8d6de;
-   }
-   .category-search-group.has-clear .form-control {
-   border-right: 0 !important;
-   border-top-right-radius: 0 !important;
-   border-bottom-right-radius: 0 !important;
-   }
-   .category-search-group #btn_category_clear {
-   border-left: 0 !important;
-   border-right: 1px solid #d8d6de !important;
-   border-top-right-radius: 0.357rem !important;
-   border-bottom-right-radius: 0.357rem !important;
-   border-color: #d8d6de;
-   }
-   .category-search-group:focus-within .input-group-text,
-   .category-search-group:focus-within .form-control {
-   border-color: #7367f0 !important;
-   box-shadow: none !important;
-   }
-   .bg-light-primary {
-   background-color: rgba(115, 103, 240, 0.12) !important;
-   color: #7367f0 !important;
-   }
-   .categories-panel-group .badge {
-   font-weight: 500;
-   padding: 0.35em 0.65em;
-   border-radius: 4px;
-   }
+    .btn-group-option {
+        display: inline-block !important;
+    }
+    .spinner {
+        visibility: hidden;
+    }
+    .spinner > div {
+        width: 16px;
+        height: 16px;
+        background-color: #999;
+    }
+    .cursor-default {
+        cursor: default !important;
+    }
+    .cursor-pointer {
+        cursor: pointer !important;
+    }
+    .category-search-group .input-group-text:first-child {
+        border-right: 0 !important;
+        border-top-left-radius: 0.357rem !important;
+        border-bottom-left-radius: 0.357rem !important;
+        border-color: #d8d6de;
+    }
+    .category-search-group .form-control {
+        border-left: 0 !important;
+        border-right: 1px solid #d8d6de !important;
+        border-top-right-radius: 0.357rem !important;
+        border-bottom-right-radius: 0.357rem !important;
+        border-color: #d8d6de;
+    }
+    .category-search-group.has-clear .form-control {
+        border-right: 0 !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+    .category-search-group #btn_category_clear {
+        border-left: 0 !important;
+        border-right: 1px solid #d8d6de !important;
+        border-top-right-radius: 0.357rem !important;
+        border-bottom-right-radius: 0.357rem !important;
+        border-color: #d8d6de;
+    }
+    .category-search-group:focus-within .input-group-text,
+    .category-search-group:focus-within .form-control {
+        border-color: #7367f0 !important;
+        box-shadow: none !important;
+    }
+    .bg-light-primary {
+        background-color: rgba(115, 103, 240, 0.12) !important;
+        color: #7367f0 !important;
+    }
+    .categories-panel-group .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+        border-radius: 4px;
+    }
 </style>
