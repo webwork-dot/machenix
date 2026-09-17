@@ -58,7 +58,7 @@ class Local_products_model extends CI_Model
 
                 $delete_url = "confirm_modal('" . base_url() . "inventory/local-products/delete/" . $id . "','Are you sure want to delete!')";
                 $edit_url = base_url() . 'inventory/local-products/edit/' . $id;
-                $history_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_product_history/" . $id . "', 'Product History')";
+                $history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_raw_product_history/" . $id . "', 'Product History')";
                 $action = '';
                 $action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 

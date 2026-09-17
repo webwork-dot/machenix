@@ -285,8 +285,12 @@ $route[$r_inventory . '/import-order'] = 'inventory/import_order';
 $route[$r_inventory . '/import-purchase-order'] = 'inventory/import_purchase_order';
 
 $route[$r_inventory . '/black-order'] = 'inventory/black_order';
+$route[$r_inventory . '/black-order/edit/(:num)'] = 'inventory/black_order/edit/$1';
+$route[$r_inventory . '/black-order/edit_post/(:num)'] = 'inventory/black_order/edit_post/$1';
 $route[$r_inventory . '/conversion-order'] = 'inventory/conversion_order';
 $route[$r_inventory . '/conversion-order/add'] = 'inventory/conversion_order_form/add';
+$route[$r_inventory . '/conversion-order/edit/(:num)'] = 'inventory/conversion_order_form/edit/$1';
+$route[$r_inventory . '/conversion-order/edit_post/(:num)'] = 'inventory/conversion_order/edit_post/$1';
 
 $route[$r_inventory . '/company-sales']                  = 'inventory/company_sales';
 $route[$r_inventory . '/company-sales/add']              = 'inventory/company_sales_form/add';
@@ -321,6 +325,8 @@ $route[$r_inventory . '/sales-invoice/edit/(:num)'] = 'inventory/sales_invoice_f
 $route[$r_inventory . '/sales-invoice/edit_post/(:num)'] = 'inventory/sales_invoice_edit_post/$1';
 $route[$r_inventory . '/sales_invoice_delete/(:num)'] = 'inventory/sales_invoice_delete/$1';
 $route[$r_inventory . '/sales_invoice_cancel/(:num)'] = 'inventory/sales_invoice_cancel/$1';
+$route[$r_inventory . '/sales_order_cancel/(:num)']   = 'inventory/sales_order_cancel/$1';
+$route[$r_inventory . '/get_cancelled_sales_order']   = 'inventory/get_cancelled_sales_order';
 $route[$r_inventory . '/sales-order/approve/(:num)']    = 'inventory/sales_order_form/approve/$1';
 $route[$r_inventory . '/sales-order/edit/(:num)']    = 'inventory/sales_order_form/edit/$1';
 $route[$r_inventory . '/sales-order/edit-order/(:num)']    = 'inventory/sales_order_form/edit_order/$1';

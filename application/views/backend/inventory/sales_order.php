@@ -116,6 +116,12 @@
                         <span class="d-none d-md-block">All Orders</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="<?php echo base_url();?>inventory/sales-order?status=cancelled<?php echo $date_range_param; ?>" class="nav-link <?php echo ($status == 'cancelled') ? 'active' : ''; ?>">
+                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
+                        <span class="d-none d-md-block">Cancelled</span>
+                    </a>
+                </li>
                 
             </ul>
         </div>
@@ -148,10 +154,12 @@
                    <h5 class="mb-0">
                    <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                        <b>Total Product Batches <span id="total_count"> (0)</span></b>
+                   <?php } elseif ($status == 'cancelled') { ?>
+                       <b>Total Cancelled <span id="total_count"> (0)</span></b>
                    <?php } else { ?>
                        <b>Total Sales Order <span id="total_count"> (0)</span></b>
                    <?php } ?>
-                   <?php if ($status == 'complete' && $staff_access !== 7) { ?>
+                   <?php if (($status == 'complete' || $status == 'cancelled') && $staff_access !== 7) { ?>
                       &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
                    <?php } ?>
 				  </h5>
@@ -186,6 +194,22 @@
 					<th>Comm Amt</th>
 					<th>Comm Name</th>
 					<th>Profit</th>
+                  <?php } elseif ($status == 'cancelled') { ?>
+					<th>#</th>
+					<th>Date</th>
+					<th>Type</th>
+					<th>Invoice No</th>
+					<th>Invoice Date</th>
+					<th>Customer Name</th>
+					<th>Order NO</th>
+					<th>Warehouse</th>
+					<th>Total Qty</th>
+					<th>Total Products</th>
+					<th>Total Amount</th>
+                    <?php if ($staff_access !== 7) { ?>
+                        <th>Added By</th>
+                    <?php } ?>
+                    <th>Actions</th>
                   <?php } else { ?>
 					<th>#</th>
 					<th>Date</th>
@@ -216,6 +240,11 @@
 <?php
 if ($status == 'all' && $sub_tab == 'product') {
     $num_cols = 17;
+} elseif ($status == 'cancelled') {
+    $num_cols = 11;
+    if ($staff_access !== 7) {
+        $num_cols += 1;
+    }
 } else {
     $num_cols = 8;
     if ($status == 'complete') {
@@ -248,6 +277,8 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             "ajax":{
                 <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                 "url": "<?php echo base_url('inventory/get_sales_order_product_wise'); ?>",
+                <?php } elseif ($status == 'cancelled') { ?>
+                "url": "<?php echo base_url('inventory/get_cancelled_sales_order'); ?>",
                 <?php } elseif ($status != 'complete') { ?>
                 "url": "<?php echo base_url('inventory/get_sales_order'); ?>",
                 <?php } else { ?>
@@ -287,6 +318,22 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 { "data": "comm_amt" },
                 { "data": "comm_name" },
                 { "data": "profit" }
+                <?php } elseif ($status == 'cancelled') { ?>
+                { "data": "sr_no" },
+                { "data": "date" },
+                { "data": "type" },
+                { "data": "invoice_no" },
+                { "data": "invoice_date" },
+                { "data": "customer_name" },
+                { "data": "order_no" },
+                { "data": "warehouse_name" },
+                { "data": "qty" },
+                { "data": "total_pro" },
+                { "data": "grand_total" },
+                 <?php if ($staff_access !== 7) { ?>
+                 { "data": "added_by" },
+                 <?php } ?>
+                 { "data": "action" }
                 <?php } else { ?>
                 { "data": "sr_no" },
                 { "data": "date" },
@@ -346,6 +393,11 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                 {
                     "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                    "className": "text-center",
+                }
+                <?php } elseif ($status == 'cancelled') { ?>
+                {
+                    "targets": [0, 2],
                     "className": "text-center",
                 }
                 <?php } else { ?>
@@ -428,7 +480,7 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
     function cancelSalesInvoice(id) {
         Swal.fire({
             title: 'Are you sure?',
-            text: "This will mark the sales invoice as cancelled.",
+            text: "This will mark the sales invoice as cancelled and revert the received quantities in the sales order batches!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
@@ -477,6 +529,134 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                         Swal.fire({
                             title: 'Error!',
                             text: 'An error occurred while cancelling the sales invoice.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    function cancelSalesOrder(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will mark the sales order as cancelled and revert any booked stock!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!',
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-outline-danger ms-1'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.loader').show();
+                $.ajax({
+                    url: "<?php echo base_url('inventory/sales_order_cancel/'); ?>" + id,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(res) {
+                        $('.loader').hide();
+                        if (res.status == 200 || res.status == '200') {
+                            Swal.fire({
+                                title: 'Cancelled!',
+                                text: res.message,
+                                icon: 'success',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                $('#report-datatable').DataTable().ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: res.message,
+                                icon: 'error',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('.loader').hide();
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'An error occurred while cancelling the sales order.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    function deleteSalesOrder(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Are you sure want to delete this sales order?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-outline-danger ms-1'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.loader').show();
+                $.ajax({
+                    url: "<?php echo base_url('inventory/sales_order/delete/'); ?>" + id,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(res) {
+                        $('.loader').hide();
+                        if (res.status == 200 || res.status == '200') {
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: res.message,
+                                icon: 'success',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                $('#report-datatable').DataTable().ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Warning!',
+                                text: res.message,
+                                icon: 'warning',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: false
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('.loader').hide();
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'An error occurred while deleting the sales order.',
                             icon: 'error',
                             customClass: {
                                 confirmButton: 'btn btn-primary'

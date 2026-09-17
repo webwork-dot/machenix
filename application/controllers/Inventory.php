@@ -3868,7 +3868,7 @@ class Inventory extends CI_Controller
             
             // $this->createPDF($html, $param1, true , 'A4','portrait');
         } elseif ($param1 == "delete") {
-            $this->inventory_model->delete_sales_order($param2);
+            $this->inventory_model->delete_sales_order($param2, 'delete');
         } elseif ($param1 == "gen_invoice") {
             $this->inventory_model->gen_invoice_sales_order($param2);
         } elseif ($param1 == "gen_invoice_post") {
@@ -3889,6 +3889,34 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_black_order($param2, 'delete');
+        } elseif ($param1 == "cancel") {
+            $this->inventory_model->delete_black_order($param2, 'cancel');
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_black_order_post($param2);
+        } elseif ($param1 == "edit") {
+            $invoice = $this->db->where('id', $param2)
+                ->where('type', 'bill')
+                ->where('is_deleted', '0')
+                ->get('invoice_order')
+                ->row_array();
+            if (empty($invoice) || !empty($invoice['is_cancelled'])) {
+                $this->session->set_flashdata('error_message', empty($invoice) ? 'Black order invoice not found.' : 'Cancelled black order cannot be edited.');
+                redirect(site_url('inventory/black-order?status=completed'), 'refresh');
+            }
+            $products = $this->db->where('parent_id', $invoice['id'])->get('invoice_order_products')->result_array();
+            foreach ($products as &$product) {
+                $batch = $this->db->where('id', $product['batch_id'])->get('sales_order_product_batch')->row_array();
+                $product['batch_no'] = $batch['batch_no'] ?? '-';
+            }
+            unset($product);
+            $page_data['invoice'] = $invoice;
+            $page_data['products'] = $products;
+            $page_data['page_name'] = 'black_order_edit';
+            $page_data['navigation'] = 'black_order';
+            $page_data['page_title'] = 'Edit Black Order';
+            $this->load->view('backend/index', $page_data);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['page_name']  = 'black_order';
@@ -3903,8 +3931,12 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_conversion_order_post();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_conversion_order_post($param2);
         } elseif ($param1 == "delete") {
-            $this->inventory_model->delete_conversion_order($param2);
+            $this->inventory_model->delete_conversion_order($param2, 'delete');
+        } elseif ($param1 == "cancel") {
+            $this->inventory_model->delete_conversion_order($param2, 'cancel');
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['page_name']  = 'conversion_order';
@@ -3931,6 +3963,70 @@ class Inventory extends CI_Controller
             $page_data['navigation']  = 'conversion_order';
             $page_data['page_title'] = 'Add Sales Conversion';
             $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $invoice = $this->db->where('id', $param2)
+                ->where('type', 'conversion')
+                ->where('is_deleted', '0')
+                ->get('invoice_order')
+                ->row_array();
+            $sales = array();
+            $products = array();
+            $charges = array();
+            if (!empty($invoice)) {
+                $sales = $this->db->where('id', $invoice['unique_id'])
+                    ->where('type', 'conversion')
+                    ->where('is_deleted', '0')
+                    ->get('sales_order')
+                    ->row_array();
+                if (!empty($sales)) {
+                    $products = $this->db->where('order_id', $sales['id'])->get('sales_order_product')->result_array();
+                    foreach ($products as &$product) {
+                        $batches = $this->db->where('order_product_id', $product['id'])->get('sales_order_product_batch')->result_array();
+                        foreach ($batches as &$batch) {
+                            $inventory = $this->db->where('product_id', $product['product_id'])
+                                ->where('batch_no', $batch['batch_no'])
+                                ->where('warehouse_id', $sales['warehouse_id'])
+                                ->get('inventory')
+                                ->row_array();
+                            $converted_qty = (float) $batch['qty'];
+                            $black_qty = (float) ($inventory['black_qty'] ?? 0);
+                            $white_qty = (float) ($inventory['official_qty'] ?? 0);
+                            $batch['inventory_id'] = (int) ($inventory['id'] ?? 0);
+                            $batch['avail_official_qty'] = $white_qty;
+                            $batch['current_black_qty'] = $black_qty;
+                            $batch['max_qty'] = $white_qty + $converted_qty;
+                            $batch['qty_locked'] = empty($inventory) || ($black_qty + 0.00001) < $converted_qty;
+                            $batch['lock_reason'] = '';
+                            if (empty($inventory)) {
+                                $batch['lock_reason'] = 'Inventory record not found. Quantity is locked.';
+                            } elseif ($batch['qty_locked']) {
+                                $batch['lock_reason'] = 'Black stock from this conversion was used in another order. Quantity is locked.';
+                            }
+                        }
+                        unset($batch);
+                        $product['batches'] = $batches;
+                    }
+                    unset($product);
+                    $charges = $this->db->where('order_id', $sales['id'])->get('sales_order_charges')->result_array();
+                    $page_data['product_list'] = $this->inventory_model->get_product_id_by_warehouse($sales['warehouse_id']);
+                }
+            }
+            if (!empty($invoice) && !empty($sales) && (!empty($sales['is_cancelled']) || !empty($invoice['is_cancelled']))) {
+                $this->session->set_flashdata('error_message', 'Cancelled conversion order cannot be edited.');
+                redirect(site_url('inventory/conversion-order'), 'refresh');
+            }
+            if (empty($invoice) || empty($sales)) {
+                $this->session->set_flashdata('error_message', 'Conversion order not found.');
+                redirect(site_url('inventory/conversion-order'), 'refresh');
+            }
+            $page_data['invoice'] = $invoice;
+            $page_data['data'] = $sales;
+            $page_data['products'] = $products;
+            $page_data['charges'] = $charges;
+            $page_data['page_name']  = 'conversion_order_edit';
+            $page_data['navigation']  = 'conversion_order';
+            $page_data['page_title'] = 'Edit Sales Conversion';
+            $this->load->view('backend/index', $page_data);
         }
     }
 
@@ -3941,7 +4037,7 @@ class Inventory extends CI_Controller
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_company_sales_post();
         } elseif ($param1 == "delete") {
-            $this->inventory_model->delete_sales_order($param2);
+            $this->inventory_model->delete_sales_order($param2, 'delete');
             $this->session->set_flashdata('flash_message', get_phrase('sales_order_deleted_successfully'));
             redirect(site_url('inventory/company-sales'), 'refresh');
         } else {
@@ -4242,6 +4338,14 @@ class Inventory extends CI_Controller
         return $this->inventory_model->sales_invoice_cancel($id);
     }
 
+    public function sales_order_cancel($id)
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        return $this->inventory_model->delete_sales_order($id, 'cancel');
+    }
+
     public function get_product_batch()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -4309,6 +4413,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_completed_sales_order();
+        }
+    }
+
+    public function get_cancelled_sales_order()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_cancelled_sales_order();
         }
     }
 

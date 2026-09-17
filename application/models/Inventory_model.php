@@ -3053,7 +3053,7 @@ class Inventory_model extends CI_Model
 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/raw_products/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/raw-products/edit/' . $id;
-				$history_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_product_history/" . $id . "', 'Product History')";
+				$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_raw_product_history/" . $id . "', 'Product History')";
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 
@@ -12560,7 +12560,7 @@ class Inventory_model extends CI_Model
 				$reassign_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_reinitiate_modal/" . $id . "','" . (($data_type == 'leads') ? "Assign" : "Reassign") . " Staff')";
 				$followup_url = "smallAjaxModal('" . base_url() . "modal/popup_inventory/customer_followup_modal/" . $id . "','" . "Add Follow-Up')";
 				$add_call_url = "smallAjaxModal('" . base_url() . "modal/popup_inventory/customer_add_call_modal/" . $id . "','" . "Add Call')";
-				$timeline_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_customer_timeline/" . $id . "','Timeline')";
+				$timeline_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_customer_timeline/" . $id . "','History')";
 				$share_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_share_modal/" . $id . "','Share Customer')";
 
 				$action = '';
@@ -15933,6 +15933,7 @@ class Inventory_model extends CI_Model
 			}
 		}
 		$keyword_filter .= " AND (so.type != 'company')";
+		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
 
 		if($status == 'pending' || $status == 'all') {
 			$total_count = $this->db->query("
@@ -16013,13 +16014,14 @@ class Inventory_model extends CI_Model
 
 				$action = '';
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
-				$history_url = "showRightCanvas('" . base_url() . "modal/popup_inventory/canvas_sales_order_history/" . $id . "', 'Sales Order History')";
+				$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_sales_order_history/" . $id . "', 'Sales Order History')";
 				$history_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
 
 				$delete_html = '';
+				$cancel_order_html = '';
 				if ($this->session->userdata('super_type_id') != 7) {
-					$delete_url = "confirm_modal('" . base_url() . "inventory/sales_order/delete/" . $id . "','Are you sure want to delete!')";
-					$delete_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>';
+					$cancel_order_html = '<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+					$delete_html = '<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
 				}
 
 				$edit_order_html = '';
@@ -16054,6 +16056,7 @@ class Inventory_model extends CI_Model
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 						   ' . $approve_html . '
 							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+							' . $cancel_order_html . '
 							' . $delete_html . '
 							' . $history_html . '
 						</div>
@@ -16068,6 +16071,7 @@ class Inventory_model extends CI_Model
 						<div class="dropdown-menu">
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 							' . $gen_invoice_html . '
+							' . $cancel_order_html . '
 							' . $delete_html . '
 							' . $edit_order_html . '
 							' . $history_html . '
@@ -16084,6 +16088,7 @@ class Inventory_model extends CI_Model
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 							<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View White Invoice</a>
 							<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
+							' . $cancel_order_html . '
 							' . $delete_html . '
 							' . $edit_order_html . '
 						</div>
@@ -16200,6 +16205,7 @@ class Inventory_model extends CI_Model
 				$keyword_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
 			}
 		}
+		$keyword_filter .= " AND (io.is_cancelled = 0 OR io.is_cancelled IS NULL)";
 
 		$total_count = $this->db->query("
 			SELECT io.id 
@@ -16228,30 +16234,20 @@ class Inventory_model extends CI_Model
 				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
 				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $first_order_id;
 				$edit_url = base_url('inventory/sales-invoice/edit/' . $id);
-				$is_cancelled = !empty($item['is_cancelled']) && $item['is_cancelled'] == 1;
 
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>';
-
-				if (!$is_cancelled) {
-					$action .= '
+						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
 						<a class="dropdown-item" href="' . $edit_url . '"><i class="feather icon-edit" aria-hidden="true"></i> Edit</a>
-						<a href="javascript:void(0)" class="dropdown-item text-warning" onclick="cancelSalesInvoice(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
-				}
-
-				$action .= '
+						<a href="javascript:void(0)" class="dropdown-item text-warning" onclick="cancelSalesInvoice(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>
 						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="deleteSalesInvoice(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>
 					</div>
 				</div>';
 
 				$invoice_no_display = $item['invoice_no'] ? $item['invoice_no'] : '-';
-				if ($is_cancelled) {
-					$invoice_no_display .= ' <span class="badge bg-danger">Cancelled</span>';
-				}
 
 				$data[] = array(
 					"sr_no"          => $start + $i + 1,
@@ -16293,6 +16289,239 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function get_cancelled_sales_order()
+	{
+		$params['draw'] = $_REQUEST['draw'] ?? 1;
+		$start = intval($_REQUEST['start'] ?? 0);
+		$length = intval($_REQUEST['length'] ?? 10);
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
+		$data = array();
+
+		$io_filter = "";
+		$so_filter = "";
+
+		if (!empty($filter_data['keywords'])) {
+			$keyword = $filter_data['keywords'];
+			$io_filter .= " AND (io.customer_name LIKE '%" . $keyword . "%' 
+				OR io.refrence_no LIKE '%" . $keyword . "%'
+				OR io.order_no LIKE '%" . $keyword . "%'
+				OR io.invoice_no LIKE '%" . $keyword . "%')";
+
+			$so_filter .= " AND (so.customer_name LIKE '%" . $keyword . "%' 
+				OR so.refrence_no LIKE '%" . $keyword . "%'
+				OR so.order_no LIKE '%" . $keyword . "%'
+				OR so.invoice_no LIKE '%" . $keyword . "%'
+				OR so.company_name LIKE '%" . $keyword . "%')";
+		}
+
+		if (!empty($_REQUEST['customer_id'])) {
+			$cust_id = clean_and_escape($_REQUEST['customer_id']);
+			$io_filter .= " AND (io.customer_id = '" . $cust_id . "')";
+			$so_filter .= " AND (so.customer_id = '" . $cust_id . "')";
+		}
+
+		if (!empty($_REQUEST['date_range'])) {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($added_date[0]));
+			$to = date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$io_filter .= " AND (DATE(COALESCE(NULLIF(io.cancelled_date, '0000-00-00 00:00:00'), io.date)) = '$from')";
+				$so_filter .= " AND (DATE(COALESCE(NULLIF(so.cancelled_date, '0000-00-00 00:00:00'), so.date)) = '$from')";
+			} else {
+				$io_filter .= " AND (DATE(COALESCE(NULLIF(io.cancelled_date, '0000-00-00 00:00:00'), io.date)) BETWEEN '$from' AND '$to')";
+				$so_filter .= " AND (DATE(COALESCE(NULLIF(so.cancelled_date, '0000-00-00 00:00:00'), so.date)) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$io_filter .= " AND (io.company_id='" . $company_id . "')";
+			$so_filter .= " AND (so.company_id='" . $company_id . "')";
+			if ($this->session->userdata('super_type_id') == 7) {
+				$io_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+				$so_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			}
+		}
+
+		$total_count_query = $this->db->query("
+			SELECT COUNT(*) AS total FROM (
+				SELECT io.id 
+				FROM invoice_order AS io
+				WHERE io.is_cancelled = '1' AND io.is_deleted = '0' AND io.type = 'normal' $io_filter
+
+				UNION ALL
+
+				SELECT so.id 
+				FROM sales_order AS so
+				WHERE so.is_cancelled = '1' AND so.is_deleted = '0' AND so.type != 'company' $so_filter
+			) AS total_count_table
+		");
+		$total_count = $total_count_query->row_array()['total'] ?? 0;
+
+		$query = $this->db->query("
+			SELECT 
+				id,
+				record_type,
+				order_no,
+				invoice_no,
+				invoice_date,
+				refrence_no,
+				date,
+				cancelled_date,
+				cancel_date,
+				customer_id,
+				customer_name,
+				warehouse_name,
+				company_name,
+				grand_total,
+				added_by_name,
+				product_count,
+				qty_count,
+				unique_id
+			FROM (
+				SELECT 
+					io.id,
+					'invoice' AS record_type,
+					io.order_no,
+					io.invoice_no,
+					io.invoice_date,
+					io.refrence_no,
+					io.date,
+					io.cancelled_date,
+					COALESCE(NULLIF(io.cancelled_date, '0000-00-00 00:00:00'), io.date) AS cancel_date,
+					io.customer_id,
+					io.customer_name,
+					io.warehouse_name,
+					io.company_name,
+					io.grand_total,
+					io.added_by_name,
+					(SELECT COUNT(DISTINCT product_id) FROM invoice_order_products WHERE parent_id = io.id) AS product_count,
+					(SELECT COALESCE(SUM(qty), 0) FROM invoice_order_products WHERE parent_id = io.id) AS qty_count,
+					io.unique_id
+				FROM invoice_order AS io
+				WHERE io.is_cancelled = '1' AND io.is_deleted = '0' AND io.type = 'normal' $io_filter
+
+				UNION ALL
+
+				SELECT 
+					so.id,
+					'sales_order' AS record_type,
+					so.order_no,
+					COALESCE(so.invoice_no, '-') AS invoice_no,
+					so.invoice_date,
+					so.refrence_no,
+					so.date,
+					so.cancelled_date,
+					COALESCE(NULLIF(so.cancelled_date, '0000-00-00 00:00:00'), so.date) AS cancel_date,
+					so.customer_id,
+					so.customer_name,
+					so.warehouse_name,
+					so.company_name,
+					so.grand_total,
+					so.added_by_name,
+					(SELECT COUNT(DISTINCT product_id) FROM sales_order_product WHERE order_id = so.id) AS product_count,
+					(SELECT COALESCE(SUM(qty), 0) FROM sales_order_product WHERE order_id = so.id) AS qty_count,
+					so.unique_id
+				FROM sales_order AS so
+				WHERE so.is_cancelled = '1' AND so.is_deleted = '0' AND so.type != 'company' $so_filter
+			) AS union_cancelled
+			ORDER BY cancel_date DESC
+			LIMIT $start, $length
+		");
+
+		if (!empty($query)) {
+			$i = 0;
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$record_type = $item['record_type'];
+
+				if ($record_type == 'invoice') {
+					$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
+					$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
+
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+							<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
+						</div>
+					</div>';
+
+					$type_badge = '<span class="badge bg-danger">Invoice</span>';
+				} else {
+					$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
+					$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_sales_order_history/" . $id . "', 'Sales Order History')";
+
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>
+						</div>
+					</div>';
+
+					$type_badge = '<span class="badge bg-warning text-dark">Sales Order</span>';
+				}
+
+				$invoice_no_display = (!empty($item['invoice_no']) && $item['invoice_no'] != '-') ? $item['invoice_no'] : '-';
+				$invoice_date_display = (!empty($item['invoice_date']) && $item['invoice_date'] != '0000-00-00') ? date('d M, Y', strtotime($item['invoice_date'])) : '-';
+
+				$data[] = array(
+					"sr_no"          => $start + $i + 1,
+					"id"             => $id,
+					"type"           => $type_badge,
+					"order_no"       => $item['order_no'] ? $item['order_no'] : '-',
+					"invoice_no"     => $invoice_no_display,
+					"invoice_date"   => $invoice_date_display,
+					"refrence_no"    => $item['refrence_no'] ? $item['refrence_no'] : '-',
+					"customer_name"  => $item['customer_name'],
+					"warehouse_name" => $item['warehouse_name'] ? $item['warehouse_name'] : '-',
+					"total_pro"      => $item['product_count'],
+					"qty"            => $item['qty_count'],
+					"grand_total"    => $item['grand_total'],
+					"date"           => date('d M, Y', strtotime($item['cancel_date'])),
+					"added_by"       => (!empty($item['added_by_name'])) ? $item['added_by_name'] : '-',
+					"action"         => $action,
+				);
+				$i++;
+			}
+		}
+
+		$total_amount_formatted = '0.00';
+		if ($this->session->userdata('super_type_id') != 7) {
+			$sum_query = $this->db->query("
+				SELECT COALESCE(SUM(grand_total), 0) AS total_amount FROM (
+					SELECT io.grand_total 
+					FROM invoice_order AS io
+					WHERE io.is_cancelled = '1' AND io.is_deleted = '0' AND io.type = 'normal' $io_filter
+
+					UNION ALL
+
+					SELECT so.grand_total 
+					FROM sales_order AS so
+					WHERE so.is_cancelled = '1' AND so.is_deleted = '0' AND so.type != 'company' $so_filter
+				) AS sum_table
+			");
+			if ($sum_query->num_rows() > 0) {
+				$row = $sum_query->row_array();
+				$total_val = $row['total_amount'];
+				$total_amount_formatted = number_format((float)($total_val ?? 0), 2, '.', ',');
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => intval($total_count),
+			"recordsFiltered" => intval($total_count),
+			"data"            => $data,
+			"total_amount"    => $total_amount_formatted
+		);
+		echo json_encode($json_data);
+	}
+
 	public function sales_invoice_delete($invoice_order_id)
 	{
 		$this->db->trans_start();
@@ -16305,46 +16534,50 @@ class Inventory_model extends CI_Model
 				throw new Exception('Sales invoice not found or already deleted.');
 			}
 
-			// Get all products in this invoice
-			$invoice_products = $this->db->where('parent_id', $invoice_order_id)
-										 ->get('invoice_order_products')
-										 ->result_array();
+			// Only revert quantities if the invoice wasn't already cancelled (quantities already reverted on cancel)
+			if (empty($invoice_order['is_cancelled'])) {
+				// Get all products in this invoice
+				$invoice_products = $this->db->where('parent_id', $invoice_order_id)
+											 ->get('invoice_order_products')
+											 ->result_array();
 
-			$affected_orders = array();
-			if (!empty($invoice_order['unique_id'])) {
-				$affected_orders = array_filter(explode(',', $invoice_order['unique_id']));
-			}
+				$affected_orders = array();
+				if (!empty($invoice_order['unique_id'])) {
+					$affected_orders = array_filter(explode(',', $invoice_order['unique_id']));
+				}
 
-			foreach ($invoice_products as $iop) {
-				$batch_id = $iop['batch_id'];
-				$qty = (float)$iop['qty'];
+				foreach ($invoice_products as $iop) {
+					$batch_id = $iop['batch_id'];
+					$qty = (float)$iop['qty'];
 
-				if ($batch_id > 0 && $qty > 0) {
-					$batch = $this->db->where('id', $batch_id)->get('sales_order_product_batch')->row_array();
-					if (!empty($batch)) {
-						$new_recieved_qty = max(0, (float)$batch['recieved_qty'] - $qty);
-						$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
-							'recieved_qty' => $new_recieved_qty
-						));
-						if (!empty($batch['order_id'])) {
-							$affected_orders[] = $batch['order_id'];
+					if ($batch_id > 0 && $qty > 0) {
+						$batch = $this->db->where('id', $batch_id)->get('sales_order_product_batch')->row_array();
+						if (!empty($batch)) {
+							$new_recieved_qty = max(0, (float)$batch['recieved_qty'] - $qty);
+							$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
+								'recieved_qty' => $new_recieved_qty
+							));
+							if (!empty($batch['order_id'])) {
+								$affected_orders[] = $batch['order_id'];
+							}
 						}
+					}
+				}
+
+				// Recalculate is_generated for all affected orders
+				$affected_orders = array_unique($affected_orders);
+				foreach ($affected_orders as $ord_id) {
+					if (!empty($ord_id)) {
+						$this->common_model->markInvoiceGenerated($ord_id);
 					}
 				}
 			}
 
 			// Mark invoice as deleted
 			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
-				'is_deleted' => 1
+				'is_deleted'   => 1,
+				'deleted_date' => date('Y-m-d H:i:s')
 			));
-
-			// Recalculate is_generated for all affected orders
-			$affected_orders = array_unique($affected_orders);
-			foreach ($affected_orders as $ord_id) {
-				if (!empty($ord_id)) {
-					$this->common_model->markInvoiceGenerated($ord_id);
-				}
-			}
 
 			// Log action
 			$log_data = array(
@@ -16395,10 +16628,47 @@ class Inventory_model extends CI_Model
 				throw new Exception('Sales invoice is already cancelled.');
 			}
 
-			// Mark invoice as cancelled (no need to revert quantity per requirements)
+			// Get all products in this invoice
+			$invoice_products = $this->db->where('parent_id', $invoice_order_id)
+										 ->get('invoice_order_products')
+										 ->result_array();
+
+			$affected_orders = array();
+			if (!empty($invoice_order['unique_id'])) {
+				$affected_orders = array_filter(explode(',', $invoice_order['unique_id']));
+			}
+
+			foreach ($invoice_products as $iop) {
+				$batch_id = $iop['batch_id'];
+				$qty = (float)$iop['qty'];
+
+				if ($batch_id > 0 && $qty > 0) {
+					$batch = $this->db->where('id', $batch_id)->get('sales_order_product_batch')->row_array();
+					if (!empty($batch)) {
+						$new_recieved_qty = max(0, (float)$batch['recieved_qty'] - $qty);
+						$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
+							'recieved_qty' => $new_recieved_qty
+						));
+						if (!empty($batch['order_id'])) {
+							$affected_orders[] = $batch['order_id'];
+						}
+					}
+				}
+			}
+
+			// Mark invoice as cancelled
 			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
-				'is_cancelled' => 1
+				'is_cancelled'   => 1,
+				'cancelled_date' => date('Y-m-d H:i:s')
 			));
+
+			// Recalculate is_generated for all affected orders
+			$affected_orders = array_unique($affected_orders);
+			foreach ($affected_orders as $ord_id) {
+				if (!empty($ord_id)) {
+					$this->common_model->markInvoiceGenerated($ord_id);
+				}
+			}
 
 			// Log action
 			$log_data = array(
@@ -16406,7 +16676,7 @@ class Inventory_model extends CI_Model
 				'ref_id'         => NULL,
 				'module'         => 'sales',
 				'action'         => 'cancel_sales_invoice',
-				'message'        => 'Sales invoice ' . $invoice_order['invoice_no'] . ' marked as cancelled by ' . $this->session->userdata('super_name'),
+				'message'        => 'Sales invoice ' . $invoice_order['invoice_no'] . ' marked as cancelled and quantities reverted by ' . $this->session->userdata('super_name'),
 				'json'           => json_encode($invoice_order),
 				'table_name'     => 'invoice_order',
 				'added_by'       => $this->session->userdata('super_user_id'),
@@ -16419,7 +16689,7 @@ class Inventory_model extends CI_Model
 			$this->db->trans_commit();
 			$resultpost = array(
 				"status" => 200,
-				"message" => "Sales invoice marked as cancelled successfully."
+				"message" => "Sales invoice marked as cancelled successfully and quantities reverted."
 			);
 		} catch (Exception $e) {
 			$this->db->trans_rollback();
@@ -16431,6 +16701,196 @@ class Inventory_model extends CI_Model
 
 		$this->session->set_flashdata('flash_message', $resultpost['message']);
 		return simple_json_output($resultpost);
+	}
+
+	private function get_sales_order_pending_by_inventory($order_id, $sales)
+	{
+		$batches = $this->db->query(
+			"SELECT sopb.batch_no, sopb.black_qty, sopb.avail_black_qty, sop.product_id, sop.product_name
+			FROM sales_order_product_batch sopb
+			LEFT JOIN sales_order_product sop ON sop.id = sopb.order_product_id
+			WHERE sopb.order_id = ?",
+			array($order_id)
+		)->result_array();
+
+		$pending_by_inv = array();
+		$pending_queue = array();
+
+		foreach ($batches as $batch) {
+			$pending = (float) $batch['black_qty'] - (float) $batch['avail_black_qty'];
+			if ($pending <= 0) {
+				continue;
+			}
+
+			$hist = $this->db->where(array(
+				'order_id' => $order_id,
+				'product_id' => $batch['product_id'],
+				'batch_no' => $batch['batch_no'],
+				'status' => 'out',
+				'is_deleted' => 0,
+			))->where('black_qty', $batch['black_qty'])->get('inventory_history')->row_array();
+
+			$inv = array();
+			if (!empty($hist['parent_id'])) {
+				$inv = $this->common_model->getRowById('inventory', '*', array('id' => $hist['parent_id']));
+			}
+			if (empty($inv)) {
+				$inv = $this->db->get_where('inventory', array(
+					'product_id' => $batch['product_id'],
+					'warehouse_id' => $sales['warehouse_id'],
+					'batch_no' => $batch['batch_no'],
+				))->row_array();
+			}
+			if (empty($inv)) {
+				$name = !empty($batch['product_name']) ? $batch['product_name'] : $batch['batch_no'];
+				throw new Exception('Inventory batch not found to reverse pending quantity for ' . $name . '.');
+			}
+
+			$inv_id = $inv['id'];
+			if (!isset($pending_by_inv[$inv_id])) {
+				$pending_by_inv[$inv_id] = array(
+					'pending' => 0,
+					'stock_pending' => (float) $inv['pending_qty'],
+					'name' => !empty($batch['product_name']) ? $batch['product_name'] : $inv['product_name'],
+					'batch_no' => $batch['batch_no'],
+				);
+			}
+			$pending_by_inv[$inv_id]['pending'] += $pending;
+			$queue_key = $batch['product_id'] . '|' . $batch['batch_no'] . '|' . (float) $batch['black_qty'];
+			$pending_queue[$queue_key][] = array(
+				'pending' => $pending,
+				'inventory_id' => $inv_id,
+			);
+		}
+
+		foreach ($pending_by_inv as $info) {
+			if ($info['pending'] > $info['stock_pending']) {
+				throw new Exception(
+					'Pending quantity (' . $info['pending'] . ') of ' . $info['name'] . ' (Batch: ' . $info['batch_no'] . ') is greater than available stock quantity (' . $info['stock_pending'] . '). Delete a black order invoice first.'
+				);
+			}
+		}
+
+		return array($pending_by_inv, $pending_queue);
+	}
+
+	private function revert_sales_order_stock($id, $sales)
+	{
+		$reverted_data = array();
+		$history_data = array();
+
+		if ($sales['is_approved'] == 0) {
+			return array($reverted_data, $history_data);
+		}
+
+		list($pending_by_inv, $pending_queue) = $this->get_sales_order_pending_by_inventory($id, $sales);
+		$history_records = $this->common_model->getResultById('inventory_history', '*', array(
+			'order_id' => $id,
+			'status' => 'out',
+			'is_deleted' => 0
+		));
+		if (!is_array($history_records)) {
+			$history_records = array();
+		}
+
+		$updated_inv = array();
+
+		foreach ($history_records as $his) {
+			$inv_id = $his['parent_id'];
+			$inv = $this->common_model->getRowById('inventory', '*', array('id' => $inv_id));
+			if ($inv) {
+				$pending_cut = 0;
+				$queue_key = $his['product_id'] . '|' . $his['batch_no'] . '|' . (float) $his['black_qty'];
+				if (!empty($pending_queue[$queue_key])) {
+					$pending_item = array_shift($pending_queue[$queue_key]);
+					$pending_cut = $pending_item['pending'];
+					$matched_inv_id = $pending_item['inventory_id'];
+					if (isset($pending_by_inv[$matched_inv_id])) {
+						$pending_by_inv[$matched_inv_id]['pending'] -= $pending_cut;
+					}
+				}
+
+				$new_qty = $inv['quantity'] + $his['quantity'];
+				$new_official = $inv['official_qty'] + $his['official_qty'] + $pending_cut;
+				$new_black = $inv['black_qty'] + $his['black_qty'] - $pending_cut;
+				$new_pending = $inv['pending_qty'] - $pending_cut;
+				if ($new_black < 0) {
+					$new_black = 0;
+				}
+				if ($new_pending < 0) {
+					$new_pending = 0;
+				}
+
+				$this->db->where('id', $inv_id)->update('inventory', array(
+					'quantity' => $new_qty,
+					'official_qty' => $new_official,
+					'black_qty' => $new_black,
+					'pending_qty' => $new_pending,
+				));
+
+				$updated_inv[$inv_id] = true;
+				$reverted_data[] = array(
+					'inventory_id' => $inv_id,
+					'product_id' => $inv['product_id'],
+					'batch_no' => $inv['batch_no'],
+					'old_qty' => $inv['quantity'],
+					'new_qty' => $new_qty,
+					'old_official' => $inv['official_qty'],
+					'new_official' => $new_official,
+					'old_black' => $inv['black_qty'],
+					'new_black' => $new_black,
+					'old_pending' => $inv['pending_qty'],
+					'new_pending' => $new_pending,
+					'pending_reversed' => $pending_cut,
+				);
+			}
+
+			$this->db->where('id', $his['id'])->update('inventory_history', array('is_deleted' => 1));
+			$history_data[] = $his;
+		}
+
+		foreach ($pending_by_inv as $inv_id => $info) {
+			if (!empty($updated_inv[$inv_id]) || $info['pending'] <= 0) {
+				continue;
+			}
+
+			$inv = $this->common_model->getRowById('inventory', '*', array('id' => $inv_id));
+			if (empty($inv)) {
+				continue;
+			}
+
+			$pending_cut = $info['pending'];
+			$new_official = $inv['official_qty'] + $pending_cut;
+			$new_black = $inv['black_qty'] - $pending_cut;
+			$new_pending = $inv['pending_qty'] - $pending_cut;
+			if ($new_black < 0) {
+				$new_black = 0;
+			}
+			if ($new_pending < 0) {
+				$new_pending = 0;
+			}
+
+			$this->db->where('id', $inv_id)->update('inventory', array(
+				'official_qty' => $new_official,
+				'black_qty' => $new_black,
+				'pending_qty' => $new_pending,
+			));
+
+			$reverted_data[] = array(
+				'inventory_id' => $inv_id,
+				'product_id' => $inv['product_id'],
+				'batch_no' => $inv['batch_no'],
+				'old_official' => $inv['official_qty'],
+				'new_official' => $new_official,
+				'old_black' => $inv['black_qty'],
+				'new_black' => $new_black,
+				'old_pending' => $inv['pending_qty'],
+				'new_pending' => $new_pending,
+				'pending_reversed' => $pending_cut,
+			);
+		}
+
+		return array($reverted_data, $history_data);
 	}
 
 	public function sales_invoice_edit_post($invoice_order_id)
@@ -16701,6 +17161,7 @@ class Inventory_model extends CI_Model
 			}
 		}
 		$keyword_filter .= " AND (so.type != 'company')";
+		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
 
 		$total_count = $this->db->query("
 			SELECT sopb.id
@@ -17651,7 +18112,7 @@ class Inventory_model extends CI_Model
 											'warehouse_name' 		=> $batch_detail["warehouse_name"],
 											'product_id' 				=> $batch_detail["product_id"],
 											'categories' 				=> $batch_detail["categories"],
-											'batch_no' 					=> $batch_detail["voucher_no"],
+											'batch_no' 					=> $batch_detail["batch_no"],
 											'product_name'			=> $batch_detail['product_name'] ?? '',
 											'item_code'					=> $batch_detail['item_code'] ?? '',
 											'sku'         			=> $batch_detail['sku'] ?? '',
@@ -17694,7 +18155,7 @@ class Inventory_model extends CI_Model
 											'warehouse_name' 		=> $batch_detail["warehouse_name"],
 											'product_id' 				=> $batch_detail["product_id"],
 											'categories' 				=> $batch_detail["categories"],
-											'batch_no' 					=> $batch_detail["voucher_no"],
+											'batch_no' 					=> $batch_detail["batch_no"],
 											'product_name'			=> $batch_detail['product_name'] ?? '',
 											'item_code'					=> $batch_detail['item_code'] ?? '',
 											'sku'         			=> $batch_detail['sku'] ?? '',
@@ -17788,7 +18249,7 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
-	public function delete_conversion_order($invoice_order_id)
+	public function delete_conversion_order($invoice_order_id, $type = 'delete')
 	{
 		$this->db->trans_start(); // Start transaction
 
@@ -17818,6 +18279,11 @@ class Inventory_model extends CI_Model
 								   ->row_array();
 			if (empty($sales_order)) {
 				throw new Exception('Corresponding sales order not found.');
+			}
+
+			$is_cancel = ($type === 'cancel');
+			if ($is_cancel && (!empty($sales_order['is_cancelled']) || !empty($invoice_order['is_cancelled']))) {
+				throw new Exception('Sales conversion order is already cancelled.');
 			}
 
 			// 3. Fetch all products associated with this sales order
@@ -17855,22 +18321,25 @@ class Inventory_model extends CI_Model
 
 					$current_black_qty = (float) $inventory_item['black_qty'];
 					if ($current_black_qty < $allocated_qty) {
-						throw new Exception('Cannot delete. Insufficient black stock in batch: ' . $batch_no . ' for product: ' . $op['product_name'] . '. (Allocated: ' . $allocated_qty . ', Available Black: ' . $current_black_qty . ')');
+						throw new Exception('Cannot ' . ($is_cancel ? 'cancel' : 'delete') . '. Insufficient black stock in batch: ' . $batch_no . ' for product: ' . $op['product_name'] . '. (Allocated: ' . $allocated_qty . ', Available Black: ' . $current_black_qty . ')');
 					}
 
 					// Store details for database update
 					$inventory_updates[] = array(
 						'inventory_item' => $inventory_item,
 						'allocated_qty'  => $allocated_qty,
+						'product_id'     => $product_id,
 						'op_batch'       => $op_batch
 					);
 				}
 			}
 
-			// 5. Apply updates to database and insert history logs
+			// 5. Revert stock unless this order was already cancelled
+			if (empty($sales_order['is_cancelled'])) {
 			foreach ($inventory_updates as $update) {
 				$item = $update['inventory_item'];
 				$allocated_qty = $update['allocated_qty'];
+				$product_id = $update['product_id'];
 				$op_batch = $update['op_batch'];
 
 				$new_black_qty = $item['black_qty'] - $allocated_qty;
@@ -17882,44 +18351,51 @@ class Inventory_model extends CI_Model
 					'official_qty' => $new_official_qty,
 				));
 
-				// Insert into inventory history: Reversal (Inflow of white qty)
-				$history = array(
-					'supplier_id'    => $item['supplier_id'],
-					'parent_id'      => $item['id'],
-					'company_id'     => $sales_order['company_id'],
-					'warehouse_id'   => $item['warehouse_id'],
-					'warehouse_name' => $item['warehouse_name'],
-					'product_id'     => $item['product_id'],
-					'categories'     => $item['categories'],
-					'batch_no'       => $item['voucher_no'],
-					'product_name'   => $item['product_name'] ?? '',
-					'item_code'      => $item['item_code'] ?? '',
-					'sku'            => $item['sku'] ?? '',
-					'order_id'       => $sales_order_id,
-					'status'         => 'conversion_delete',
-					'quantity'       => $allocated_qty,
-					'received_date'  => date('Y-m-d'),
-					'added_date'     => date('Y-m-d H:i:s'),
-					'added_by_id'    => $this->session->userdata('super_user_id'),
-					'added_by_name'  => $this->session->userdata('super_name'),
-				);
-				$this->db->insert('inventory_history', $history);
+				// Soft delete only this order-product batch's add history (white out + black in)
+				foreach (array('out', 'in') as $history_status) {
+					$history_row = $this->db->where(array(
+						'order_id' => $op_batch['order_id'],
+						'product_id' => $product_id,
+						'batch_no' => $op_batch['batch_no'],
+						'status' => $history_status,
+						'is_deleted' => 0,
+						'quantity' => $allocated_qty,
+					))->order_by('id', 'asc')->get('inventory_history')->row_array();
+
+					if (!empty($history_row)) {
+						$this->db->where('id', $history_row['id'])->update('inventory_history', array('is_deleted' => 1));
+					}
+				}
+			}
 			}
 
-			// 6. Set is_deleted = '1' for sales_order and invoice_order
-			$this->db->where('id', $sales_order_id)->update('sales_order', array('is_deleted' => '1'));
-			$this->db->where('id', $invoice_order_id)->update('invoice_order', array('is_deleted' => '1'));
+			// 6. Cancel or delete both sales order and invoice
+			if ($is_cancel) {
+				$order_status = array('is_cancelled' => 1, 'cancelled_date' => date('Y-m-d H:i:s'));
+				$log_action = 'cancel';
+				$log_message = 'Conversion Order No ' . $sales_order['order_no'] . ' has been cancelled.';
+				$resultpost['message'] = 'Sales conversion cancelled successfully.';
+			} else {
+				$order_status = array('is_deleted' => '1', 'deleted_date' => date('Y-m-d H:i:s'));
+				$log_action = 'delete';
+				$log_message = 'Conversion Order No ' . $sales_order['order_no'] . ' has been deleted.';
+			}
+			$this->db->where('id', $sales_order_id)->update('sales_order', $order_status);
+			$this->db->where('id', $invoice_order_id)->update('invoice_order', $order_status);
 
-			// 7. Insert system log for deleting conversion
-			$log_data = array(
-				'title'          => 'Conversion Order Deleted',
-				'detail'         => 'Conversion Order No ' . $sales_order['order_no'] . ' has been deleted.',
-				'added_date'     => date("Y-m-d H:i:s"),
-				'added_by_id'    => $this->session->userdata('super_user_id'),
-				'added_by_name'  => $this->session->userdata('super_name'),
-				'added_by_type'  => $this->session->userdata('super_type')
-			);
-			$this->db->insert('sys_logs', $log_data);
+			$this->db->insert('sys_logs', array(
+				'parent_id' => $sales_order_id,
+				'ref_id' => $invoice_order_id,
+				'module' => 'sales',
+				'action' => $log_action,
+				'message' => $log_message,
+				'json' => json_encode(array('type' => $type, 'order_no' => $sales_order['order_no'])),
+				'table_name' => 'sales_order',
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name' => $this->session->userdata('super_name'),
+				'added_by_type' => $this->session->userdata('super_type'),
+			));
 
 			$this->db->trans_commit(); // Commit transaction
 		} catch (Exception $e) {
@@ -17931,6 +18407,566 @@ class Inventory_model extends CI_Model
 		}
 
 		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_conversion_order_post($invoice_order_id)
+	{
+		$this->db->trans_begin();
+
+		try {
+			$invoice = $this->db->where('id', $invoice_order_id)
+				->where('type', 'conversion')
+				->where('is_deleted', '0')
+				->get('invoice_order')
+				->row_array();
+			if (empty($invoice)) {
+				throw new Exception('Conversion order not found.');
+			}
+
+			$sales_order_id = $invoice['unique_id'];
+			$sales = $this->db->where('id', $sales_order_id)
+				->where('type', 'conversion')
+				->where('is_deleted', '0')
+				->get('sales_order')
+				->row_array();
+			if (empty($sales)) {
+				throw new Exception('Corresponding sales order not found.');
+			}
+			if (!empty($sales['is_cancelled']) || !empty($invoice['is_cancelled'])) {
+				throw new Exception('Cancelled conversion order cannot be edited.');
+			}
+
+			$existing_batch_ids = $this->input->post('existing_batch_id');
+			$existing_qty = $this->input->post('existing_qty');
+			$existing_amount = $this->input->post('existing_amount');
+			$remove_batch_ids = $this->input->post('remove_batch_id');
+			$new_product_ids = $this->input->post('new_product_id');
+			$new_inventory_ids = $this->input->post('new_inventory_id');
+			$new_qty = $this->input->post('new_qty');
+			$new_amount = $this->input->post('new_amount');
+			$new_gst = $this->input->post('new_gst');
+
+			if (!is_array($existing_batch_ids)) $existing_batch_ids = array();
+			if (!is_array($existing_qty)) $existing_qty = array();
+			if (!is_array($existing_amount)) $existing_amount = array();
+			if (!is_array($remove_batch_ids)) $remove_batch_ids = array();
+			if (!is_array($new_product_ids)) $new_product_ids = array();
+
+			$posted_existing = array();
+			foreach ($existing_batch_ids as $index => $batch_id) {
+				$posted_existing[(int) $batch_id] = array(
+					'qty' => (float) ($existing_qty[$index] ?? 0),
+					'amount' => (float) ($existing_amount[$index] ?? 0),
+				);
+			}
+			$remove_ids = array();
+			foreach ($remove_batch_ids as $batch_id) {
+				$remove_ids[(int) $batch_id] = true;
+			}
+
+			$db_batches = $this->db->where('order_id', $sales_order_id)->get('sales_order_product_batch')->result_array();
+			$db_batch_map = array();
+			foreach ($db_batches as $batch) {
+				$db_batch_map[(int) $batch['id']] = $batch;
+				$batch_id = (int) $batch['id'];
+				if (!isset($posted_existing[$batch_id]) && empty($remove_ids[$batch_id])) {
+					throw new Exception('A conversion line was not submitted. Refresh the page and try again.');
+				}
+			}
+			foreach ($posted_existing as $batch_id => $posted) {
+				if (!isset($db_batch_map[$batch_id])) {
+					throw new Exception('Batch not found for this conversion order.');
+				}
+			}
+
+			$find_history = function ($product_id, $batch_no, $status, $qty, $inventory_id) use ($sales_order_id) {
+				$history_row = $this->db->where(array(
+					'order_id' => $sales_order_id,
+					'product_id' => $product_id,
+					'batch_no' => $batch_no,
+					'status' => $status,
+					'is_deleted' => 0,
+					'quantity' => $qty,
+				))->order_by('id', 'asc')->get('inventory_history')->row_array();
+
+				if (empty($history_row) && !empty($inventory_id)) {
+					$history_row = $this->db->where(array(
+						'order_id' => $sales_order_id,
+						'product_id' => $product_id,
+						'parent_id' => $inventory_id,
+						'status' => $status,
+						'is_deleted' => 0,
+						'quantity' => $qty,
+					))->order_by('id', 'asc')->get('inventory_history')->row_array();
+				}
+
+				if (empty($history_row) && !empty($inventory_id)) {
+					$rows = $this->db->where(array(
+						'order_id' => $sales_order_id,
+						'product_id' => $product_id,
+						'parent_id' => $inventory_id,
+						'status' => $status,
+						'is_deleted' => 0,
+					))->order_by('id', 'asc')->get('inventory_history')->result_array();
+					foreach ($rows as $row) {
+						if (abs((float) $row['quantity'] - (float) $qty) < 0.0001) {
+							$history_row = $row;
+							break;
+						}
+					}
+					if (empty($history_row) && count($rows) === 1) {
+						$history_row = $rows[0];
+					}
+				}
+
+				return $history_row;
+			};
+
+			$load_inventory = function ($product_id, $batch_no) use ($sales) {
+				return $this->db->where('product_id', $product_id)
+					->where('batch_no', $batch_no)
+					->where('warehouse_id', $sales['warehouse_id'])
+					->get('inventory')
+					->row_array();
+			};
+
+			$apply_stock = function ($inventory_id, $delta, $label) {
+				$item = $this->db->where('id', $inventory_id)->get('inventory')->row_array();
+				if (empty($item)) {
+					throw new Exception('Inventory record not found for ' . $label . '.');
+				}
+				if ($delta > 0 && ((float) $item['official_qty'] + 0.00001) < $delta) {
+					throw new Exception('Insufficient white stock for ' . $label . '. Available white: ' . $item['official_qty'] . '.');
+				}
+				if ($delta < 0 && ((float) $item['black_qty'] + 0.00001) < abs($delta)) {
+					throw new Exception('Cannot change quantity. Insufficient black stock for ' . $label . '. Available black: ' . $item['black_qty'] . '.');
+				}
+				$this->db->where('id', $inventory_id)->update('inventory', array(
+					'black_qty' => (float) $item['black_qty'] + $delta,
+					'official_qty' => (float) $item['official_qty'] - $delta,
+				));
+			};
+
+			$kept_inventory_ids = array();
+
+			foreach ($db_batch_map as $batch_id => $batch) {
+				$product = $this->db->where('id', $batch['order_product_id'])->get('sales_order_product')->row_array();
+				$product_id = $product['product_id'] ?? 0;
+				$label = ($product['product_name'] ?? 'product') . ' / ' . $batch['batch_no'];
+				$inventory = $load_inventory($product_id, $batch['batch_no']);
+				$old_qty = (float) $batch['qty'];
+				$locked = empty($inventory) || (((float) ($inventory['black_qty'] ?? 0) + 0.00001) < $old_qty);
+
+				if (!empty($remove_ids[$batch_id])) {
+					if ($locked) {
+						throw new Exception('Cannot remove ' . $label . '. Black stock from this conversion was used in another order.');
+					}
+					$apply_stock($inventory['id'], -$old_qty, $label);
+					foreach (array('out', 'in') as $history_status) {
+						$history_row = $find_history($product_id, $batch['batch_no'], $history_status, $old_qty, $inventory['id']);
+						if (empty($history_row)) {
+							throw new Exception('Conversion history not found for ' . $label . '.');
+						}
+						$this->db->where('id', $history_row['id'])->update('inventory_history', array('is_deleted' => 1));
+					}
+					$this->db->where('parent_id', $invoice_order_id)->where('batch_id', $batch_id)->delete('invoice_order_products');
+					$this->db->where('id', $batch_id)->delete('sales_order_product_batch');
+					continue;
+				}
+
+				$posted = $posted_existing[$batch_id];
+				$new_line_qty = (float) $posted['qty'];
+				$amount = price_format_decimal($posted['amount']);
+				if ($amount < 0) {
+					throw new Exception('Amount cannot be negative.');
+				}
+				if ($new_line_qty <= 0) {
+					throw new Exception('Quantity must be greater than zero for ' . $label . '. Remove the row instead.');
+				}
+				if ($locked && abs($new_line_qty - $old_qty) > 0.0001) {
+					throw new Exception('Quantity is locked for ' . $label . ' because black stock was used in another order. Only amount can be edited.');
+				}
+
+				$max_qty = (float) ($inventory['official_qty'] ?? 0) + $old_qty;
+				if ($new_line_qty > $max_qty + 0.00001) {
+					throw new Exception('Quantity for ' . $label . ' cannot exceed available white plus converted qty (' . $max_qty . ').');
+				}
+
+				$delta = $new_line_qty - $old_qty;
+				if (abs($delta) > 0.0001) {
+					if (empty($inventory)) {
+						throw new Exception('Inventory record not found for ' . $label . '.');
+					}
+					$apply_stock($inventory['id'], $delta, $label);
+				}
+
+				$gst_per = (float) $batch['gst'];
+				$bill_total = price_format_decimal($new_line_qty * $amount);
+				$gst_amt = price_format_decimal(($bill_total * $gst_per) / 100);
+				$total_bill_gst = price_format_decimal($bill_total + $gst_amt);
+
+				$this->db->where('id', $batch_id)->update('sales_order_product_batch', array(
+					'qty' => $new_line_qty,
+					'white_qty' => $new_line_qty,
+					'recieved_qty' => $new_line_qty,
+					'amount' => $amount,
+					'bill_amount' => $amount,
+					'bill_total' => $bill_total,
+					'gst_amount' => $gst_amt,
+					'total_bill_gst_amount' => $total_bill_gst,
+					'black_amount' => 0,
+					'black_total' => 0,
+					'final_total' => $total_bill_gst,
+				));
+
+				$invoice_update = array(
+					'qty' => $new_line_qty,
+					'amount' => $amount,
+					'total_amount' => $bill_total,
+					'bill_amount' => $amount,
+					'bill_total' => $bill_total,
+					'gst_amount' => $gst_amt,
+					'total_bill_gst_amount' => $total_bill_gst,
+					'final_total' => $total_bill_gst,
+				);
+				$this->db->where('parent_id', $invoice_order_id)->where('batch_id', $batch_id)->update('invoice_order_products', $invoice_update);
+
+				if (!empty($inventory)) {
+					$kept_inventory_ids[(int) $inventory['id']] = true;
+					foreach (array('out', 'in') as $history_status) {
+						$history_row = $find_history($product_id, $batch['batch_no'], $history_status, $old_qty, $inventory['id']);
+						if (empty($history_row)) {
+							if (abs($delta) > 0.0001) {
+								throw new Exception('Conversion history not found for ' . $label . '.');
+							}
+							continue;
+						}
+						$history_fields = ($history_status === 'out')
+							? array(
+								'quantity' => $new_line_qty,
+								'official_qty' => $new_line_qty,
+								'official_rate_rs' => $amount,
+								'official_total_rs' => $bill_total,
+								'taxable_value' => $bill_total,
+								'gst_amt' => $gst_amt,
+								'total_amt' => $total_bill_gst,
+							)
+							: array(
+								'quantity' => $new_line_qty,
+								'black_qty' => $new_line_qty,
+								'black_rate_rs' => $amount,
+								'black_total_rs' => $bill_total,
+							);
+						$this->db->where('id', $history_row['id'])->update('inventory_history', $history_fields);
+					}
+				}
+			}
+
+			for ($i = 0; $i < count($new_product_ids); $i++) {
+				$product_id = (int) ($new_product_ids[$i] ?? 0);
+				$inventory_id = (int) ($new_inventory_ids[$i] ?? 0);
+				$allocated_qty = (float) ($new_qty[$i] ?? 0);
+				$amount = (float) ($new_amount[$i] ?? 0);
+				if ($product_id <= 0 && $inventory_id <= 0 && $allocated_qty <= 0) {
+					continue;
+				}
+				if ($product_id <= 0 || $inventory_id <= 0 || $allocated_qty <= 0) {
+					throw new Exception('New product, batch and quantity are required.');
+				}
+				if ($amount < 0) {
+					throw new Exception('Amount cannot be negative.');
+				}
+				if (!empty($kept_inventory_ids[$inventory_id])) {
+					throw new Exception('This batch is already on the conversion. Change that row quantity instead.');
+				}
+
+				$product = $this->crud_model->get_raw_products_by_id($product_id)->row_array();
+				if (empty($product)) {
+					throw new Exception('No Product Found');
+				}
+				$batch_detail = $this->db->where('id', $inventory_id)
+					->where('warehouse_id', $sales['warehouse_id'])
+					->where('product_id', $product_id)
+					->get('inventory')
+					->row_array();
+				if (empty($batch_detail)) {
+					throw new Exception('Batch details not found for the selected product.');
+				}
+				if (((float) $batch_detail['official_qty'] + 0.00001) < $allocated_qty) {
+					throw new Exception('Insufficient white stock for ' . $product['name'] . ' in batch ' . $batch_detail['batch_no'] . '. Available White Qty: ' . $batch_detail['official_qty'] . '.');
+				}
+
+				$gst_per = ($new_gst[$i] !== '' && $new_gst[$i] !== null) ? (float) $new_gst[$i] : (float) ($product['gst'] ?? 0);
+				$amount = price_format_decimal($amount);
+				$bill_total = price_format_decimal($allocated_qty * $amount);
+				$gst_amt = price_format_decimal(($bill_total * $gst_per) / 100);
+				$total_bill_gst = price_format_decimal($bill_total + $gst_amt);
+				$label = $product['name'] . ' / ' . $batch_detail['batch_no'];
+
+				$item_code = $product['item_code'] ?? '';
+				if ($item_code == '') {
+					$item_code = $batch_detail['item_code'] ?? '';
+				}
+
+				$order_product = $this->db->where('order_id', $sales_order_id)->where('product_id', $product_id)->get('sales_order_product')->row_array();
+				if (empty($order_product)) {
+					$this->db->insert('sales_order_product', array(
+						'order_id' => $sales_order_id,
+						'product_id' => $product_id,
+						'item_code' => $item_code,
+						'product_name' => $product['name'],
+						'qty' => $allocated_qty,
+						'amount' => $amount,
+						'total_amount' => $bill_total,
+						'bill_amount' => $amount,
+						'bill_total' => $bill_total,
+						'available' => (float) $batch_detail['official_qty'],
+						'gst' => $gst_per,
+						'gst_amount' => $gst_amt,
+						'total_bill_gst_amount' => $total_bill_gst,
+						'black_amount' => 0,
+						'black_total' => 0,
+						'final_total' => $total_bill_gst,
+					));
+					$order_product_id = $this->db->insert_id();
+				} else {
+					$order_product_id = $order_product['id'];
+				}
+
+				$this->db->insert('sales_order_product_batch', array(
+					'order_id' => $sales_order_id,
+					'order_product_id' => $order_product_id,
+					'batch_no' => $batch_detail['batch_no'],
+					'batch_qty' => $batch_detail['quantity'],
+					'avail_white_qty' => $batch_detail['official_qty'],
+					'avail_black_qty' => $batch_detail['black_qty'],
+					'qty' => $allocated_qty,
+					'white_qty' => $allocated_qty,
+					'black_qty' => 0,
+					'recieved_qty' => $allocated_qty,
+					'amount' => $amount,
+					'bill_amount' => $amount,
+					'bill_total' => $bill_total,
+					'gst' => $gst_per,
+					'gst_amount' => $gst_amt,
+					'total_bill_gst_amount' => $total_bill_gst,
+					'black_amount' => 0,
+					'black_total' => 0,
+					'final_total' => $total_bill_gst,
+					'added_date' => date('Y-m-d H:i:s'),
+				));
+				$new_batch_id = $this->db->insert_id();
+
+				$this->db->insert('invoice_order_products', array(
+					'parent_id' => $invoice_order_id,
+					'batch_id' => $new_batch_id,
+					'order_id' => $sales_order_id,
+					'product_id' => $product_id,
+					'product_name' => $product['name'],
+					'qty' => $allocated_qty,
+					'item_code' => $item_code,
+					'amount' => $amount,
+					'total_amount' => $bill_total,
+					'bill_amount' => $amount,
+					'bill_total' => $bill_total,
+					'gst' => $gst_per,
+					'gst_amount' => $gst_amt,
+					'total_bill_gst_amount' => $total_bill_gst,
+					'final_total' => $total_bill_gst,
+				));
+
+				$apply_stock($inventory_id, $allocated_qty, $label);
+				$kept_inventory_ids[$inventory_id] = true;
+
+				$history_base = array(
+					'supplier_id' => $batch_detail['supplier_id'],
+					'parent_id' => $inventory_id,
+					'company_id' => $sales['company_id'],
+					'warehouse_id' => $batch_detail['warehouse_id'],
+					'warehouse_name' => $batch_detail['warehouse_name'],
+					'product_id' => $batch_detail['product_id'],
+					'categories' => $batch_detail['categories'],
+					'batch_no' => $batch_detail['batch_no'],
+					'product_name' => $batch_detail['product_name'] ?? $product['name'],
+					'item_code' => $batch_detail['item_code'] ?? $item_code,
+					'sku' => $batch_detail['sku'] ?? '',
+					'order_id' => $sales_order_id,
+					'quantity' => $allocated_qty,
+					'actual_rmb' => 0,
+					'total_rmb' => 0,
+					'actual_usd' => 0,
+					'actual_inr' => 0,
+					'pending_qty' => 0,
+					'duty_percent' => 0,
+					'duty_amt' => 0,
+					'duty_surcharge' => 0,
+					'received_date' => date('Y-m-d'),
+					'invoice_no' => $invoice['invoice_no'],
+					'added_date' => date('Y-m-d H:i:s'),
+					'added_by_id' => $this->session->userdata('super_user_id'),
+					'added_by_name' => $this->session->userdata('super_name'),
+				);
+				$this->db->insert('inventory_history', array_merge($history_base, array(
+					'status' => 'out',
+					'official_qty' => $allocated_qty,
+					'official_rate_rs' => $amount,
+					'official_total_rs' => $bill_total,
+					'black_qty' => 0,
+					'black_rate_rs' => 0,
+					'black_total_rs' => 0,
+					'taxable_value' => $bill_total,
+					'gst_amt' => $gst_amt,
+					'total_amt' => $total_bill_gst,
+				)));
+				$this->db->insert('inventory_history', array_merge($history_base, array(
+					'status' => 'in',
+					'official_qty' => 0,
+					'official_rate_rs' => 0,
+					'official_total_rs' => 0,
+					'black_qty' => $allocated_qty,
+					'black_rate_rs' => $amount,
+					'black_total_rs' => $bill_total,
+					'taxable_value' => 0,
+					'gst_amt' => 0,
+					'total_amt' => 0,
+				)));
+			}
+
+			$basic_value = 0;
+			$gst_total = 0;
+			$net_sales = 0;
+			$has_line = false;
+			$order_products = $this->db->where('order_id', $sales_order_id)->get('sales_order_product')->result_array();
+			foreach ($order_products as $order_product) {
+				$batches = $this->db->where('order_product_id', $order_product['id'])->get('sales_order_product_batch')->result_array();
+				if (empty($batches)) {
+					$this->db->where('id', $order_product['id'])->delete('sales_order_product');
+					continue;
+				}
+
+				$has_line = true;
+				$qty = 0;
+				$amount_value = 0;
+				$total_amount = 0;
+				$bill_total = 0;
+				$gst_amount = 0;
+				$total_bill_gst = 0;
+				$gst_per = (float) $batches[0]['gst'];
+				foreach ($batches as $batch) {
+					$qty += (float) $batch['qty'];
+					$amount_value += ((float) $batch['qty'] * (float) $batch['amount']);
+					$total_amount += (float) $batch['bill_total'];
+					$bill_total += (float) $batch['bill_total'];
+					$gst_amount += (float) $batch['gst_amount'];
+					$total_bill_gst += (float) $batch['total_bill_gst_amount'];
+					$basic_value += (float) $batch['bill_total'];
+					$gst_total += (float) $batch['gst_amount'];
+					$net_sales += (float) $batch['total_bill_gst_amount'];
+				}
+				$unit_amount = $qty > 0 ? price_format_decimal($amount_value / $qty) : 0;
+				$this->db->where('id', $order_product['id'])->update('sales_order_product', array(
+					'qty' => $qty,
+					'amount' => $unit_amount,
+					'total_amount' => price_format_decimal($total_amount),
+					'bill_amount' => $unit_amount,
+					'bill_total' => price_format_decimal($bill_total),
+					'gst' => $gst_per,
+					'gst_amount' => price_format_decimal($gst_amount),
+					'total_bill_gst_amount' => price_format_decimal($total_bill_gst),
+					'black_amount' => 0,
+					'black_total' => 0,
+					'final_total' => price_format_decimal($total_bill_gst),
+				));
+			}
+
+			if (!$has_line) {
+				throw new Exception('At least one product row is required.');
+			}
+
+			$basic_value = price_format_decimal($basic_value);
+			$gst_total = price_format_decimal($gst_total);
+			$net_sales = price_format_decimal($net_sales);
+			$other_charges = (float) ($sales['other_charges_amount'] ?? 0);
+			$round_of = (float) ($sales['round_of'] ?? 0);
+			$grand_total = price_format_decimal($net_sales + $other_charges + $round_of);
+			$central_gst = 0;
+			$state_gst = 0;
+			$igst = 0;
+			if ($sales['gst_type'] === 'IGST') {
+				$igst = $gst_total;
+			} elseif ($sales['gst_type'] == 'Central GST / State GST') {
+				$central_gst = price_format_decimal($gst_total / 2);
+				$state_gst = price_format_decimal($gst_total - $central_gst);
+			}
+
+			$header = array(
+				'basic_value' => $basic_value,
+				'net_sales_value_1' => $net_sales,
+				'total_black_amt' => 0,
+				'central_gst' => $central_gst,
+				'state_gst' => $state_gst,
+				'igst' => $igst,
+				'gst_total' => $gst_total,
+				'net_sales_value_2' => $net_sales,
+				'grand_total' => $grand_total,
+			);
+			$this->db->where('id', $sales_order_id)->update('sales_order', $header);
+			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+				'basic_value' => $basic_value,
+				'net_sales_value_1' => $net_sales,
+				'gst_total' => $gst_total,
+				'net_sales_value_2' => $net_sales,
+				'grand_total' => $grand_total,
+			));
+
+			$this->db->insert('sys_logs', array(
+				'parent_id' => $sales_order_id,
+				'ref_id' => $invoice_order_id,
+				'module' => 'sales',
+				'action' => 'edit_conversion',
+				'message' => 'Conversion Order updated by ' . $this->session->userdata('super_name'),
+				'json' => json_encode(array(
+					'invoice_order_id' => $invoice_order_id,
+					'updated' => $posted_existing,
+					'removed' => array_keys($remove_ids),
+					'added' => $new_inventory_ids,
+				)),
+				'table_name' => 'sales_order',
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name' => $this->session->userdata('super_name'),
+				'added_by_type' => $this->session->userdata('super_type'),
+			));
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost = array(
+					'status' => 400,
+					'message' => 'Error occurred while updating conversion order',
+				);
+			} else {
+				$this->db->trans_commit();
+				$resultpost = array(
+					'status' => 200,
+					'message' => 'Conversion order updated successfully.',
+					'url' => site_url('inventory/conversion-order'),
+				);
+			}
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				'status' => 400,
+				'message' => $e->getMessage(),
+			);
+		}
+
+		if ($resultpost['status'] == 200) {
+			$this->session->set_flashdata('flash_message', $resultpost['message']);
+		} else {
+			$this->session->set_flashdata('error_message', $resultpost['message']);
+		}
+
 		return simple_json_output($resultpost);
 	}
 
@@ -18002,13 +19038,17 @@ class Inventory_model extends CI_Model
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
 				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
 				$delete_url = "confirm_modal('" . base_url() . "inventory/conversion_order/delete/" . $id . "','Are you sure want to delete!')";
+				$cancel_url = "confirm_modal('" . base_url() . "inventory/conversion_order/cancel/" . $id . "','Are you sure want to cancel!')";
+				$edit_url = site_url('inventory/conversion-order/edit/' . $id);
 
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+						' . (empty($item['is_cancelled']) ? '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>' : '') . '
 						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
+						' . (empty($item['is_cancelled']) ? '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $cancel_url . '"><i class="fa fa-ban" aria-hidden="true"></i> Cancel</a>' : '') . '
 						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
 					</div>
 				</div>';
@@ -18250,13 +19290,19 @@ class Inventory_model extends CI_Model
 
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
 				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
+				$edit_url = site_url('inventory/black-order/edit/' . $id);
+				$delete_url = "confirm_modal('" . base_url() . "inventory/black_order/delete/" . $id . "','Are you sure want to delete!')";
+				$cancel_url = "confirm_modal('" . base_url() . "inventory/black_order/cancel/" . $id . "','Are you sure want to cancel!')";
 
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+						' . (empty($item['is_cancelled']) ? '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit Amount</a>' : '') . '
 						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
+						' . (empty($item['is_cancelled']) ? '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $cancel_url . '"><i class="fa fa-ban" aria-hidden="true"></i> Cancel</a>' : '') . '
+						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
 					</div>
 				</div>';
 
@@ -20004,8 +21050,331 @@ class Inventory_model extends CI_Model
 		return simple_json_output($resultpost);
 	}
 
-	function delete_sales_order($id)
+	public function edit_black_order_post($invoice_order_id)
 	{
+		$this->db->trans_begin();
+
+		try {
+			$invoice = $this->db->where('id', $invoice_order_id)
+				->where('type', 'bill')
+				->where('is_deleted', '0')
+				->get('invoice_order')
+				->row_array();
+			if (empty($invoice)) {
+				throw new Exception('Black order invoice not found.');
+			}
+			if (!empty($invoice['is_cancelled'])) {
+				throw new Exception('Cancelled black order cannot be edited.');
+			}
+
+			$product_ids = $this->input->post('product_id');
+			$amounts = $this->input->post('amount');
+			if (empty($product_ids) || !is_array($product_ids)) {
+				throw new Exception('No amounts were submitted.');
+			}
+
+			$existing = $this->db->where('parent_id', $invoice_order_id)->get('invoice_order_products')->result_array();
+			$existing_map = array();
+			foreach ($existing as $row) {
+				$existing_map[(int) $row['id']] = $row;
+			}
+			if (count($product_ids) !== count($existing_map)) {
+				throw new Exception('All invoice products must be submitted.');
+			}
+
+			$basic_value = 0;
+			$gst_total = 0;
+			$net_sales = 0;
+			foreach ($product_ids as $index => $product_id) {
+				$product_id = (int) $product_id;
+				if (!isset($existing_map[$product_id])) {
+					throw new Exception('Invoice product not found for this black order.');
+				}
+				unset($existing_map[$product_id]);
+
+				$product = $this->db->where('id', $product_id)->where('parent_id', $invoice_order_id)->get('invoice_order_products')->row_array();
+				$amount = price_format_decimal($amounts[$index] ?? 0);
+				if ($amount < 0) {
+					throw new Exception('Amount cannot be negative.');
+				}
+
+				$qty = (float) $product['qty'];
+				$gst_per = (float) $product['gst'];
+				$bill_total = price_format_decimal($qty * $amount);
+				$gst_amt = price_format_decimal(($bill_total * $gst_per) / 100);
+				$total_bill_gst = price_format_decimal($bill_total + $gst_amt);
+
+				$this->db->where('id', $product_id)->where('parent_id', $invoice_order_id)->update('invoice_order_products', array(
+					'amount' => $amount,
+					'total_amount' => $bill_total,
+					'bill_amount' => $amount,
+					'bill_total' => $bill_total,
+					'gst_amount' => $gst_amt,
+					'total_bill_gst_amount' => $total_bill_gst,
+					'final_total' => $total_bill_gst,
+				));
+
+				$basic_value += $bill_total;
+				$gst_total += $gst_amt;
+				$net_sales += $total_bill_gst;
+			}
+			if (!empty($existing_map)) {
+				throw new Exception('All invoice products must be submitted.');
+			}
+
+			$basic_value = price_format_decimal($basic_value);
+			$gst_total = price_format_decimal($gst_total);
+			$net_sales = price_format_decimal($net_sales);
+			$round_of = (float) ($invoice['round_of'] ?? 0);
+			$other_charges = (float) ($invoice['other_charges_amount'] ?? 0);
+			$grand_total = price_format_decimal($net_sales + $other_charges + $round_of);
+			$central_gst = 0;
+			$state_gst = 0;
+			$igst = 0;
+			if ($invoice['gst_type'] === 'IGST') {
+				$igst = $gst_total;
+			} elseif ($invoice['gst_type'] == 'Central GST / State GST') {
+				$central_gst = price_format_decimal($gst_total / 2);
+				$state_gst = price_format_decimal($gst_total - $central_gst);
+			}
+
+			$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+				'basic_value' => $basic_value,
+				'net_sales_value_1' => $net_sales,
+				'central_gst' => $central_gst,
+				'state_gst' => $state_gst,
+				'igst' => $igst,
+				'gst_total' => $gst_total,
+				'net_sales_value_2' => $net_sales,
+				'grand_total' => $grand_total,
+			));
+
+			$this->db->insert('sys_logs', array(
+				'parent_id' => $invoice_order_id,
+				'ref_id' => NULL,
+				'module' => 'sales',
+				'action' => 'edit_black_order',
+				'message' => 'Black Order Invoice ' . $invoice['invoice_no'] . ' amount updated by ' . $this->session->userdata('super_name'),
+				'json' => json_encode(array('invoice_order_id' => $invoice_order_id, 'amounts' => $amounts)),
+				'table_name' => 'invoice_order',
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name' => $this->session->userdata('super_name'),
+				'added_by_type' => $this->session->userdata('super_type'),
+			));
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost = array(
+					'status' => 400,
+					'message' => 'Error occurred while updating black order',
+				);
+			} else {
+				$this->db->trans_commit();
+				$resultpost = array(
+					'status' => 200,
+					'message' => 'Black order amount updated successfully.',
+					'url' => site_url('inventory/black-order?status=completed'),
+				);
+			}
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				'status' => 400,
+				'message' => $e->getMessage(),
+			);
+		}
+
+		if ($resultpost['status'] == 200) {
+			$this->session->set_flashdata('flash_message', $resultpost['message']);
+		} else {
+			$this->session->set_flashdata('error_message', $resultpost['message']);
+		}
+
+		return simple_json_output($resultpost);
+	}
+
+	public function delete_black_order($invoice_order_id, $type = 'delete')
+	{
+		$is_cancel = ($type === 'cancel');
+		$this->db->trans_begin();
+
+		try {
+			$invoice = $this->db->where('id', $invoice_order_id)
+				->where('type', 'bill')
+				->where('is_deleted', '0')
+				->get('invoice_order')
+				->row_array();
+			if (empty($invoice)) {
+				throw new Exception('Black order invoice not found.');
+			}
+			if ($is_cancel && !empty($invoice['is_cancelled'])) {
+				throw new Exception('Black order invoice is already cancelled.');
+			}
+
+			$products = $this->db->where('parent_id', $invoice_order_id)->get('invoice_order_products')->result_array();
+			if (empty($products)) {
+				throw new Exception('No products found for this black order invoice.');
+			}
+
+			foreach ($products as $product) {
+				if ((float) ($product['return_qty'] ?? 0) > 0) {
+					throw new Exception('Delete the sale return entry first.');
+				}
+			}
+
+			$affected_orders = array();
+			if (empty($invoice['is_cancelled'])) {
+				foreach ($products as $product) {
+					$qty = (float) $product['qty'];
+					if ($qty <= 0) {
+						continue;
+					}
+
+					$batch = $this->db->where('id', $product['batch_id'])->get('sales_order_product_batch')->row_array();
+					if (empty($batch)) {
+						throw new Exception('Sales order batch not found for ' . $product['product_name'] . '.');
+					}
+					if (((float) $batch['recieved_black_qty'] + 0.00001) < $qty) {
+						throw new Exception('Cannot reverse received quantity for ' . $product['product_name'] . '. Received black qty is less than the invoice qty.');
+					}
+
+					$this->db->where('id', $batch['id'])->update('sales_order_product_batch', array(
+						'recieved_black_qty' => (float) $batch['recieved_black_qty'] - $qty,
+					));
+					if (!empty($batch['order_id'])) {
+						$affected_orders[] = $batch['order_id'];
+					}
+
+					$inventory = $this->db->where('product_id', $product['product_id'])
+						->where('warehouse_id', $invoice['warehouse_id'])
+						->where('batch_no', $batch['batch_no'])
+						->get('inventory')
+						->row_array();
+					if (empty($inventory)) {
+						throw new Exception('Inventory record not found for ' . $product['product_name'] . ' / ' . $batch['batch_no'] . '.');
+					}
+
+					$this->db->where('id', $inventory['id'])->update('inventory', array(
+						'pending_qty' => (float) $inventory['pending_qty'] + $qty,
+					));
+
+					$invoice_history = $this->db->where(array(
+						'invoice_no' => $invoice['invoice_no'],
+						'order_id' => $product['order_id'],
+						'product_id' => $product['product_id'],
+						'parent_id' => $inventory['id'],
+						'batch_no' => $batch['batch_no'],
+						'status' => 'out',
+						'is_deleted' => 0,
+						'quantity' => $qty,
+					))->order_by('id', 'desc')->get('inventory_history')->row_array();
+
+					if (empty($invoice_history)) {
+						$invoice_history = $this->db->where(array(
+							'invoice_no' => $invoice['invoice_no'],
+							'order_id' => $product['order_id'],
+							'product_id' => $product['product_id'],
+							'parent_id' => $inventory['id'],
+							'status' => 'out',
+							'is_deleted' => 0,
+						))->order_by('id', 'desc')->get('inventory_history')->row_array();
+					}
+					if (empty($invoice_history)) {
+						throw new Exception('Inventory history not found for ' . $product['product_name'] . ' / ' . $batch['batch_no'] . '.');
+					}
+					$this->db->where('id', $invoice_history['id'])->update('inventory_history', array('is_deleted' => 1));
+
+					$sale_history = $this->db->where(array(
+						'order_id' => $product['order_id'],
+						'parent_id' => $inventory['id'],
+						'status' => 'out',
+						'is_deleted' => 0,
+					))->where('id !=', $invoice_history['id'])->order_by('id', 'asc')->get('inventory_history')->row_array();
+					if (!empty($sale_history)) {
+						$this->db->where('id', $sale_history['id'])->update('inventory_history', array(
+							'pending_qty' => (float) $sale_history['pending_qty'] + $qty,
+						));
+					}
+				}
+
+				foreach (array_unique($affected_orders) as $order_id) {
+					$this->common_model->markInvoiceGenerated($order_id);
+				}
+			}
+
+			if ($is_cancel) {
+				$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+					'is_cancelled' => 1,
+					'cancelled_date' => date('Y-m-d H:i:s'),
+				));
+				$log_action = 'cancel';
+				$log_message = 'Black Order Invoice ' . $invoice['invoice_no'] . ' has been cancelled.';
+				$success_message = 'Black order cancelled successfully.';
+				$error_message = 'Error occurred while cancelling black order';
+			} else {
+				$this->db->where('id', $invoice_order_id)->update('invoice_order', array(
+					'is_deleted' => 1,
+					'deleted_date' => date('Y-m-d H:i:s'),
+				));
+				$log_action = 'delete';
+				$log_message = 'Black Order Invoice ' . $invoice['invoice_no'] . ' has been deleted.';
+				$success_message = 'Black order deleted successfully.';
+				$error_message = 'Error occurred while deleting black order';
+			}
+
+			$this->db->insert('sys_logs', array(
+				'parent_id' => $invoice_order_id,
+				'ref_id' => NULL,
+				'module' => 'sales',
+				'action' => $log_action,
+				'message' => $log_message,
+				'json' => json_encode(array('invoice_order_id' => $invoice_order_id, 'type' => $type)),
+				'table_name' => 'invoice_order',
+				'added_by' => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name' => $this->session->userdata('super_name'),
+				'added_by_type' => $this->session->userdata('super_type'),
+			));
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$resultpost = array(
+					'status' => 400,
+					'message' => $error_message,
+				);
+			} else {
+				$this->db->trans_commit();
+				$resultpost = array(
+					'status' => 200,
+					'message' => $success_message,
+					'url' => site_url('inventory/black-order?status=completed'),
+				);
+			}
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			$resultpost = array(
+				'status' => 400,
+				'message' => $e->getMessage(),
+			);
+		}
+
+		if ($resultpost['status'] == 200) {
+			$this->session->set_flashdata('flash_message', $resultpost['message']);
+		} else {
+			$this->session->set_flashdata('error_message', $resultpost['message']);
+		}
+
+		if ($this->input->is_ajax_request()) {
+			return simple_json_output($resultpost);
+		}
+
+		redirect(site_url('inventory/black-order?status=completed'), 'refresh');
+	}
+
+	function delete_sales_order($id, $type = 'delete')
+	{
+		$is_cancel = ($type === 'cancel');
 		$this->db->trans_begin(); // Start transaction
 
 		try {
@@ -20013,111 +21382,79 @@ class Inventory_model extends CI_Model
 			if (!$sales) {
 				throw new Exception(get_phrase('sales_order_not_found'));
 			}
+			if ($is_cancel && $sales['is_cancelled'] == 1) {
+				throw new Exception('Sales order is already cancelled.');
+			}
+
+			// If the sale order is approved, check if any batch has return or received qty
+			if ($sales['is_approved'] != 0) {
+				$batches = $this->db->where('order_id', $id)->get('sales_order_product_batch')->result_array();
+				$has_return_qty = false;
+				$has_recieved_qty = false;
+
+				foreach ($batches as $b) {
+					$tot_return = (float)($b['return_qty'] ?? 0) + (float)($b['return_black_qty'] ?? 0);
+					if ($tot_return > 0) {
+						$has_return_qty = true;
+					}
+					$tot_recieved = (float)($b['recieved_qty'] ?? 0) + (float)($b['recieved_black_qty'] ?? 0);
+					if ($tot_recieved > 0) {
+						$has_recieved_qty = true;
+					}
+				}
+
+				if ($has_return_qty) {
+					throw new Exception("Some of the order quantity has already returned against this order.. Delete the sale return entry first");
+				}
+
+				if ($has_recieved_qty) {
+					throw new Exception("Some of the order quantity has already been generated in invoice.. Delete or cancel the invoice first..");
+				}
+			}
 
 			$reverted_data = [];
 			$history_data = [];
 
-			if ($sales['is_approved'] != 0) {
-				// Retrieve stock history records associated with this sales order that are not deleted and have status 'out'
-				$history_records = $this->common_model->getResultById('inventory_history', '*', [
-					'order_id' => $id,
-					'status' => 'out',
-					'is_deleted' => 0
+			if (empty($sales['is_cancelled'])) {
+				list($reverted_data, $history_data) = $this->revert_sales_order_stock($id, $sales);
+			}
+
+			if ($is_cancel) {
+				$this->db->where('id', $id)->update('sales_order', [
+					'is_cancelled'   => 1,
+					'cancelled_date' => date('Y-m-d H:i:s')
 				]);
-
-				if (!empty($history_records)) {
-					foreach ($history_records as $his) {
-						$inv_id = $his['parent_id'];
-						$inv = $this->common_model->getRowById('inventory', '*', ['id' => $inv_id]);
-						if ($inv) {
-							$new_qty = $inv['quantity'] + $his['quantity'];
-							$new_official = $inv['official_qty'] + $his['official_qty'];
-							$new_black = $inv['black_qty'] + $his['black_qty'];
-
-							// Revert stock in inventory batch
-							$this->db->where('id', $inv_id)->update('inventory', [
-								'quantity' => $new_qty,
-								'official_qty' => $new_official,
-								'black_qty' => $new_black
-							]);
-
-							$reverted_data[] = [
-								'inventory_id' => $inv_id,
-								'product_id'   => $inv['product_id'],
-								'batch_no'     => $inv['batch_no'],
-								'old_qty'      => $inv['quantity'],
-								'new_qty'      => $new_qty,
-								'old_official' => $inv['official_qty'],
-								'new_official' => $new_official,
-								'old_black'    => $inv['black_qty'],
-								'new_black'    => $new_black
-							];
-						}
-
-						// Soft delete stock history entry
-						$this->db->where('id', $his['id'])->update('inventory_history', ['is_deleted' => 1]);
-						$history_data[] = $his;
-					}
-				}
+				$log_action = 'cancel';
+				$log_message = 'Sale Order ' . $sales['order_no'] . ' marked as cancelled by ' . $this->session->userdata('super_name');
+				$success_message = 'Sales order marked as cancelled successfully.';
+				$error_message = 'Error occurred while cancelling Sales Order';
+			} else {
+				$this->db->where('id', $id)->update('sales_order', [
+					'is_deleted'   => 1,
+					'deleted_date' => date('Y-m-d H:i:s')
+				]);
+				$log_action = 'delete';
+				$log_message = 'Sale Order deleted by ' . $this->session->userdata('super_name');
+				$success_message = get_phrase('sales_order_delete_successfully');
+				$error_message = 'Error occurred while deleting Sales Order';
 			}
 
-			// Soft delete the sales order itself
-			$this->db->where('id', $id)->update('sales_order', ['is_deleted' => 1]);
-
-			// Reverting Payment Entries
-			$payment_log = [];
-			$payment_records = $this->db->where('order_id', $id)->get('customer_payment_record');
-			if ($payment_records->num_rows() > 0) {
-				foreach ($payment_records->result_array() as $record) {
-					$this->db->where('id', $record['id'])->update('customer_payment_record', ['is_deleted' => 1]);
-
-					$payment = $this->db->where('id', $record['payment_id'])->get('customer_payment');
-					if ($payment->num_rows() > 0) {
-						$payment = $payment->row_array();
-						$updated_record = [
-							"allocated_inv" => $payment['allocated_inv'] - $record['order_paid'],
-							"total_outstanding" => $payment['total_outstanding'] - $record['order_paid'],
-							"on_account" => $payment['on_account'] + $record['order_paid'],
-						];
-
-						$this->db->where('id', $record['payment_id'])->update('customer_payment', $updated_record);
-
-						$customer_credit = [
-							'payment_id' => $record['payment_id'],
-							'customer_id' => $payment['customer_id'],
-							'item_no' => "Sales Deleted - " . $id,
-							'date' => date('Y-m-d'),
-							'credit_balance' => $record['order_paid'],
-							'debit_balance' => "0",
-							'created_at' => date('Y-m-d H:i:s'),
-						];
-
-						$this->db->insert('customer_credit',$customer_credit);
-
-						$payment_log[] = [
-							"record" => $record,
-							"credit" => $customer_credit,
-							"updated_payment" => $updated_record,
-							"payment" => $payment
-						];
-					}
-				}
-			}
+			// Also soft delete commission entries
+			$this->db->where('order_id', $id)->update('sales_commission', ['is_deleted' => 1]);
 
 			// Create JSON log details
 			$log_json = [
 				'sale_order'    => $sales,
 				'reverted_data' => $reverted_data,
-				'history_data'  => $history_data,
-				'payment_log'   => $payment_log
+				'history_data'  => $history_data
 			];
 
 			$log_data = array(
 				'parent_id'      => $id,
 				'ref_id'         => NULL,
 				'module'         => 'sales',
-				'action'         => 'delete',
-				'message'        => 'Sale Order deleted by ' . $this->session->userdata('super_name'),
+				'action'         => $log_action,
+				'message'        => $log_message,
 				'json'           => json_encode($log_json),
 				'table_name'     => 'sales_order',
 				'added_by'       => $this->session->userdata('super_user_id'),
@@ -20131,13 +21468,13 @@ class Inventory_model extends CI_Model
 				$this->db->trans_rollback();
 				$resultpost = [
 					"status" => 400,
-					"message" => "Error occurred while deleting Sales Order",
+					"message" => $error_message,
 				];
 			} else {
 				$this->db->trans_commit();
 				$resultpost = [
 					"status" => 200,
-					"message" => get_phrase('sales_order_delete_successfully'),
+					"message" => $success_message,
 					"url" => $this->session->userdata('previous_url'),
 				];
 			}
@@ -20149,8 +21486,17 @@ class Inventory_model extends CI_Model
 			];
 		}
 
-		$this->session->set_flashdata('flash_message', $resultpost['message']);
-		return simple_json_output($resultpost);
+		if ($resultpost['status'] == 200) {
+			$this->session->set_flashdata('flash_message', $resultpost['message']);
+		} else {
+			$this->session->set_flashdata('error_message', $resultpost['message']);
+		}
+
+		if ($is_cancel || $this->input->is_ajax_request()) {
+			return simple_json_output($resultpost);
+		} else {
+			redirect($this->session->userdata('previous_url') ? $this->session->userdata('previous_url') : site_url('inventory/sales-order'), 'refresh');
+		}
 	}
 
 	function add_inventory_data($unique_id)
