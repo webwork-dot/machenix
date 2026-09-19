@@ -254,6 +254,100 @@
 		display: none !important;
 	}
 
+	/* Fixed height scroll body — never show parent horizontal scroll */
+	.dataTables_scroll {
+		overflow: hidden;
+		width: 100% !important;
+	}
+	.dataTables_scrollHead {
+		overflow-x: hidden !important;
+		overflow-y: hidden !important;
+		width: 100% !important;
+	}
+	.dataTables_scrollBody {
+		max-height: 475px !important;
+		height: 475px !important;
+		overflow-x: hidden !important;
+		overflow-y: auto !important;
+		width: 100% !important;
+	}
+	/* Kill DT scrollbar-gutter padding that leaves a gap before the scrollbar */
+	#report-datatable_wrapper .dataTables_scrollHeadInner {
+		padding-right: 0 !important;
+		box-sizing: border-box !important;
+		width: 100% !important;
+		min-width: 100% !important;
+		max-width: 100% !important;
+	}
+	#report-datatable_wrapper .dataTables_scrollHeadInner > table,
+	#report-datatable_wrapper .dataTables_scrollBody > table {
+		width: 100% !important;
+		min-width: 100% !important;
+		max-width: 100% !important;
+		table-layout: fixed !important;
+		box-sizing: border-box !important;
+		margin: 0 !important;
+	}
+	#report-datatable_wrapper .dataTables_scrollHead table th,
+	#report-datatable_wrapper .dataTables_scrollBody > table > tbody > tr:not(.child) > td {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	#report-datatable_wrapper .dataTables_scrollHead table,
+	#report-datatable_wrapper .dataTables_scrollBody table {
+		margin-bottom: 0 !important;
+	}
+	table.dataTable tbody tr.child,
+	table.dataTable tbody tr.child:hover {
+		background: transparent !important;
+	}
+	/* Keep child td as a real table-cell so parent row layout stays intact */
+	table.dataTable tbody tr.child > td {
+		padding: 0 !important;
+		border-top: none !important;
+		background: transparent !important;
+	}
+	/*
+	 * width:0 + min-width:100% makes the wrap take the parent table width
+	 * without letting wide batch columns expand the DataTables body table.
+	 */
+	.child-scroll-wrap {
+		display: block;
+		width: 0;
+		min-width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		overflow-x: auto !important;
+		overflow-y: hidden !important;
+		-webkit-overflow-scrolling: touch;
+		padding: 4px 2px;
+	}
+	.child-scroll-wrap .batch-breakdown-card,
+	.child-scroll-wrap .company-breakdown-card {
+		display: block;
+		width: max-content;
+		min-width: 100%;
+		max-width: none !important;
+		margin: 0;
+		box-sizing: border-box;
+		overflow: visible !important;
+	}
+	.child-scroll-wrap .table-responsive,
+	.child-scroll-wrap .batch-breakdown-card > .table-responsive,
+	.child-scroll-wrap .company-breakdown-card > .table-responsive {
+		display: block !important;
+		width: max-content !important;
+		min-width: 100% !important;
+		max-width: none !important;
+		overflow: visible !important;
+	}
+	.child-scroll-wrap .sub-batch-table,
+	.child-scroll-wrap .sub-company-table {
+		width: max-content !important;
+		min-width: 100%;
+		margin-bottom: 0;
+	}
+
 	/* Main Table Head & Body */
 	#report-datatable {
 		width: 100% !important;
@@ -273,6 +367,13 @@
 		border-top: none !important;
 		white-space: nowrap !important;
 		vertical-align: middle !important;
+	}
+	#report-datatable thead th.th-cost-wrap,
+	#report-datatable_wrapper .dataTables_scrollHead table th.th-cost-wrap {
+		white-space: normal !important;
+		overflow: visible !important;
+		text-overflow: clip !important;
+		line-height: 1.25;
 	}
 	#report-datatable tbody td {
 		padding: 6px 10px !important;
@@ -482,8 +583,13 @@
 		border: 1px solid #e2e8f0;
 		border-radius: 8px;
 		padding: 8px 12px;
-		margin: 4px 2px;
+		margin: 0;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+		box-sizing: border-box;
+	}
+	.batch-breakdown-card > .table-responsive {
+		overflow: visible;
+		max-width: none;
 	}
 	.batch-card-header {
 		display: flex;
@@ -529,7 +635,8 @@
 		border-radius: 6px;
 		overflow: hidden;
 		margin-bottom: 0;
-		width: 100% !important;
+		width: max-content !important;
+		min-width: 100%;
 	}
 	.sub-batch-table thead th {
 		background: #f1f5f9 !important;
@@ -736,7 +843,7 @@
 				</div>
 			</div>
 
-			<div class="table-responsive">
+			<div class="stock-table-scroll">
 				<table class="table leads-table w-100" id="report-datatable">
 					<thead>
 						<tr>
@@ -751,10 +858,10 @@
 							<th class="text-end">PO Qty</th>
 							<th class="text-end">Priority Qty</th>
 							<th class="text-end">Loading Qty</th>
-							<th class="text-end">Actual Cost with Exp</th>
-							<th class="text-end">Actual Cost Net Amt</th>
-							<th class="text-end">Official Cost with Exp</th>
-							<th class="text-end">Official Cost Net Amt</th>
+							<th class="text-end th-cost-wrap">Actual Cost<br>with Exp</th>
+							<th class="text-end th-cost-wrap">Actual Cost<br>Net Amt</th>
+							<th class="text-end th-cost-wrap">Official Cost<br>with Exp</th>
+							<th class="text-end th-cost-wrap">Official Cost<br>Net Amt</th>
 							<th class="text-center" style="width: 75px;">Action</th>
 						</tr>
 					</thead>
@@ -861,7 +968,8 @@
             return Number(b.quantity) > 0;
         });
 
-        var html = '<div class="batch-breakdown-card">';
+        var html = '<div class="child-scroll-wrap">';
+        html += '<div class="batch-breakdown-card">';
         html += '<div class="batch-card-header">';
         html += '  <div class="d-flex align-items-center gap-1">';
         html += '    <span class="batch-tag-icon"><i class="feather icon-layers"></i></span>';
@@ -960,7 +1068,7 @@
             html += '</div>';
         }
 
-        html += '</div>';
+        html += '</div></div>';
         return html;
     }
 
@@ -970,7 +1078,10 @@
             "ordering": false,
             "pagingType": "simple_numbers",
             "processing": true,
-            "scrollX": true,
+            "autoWidth": false,
+            "scrollX": false,
+            "scrollY": "475px",
+            "scrollCollapse": false,
             "serverSide": true, 
 			"pageLength": 25,
             "lengthChange": true,
@@ -1047,8 +1158,100 @@
                 return 'Showing ' + start + ' to ' + end + ' of ' + total + ' products';
             }
             
-        }).on('draw.dt', function () { 
-            $(".loader").fadeOut("slow"); 
+        }).on('draw.dt column-sizing.dt', function () { 
+            $(".loader").fadeOut("slow");
+            fitMainTableWidth();
+            requestAnimationFrame(function () {
+                fitMainTableWidth();
+            });
+        });
+
+        // Stretch parent table flush to the vertical scrollbar edge
+        function fitMainTableWidth() {
+            var scrollBody = document.querySelector('#report-datatable_wrapper .dataTables_scrollBody');
+            if (!scrollBody) return;
+            var w = Math.floor(scrollBody.clientWidth);
+            if (w < 200) return;
+
+            scrollBody.style.setProperty('overflow-x', 'hidden', 'important');
+
+            var head = document.querySelector('#report-datatable_wrapper .dataTables_scrollHead');
+            if (head) {
+                head.style.setProperty('overflow-x', 'hidden', 'important');
+                head.style.setProperty('overflow-y', 'hidden', 'important');
+                head.style.setProperty('width', '100%', 'important');
+            }
+
+            var nodes = [
+                document.querySelector('#report-datatable_wrapper .dataTables_scrollHeadInner'),
+                document.querySelector('#report-datatable_wrapper .dataTables_scrollHeadInner > table'),
+                document.querySelector('#report-datatable_wrapper .dataTables_scrollBody > table')
+            ];
+            nodes.forEach(function (node) {
+                if (!node) return;
+                node.style.setProperty('width', w + 'px', 'important');
+                node.style.setProperty('min-width', w + 'px', 'important');
+                node.style.setProperty('max-width', w + 'px', 'important');
+                node.style.setProperty('padding-right', '0px', 'important');
+                node.style.setProperty('box-sizing', 'border-box', 'important');
+                node.style.setProperty('margin', '0px', 'important');
+            });
+
+            // Drop DT col widths so fixed layout can fill the full width
+            $('#report-datatable_wrapper colgroup col').each(function () {
+                this.style.setProperty('width', 'auto', 'important');
+            });
+        }
+
+        // Keep appendable scroll inside child without breaking parent table layout
+        function syncParentChildOverflow() {
+            fitMainTableWidth();
+        }
+
+        function lockChildRow($childTr) {
+            if (!$childTr || !$childTr.length) return;
+            var $td = $childTr.children('td').first();
+            var $wrap = $td.find('.child-scroll-wrap').first();
+            if (!$wrap.length) return;
+
+            // Restore normal table-cell behavior (undo any prior display:block breakage)
+            $childTr.css('height', '');
+            $td.attr('style', 'padding:0!important;border-top:none!important;background:transparent!important;');
+            $wrap.attr('style',
+                'display:block;width:0;min-width:100%;max-width:100%;' +
+                'overflow-x:auto;overflow-y:hidden;box-sizing:border-box;padding:4px 2px;-webkit-overflow-scrolling:touch;'
+            );
+            fitMainTableWidth();
+        }
+
+        function fitChildScrollPanels() {
+            $('#report-datatable_wrapper .dataTables_scrollBody tbody tr.child').each(function () {
+                lockChildRow($(this));
+            });
+            $('#report-datatable_wrapper .dataTables_scrollBody tbody tr.shown').each(function () {
+                var $next = $(this).next('tr');
+                if ($next.length) {
+                    lockChildRow($next);
+                }
+            });
+            fitMainTableWidth();
+        }
+
+        function openChildRow(row, tr, rowData) {
+            row.child(formatChildRow(rowData)).show();
+            tr.addClass('shown');
+            var $childTr = tr.next('tr');
+            lockChildRow($childTr);
+            setTimeout(function () {
+                lockChildRow($childTr);
+                fitMainTableWidth();
+            }, 0);
+            return $childTr;
+        }
+
+        $(window).on('resize', function () {
+            fitChildScrollPanels();
+            fitMainTableWidth();
         });
 
         // Stock with Batch expand/collapse functions
@@ -1063,15 +1266,15 @@
                     });
                     if (activeBatches.length > 0) {
                         if (!row.child.isShown()) {
-                            row.child(formatChildRow(rowData)).show();
                             var tr = $(row.node());
-                            tr.addClass('shown');
+                            openChildRow(row, tr, rowData);
                             tr.find('.btn-expand-row i').removeClass('icon-plus').addClass('icon-minus');
                         }
                     }
                 }
             });
             $('[data-toggle="tooltip"]').tooltip();
+            fitChildScrollPanels();
         }
 
         function collapseAllBatches() {
@@ -1084,6 +1287,7 @@
                     tr.find('.btn-expand-row i').removeClass('icon-minus').addClass('icon-plus');
                 }
             });
+            syncParentChildOverflow();
         }
 
         // Dynamic Column Visibility Filters Function
@@ -1105,6 +1309,10 @@
             dataTable.column(13).visible(showOffExp, false);
             dataTable.column(14).visible(showOffAmt, false);
             dataTable.columns.adjust();
+            fitMainTableWidth();
+            requestAnimationFrame(function () {
+                fitMainTableWidth();
+            });
 
             // Toggle columns in any currently expanded sub-batch tables
             $('.sub-batch-table .col-batch-booked').toggle(showBooked);
@@ -1113,6 +1321,7 @@
             $('.sub-batch-table .col-batch-act-amt').toggle(showActAmt);
             $('.sub-batch-table .col-batch-off-exp').toggle(showOffExp);
             $('.sub-batch-table .col-batch-off-amt').toggle(showOffAmt);
+            fitChildScrollPanels();
         }
 
         // Stock with Batch Toggle Handler
@@ -1173,6 +1382,7 @@
                 row.child.hide();
                 tr.removeClass('shown');
                 icon.removeClass('icon-minus').addClass('icon-plus');
+                syncParentChildOverflow();
             } else {
                 var rowData = row.data();
                 var showZeroQty = $('#toggle-zero-qty').is(':checked');
@@ -1181,8 +1391,7 @@
                     return Number(b.quantity) > 0;
                 });
                 if (activeBatches.length > 0) {
-                    row.child(formatChildRow(rowData)).show();
-                    tr.addClass('shown');
+                    openChildRow(row, tr, rowData);
                     icon.removeClass('icon-plus').addClass('icon-minus');
                     $('[data-toggle="tooltip"]').tooltip();
                 }
