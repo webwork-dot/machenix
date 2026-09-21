@@ -1090,7 +1090,7 @@ class Inventory extends CI_Controller
         $company_info = $this->common_model->getRowById('company', 'state_id', ['id' => $company_id]);
         $page_data['company_state_id'] = $company_info ? (int)$company_info['state_id'] : 0;
 
-        $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['is_locked' => '0', 'is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id, 'delivery_status' => 'purchase_in']);
+        $pos = $this->common_model->getResultById('purchase_order', 'id, voucher_no', ['is_locked' => '0', 'is_deleted' => '0', 'method' => 'import', 'company_id' => $company_id]);
         $page_data['po'] = ($pos != '') ? $pos : [];
         
         $expenses = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);

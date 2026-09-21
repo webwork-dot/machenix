@@ -183,7 +183,9 @@
 					<th>Order Date</th>
 					<th>Party Name</th>
 					<th>Product Name</th>
-					<th>Model No., Rate</th>
+					<th>Model No.</th>
+					<th>Qty</th>
+					<th>Rate</th>
 					<th>Bill amt</th>
 					<th>CGST</th>
 					<th>SGST</th>
@@ -239,7 +241,7 @@
 <script type="text/javascript">
 <?php
 if ($status == 'all' && $sub_tab == 'product') {
-    $num_cols = 17;
+    $num_cols = 19;
 } elseif ($status == 'cancelled') {
     $num_cols = 11;
     if ($staff_access !== 7) {
@@ -307,7 +309,9 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 { "data": "order_date" },
                 { "data": "party_name" },
                 { "data": "product_name" },
-                { "data": "model_rate" },
+                { "data": "model_no" },
+                { "data": "qty" },
+                { "data": "rate" },
                 { "data": "bill_amt" },
                 { "data": "cgst" },
                 { "data": "sgst" },
@@ -392,7 +396,7 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             'columnDefs': [
                 <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                 {
-                    "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                    "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
                     "className": "text-center",
                 }
                 <?php } elseif ($status == 'cancelled') { ?>

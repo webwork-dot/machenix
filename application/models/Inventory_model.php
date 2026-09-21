@@ -17271,12 +17271,18 @@ class Inventory_model extends CI_Model
 				// 6. Product Name
 				$product_html = '<span class="fw-semibold text-dark">' . htmlspecialchars($item['product_name'] ?? '-') . '</span>';
 
-				// 7. Model No., Rate
+				// 7. Model No.
 				$item_code = !empty($item['item_code']) ? htmlspecialchars($item['item_code']) : '-';
-				$unit_rate = number_format((float)($item['amount'] ?? 0), 2);
-				$model_rate_html = '<span>' . $item_code . '</span><br><small class="text-muted fw-bold">₹' . $unit_rate . '</small>';
+				$model_no_html = '<span>' . $item_code . '</span>';
 
-				// 8. Bill amt
+				// 8. Qty
+				$qty_html = (string)(int)round($net_qty);
+
+				// 9. Rate
+				$unit_rate = number_format((float)($item['amount'] ?? 0), 2);
+				$rate_html = '<span class="fw-bold">₹' . $unit_rate . '</span>';
+
+				// 10. Bill amt
 				$bill_total = (float)($item['bill_total'] ?? 0);
 				$bill_amt_unit = (float)($item['bill_amount'] ?? 0);
 				$bill_amt_html = '₹' . number_format($bill_total, 2);
@@ -17284,7 +17290,7 @@ class Inventory_model extends CI_Model
 					$bill_amt_html .= '<br><small class="text-muted">@ ₹' . number_format($bill_amt_unit, 2) . '</small>';
 				}
 
-				// 9. CGST, 10. SGST, 11. IGST
+				// 11. CGST, 12. SGST, 13. IGST
 				$gst_type = strtolower($item['gst_type'] ?? '');
 				$gst_pct = (float)($item['gst'] ?? 0);
 				$gst_amount = (float)($item['gst_amount'] ?? 0);
@@ -17302,11 +17308,11 @@ class Inventory_model extends CI_Model
 					$igst_html = '<span class="text-secondary">-</span>';
 				}
 
-				// 12. Total Bill Amt
+				// 14. Total Bill Amt
 				$total_bill_gst = (float)($item['total_bill_gst_amount'] ?? 0);
 				$total_bill_amt_html = '₹' . number_format($total_bill_gst, 2);
 
-				// 13. Cash Amt (Black Amt)
+				// 15. Cash Amt (Black Amt)
 				$black_total = (float)($item['black_total'] ?? 0);
 				$black_amt_unit = (float)($item['black_amount'] ?? 0);
 				$cash_amt_html = '₹' . number_format($black_total, 2);
@@ -17314,11 +17320,11 @@ class Inventory_model extends CI_Model
 					$cash_amt_html .= '<br><small class="text-muted">@ ₹' . number_format($black_amt_unit, 2) . '</small>';
 				}
 
-				// 14. Total Amt (Total Final Amt)
+				// 16. Total Amt (Total Final Amt)
 				$final_total = (float)($item['final_total'] ?? 0);
 				$total_amt_html = '<strong class="text-success">₹' . number_format($final_total, 2) . '</strong>';
 
-				// 15. Comm Amt
+				// 17. Comm Amt
 				$comm_amt = (float)($item['commission_amount'] ?? 0);
 				if ($comm_amt > 0) {
 					$comm_amt_html = '<strong class="text-dark">₹' . number_format($comm_amt, 2) . '</strong>';
@@ -17330,7 +17336,7 @@ class Inventory_model extends CI_Model
 					$comm_amt_html = '<span class="text-secondary">₹0.00</span>';
 				}
 
-				// 16. Comm Name
+				// 18. Comm Name
 				$comm_slab_name = !empty($item['slab_name']) ? htmlspecialchars($item['slab_name']) : '';
 				$cust_range = !empty($item['customer_range']) ? htmlspecialchars($item['customer_range']) : '';
 				if (!empty($comm_slab_name) && !empty($cust_range)) {
@@ -17346,7 +17352,7 @@ class Inventory_model extends CI_Model
 					$comm_name_html .= '<br><small class="text-muted">Rate: ' . number_format((float)$item['product_comm'], 1) . '%</small>';
 				}
 
-				// 17. Profit
+				// 19. Profit
 				$actual_cost = (float)($item['actual_cost_with_exp'] ?? 0);
 				$sale_price = (float)($item['amount'] ?? 0);
 				$profit_pct = ($actual_cost > 0 && $sale_price >= $actual_cost) ? ($sale_price / $actual_cost) * 100 : 0;
@@ -17375,7 +17381,9 @@ class Inventory_model extends CI_Model
 					"order_date"     => $order_date_html,
 					"party_name"     => $party_html,
 					"product_name"   => $product_html,
-					"model_rate"     => $model_rate_html,
+					"model_no"       => $model_no_html,
+					"qty"            => $qty_html,
+					"rate"           => $rate_html,
 					"bill_amt"       => $bill_amt_html,
 					"cgst"           => $cgst_html,
 					"sgst"           => $sgst_html,
