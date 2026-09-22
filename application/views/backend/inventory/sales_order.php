@@ -187,15 +187,19 @@
 					<th>Qty</th>
 					<th>Rate</th>
 					<th>Bill amt</th>
+					<th>Total Taxable Amt</th>
 					<th>CGST</th>
 					<th>SGST</th>
 					<th>IGST</th>
 					<th>Total Bill Amt</th>
 					<th>Cash Amt</th>
+					<th>Total Cash Amt</th>
 					<th>Total Amt</th>
 					<th>Comm Amt</th>
 					<th>Comm Name</th>
 					<th>Profit</th>
+					<th>Act Cst With Expense/Pc</th>
+					<th>Total Cst With Expense</th>
                   <?php } elseif ($status == 'cancelled') { ?>
 					<th>#</th>
 					<th>Date</th>
@@ -241,7 +245,7 @@
 <script type="text/javascript">
 <?php
 if ($status == 'all' && $sub_tab == 'product') {
-    $num_cols = 19;
+    $num_cols = 23;
 } elseif ($status == 'cancelled') {
     $num_cols = 11;
     if ($staff_access !== 7) {
@@ -313,15 +317,19 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 { "data": "qty" },
                 { "data": "rate" },
                 { "data": "bill_amt" },
+                { "data": "total_taxable_amt" },
                 { "data": "cgst" },
                 { "data": "sgst" },
                 { "data": "igst" },
                 { "data": "total_bill_amt" },
                 { "data": "cash_amt" },
+                { "data": "total_cash_amt" },
                 { "data": "total_amt" },
                 { "data": "comm_amt" },
                 { "data": "comm_name" },
-                { "data": "profit" }
+                { "data": "profit" },
+                { "data": "act_cost_with_exp" },
+                { "data": "total_cost_with_exp" }
                 <?php } elseif ($status == 'cancelled') { ?>
                 { "data": "sr_no" },
                 { "data": "date" },
@@ -396,7 +404,7 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             'columnDefs': [
                 <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                 {
-                    "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+                    "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
                     "className": "text-center",
                 }
                 <?php } elseif ($status == 'cancelled') { ?>

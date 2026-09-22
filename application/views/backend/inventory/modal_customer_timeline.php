@@ -5,11 +5,18 @@ if (!is_array($customer)) {
     $customer = [];
 }
 
-$customer_history = $this->common_model->getResultById('customer_log', '*', ['customer_id' => $customer_id]);
+$history_limit = 50;
+$customer_history = $this->db->where('customer_id', $customer_id)
+    ->order_by('id', 'DESC')
+    ->limit($history_limit)
+    ->get('customer_log')
+    ->result_array();
 if (!is_array($customer_history)) {
     $customer_history = [];
 }
-$customer_history = array_reverse($customer_history);
+
+$total_history = (int) $this->db->where('customer_id', $customer_id)->count_all_results('customer_log');
+$has_more = $total_history > count($customer_history);
 
 $is_lead = (($customer['type'] ?? '') === 'leads');
 $title = $customer['company_name'] ?? $customer['gst_name'] ?? $customer['owner_name'] ?? ($is_lead ? 'Lead' : 'Customer');
@@ -41,6 +48,36 @@ $field_labels = [
     'status_label' => 'Status Label',
     'is_distributor' => 'Distributor',
     'type' => 'Type',
+    'refrence_no' => 'Reference No',
+    'date' => 'Order Date',
+    'customer_name' => 'Customer',
+    'warehouse_name' => 'Warehouse',
+    'remark' => 'Remark',
+    'narration' => 'Narration',
+    'gst_type' => 'GST Type',
+    'basic_value' => 'Basic Value',
+    'net_sales_value_1' => 'Net Sales Value 1',
+    'total_black_amt' => 'Total Black Amt',
+    'central_gst' => 'CGST',
+    'state_gst' => 'SGST',
+    'igst' => 'IGST',
+    'gst_total' => 'GST Total',
+    'net_sales_value_2' => 'Net Sales Value 2',
+    'round_of' => 'Round Off',
+    'grand_total' => 'Grand Total',
+    'other_charges_name' => 'Other Charges',
+    'other_charges_amount' => 'Other Charges Amt',
+    'shipping_address' => 'Shipping Address',
+    'billing_address' => 'Billing Address',
+    'shipping_state_name' => 'Shipping State',
+    'shipping_city_name' => 'Shipping City',
+    'billing_state_name' => 'Billing State',
+    'billing_city_name' => 'Billing City',
+    'qty' => 'Qty',
+    'amount' => 'Rate',
+    'bill_amount' => 'Bill Amount',
+    'final_total' => 'Final Total',
+    'black_amount' => 'Black Amount',
 ];
 
 $action_meta = [
@@ -54,6 +91,11 @@ $action_meta = [
     'stalking' => ['class' => 'cth-update', 'icon' => 'fa-phone'],
     'lost' => ['class' => 'cth-delete', 'icon' => 'fa-times'],
     'delete' => ['class' => 'cth-delete', 'icon' => 'fa-trash'],
+    'sales_add' => ['class' => 'cth-add', 'icon' => 'fa-shopping-cart'],
+    'sales_edit' => ['class' => 'cth-update', 'icon' => 'fa-pencil'],
+    'sales_approve' => ['class' => 'cth-add', 'icon' => 'fa-check'],
+    'sales_delete' => ['class' => 'cth-delete', 'icon' => 'fa-trash'],
+    'sales_cancel' => ['class' => 'cth-delete', 'icon' => 'fa-ban'],
 ];
 
 $display = function ($value) {
@@ -181,6 +223,7 @@ $display = function ($value) {
   .cth-new { color: #059669; font-weight: 700; }
   .cth-empty { text-align: center; padding: 28px 12px; color: #94a3b8; }
   .cth-empty i { font-size: 28px; opacity: .45; margin-bottom: 8px; display: block; }
+  .cth-load-more { text-align: center; padding: 10px 0 4px; color: #94a3b8; font-size: 12px; display: none; }
 </style>
 
 <div class="cth-wrap">
@@ -212,99 +255,80 @@ $display = function ($value) {
       <div>No history found for this <?php echo $is_lead ? 'lead' : 'customer'; ?>.</div>
     </div>
   <?php else: ?>
-    <div class="cth-scroll">
-      <div class="cth-timeline">
-        <?php foreach ($customer_history as $history):
-          $json = [];
-          $label = [];
-          if (!empty($history['json'])) {
-            $decoded = json_decode($history['json'], true);
-            $json = is_array($decoded) ? $decoded : [];
-          }
-          if (!empty($history['label'])) {
-            $decoded_label = json_decode($history['label'], true);
-            $label = is_array($decoded_label) ? $decoded_label : [];
-          }
-
-          $action = strtolower($history['action'] ?? '');
-          $meta = $action_meta[$action] ?? ['class' => '', 'icon' => 'fa-circle'];
-          $badge_text = !empty($label['message']) ? $label['message'] : ucfirst($action ?: 'Event');
-
-          if ($action == 'reassign' || $action == 'update') {
-            $by_label = 'Updated by';
-          } elseif ($action == 'assign') {
-            $by_label = 'Assigned to';
-          } elseif ($action == 'move') {
-            $by_label = 'Moved by';
-          } else {
-            $by_label = 'Added by';
-          }
-
-          if ($action == 'assign') {
-            $actor = $json['added_by_name'] ?? $history['added_by_name'];
-          } else {
-            $actor = $history['added_by_name'] ?? 'System';
-          }
-
-          $diffs = [];
-          foreach ($json as $key => $val) {
-            if (!is_array($val) || !array_key_exists('old', $val) || !array_key_exists('new', $val)) {
-              continue;
-            }
-            if (substr($key, -3) === '_id') {
-              continue;
-            }
-            $diffs[$key] = $val;
-          }
-          if (isset($json['old_added_by_name']) || isset($json['added_by_name'])) {
-            if (strval($json['old_added_by_name'] ?? '') !== strval($json['added_by_name'] ?? '')) {
-              $diffs['added_by_name'] = [
-                'old' => $json['old_added_by_name'] ?? '',
-                'new' => $json['added_by_name'] ?? '',
-              ];
-            }
-          }
+    <div class="cth-scroll" id="cth_history_scroll"
+         data-customer-id="<?php echo (int)$customer_id; ?>"
+         data-offset="<?php echo count($customer_history); ?>"
+         data-limit="<?php echo (int)$history_limit; ?>"
+         data-has-more="<?php echo $has_more ? '1' : '0'; ?>"
+         data-loading="0">
+      <div class="cth-timeline" id="cth_history_timeline">
+        <?php
+          $this->load->view('backend/inventory/partial_customer_history_items', [
+            'customer_history' => $customer_history,
+            'field_labels' => $field_labels,
+            'action_meta' => $action_meta,
+            'display' => $display,
+          ]);
         ?>
-          <div class="cth-item <?php echo $meta['class']; ?>">
-            <span class="cth-dot"></span>
-            <div class="cth-card">
-              <div class="cth-head">
-                <span class="cth-badge"><i class="fa <?php echo $meta['icon']; ?>"></i> <?php echo htmlspecialchars($badge_text); ?></span>
-                <span class="cth-time"><?php echo !empty($history['added_date']) ? formatHistoryTime($history['added_date']) : ''; ?></span>
-              </div>
-              <div class="cth-user"><?php echo $by_label; ?> <strong><?php echo htmlspecialchars($actor ?: 'System'); ?></strong></div>
-
-              <?php if (!empty($json['status_date']) && strtotime($json['status_date']) > 0): ?>
-                <div class="cth-note">Follow up: <strong><?php echo date('d M Y, h:i A', strtotime($json['status_date'])); ?></strong></div>
-              <?php endif; ?>
-
-              <?php if (!empty($history['message']) && $history['message'] !== $badge_text): ?>
-                <div class="cth-note"><?php echo htmlspecialchars($history['message']); ?></div>
-              <?php endif; ?>
-
-              <?php if (!empty($json['remark'])): ?>
-                <div class="cth-remark"><strong>Remark:</strong> <?php echo nl2br(htmlspecialchars($json['remark'])); ?></div>
-              <?php endif; ?>
-
-              <?php if (!empty($diffs)): ?>
-                <div class="cth-changes">
-                  <?php foreach ($diffs as $field => $change):
-                    $label_text = $field_labels[$field] ?? ucwords(str_replace('_', ' ', $field));
-                  ?>
-                    <div class="cth-row">
-                      <span class="cth-field"><?php echo htmlspecialchars($label_text); ?></span>
-                      <span class="cth-vals">
-                        <span class="cth-old"><?php echo $display($change['old']); ?></span>
-                        <span class="cth-new"><?php echo $display($change['new']); ?></span>
-                      </span>
-                    </div>
-                  <?php endforeach; ?>
-                </div>
-              <?php endif; ?>
-            </div>
-          </div>
-        <?php endforeach; ?>
+      </div>
+      <div class="cth-load-more" id="cth_history_loader">
+        <span class="spinner-border spinner-border-sm text-primary" role="status"></span> Loading more...
       </div>
     </div>
   <?php endif; ?>
 </div>
+
+<script>
+(function () {
+  var $scroll = $('#cth_history_scroll');
+  if (!$scroll.length) return;
+
+  var loading = false;
+  var ajaxUrl = '<?php echo base_url("inventory/get_customer_history_ajax"); ?>';
+
+  function loadMoreHistory() {
+    if (loading) return;
+    if ($scroll.attr('data-has-more') !== '1') return;
+
+    loading = true;
+    $scroll.attr('data-loading', '1');
+    $('#cth_history_loader').show();
+
+    var customerId = $scroll.data('customer-id');
+    var offset = parseInt($scroll.attr('data-offset'), 10) || 0;
+    var limit = parseInt($scroll.attr('data-limit'), 10) || 50;
+
+    $.ajax({
+      url: ajaxUrl,
+      type: 'POST',
+      dataType: 'json',
+      data: {
+        customer_id: customerId,
+        offset: offset,
+        limit: limit,
+        view: 'timeline'
+      },
+      success: function (res) {
+        if (res && res.html) {
+          $('#cth_history_timeline').append(res.html);
+        }
+        var nextOffset = (res && typeof res.next_offset !== 'undefined') ? res.next_offset : (offset + limit);
+        $scroll.attr('data-offset', nextOffset);
+        $scroll.attr('data-has-more', (res && res.has_more) ? '1' : '0');
+      },
+      complete: function () {
+        loading = false;
+        $scroll.attr('data-loading', '0');
+        $('#cth_history_loader').hide();
+      }
+    });
+  }
+
+  $scroll.off('scroll.cthHistory').on('scroll.cthHistory', function () {
+    var el = this;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+      loadMoreHistory();
+    }
+  });
+})();
+</script>

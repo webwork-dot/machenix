@@ -12500,6 +12500,10 @@ class Inventory_model extends CI_Model
 					$keyword_filter .= " AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "'";
 				}
 		}
+
+		if (!empty($data_type)) {
+			$keyword_filter .= " AND type='" . clean_and_escape($data_type) . "'";
+		}
 		
 		$status = '';
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""):
@@ -12517,8 +12521,10 @@ class Inventory_model extends CI_Model
 				$keyword_filter .= " AND status='lost' AND type='leads'";
 			} elseif($status == 'moved') {
 				$keyword_filter .= " AND is_move = '1' AND type='customer'";
+			} elseif($status == 'all') {
+				// keep type filter from above; no extra status restriction
 			} else {
-				$keyword_filter .= " AND (status='' OR status IS NULL) AND type='$data_type'";
+				$keyword_filter .= " AND (status='' OR status IS NULL)";
 			}
 		endif;
 
@@ -12719,6 +12725,157 @@ class Inventory_model extends CI_Model
 		$data['other_charges'] = $this->db->get('sales_order_charges')->result_array();
 		
 		return $data;
+	}
+
+	/**
+	 * Insert a customer_log entry for sales order lifecycle actions.
+	 */
+	public function insert_customer_sales_log($customer_id, $action, $json_data = [], $order_no = '')
+	{
+		$customer_id = (int) $customer_id;
+		if ($customer_id <= 0) {
+			return false;
+		}
+
+		$user_id   = (int) $this->session->userdata('super_user_id');
+		$user_name = (string) $this->session->userdata('super_name');
+		$order_label = $order_no !== '' ? ' #' . $order_no : '';
+
+		$label_map = [
+			'sales_add'     => ['badge' => 'success', 'message' => 'Sales Order Added' . $order_label],
+			'sales_edit'    => ['badge' => 'warning', 'message' => 'Sales Order Updated' . $order_label],
+			'sales_approve' => ['badge' => 'primary', 'message' => 'Sales Order Approved' . $order_label],
+			'sales_delete'  => ['badge' => 'danger',  'message' => 'Sales Order Deleted' . $order_label],
+			'sales_cancel'  => ['badge' => 'danger',  'message' => 'Sales Order Cancelled' . $order_label],
+		];
+
+		$message_map = [
+			'sales_add'     => "Sales Order{$order_label} Added By {$user_name}",
+			'sales_edit'    => "Sales Order{$order_label} Updated By {$user_name}",
+			'sales_approve' => "Sales Order{$order_label} Approved By {$user_name}",
+			'sales_delete'  => "Sales Order{$order_label} Deleted By {$user_name}",
+			'sales_cancel'  => "Sales Order{$order_label} Cancelled By {$user_name}",
+		];
+
+		$label = $label_map[$action] ?? ['badge' => 'info', 'message' => 'Sales Order' . $order_label];
+		$message = $message_map[$action] ?? ("Sales Order{$order_label} By {$user_name}");
+
+		$logs = [
+			'customer_id'   => $customer_id,
+			'action'        => $action,
+			'label'         => json_encode($label),
+			'message'       => $message,
+			'json'          => json_encode($json_data),
+			'added_by'      => $user_id,
+			'added_by_name' => $user_name,
+			'added_date'    => date('Y-m-d H:i:s'),
+		];
+
+		return $this->db->insert('customer_log', $logs);
+	}
+
+	/**
+	 * Compare sales order header fields and return old/new diffs for customer history.
+	 * Only fields present in $new are compared (edit payload omits unchanged columns like company).
+	 */
+	public function build_sales_order_field_changes($old = [], $new = [])
+	{
+		$compare_keys = [
+			'refrence_no', 'date', 'customer_name', 'warehouse_name',
+			'remark', 'narration', 'gst_type', 'basic_value', 'net_sales_value_1',
+			'total_black_amt', 'central_gst', 'state_gst', 'igst', 'gst_total',
+			'net_sales_value_2', 'round_of', 'grand_total', 'other_charges_name',
+			'other_charges_amount', 'shipping_state_name', 'shipping_city_name',
+			'shipping_pincode', 'shipping_gst', 'shipping_gst_no', 'shipping_address',
+			'billing_state_name', 'billing_city_name', 'billing_pincode',
+			'billing_gst', 'billing_gst_no', 'billing_address',
+		];
+
+		$changed = [];
+		foreach ($compare_keys as $key) {
+			if (!array_key_exists($key, (array) $new)) {
+				continue;
+			}
+			$old_val = isset($old[$key]) ? (string) $old[$key] : '';
+			$new_val = (string) $new[$key];
+			if ($old_val !== $new_val) {
+				$changed[$key] = [
+					'old' => $old[$key] ?? null,
+					'new' => $new[$key],
+				];
+			}
+		}
+		return $changed;
+	}
+
+	/**
+	 * Summarize product line changes between old and new sales order products.
+	 */
+	public function build_sales_product_changes($old_products = [], $new_products = [])
+	{
+		$old_map = [];
+		foreach ((array) $old_products as $p) {
+			$pid = (string) ($p['product_id'] ?? '');
+			if ($pid === '') {
+				continue;
+			}
+			$old_map[$pid] = $p;
+		}
+
+		$new_map = [];
+		foreach ((array) $new_products as $p) {
+			$pid = (string) ($p['product_id'] ?? '');
+			if ($pid === '') {
+				continue;
+			}
+			$new_map[$pid] = $p;
+		}
+
+		$changes = [];
+		$all_ids = array_unique(array_merge(array_keys($old_map), array_keys($new_map)));
+		foreach ($all_ids as $pid) {
+			$old = $old_map[$pid] ?? null;
+			$new = $new_map[$pid] ?? null;
+			$name = ($new['product_name'] ?? null) ?: ($old['product_name'] ?? ('Product #' . $pid));
+
+			if ($old && !$new) {
+				$changes[] = [
+					'product_name' => $name,
+					'change'       => 'removed',
+					'qty'          => ['old' => $old['qty'] ?? 0, 'new' => 0],
+					'amount'       => ['old' => $old['amount'] ?? 0, 'new' => 0],
+					'final_total'  => ['old' => $old['final_total'] ?? 0, 'new' => 0],
+				];
+				continue;
+			}
+			if (!$old && $new) {
+				$changes[] = [
+					'product_name' => $name,
+					'change'       => 'added',
+					'qty'          => ['old' => 0, 'new' => $new['qty'] ?? 0],
+					'amount'       => ['old' => 0, 'new' => $new['amount'] ?? 0],
+					'final_total'  => ['old' => 0, 'new' => $new['final_total'] ?? 0],
+				];
+				continue;
+			}
+
+			$fields = [];
+			foreach (['qty', 'amount', 'bill_amount', 'final_total', 'black_amount'] as $field) {
+				$ov = (string) ($old[$field] ?? '');
+				$nv = (string) ($new[$field] ?? '');
+				if ($ov !== $nv) {
+					$fields[$field] = ['old' => $old[$field] ?? null, 'new' => $new[$field] ?? null];
+				}
+			}
+			if (!empty($fields)) {
+				$changes[] = [
+					'product_name' => $name,
+					'change'       => 'updated',
+					'fields'       => $fields,
+				];
+			}
+		}
+		return $changes;
 	}
 
 	public function approve_sales_order($id)
@@ -13076,6 +13233,17 @@ class Inventory_model extends CI_Model
 			);
 			$this->db->insert('sys_logs', $log_data);
 
+			$approve_order_no = $sales_record['order_no'] ?? '';
+			$customer_log_json = [
+				'order_id'      => $order_id,
+				'order_no'      => $approve_order_no,
+				'grand_total'   => $data['grand_total'] ?? ($sales_record['grand_total'] ?? 0),
+				'sale_order'    => array_merge((array) $sales_record, $data),
+				'products'      => $log_json['new_sale_order']['products'] ?? [],
+				'other_charges' => $log_json['new_sale_order']['other_charges'] ?? [],
+			];
+			$this->insert_customer_sales_log($customer_id, 'sales_approve', $customer_log_json, $approve_order_no);
+
 			$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 
 			if ($this->db->trans_status() === FALSE) {
@@ -13368,6 +13536,28 @@ class Inventory_model extends CI_Model
 			);
 			$this->db->insert('sys_logs', $log_data);
 
+			$edit_order_no = $old_sales_record['order_no'] ?? '';
+			$field_changes = $this->build_sales_order_field_changes($old_sales_record, $data);
+			$product_changes = $this->build_sales_product_changes(
+				$old_sales_products,
+				$log_json['new_sale_order']['products'] ?? []
+			);
+			$customer_log_json = array_merge($field_changes, [
+				'order_id'         => $order_id,
+				'order_no'         => $edit_order_no,
+				'grand_total'      => $data['grand_total'] ?? ($old_sales_record['grand_total'] ?? 0),
+				'sale_order'       => array_merge((array) $old_sales_record, $data),
+				'products'         => $log_json['new_sale_order']['products'] ?? [],
+				'other_charges'    => $log_json['new_sale_order']['other_charges'] ?? [],
+				'product_changes'  => $product_changes,
+			]);
+			$this->insert_customer_sales_log(
+				(int) ($data['customer_id'] ?? ($old_sales_record['customer_id'] ?? 0)),
+				'sales_edit',
+				$customer_log_json,
+				$edit_order_no
+			);
+
 			$this->session->set_flashdata('flash_message', get_phrase('sales_order_updated_successfully'));
 
 			if ($this->db->trans_status() === FALSE) {
@@ -13520,6 +13710,10 @@ class Inventory_model extends CI_Model
 			$this->db->where('id', $id)->update('sales_order', $data);
 			$order_id = $id;
 
+			$old_sales_products = $this->common_model->getResultById('sales_order_product', '*', ['order_id' => $id]);
+			$new_sales_products = [];
+			$new_sales_charges = [];
+
 			// Delete existing products for this order
 			$this->db->where('order_id', $order_id)->delete('sales_order_product');
 			// Delete existing batches for this order
@@ -13602,6 +13796,7 @@ class Inventory_model extends CI_Model
 
 					$this->db->insert('sales_order_product', $data_product);
 					$order_product_id = $this->db->insert_id();
+					$new_sales_products[] = $data_product;
 
 					$row_index = $x_value_arr[$i];
 					$is_replace = ($this->input->post('replace_product_chk_' . $row_index) == 1) ? 1 : 0;
@@ -13749,9 +13944,24 @@ class Inventory_model extends CI_Model
 							'total_amt'  => (float) ($charge_total_arr[$i] ?? 0),
 						);
 						$this->db->insert('sales_order_charges', $data_charge);
+						$new_sales_charges[] = $data_charge;
 					}
 				}
 			}
+
+			$edit_order_no = $sales_record['order_no'] ?? '';
+			$field_changes = $this->build_sales_order_field_changes($sales_record, $data);
+			$product_changes = $this->build_sales_product_changes($old_sales_products, $new_sales_products);
+			$customer_log_json = array_merge($field_changes, [
+				'order_id'        => $order_id,
+				'order_no'        => $edit_order_no,
+				'grand_total'     => $data['grand_total'] ?? ($sales_record['grand_total'] ?? 0),
+				'sale_order'      => array_merge((array) $sales_record, $data),
+				'products'        => $new_sales_products,
+				'other_charges'   => $new_sales_charges,
+				'product_changes' => $product_changes,
+			]);
+			$this->insert_customer_sales_log((int) $customer_id, 'sales_edit', $customer_log_json, $edit_order_no);
 
 			$this->db->trans_commit();
 		} catch (Exception $e) {
@@ -14021,6 +14231,16 @@ class Inventory_model extends CI_Model
 						'added_by_type'  => $this->session->userdata('super_type')
 					);
 					$this->db->insert('sys_logs', $log_data);
+
+					$customer_log_json = [
+						'order_id'      => $order_id,
+						'order_no'      => $order_no,
+						'grand_total'   => $data['grand_total'] ?? 0,
+						'sale_order'    => $log_json['sale_order'] ?? $data,
+						'products'      => $log_json['products'] ?? [],
+						'other_charges' => $log_json['other_charges'] ?? [],
+					];
+					$this->insert_customer_sales_log((int) $customer_id, 'sales_add', $customer_log_json, $order_no);
 
 					$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 				} else {
@@ -14477,6 +14697,16 @@ class Inventory_model extends CI_Model
 						'added_by_type'  => $this->session->userdata('super_type')
 					);
 					$this->db->insert('sys_logs', $log_data);
+
+					$customer_log_json = [
+						'order_id'      => $order_id,
+						'order_no'      => $order_no,
+						'grand_total'   => $data['grand_total'] ?? 0,
+						'sale_order'    => $log_json['sale_order'] ?? $data,
+						'products'      => $log_json['products'] ?? [],
+						'other_charges' => $log_json['other_charges'] ?? [],
+					];
+					$this->insert_customer_sales_log((int) $customer_id, 'sales_add', $customer_log_json, $order_no);
 
 					$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
 				} else {
@@ -17251,9 +17481,6 @@ class Inventory_model extends CI_Model
 				$return_black_qty = (float)($item['return_black_qty'] ?? 0);
 				$net_qty = max(0, $batch_qty - $return_qty - $return_black_qty);
 				$batch_html = '<span class="badge bg-light-primary text-primary fw-bold">' . $batch_no_val . '</span>';
-				if ($net_qty > 0) {
-					$batch_html .= '<br><small class="text-muted">Qty: ' . number_format($net_qty, 2) . '</small>';
-				}
 
 				// 3. Order No
 				$order_no_html = '<a href="javascript:void(0)" onclick="' . $view_url . '" class="fw-bold text-primary">' . htmlspecialchars($item['order_no']) . '</a>';
@@ -17282,15 +17509,15 @@ class Inventory_model extends CI_Model
 				$unit_rate = number_format((float)($item['amount'] ?? 0), 2);
 				$rate_html = '<span class="fw-bold">₹' . $unit_rate . '</span>';
 
-				// 10. Bill amt
+				// 10. Bill amt (unit price for 1 qty)
 				$bill_total = (float)($item['bill_total'] ?? 0);
 				$bill_amt_unit = (float)($item['bill_amount'] ?? 0);
-				$bill_amt_html = '₹' . number_format($bill_total, 2);
-				if ($bill_amt_unit > 0) {
-					$bill_amt_html .= '<br><small class="text-muted">@ ₹' . number_format($bill_amt_unit, 2) . '</small>';
-				}
+				$bill_amt_html = '₹' . number_format($bill_amt_unit, 2);
 
-				// 11. CGST, 12. SGST, 13. IGST
+				// 11. Total Taxable Amt
+				$total_taxable_amt_html = '₹' . number_format($bill_total, 2);
+
+				// 12. CGST, 13. SGST, 14. IGST
 				$gst_type = strtolower($item['gst_type'] ?? '');
 				$gst_pct = (float)($item['gst'] ?? 0);
 				$gst_amount = (float)($item['gst_amount'] ?? 0);
@@ -17308,19 +17535,19 @@ class Inventory_model extends CI_Model
 					$igst_html = '<span class="text-secondary">-</span>';
 				}
 
-				// 14. Total Bill Amt
+				// 15. Total Bill Amt
 				$total_bill_gst = (float)($item['total_bill_gst_amount'] ?? 0);
 				$total_bill_amt_html = '₹' . number_format($total_bill_gst, 2);
 
-				// 15. Cash Amt (Black Amt)
+				// 15. Cash Amt (unit price for 1 qty)
 				$black_total = (float)($item['black_total'] ?? 0);
 				$black_amt_unit = (float)($item['black_amount'] ?? 0);
-				$cash_amt_html = '₹' . number_format($black_total, 2);
-				if ($black_amt_unit > 0) {
-					$cash_amt_html .= '<br><small class="text-muted">@ ₹' . number_format($black_amt_unit, 2) . '</small>';
-				}
+				$cash_amt_html = '₹' . number_format($black_amt_unit, 2);
 
-				// 16. Total Amt (Total Final Amt)
+				// 16. Total Cash Amt
+				$total_cash_amt_html = '₹' . number_format($black_total, 2);
+
+				// 17. Total Amt (Total Final Amt)
 				$final_total = (float)($item['final_total'] ?? 0);
 				$total_amt_html = '<strong class="text-success">₹' . number_format($final_total, 2) . '</strong>';
 
@@ -17374,26 +17601,45 @@ class Inventory_model extends CI_Model
 					$profit_html = '<span class="text-secondary">-</span>';
 				}
 
+				// 20. Act Cst With Expense/Pc
+				if ($actual_cost > 0) {
+					$act_cost_with_exp_html = '₹' . number_format($actual_cost, 2);
+				} else {
+					$act_cost_with_exp_html = '<span class="text-secondary">-</span>';
+				}
+
+				// 21. Total Cst With Expense (per pc * qty)
+				$total_cost_with_exp = $actual_cost * $net_qty;
+				if ($total_cost_with_exp > 0) {
+					$total_cost_with_exp_html = '₹' . number_format($total_cost_with_exp, 2);
+				} else {
+					$total_cost_with_exp_html = '<span class="text-secondary">-</span>';
+				}
+
 				$data[] = array(
-					"sr_no"          => $sr_no,
-					"batch_no"       => $batch_html,
-					"order_no"       => $order_no_html,
-					"order_date"     => $order_date_html,
-					"party_name"     => $party_html,
-					"product_name"   => $product_html,
-					"model_no"       => $model_no_html,
-					"qty"            => $qty_html,
-					"rate"           => $rate_html,
-					"bill_amt"       => $bill_amt_html,
-					"cgst"           => $cgst_html,
-					"sgst"           => $sgst_html,
-					"igst"           => $igst_html,
-					"total_bill_amt" => $total_bill_amt_html,
-					"cash_amt"       => $cash_amt_html,
-					"total_amt"      => $total_amt_html,
-					"comm_amt"       => $comm_amt_html,
-					"comm_name"      => $comm_name_html,
-					"profit"         => $profit_html,
+					"sr_no"              => $sr_no,
+					"batch_no"           => $batch_html,
+					"order_no"           => $order_no_html,
+					"order_date"         => $order_date_html,
+					"party_name"         => $party_html,
+					"product_name"       => $product_html,
+					"model_no"           => $model_no_html,
+					"qty"                => $qty_html,
+					"rate"               => $rate_html,
+					"bill_amt"           => $bill_amt_html,
+					"total_taxable_amt"  => $total_taxable_amt_html,
+					"cgst"               => $cgst_html,
+					"sgst"               => $sgst_html,
+					"igst"               => $igst_html,
+					"total_bill_amt"     => $total_bill_amt_html,
+					"cash_amt"           => $cash_amt_html,
+					"total_cash_amt"     => $total_cash_amt_html,
+					"total_amt"          => $total_amt_html,
+					"comm_amt"           => $comm_amt_html,
+					"comm_name"          => $comm_name_html,
+					"profit"             => $profit_html,
+					"act_cost_with_exp"  => $act_cost_with_exp_html,
+					"total_cost_with_exp"=> $total_cost_with_exp_html,
 				);
 			}
 		}
@@ -21471,6 +21717,22 @@ class Inventory_model extends CI_Model
 				'added_by_type'  => $this->session->userdata('super_type')
 			);
 			$this->db->insert('sys_logs', $log_data);
+
+			$sales_customer_id = (int) ($sales['customer_id'] ?? 0);
+			$sales_order_no = $sales['order_no'] ?? '';
+			$customer_log_json = [
+				'order_id'      => $id,
+				'order_no'      => $sales_order_no,
+				'grand_total'   => $sales['grand_total'] ?? 0,
+				'sale_order'    => $sales,
+				'reverted_data' => $reverted_data,
+			];
+			$this->insert_customer_sales_log(
+				$sales_customer_id,
+				$is_cancel ? 'sales_cancel' : 'sales_delete',
+				$customer_log_json,
+				$sales_order_no
+			);
 
 			if ($this->db->trans_status() === FALSE) {
 				$this->db->trans_rollback();
@@ -30147,72 +30409,212 @@ public function get_sales_return_reports()
 	{
 		$customer_id = (int)$this->input->post('customer_id');
 		if (empty($customer_id)) {
-			echo '';
+			$view = $this->input->post('view');
+			if ($view === 'timeline') {
+				echo json_encode(['html' => '', 'has_more' => false, 'next_offset' => 0]);
+			} else {
+				echo '';
+			}
 			exit;
 		}
+
+		$offset = max(0, (int)$this->input->post('offset'));
+		$limit  = (int)$this->input->post('limit');
+		if ($limit <= 0) {
+			$limit = 50;
+		}
+		$view = $this->input->post('view');
 
 		$customer_history = $this->db->where('customer_id', $customer_id)
 			->order_by('id', 'DESC')
-			->limit(50)
+			->limit($limit, $offset)
 			->get('customer_log')
 			->result_array();
 
-		if (empty($customer_history)) {
-			echo '<div class="text-center text-muted p-1"><small>No history records found.</small></div>';
+		$total_count = (int) $this->db->where('customer_id', $customer_id)->count_all_results('customer_log');
+		$next_offset = $offset + count($customer_history);
+		$has_more = $next_offset < $total_count;
+
+		if ($view === 'timeline') {
+			$html = '';
+			if (!empty($customer_history)) {
+				$html = $this->load->view('backend/inventory/partial_customer_history_items', [
+					'customer_history' => $customer_history,
+				], true);
+			}
+			echo json_encode([
+				'html' => $html,
+				'has_more' => $has_more,
+				'next_offset' => $next_offset,
+			]);
 			exit;
 		}
 
-		$output = '<style>
-		  .history-item:last-child{ margin-bottom: 0; }
-		  .history-card{
-			border: 1px solid #edf0f2;
-			border-radius: 6px;
-			box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-			overflow: hidden;
-			margin-bottom: 8px !important;
-		  }
-		  .history-card .card-body{ padding: 10px 12px; }
-		  .history-meta{ font-size: 11px; color: #6c757d; }
-		  .history-title{ font-weight: 600; color: #111827; font-size: 12px; margin: 2px 0 4px; }
-		  .history-pill{ font-size: 10px; padding: 3px 7px; border-radius: 999px; }
-		</style>';
+		if (empty($customer_history)) {
+			if ($offset > 0) {
+				echo '';
+			} else {
+				echo '<div class="text-center text-muted p-1"><small>No history records found.</small></div>';
+			}
+			exit;
+		}
+
+		$output = '';
+		if ($offset === 0) {
+			$output .= '<style>
+			  .history-item:last-child{ margin-bottom: 0; }
+			  .history-card{
+				border: 1px solid #edf0f2;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+				overflow: hidden;
+				margin-bottom: 8px !important;
+			  }
+			  .history-card .card-body{ padding: 10px 12px; }
+			  .history-meta{ font-size: 11px; color: #6c757d; }
+			  .history-title{ font-weight: 600; color: #111827; font-size: 12px; margin: 2px 0 4px; }
+			  .history-pill{ font-size: 10px; padding: 3px 7px; border-radius: 999px; }
+			  .history-diff{ font-size: 11px; color: #64748b; margin-top: 4px; }
+			  .history-diff .old{ color: #ef4444; text-decoration: line-through; margin-right: 4px; }
+			  .history-diff .new{ color: #059669; font-weight: 600; }
+			</style>';
+			$output .= '<div id="call_history_list" data-offset="' . $next_offset . '" data-has-more="' . ($has_more ? '1' : '0') . '" data-customer-id="' . $customer_id . '">';
+		}
 
 		foreach ($customer_history as $history) {
 			$json = [];
 			$label = [];
 			if ($history['json']) {
 				$json = json_decode($history['json'], true);
+				if (!is_array($json)) {
+					$json = [];
+				}
 			}
 			if ($history['label']) {
 				$label = json_decode($history['label'], true);
+				if (!is_array($label)) {
+					$label = [];
+				}
 			}
 
 			$badge = isset($label['badge']) ? $label['badge'] : 'primary';
 			$message = isset($label['message']) ? $label['message'] : '';
 			$time_formatted = function_exists('formatHistoryTime') ? formatHistoryTime($history['added_date']) : $history['added_date'];
+			$action = strtolower($history['action'] ?? '');
 
 			$output .= '<div class="history-item">';
 			$output .= '<div class="card history-card">';
 			$output .= '<div class="card-body">';
 			$output .= '<div class="d-flex justify-content-between align-items-center mb-1">';
-			$output .= '<span class="badge bg-' . $badge . ' history-pill">' . htmlspecialchars($message) . '</span>';
+			$output .= '<span class="badge bg-' . htmlspecialchars($badge) . ' history-pill">' . htmlspecialchars($message) . '</span>';
 			$output .= '<small class="history-meta">' . $time_formatted . '</small>';
 			$output .= '</div>';
 
-			if ($history['action'] == "create" || $history['action'] == "follow" || $history['action'] == "lost") {
+			if ($action == "create" || $action == "follow" || $action == "lost" || $action == "sales_add") {
 				$output .= '<div class="history-title">Added By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
-			} elseif ($history['action'] == "reassign" || $history['action'] == "update") {
+			} elseif ($action == "reassign" || $action == "update" || $action == "sales_edit") {
 				$output .= '<div class="history-title">Updated By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
-			} elseif ($history['action'] == "assign") {
+			} elseif ($action == "assign") {
 				$assigned_name = isset($json['added_by_name']) ? $json['added_by_name'] : '';
 				$output .= '<div class="history-title">Assigned To: <span class="text-primary">' . htmlspecialchars($assigned_name) . '</span></div>';
-			} elseif ($history['action'] == "move") {
+			} elseif ($action == "move") {
 				$output .= '<div class="history-title">Moved By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			} elseif ($action == "sales_approve") {
+				$output .= '<div class="history-title">Approved By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			} elseif ($action == "sales_delete" || $action == "delete") {
+				$output .= '<div class="history-title">Deleted By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			} elseif ($action == "sales_cancel") {
+				$output .= '<div class="history-title">Cancelled By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			} else {
+				$output .= '<div class="history-title">By: <span class="text-primary">' . htmlspecialchars($history['added_by_name']) . '</span></div>';
+			}
+
+			if (strpos($action, 'sales_') === 0) {
+				$order_no = $json['order_no'] ?? '';
+				$grand_total = $json['grand_total'] ?? '';
+				if ($order_no !== '' || $grand_total !== '') {
+					$output .= '<div class="history-meta">';
+					if ($order_no !== '') {
+						$output .= 'Order: <strong>' . htmlspecialchars($order_no) . '</strong>';
+					}
+					if ($grand_total !== '' && $grand_total !== null) {
+						$output .= ($order_no !== '' ? ' · ' : '') . 'Total: <strong>' . htmlspecialchars((string)$grand_total) . '</strong>';
+					}
+					$output .= '</div>';
+				}
+
+				if ($action === 'sales_edit') {
+					$diff_count = 0;
+					foreach ($json as $key => $val) {
+						if (in_array($key, ['sale_order', 'products', 'other_charges', 'product_changes', 'reverted_data', 'order_id', 'order_no', 'grand_total'], true)) {
+							continue;
+						}
+						if (!is_array($val) || !array_key_exists('old', $val) || !array_key_exists('new', $val)) {
+							continue;
+						}
+						if (substr($key, -3) === '_id') {
+							continue;
+						}
+						$field = ucwords(str_replace('_', ' ', $key));
+						$output .= '<div class="history-diff"><strong>' . htmlspecialchars($field) . ':</strong> ';
+						$output .= '<span class="old">' . htmlspecialchars((string)($val['old'] ?? '')) . '</span>';
+						$output .= '<span class="new">' . htmlspecialchars((string)($val['new'] ?? '')) . '</span></div>';
+						$diff_count++;
+						if ($diff_count >= 5) {
+							break;
+						}
+					}
+					if (!empty($json['product_changes']) && is_array($json['product_changes'])) {
+						$output .= '<div class="history-meta mt-1">' . count($json['product_changes']) . ' product change(s)</div>';
+					}
+				}
 			}
 
 			$output .= '</div>';
 			$output .= '</div>';
 			$output .= '</div>';
+		}
+
+		if ($offset === 0) {
+			$output .= '</div>';
+			if ($has_more) {
+				$output .= '<div id="call_history_loader" class="text-center p-1" style="display:none;"><span class="spinner-border spinner-border-sm text-primary" role="status"></span></div>';
+				$output .= '<script>
+				(function(){
+				  var $wrap = $("#customer_history_container");
+				  var $list = $("#call_history_list");
+				  if(!$wrap.length || !$list.length) return;
+				  var loading = false;
+				  $wrap.off("scroll.callHist").on("scroll.callHist", function(){
+				    var el = this;
+				    if(loading) return;
+				    if($list.attr("data-has-more") !== "1") return;
+				    if(el.scrollTop + el.clientHeight < el.scrollHeight - 30) return;
+				    loading = true;
+				    $("#call_history_loader").show();
+				    $.ajax({
+				      url: "' . base_url('inventory/get_customer_history_ajax') . '",
+				      type: "POST",
+				      data: {
+				        customer_id: $list.data("customer-id"),
+				        offset: parseInt($list.attr("data-offset"), 10) || 0,
+				        limit: 50
+				      },
+				      success: function(html){
+				        if(html){ $list.append(html); }
+				        var next = (parseInt($list.attr("data-offset"), 10) || 0) + 50;
+				        $list.attr("data-offset", next);
+				        if(!html || $.trim(html) === ""){ $list.attr("data-has-more", "0"); }
+				      },
+				      complete: function(){
+				        loading = false;
+				        $("#call_history_loader").hide();
+				      }
+				    });
+				  });
+				})();
+				</script>';
+			}
 		}
 
 		echo $output;
