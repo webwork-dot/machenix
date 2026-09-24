@@ -629,7 +629,7 @@
 <script>
 function get_per_total(amount, percent) {
   var final_amount = (amount * percent) / 100;
-  return parseFloat(final_amount.toFixed(2));
+  return parseFloat(cleanNum(final_amount));
 }
 
 function subtotal_cal() {
@@ -666,18 +666,18 @@ function subtotal_cal() {
     final_total_sum += Number(element.value) || 0;
   });
 
-  $("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
-  $("#net_sales_value_1").val(total_bill_amt_in_gst.toFixed(2));
-  $("#total_black_amount_summary").val(total_black_amount.toFixed(2));
-  $("#net_sales_value_2").val(final_total_sum.toFixed(2));
+  $("#basic_value").val(cleanNum(total_bill_amt_ex_gst));
+  $("#net_sales_value_1").val(cleanNum(total_bill_amt_in_gst));
+  $("#total_black_amount_summary").val(cleanNum(total_black_amount));
+  $("#net_sales_value_2").val(cleanNum(final_total_sum));
 
   if (gst_type === 'IGST') {
-    $('#igst').val(total_gst_amount.toFixed(2));
+    $('#igst').val(cleanNum(total_gst_amount));
     $('#central_gst').val('0.00');
     $('#state_gst').val('0.00');
   } else if (gst_type == 'Central GST / State GST') {
-    $('#central_gst').val((total_gst_amount / 2).toFixed(2));
-    $('#state_gst').val((total_gst_amount / 2).toFixed(2));
+    $('#central_gst').val(cleanNum((total_gst_amount / 2)));
+    $('#state_gst').val(cleanNum((total_gst_amount / 2)));
     $('#igst').val('0.00');
   } else {
     $('#central_gst').val('0.00');
@@ -691,15 +691,23 @@ function subtotal_cal() {
     total_charge_amt += Number(element.value) || 0;
   });
 
-  $("#other_charges_amount").val(total_charge_amt.toFixed(2));
+  $("#other_charges_amount").val(cleanNum(total_charge_amt));
 
   var round_of = parseFloat($("#round_of").val()) || 0;
 
   grand_total = final_total_sum + total_charge_amt + round_of;
-  $('#grand_total').val(grand_total.toFixed(2));
+  $('#grand_total').val(cleanNum(grand_total));
 }
 
-function recalculate() {
+
+  function cleanNum(n, d) {
+    d = (typeof d === 'undefined') ? 2 : d;
+    var x = parseFloat(n);
+    if (isNaN(x)) return 0;
+    return parseFloat(x.toFixed(d));
+  }
+
+  function recalculate() {
   subtotal_cal();
 };
 
@@ -840,7 +848,7 @@ function appendRequirement() {
       var total_amount = qty * amount;
 
       if (!is_manual && activeId !== 'bill_amount_' + index) {
-          bill_amt_el.val(amount.toFixed(2));
+          bill_amt_el.val(cleanNum(amount));
       }
 
       var bill_amt = Number(bill_amt_el.val()) || 0;
@@ -852,15 +860,15 @@ function appendRequirement() {
       var total_black_amt = total_amount - total_bill_amt;
       var final_total = total_black_amt + total_bill_gst_amt;
 
-      $('#total_amount_' + index).val(total_amount.toFixed(2));
+      $('#total_amount_' + index).val(cleanNum(total_amount));
       if (activeId !== 'bill_total_' + index) {
-          $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+          $('#bill_total_' + index).val(cleanNum(total_bill_amt));
       }
-      $('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
-      $('#black_amount_' + index).val(total_black_amt.toFixed(2));
-      $('#gst_amount_' + index).val(gst_amt.toFixed(2));
-      $('#total_bill_gst_amount_' + index).val(total_bill_gst_amt.toFixed(2));
-      $('#final_total_' + index).val(final_total.toFixed(2));
+      $('#black_amount_per_unit_' + index).val(cleanNum(black_amt));
+      $('#black_amount_' + index).val(cleanNum(total_black_amt));
+      $('#gst_amount_' + index).val(cleanNum(gst_amt));
+      $('#total_bill_gst_amount_' + index).val(cleanNum(total_bill_gst_amt));
+      $('#final_total_' + index).val(cleanNum(final_total));
 
       recalculate();
   }
@@ -875,7 +883,7 @@ function appendRequirement() {
       if (qty > 0) {
           var bill_amt = bill_total / qty;
           if (activeId !== 'bill_amount_' + index) {
-              $('#bill_amount_' + index).val(bill_amt.toFixed(2));
+              $('#bill_amount_' + index).val(cleanNum(bill_amt));
           }
       }
 
@@ -1110,7 +1118,7 @@ function appendRequirement() {
     }
     
     var total = price + (price * gst / 100);
-    $('#charge_total_' + index).val(total.toFixed(2));
+    $('#charge_total_' + index).val(cleanNum(total));
     recalculate();
   }
 
@@ -1384,15 +1392,15 @@ function appendRequirement() {
 
     var total_allocated = total_white + total_black;
 
-    $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
-    $('#gst_amount_' + index).val(total_gst_amt.toFixed(2));
-    $('#total_bill_gst_amount_' + index).val(total_bill_gst.toFixed(2));
-    $('#black_amount_' + index).val(total_black_amt.toFixed(2));
-    $('#final_total_' + index).val(total_final.toFixed(2));
+    $('#bill_total_' + index).val(cleanNum(total_bill_amt));
+    $('#gst_amount_' + index).val(cleanNum(total_gst_amt));
+    $('#total_bill_gst_amount_' + index).val(cleanNum(total_bill_gst));
+    $('#black_amount_' + index).val(cleanNum(total_black_amt));
+    $('#final_total_' + index).val(cleanNum(total_final));
 
     if (total_allocated > 0) {
-      $('#bill_amount_' + index).val((total_bill_amt / total_allocated).toFixed(2));
-      $('#black_amount_per_unit_' + index).val((total_black_amt / total_allocated).toFixed(2));
+      $('#bill_amount_' + index).val(cleanNum((total_bill_amt / total_allocated)));
+      $('#black_amount_per_unit_' + index).val(cleanNum((total_black_amt / total_allocated)));
     } else {
       $('#bill_amount_' + index).val('0.00');
       $('#black_amount_per_unit_' + index).val('0.00');
@@ -1424,10 +1432,10 @@ function appendRequirement() {
     var is_manual = bill_amt_el.attr('data-manual') === 'true';
 
     if (activeId === rate_el.attr('id')) {
-      bill_amt_el.val(rate.toFixed(2));
+      bill_amt_el.val(cleanNum(rate));
       bill_amt_el.attr('data-manual', 'false');
     } else if (!is_manual && activeId !== bill_amt_el.attr('id')) {
-      bill_amt_el.val(rate.toFixed(2));
+      bill_amt_el.val(cleanNum(rate));
     }
 
     var bill_amt = parseFloat(bill_amt_el.val()) || 0;
@@ -1484,15 +1492,15 @@ function appendRequirement() {
     var total_batch_qty = white_qty + black_qty;
     var total_batch_amount_val = total_batch_qty * rate;
 
-    row.find('.batch_total_amount').val(total_batch_amount_val.toFixed(2));
+    row.find('.batch_total_amount').val(cleanNum(total_batch_amount_val));
     if (activeId !== row.find('.batch_bill_total').attr('id')) {
-      row.find('.batch_bill_total').val(bill_total.toFixed(2));
+      row.find('.batch_bill_total').val(cleanNum(bill_total));
     }
-    row.find('.batch_gst_amt').val(gst_amt.toFixed(2));
-    row.find('.batch_total_bill_gst_amount').val(total_bill_gst_amt.toFixed(2));
-    row.find('.batch_black_amt').val(black_amt_unit.toFixed(2));
-    row.find('.batch_black_total_amt').val(black_total_amt.toFixed(2));
-    row.find('.batch_final_total').val(final_total.toFixed(2));
+    row.find('.batch_gst_amt').val(cleanNum(gst_amt));
+    row.find('.batch_total_bill_gst_amount').val(cleanNum(total_bill_gst_amt));
+    row.find('.batch_black_amt').val(cleanNum(black_amt_unit));
+    row.find('.batch_black_total_amt').val(cleanNum(black_total_amt));
+    row.find('.batch_final_total').val(cleanNum(final_total));
 
     checkBatchRemarkRequirement(element);
     checkBatchBillRemarkRequirement(element);
@@ -1513,7 +1521,7 @@ function appendRequirement() {
     if (total_qty > 0) {
       var bill_amt = bill_total / total_qty;
       if (activeId !== row.find('.batch_bill_amount').attr('id')) {
-        row.find('.batch_bill_amount').val(bill_amt.toFixed(2));
+        row.find('.batch_bill_amount').val(cleanNum(bill_amt));
       }
     }
 
@@ -1701,7 +1709,7 @@ function appendRequirement() {
 
     if (min_price > 0 && rate < min_price) {
       indicator.removeClass('d-none').addClass('d-inline-flex');
-      min_price_span.text(min_price.toFixed(2));
+      min_price_span.text(cleanNum(min_price));
       remark_input.prop('readonly', false).attr('required', 'required').addClass('border-danger');
     } else {
       indicator.addClass('d-none').removeClass('d-inline-flex');
@@ -1719,7 +1727,7 @@ function appendRequirement() {
 
     if (min_billing_price > 0 && bill_amt < min_billing_price) {
       indicator.removeClass('d-none').addClass('d-inline-flex');
-      min_billing_span.text(min_billing_price.toFixed(2));
+      min_billing_span.text(cleanNum(min_billing_price));
       remark_input.prop('readonly', false).attr('required', 'required').addClass('border-danger');
     } else {
       indicator.addClass('d-none').removeClass('d-inline-flex');
@@ -1820,8 +1828,8 @@ function appendRequirement() {
         row.attr('data-min-price', res.min_selling_price || 0);
         row.attr('data-min-billing-price', res.min_billing_price || 0);
         
-        row.find('.batch_actual_price').val(parseFloat(res.actual_cost_with_exp || 0).toFixed(2));
-        row.find('.batch_official_price').val(parseFloat(res.off_sale_price || 0).toFixed(2));
+        row.find('.batch_actual_price').val(parseFloatcleanNum((res.actual_cost_with_exp || 0)));
+        row.find('.batch_official_price').val(parseFloatcleanNum((res.off_sale_price || 0)));
 
         var main_rate = $('#master_amount_' + index).val();
         var main_gst = $('#gst_' + index).val();

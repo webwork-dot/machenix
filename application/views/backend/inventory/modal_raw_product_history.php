@@ -28,9 +28,10 @@ $field_labels = [
     'item_code' => 'Model No. / SKU',
     'categories' => 'Category ID',
     'unit' => 'Unit',
-    'gst' => 'GST Rate (%)',
+    'gst' => 'Tax Rate (%)',
     'is_gst_applicable' => 'GST Applicable',
     'hsn_code' => 'HSN Code',
+    'commission_id' => 'Commission',
     'duty_charge' => 'Duty Charge (%)',
     'cartoon_qty' => 'Cartoon Qty',
     'net_weight' => 'Net Weight',
@@ -41,12 +42,14 @@ $field_labels = [
     'cbm' => 'CBM',
     'product_mrp' => 'Min Billing Price',
     'costing_price' => 'Min Selling Price',
+    'off_sale_price' => 'Off Sale Amt',
     'usd_rate' => 'Official USD Rate',
     'actual_usd_rate' => 'Actual USD Rate',
     'rate' => 'Actual RMB',
     'intimation' => 'Stock Intimation',
     'min_stock' => 'Min Stock',
     'opening_stock' => 'Opening Stock',
+    'status' => 'Status',
     'is_deleted' => 'Deleted Status'
 ];
 
@@ -73,7 +76,13 @@ $action_meta = [
 
 $display = function ($value) {
     $text = trim(strval($value));
-    return $text === '' ? '—' : htmlspecialchars($text);
+    if ($text === '') {
+        return '—';
+    }
+    if (is_numeric($text)) {
+        $text = clean_number($text);
+    }
+    return htmlspecialchars($text);
 };
 ?>
 

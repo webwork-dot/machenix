@@ -41,15 +41,20 @@ class Local_products_model extends CI_Model
 
         if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
             $keyword        = $filter_data['keywords'];
-            $keyword_filter = " AND (pv.sku_code like '%" . $keyword . "%' OR p.name like '%" . $keyword . "%' OR p.item_code like '%" . $keyword . "%' OR p.hsn_code like '%" . $keyword . "%')";
+            $keyword_filter = " AND (pv.sku_code like '%" . $keyword . "%' OR p.name like '%" . $keyword . "%' OR p.alias like '%" . $keyword . "%' OR p.item_code like '%" . $keyword . "%' OR p.hsn_code like '%" . $keyword . "%')";
         endif;
 
         $total_count = $this->db->query("SELECT  p.id FROM raw_products as p
         LEFT JOIN product_variation as pv ON p.id = pv.product_id
         WHERE (p.is_deleted='0' AND p.product_type='local') $keyword_filter group by p.id ORDER BY p.id ASC")->num_rows();
-        $query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty, (SELECT image FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, id ASC LIMIT 1) AS product_image FROM raw_products as p
+        $query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty,p.commission_id,p.product_mrp,p.costing_price,p.intimation,p.off_sale_price,p.status, (SELECT image FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, id ASC LIMIT 1) AS product_image FROM raw_products as p
         LEFT JOIN product_variation as pv ON p.id = pv.product_id
         WHERE (p.is_deleted='0' AND p.product_type='local') $keyword_filter group by p.id ORDER BY p.id DESC LIMIT $start, $length");
+
+        $commissions = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
+        if (!is_array($commissions)) {
+            $commissions = [];
+        }
 
         if (!empty($query)) {
             foreach ($query->result_array() as $item) {
@@ -66,62 +71,59 @@ class Local_products_model extends CI_Model
 
                 $action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
 
-                $total_amount = preg_replace('/\.?0+$/', '', $item['total_amount']);
-                $amount = '<input type="number" class="form-control" placeholder="Enter Price" name="total_amount" id="' . $item['id'] . '" value="' . $total_amount . '" onchange="total_cal(this)" required="" >';
-
                 // Category
                 $category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
                 $category_name = $category['name'] ?? '-';
 
-                $yrs = [];
-                foreach (explode(',', $item['sizes']) as $size) {
-                    $size_id = $this->db->select('color_code')->where('id', $size)->get('oc_attribute_values')->row_array();
-                    if ($size_id) {
-                        $yrs[] = $size_id['color_code'];
-                    }
+                $alias_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $item_code_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $hsn_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $gst_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="gst" value="' . htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $mrp_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="product_mrp" value="' . htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $costing_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="costing_price" value="' . htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $intimation_input = '<input type="number" step="1" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="intimation" value="' . htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                $off_sale_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="off_sale_price" value="' . htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+
+                $commission_select = '<select class="form-select form-select-sm local-prod-field" data-id="' . $id . '" data-field="commission_id" onchange="updateLocalProductField(this)">';
+                $commission_select .= '<option value="">Select</option>';
+                foreach ($commissions as $comm) {
+                    $selected = ((int)$item['commission_id'] === (int)$comm['id']) ? ' selected' : '';
+                    $commission_select .= '<option value="' . (int)$comm['id'] . '"' . $selected . '>' . htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES) . '</option>';
                 }
+                $commission_select .= '</select>';
 
-                usort($yrs, function ($a, $b) {
-                    $diff = intval($a) - intval($b);
-                    if ($diff === 0) {
-                        $lenDiff = strlen($b) - strlen($a);
-                        if ($lenDiff !== 0) {
-                            return $lenDiff;
-                        }
+                $status_selected_1 = ((int)$item['status'] === 1) ? ' selected' : '';
+                $status_selected_0 = ((int)$item['status'] === 0) ? ' selected' : '';
+                $status_select = '<select class="form-select form-select-sm local-prod-field" data-id="' . $id . '" data-field="status" onchange="updateLocalProductField(this)">';
+                $status_select .= '<option value="1"' . $status_selected_1 . '>Active</option>';
+                $status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
+                $status_select .= '</select>';
 
-                        return strcmp($a, $b);
-                    }
-                    return $diff;
-                });
-
-                $size_label = '';
-
-                if (count($yrs) == 1) {
-                    $size_label = $yrs[0];
-                } elseif (count($yrs) > 1) {
-                    $size_label = $yrs[0] . ' - ' . $yrs[count($yrs) - 1];
+                $image_src = !empty($item['product_image']) ? $item['product_image'] : (!empty($item['image']) ? $item['image'] : '');
+                if (!empty($image_src)) {
+                    $image_url = base_url() . $image_src;
+                    $image_html = '<a href="' . htmlspecialchars($image_url, ENT_QUOTES) . '" target="_blank" rel="noopener noreferrer"><img src="' . htmlspecialchars($image_url, ENT_QUOTES) . '" width="40" height="40" style="object-fit: cover; border-radius: 4px; cursor: pointer;"></a>';
+                } else {
+                    $image_html = '-';
                 }
 
                 $data[] = array(
-                    "sr_no"       => ++$start,
-                    "image"       => !empty($item['product_image']) ? '<img src="' . base_url() . $item['product_image'] . '" width="40" height="40" style="object-fit: cover; border-radius: 4px;">' : '-',
-                    "id"          => $item['id'],
-                    "name"        => $item['name'],
-                    "alias"        => $item['alias'],
-                    "unit"       => $item['unit'],
-                    "amount"        => $item['amount'],
-                    "form"        => $item['form'],
-                    "gst_type"        => $item['gst_type'],
-                    "gst"        => $item['gst'],
-                    "gst_amount"        => $item['gst_amount'],
-                    "category_name"        => $category_name,
-                    "total_amount"        => $amount,
-                    "hsn_code"        => $item['hsn_code'],
-                    "item_code"        => $item['item_code'],
-                    "group_id"        => $item['group_id'],
-                    "vatiation"        => $size_label,
-                    "color_name"        => $item['color_name'],
-                    "action"      => $action,
+                    "sr_no"             => ++$start,
+                    "image"             => $image_html,
+                    "id"                => $item['id'],
+                    "name"              => $item['name'],
+                    "alias"             => $alias_input,
+                    "category_name"     => $category_name,
+                    "item_code"         => $item_code_input,
+                    "hsn_code"          => $hsn_input,
+                    "gst"               => $gst_input,
+                    "commission_id"     => $commission_select,
+                    "product_mrp"       => $mrp_input,
+                    "costing_price"     => $costing_input,
+                    "intimation"        => $intimation_input,
+                    "off_sale_price"    => $off_sale_input,
+                    "status"            => $status_select,
+                    "action"            => $action,
                 );
             }
         }
@@ -134,6 +136,117 @@ class Local_products_model extends CI_Model
             "user_data" => $this->session->userdata('super_type'),
         );
         echo json_encode($json_data);
+    }
+
+    public function update_local_product_field()
+    {
+        $id = (int)$this->input->post('id');
+        $field = clean_and_escape($this->input->post('field'));
+        $value = $this->input->post('value');
+
+        $allowed_fields = [
+            'alias',
+            'item_code',
+            'hsn_code',
+            'gst',
+            'commission_id',
+            'product_mrp',
+            'costing_price',
+            'intimation',
+            'off_sale_price',
+            'status',
+        ];
+
+        if ($id <= 0 || !in_array($field, $allowed_fields, true)) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status'  => 400,
+                'message' => 'Invalid request',
+            ]);
+            return;
+        }
+
+        $old_product_data = $this->db->where('id', $id)->where('product_type', 'local')->where('is_deleted', '0')->get('raw_products')->row_array();
+        if (empty($old_product_data)) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status'  => 400,
+                'message' => 'Product not found',
+            ]);
+            return;
+        }
+
+        $data = [];
+        if (in_array($field, ['gst', 'product_mrp', 'costing_price', 'off_sale_price'], true)) {
+            $data[$field] = is_numeric($value) ? $value : 0;
+        } elseif ($field === 'intimation') {
+            $intimation = (int)$value;
+            $data['intimation'] = $intimation;
+            $data['min_stock'] = $intimation;
+        } elseif (in_array($field, ['commission_id', 'status'], true)) {
+            $data[$field] = (int)$value;
+        } else {
+            $data[$field] = clean_and_escape($value);
+        }
+
+        // Skip update + history when nothing actually changed
+        $has_change = false;
+        $numeric_fields = ['gst', 'product_mrp', 'costing_price', 'off_sale_price', 'intimation', 'min_stock', 'commission_id', 'status'];
+        foreach ($data as $k => $v) {
+            $old_val = $old_product_data[$k] ?? '';
+            if (in_array($k, $numeric_fields, true)) {
+                if ((float)$old_val !== (float)$v) {
+                    $has_change = true;
+                    break;
+                }
+            } elseif (strval($old_val) !== strval($v)) {
+                $has_change = true;
+                break;
+            }
+        }
+        if (!$has_change) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status'  => 200,
+                'message' => 'No changes',
+            ]);
+            return;
+        }
+
+        $this->db->where('id', $id);
+        if ($this->db->update('raw_products', $data)) {
+            $new_product_data = $this->db->where('id', $id)->get('raw_products')->row_array();
+            $log_json = array(
+                'old_data' => $old_product_data,
+                'new_data' => $new_product_data
+            );
+            $log_data = array(
+                'parent_id'      => NULL,
+                'ref_id'         => $id,
+                'module'         => 'product',
+                'action'         => 'update',
+                'message'        => 'Product field updated by ' . $this->session->userdata('super_name'),
+                'json'           => json_encode($log_json),
+                'table_name'     => 'raw_products',
+                'added_by'       => $this->session->userdata('super_user_id'),
+                'added_by_email' => $this->session->userdata('super_email'),
+                'added_by_name'  => $this->session->userdata('super_name'),
+                'added_by_type'  => $this->session->userdata('super_type')
+            );
+            $this->db->insert('sys_logs', $log_data);
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status'  => 200,
+                'message' => 'Updated successfully',
+            ]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status'  => 400,
+                'message' => 'Update failed',
+            ]);
+        }
     }
 
     public function raw_products_delete_sku()

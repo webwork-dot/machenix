@@ -20,9 +20,6 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-            <!-- <a href="<?php echo site_url('inventory/import-products'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-outline-primary" tabindex="0" aria-controls="DataTables_Table_0" >
-                <span><i class="feather icon-upload"></i> <?= get_phrase('import_products');?></span>
-            </a> -->
             <a href="<?php echo site_url('inventory/raw-products/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" >
                 <span><i class="feather icon-plus"></i> <?= get_phrase('add_products');?></span>
             </a>
@@ -31,11 +28,21 @@
                   <tr>
 					<th>#</th>
 					<th>Image</th>
-					<th>SKU Code</th>
-					<th style="width: 45%;">Product Name</th>
-					<th>Alias</th>
+					<th>Product Name</th>
+					<th>Alias Name</th>
 					<th>Category</th>
-					<th>HSN</th>
+					<th>Model No</th>
+					<th>HSN Code</th>
+					<th>Duty Charge</th>
+					<th>Tax Rate</th>
+					<th>Unit</th>
+					<th>Commission</th>
+					<th>Min Billing Price</th>
+					<th>Min Selling Price</th>
+					<th>Stock Intimation</th>
+					<th>Opening Stock</th>
+					<th>Off Sale Amt</th>
+					<th>Status</th>
 					<th>Actions</th>
                   </tr>
                </thead>
@@ -46,7 +53,9 @@
 </div>
 
 <script type="text/javascript">   
-	var dataTable;	
+	var dataTable;
+	var rawProductFieldTimers = {};
+
     $(document).ready(function($) {
     	dataTable = $('#report-datatable').DataTable({ 
         "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -85,11 +94,21 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "image" },
-                { "data": "item_code" },
                 { "data": "name" },
                 { "data": "alias" },
                 { "data": "category_name" },
+                { "data": "item_code" },
                 { "data": "hsn_code" },
+                { "data": "duty_charge" },
+                { "data": "gst" },
+                { "data": "unit" },
+                { "data": "commission_id" },
+                { "data": "product_mrp" },
+                { "data": "costing_price" },
+                { "data": "intimation" },
+                { "data": "opening_stock" },
+                { "data": "off_sale_price" },
+                { "data": "status" },
                 { "data": "action" },
             ], 
            
@@ -98,8 +117,8 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0, 2, 3, 4, 5, 6],
-                       
+                       "columns": [0, 2, 4],
+
                     }
                 },
                 {
@@ -107,7 +126,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,2,3,4,5,6]
+                       "columns": [0, 2, 4]
                     }
                 }
             ], 
@@ -120,7 +139,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 
@@ -129,28 +148,40 @@
             $(".loader").fadeOut("slow"); 
         });
     });
-	
-	function total_cal(elemt) { 
-		id   = $(elemt).attr('id');
-		value = $(elemt).val();
-		$(".loader").show();
-        var a = {
-          id: id,
-          total_amount: value,
-        };
-        $.ajax({
-            type: "POST",
-            url:   "<?php echo base_url()?>inventory/update_product_price",
-            data: a,
-            success: function(res) {
-                if(res.status == 200){
-					dataTable.ajax.reload(); 
-                }
-                else{
-					alert('price not change')
-                }
-			}
-        })
-    }
+
+	function updateRawProductField(elemt) {
+		var $el = $(elemt);
+		var id = $el.data('id');
+		var field = $el.data('field');
+		var value = $el.val();
+		var key = id + '_' + field;
+		var isSelect = $el.is('select');
+
+		if (rawProductFieldTimers[key]) {
+			clearTimeout(rawProductFieldTimers[key]);
+		}
+
+		var delay = isSelect ? 0 : 500;
+		rawProductFieldTimers[key] = setTimeout(function() {
+			$.ajax({
+				type: "POST",
+				url: "<?php echo base_url(); ?>inventory/update_raw_product_field",
+				dataType: "json",
+				data: {
+					id: id,
+					field: field,
+					value: value
+				},
+				success: function(res) {
+					if (res.status != 200) {
+						alert(res.message || 'Update failed');
+					}
+				},
+				error: function() {
+					alert('Update failed');
+				}
+			});
+		}, delay);
+	}
 	
 </script>

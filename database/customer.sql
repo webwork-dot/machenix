@@ -33,8 +33,10 @@ CREATE TABLE `customer` (
   `is_move` tinyint(1) NOT NULL DEFAULT 0,
   `move_date` datetime DEFAULT NULL,
   `outstanding` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `outstanding_limit` decimal(16,5) NOT NULL DEFAULT 0.00,
   `added_by_id` int(11) DEFAULT NULL,
   `added_by_name` varchar(100) DEFAULT NULL,
+  `added_by_user_id` int(11) DEFAULT NULL,
   `added_date` datetime NOT NULL,
   `is_deleted` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)

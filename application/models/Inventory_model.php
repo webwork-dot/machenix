@@ -3036,85 +3036,111 @@ class Inventory_model extends CI_Model
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			$keyword_filter = " AND (pv.sku_code like '%" . $keyword . "%' OR p.name like '%" . $keyword . "%' OR p.item_code like '%" . $keyword . "%' OR p.hsn_code like '%" . $keyword . "%')";
+			$keyword_filter = " AND (pv.sku_code like '%" . $keyword . "%' OR p.name like '%" . $keyword . "%' OR p.alias like '%" . $keyword . "%' OR p.item_code like '%" . $keyword . "%' OR p.hsn_code like '%" . $keyword . "%')";
 		endif;
 
 		$total_count = $this->db->query("SELECT  p.id FROM raw_products as p
 		LEFT JOIN product_variation as pv ON p.id = pv.product_id
 		WHERE (p.is_deleted='0' AND p.product_type='import') $keyword_filter group by p.id ORDER BY p.id ASC")->num_rows();
-		$query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty, (SELECT image FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, id ASC LIMIT 1) AS product_image FROM raw_products as p
+		$query = $this->db->query("SELECT p.id,p.alias,p.categories,p.group_id,p.color_name,p.item_code,p.is_variation,p.image,p.name,p.unit,p.amount,p.form,p.gst_type,p.gst,p.gst_amount,p.total_amount,p.hsn_code,p.sizes,p.cartoon_qty,p.commission_id,p.product_mrp,p.costing_price,p.intimation,p.off_sale_price,p.status,p.duty_charge,p.opening_stock, (SELECT image FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, id ASC LIMIT 1) AS product_image FROM raw_products as p
 		LEFT JOIN product_variation as pv ON p.id = pv.product_id
 		WHERE (p.is_deleted='0' AND p.product_type='import') $keyword_filter group by p.id ORDER BY p.id DESC LIMIT $start, $length");
+
+		$commissions = $this->common_model->getResultById('product_commission_slab', 'id, name, commission', ['is_deleted' => '0']);
+		if (!is_array($commissions)) {
+			$commissions = [];
+		}
+		$product_units = $this->common_model->getResultById('product_unit', 'id, name', ['is_delete' => '0']);
+		if (!is_array($product_units)) {
+			$product_units = [];
+		}
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
-				$is_variation = $item['is_variation'];
 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/raw_products/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/raw-products/edit/' . $id;
 				$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_raw_product_history/" . $id . "', 'Product History')";
+				$ctn_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_raw_product_ctn/" . $id . "', 'Pkg (Ctn) Sections')";
+				$supplier_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_raw_product_suppliers/" . $id . "', 'Suppliers')";
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+
+				$action .= '<a href="javascript:void(0);" onclick="' . $ctn_url . '" data-toggle="tooltip" data-bs-placement="top" title="Pkg (Ctn)"><button type="button" class="btn mr-1 mb-1" style="background-color: #28c76f; color: #fff; border-color: #28c76f;"><i class="fa fa-cubes" aria-hidden="true"></i></button></a>';
+
+				$action .= '<a href="javascript:void(0);" onclick="' . $supplier_url . '" data-toggle="tooltip" data-bs-placement="top" title="Suppliers"><button type="button" class="btn mr-1 mb-1" style="background-color: #ff9f43; color: #fff; border-color: #ff9f43;"><i class="fa fa-users" aria-hidden="true"></i></button></a>';
 
 				$action .= '<a href="javascript:void(0);" onclick="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="History"><button type="button" class="btn mr-1 mb-1 icon-btn-history" style="background-color: #7367f0; color: #fff; border-color: #7367f0;"><i class="fa fa-history" aria-hidden="true"></i></button></a>';
 
 				$action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
 
-				$total_amount = preg_replace('/\.?0+$/', '', $item['total_amount']);
-				$amount = '<input type="number" class="form-control" placeholder="Enter Price" name="total_amount" id="' . $item['id'] . '" value="' . $total_amount . '" onchange="total_cal(this)" required="" >';
-
 				// Category
 				$category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
-        $category_name = $category['name'] ?? '-';
+				$category_name = $category['name'] ?? '-';
 
-				$yrs = [];
-				foreach (explode(',', $item['sizes']) as $size) {
-					$size_id = $this->db->select('color_code')->where('id', $size)->get('oc_attribute_values')->row_array();
-					$yrs[] = $size_id['color_code'];
+				$alias_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$item_code_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$hsn_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$duty_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="duty_charge" value="' . htmlspecialchars(clean_number($item['duty_charge'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$gst_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="gst" value="' . htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$mrp_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="product_mrp" value="' . htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$costing_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="costing_price" value="' . htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$intimation_input = '<input type="number" step="1" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="intimation" value="' . htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$opening_input = '<input type="number" step="1" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="opening_stock" value="' . htmlspecialchars((string)(int)($item['opening_stock'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				$off_sale_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="off_sale_price" value="' . htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+
+				$unit_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="unit" onchange="updateRawProductField(this)">';
+				$unit_select .= '<option value="">Select</option>';
+				foreach ($product_units as $unit) {
+					$selected = ((string)$item['unit'] === (string)$unit['name']) ? ' selected' : '';
+					$unit_select .= '<option value="' . htmlspecialchars($unit['name'], ENT_QUOTES) . '"' . $selected . '>' . htmlspecialchars($unit['name'], ENT_QUOTES) . '</option>';
 				}
+				$unit_select .= '</select>';
 
-				usort($yrs, function ($a, $b) {
-					$diff = intval($a) - intval($b);
-					if ($diff === 0) {
-						$lenDiff = strlen($b) - strlen($a);
-						if ($lenDiff !== 0) {
-							return $lenDiff;
-						}
+				$commission_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="commission_id" onchange="updateRawProductField(this)">';
+				$commission_select .= '<option value="">Select</option>';
+				foreach ($commissions as $comm) {
+					$selected = ((int)$item['commission_id'] === (int)$comm['id']) ? ' selected' : '';
+					$commission_select .= '<option value="' . (int)$comm['id'] . '"' . $selected . '>' . htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES) . '</option>';
+				}
+				$commission_select .= '</select>';
 
-						return strcmp($a, $b);
-					}
-					return $diff;
-				});
+				$status_selected_1 = ((int)$item['status'] === 1) ? ' selected' : '';
+				$status_selected_0 = ((int)$item['status'] === 0) ? ' selected' : '';
+				$status_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="status" onchange="updateRawProductField(this)">';
+				$status_select .= '<option value="1"' . $status_selected_1 . '>Active</option>';
+				$status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
+				$status_select .= '</select>';
 
-				$size_label = '';
-
-				if (count($yrs) == 1) {
-					$size_label = $yrs[0];
+				$image_src = !empty($item['product_image']) ? $item['product_image'] : (!empty($item['image']) ? $item['image'] : '');
+				if (!empty($image_src)) {
+					$image_url = base_url() . $image_src;
+					$image_html = '<a href="' . htmlspecialchars($image_url, ENT_QUOTES) . '" target="_blank" rel="noopener noreferrer"><img src="' . htmlspecialchars($image_url, ENT_QUOTES) . '" width="40" height="40" style="object-fit: cover; border-radius: 4px; cursor: pointer;"></a>';
 				} else {
-					$size_label = $yrs[0] . ' - ' . $yrs[count($yrs) - 1];
+					$image_html = '-';
 				}
 
 				$data[] = array(
-					"sr_no"       => ++$start,
-					"image"       => !empty($item['product_image']) ? '<img src="' . base_url() . $item['product_image'] . '" width="50" height="50" style="object-fit: cover; border-radius: 4px;">' : '-',
-					"id"          => $item['id'],
-					"name"        => $item['name'],
-					"alias"        => $item['alias'],
-					"unit"       => $item['unit'],
-					"amount"        => $item['amount'],
-					"form"        => $item['form'],
-					"gst_type"        => $item['gst_type'],
-					"gst"        => $item['gst'],
-					"gst_amount"        => $item['gst_amount'],
-					"category_name"        => $category_name,
-					"total_amount"        => $amount,
-					"hsn_code"        => $item['hsn_code'],
-					"item_code"        => $item['item_code'],
-					"group_id"        => $item['group_id'],
-					"vatiation"        => $size_label,
-					"color_name"        => $item['color_name'],
-					"action"      => $action,
+					"sr_no"              => ++$start,
+					"image"              => $image_html,
+					"id"                 => $item['id'],
+					"name"               => $item['name'],
+					"alias"              => $alias_input,
+					"category_name"      => $category_name,
+					"item_code"          => $item_code_input,
+					"hsn_code"           => $hsn_input,
+					"duty_charge"        => $duty_input,
+					"gst"                => $gst_input,
+					"unit"               => $unit_select,
+					"commission_id"      => $commission_select,
+					"product_mrp"        => $mrp_input,
+					"costing_price"      => $costing_input,
+					"intimation"         => $intimation_input,
+					"opening_stock"      => $opening_input,
+					"off_sale_price"     => $off_sale_input,
+					"status"             => $status_select,
+					"action"             => $action,
 				);
 			}
 		}
@@ -3127,6 +3153,368 @@ class Inventory_model extends CI_Model
 			"user_data" => $this->session->userdata('super_type'),
 		);
 		echo json_encode($json_data);
+	}
+
+	public function update_raw_product_field()
+	{
+		$id = (int)$this->input->post('id');
+		$field = clean_and_escape($this->input->post('field'));
+		$value = $this->input->post('value');
+
+		$allowed_fields = [
+			'alias',
+			'item_code',
+			'hsn_code',
+			'duty_charge',
+			'gst',
+			'unit',
+			'commission_id',
+			'product_mrp',
+			'costing_price',
+			'intimation',
+			'opening_stock',
+			'off_sale_price',
+			'status',
+		];
+
+		if ($id <= 0 || !in_array($field, $allowed_fields, true)) {
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status'  => 400,
+				'message' => 'Invalid request',
+			]);
+			return;
+		}
+
+		$old_product_data = $this->db->where('id', $id)->where('product_type', 'import')->where('is_deleted', '0')->get('raw_products')->row_array();
+		if (empty($old_product_data)) {
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status'  => 400,
+				'message' => 'Product not found',
+			]);
+			return;
+		}
+
+		$data = [];
+		$decimal_fields = ['duty_charge', 'gst', 'product_mrp', 'costing_price', 'off_sale_price'];
+		if (in_array($field, $decimal_fields, true)) {
+			$data[$field] = is_numeric($value) ? $value : 0;
+		} elseif ($field === 'intimation') {
+			$intimation = (int)$value;
+			$data['intimation'] = $intimation;
+			$data['min_stock'] = $intimation;
+		} elseif ($field === 'opening_stock') {
+			$data[$field] = (int)$value;
+		} elseif (in_array($field, ['commission_id', 'status'], true)) {
+			$data[$field] = (int)$value;
+		} else {
+			$data[$field] = clean_and_escape($value);
+		}
+
+		$has_change = false;
+		$numeric_fields = array_merge($decimal_fields, ['intimation', 'min_stock', 'opening_stock', 'commission_id', 'status']);
+		foreach ($data as $k => $v) {
+			$old_val = $old_product_data[$k] ?? '';
+			if (in_array($k, $numeric_fields, true)) {
+				if ((float)$old_val !== (float)$v) {
+					$has_change = true;
+					break;
+				}
+			} elseif (strval($old_val) !== strval($v)) {
+				$has_change = true;
+				break;
+			}
+		}
+		if (!$has_change) {
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status'  => 200,
+				'message' => 'No changes',
+			]);
+			return;
+		}
+
+		$this->db->where('id', $id);
+		if ($this->db->update('raw_products', $data)) {
+			$new_product_data = $this->db->where('id', $id)->get('raw_products')->row_array();
+			$log_json = array(
+				'old_data' => $old_product_data,
+				'new_data' => $new_product_data
+			);
+			$log_data = array(
+				'parent_id'      => NULL,
+				'ref_id'         => $id,
+				'module'         => 'product',
+				'action'         => 'update',
+				'message'        => 'Product field updated by ' . $this->session->userdata('super_name'),
+				'json'           => json_encode($log_json),
+				'table_name'     => 'raw_products',
+				'added_by'       => $this->session->userdata('super_user_id'),
+				'added_by_email' => $this->session->userdata('super_email'),
+				'added_by_name'  => $this->session->userdata('super_name'),
+				'added_by_type'  => $this->session->userdata('super_type')
+			);
+			$this->db->insert('sys_logs', $log_data);
+
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status'  => 200,
+				'message' => 'Updated successfully',
+			]);
+		} else {
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status'  => 400,
+				'message' => 'Update failed',
+			]);
+		}
+	}
+
+	public function update_raw_product_ctn($id = "")
+	{
+		$id = (int)$id;
+		$resultpost = array(
+			"status" => 200,
+			"message" => "CTN sections updated successfully",
+		);
+
+		$product = $this->db->where('id', $id)->where('product_type', 'import')->where('is_deleted', '0')->get('raw_products')->row_array();
+		if (empty($product)) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Product not found",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$old_product_data = $this->get_complete_product_log_data($id);
+
+		$variation_ids = $this->input->post('variation_id');
+		$variation_net_weight = $this->input->post('variation_net_weight');
+		$variation_gross_weight = $this->input->post('variation_gross_weight');
+		$variation_length = $this->input->post('variation_length');
+		$variation_width = $this->input->post('variation_width');
+		$variation_height = $this->input->post('variation_height');
+		$variation_cbm = $this->input->post('variation_cbm');
+
+		$total_variations = !empty($variation_net_weight) ? count($variation_net_weight) : 1;
+
+		$data = [];
+		if (!empty($variation_net_weight) && is_array($variation_net_weight)) {
+			$data['cartoon_qty'] = $total_variations;
+
+			$total_net_weight = 0;
+			$total_gross_weight = 0;
+			$total_length = 0;
+			$total_width = 0;
+			$total_height = 0;
+			$total_cbm = 0;
+
+			foreach ($variation_net_weight as $index => $net_weight) {
+				$total_net_weight += floatval($net_weight ?? 0);
+				$total_gross_weight += floatval($variation_gross_weight[$index] ?? 0);
+				$total_length += floatval($variation_length[$index] ?? 0);
+				$total_width += floatval($variation_width[$index] ?? 0);
+				$total_height += floatval($variation_height[$index] ?? 0);
+				$total_cbm += floatval($variation_cbm[$index] ?? 0);
+			}
+
+			$data['net_weight'] = clean_and_escape($total_net_weight);
+			$data['gross_weight'] = clean_and_escape($total_gross_weight);
+			$data['length'] = clean_and_escape($total_length);
+			$data['width'] = clean_and_escape($total_width);
+			$data['height'] = clean_and_escape($total_height);
+			$data['cbm'] = clean_and_escape($total_cbm);
+		} else {
+			$data['cartoon_qty'] = 1;
+			$data['net_weight'] = 0;
+			$data['gross_weight'] = 0;
+			$data['length'] = 0;
+			$data['width'] = 0;
+			$data['height'] = 0;
+			$data['cbm'] = 0;
+		}
+
+		$this->db->where('id', $id);
+		$this->db->update('raw_products', $data);
+
+		$existing_variations = $this->db->select('id')->where('product_id', $id)->get('product_variation')->result_array();
+		$existing_ids = array_column($existing_variations, 'id');
+		$submitted_ids = array_filter($variation_ids ?? [], function ($vid) {
+			return $vid != 0;
+		});
+
+		$ids_to_delete = array_diff($existing_ids, $submitted_ids);
+		if (!empty($ids_to_delete)) {
+			$this->db->where_in('id', $ids_to_delete)->where('product_id', $id)->delete('product_variation');
+		}
+
+		if (!empty($variation_net_weight) && is_array($variation_net_weight)) {
+			foreach ($variation_net_weight as $index => $net_weight) {
+				$variation = [];
+				$variation['product_id'] = $id;
+				$variation['size_id'] = '';
+				$variation['size_name'] = '';
+				$variation['name'] = $product['name'];
+				$variation['sku_code'] = $product['item_code'];
+				$variation['cartoon_qty'] = 1;
+				$variation['net_weight'] = clean_and_escape($net_weight ?? 0);
+				$variation['gross_weight'] = clean_and_escape($variation_gross_weight[$index] ?? 0);
+				$variation['length'] = clean_and_escape($variation_length[$index] ?? 0);
+				$variation['width'] = clean_and_escape($variation_width[$index] ?? 0);
+				$variation['height'] = clean_and_escape($variation_height[$index] ?? 0);
+				$variation['cbm'] = clean_and_escape($variation_cbm[$index] ?? 0);
+				$variation['is_other'] = 0;
+				$variation['listed_1'] = $product['listed_1'] ?? 1;
+				$variation['listed_2'] = $product['listed_2'] ?? 1;
+				$variation['listed_3'] = $product['listed_3'] ?? 1;
+				$variation['listed_4'] = $product['listed_4'] ?? 1;
+				$variation['listed_5'] = $product['listed_5'] ?? 1;
+				$variation['listed_6'] = 1;
+				$variation['listed_7'] = 1;
+
+				if (!empty($product['image'])) {
+					$variation['image'] = $product['image'];
+				}
+
+				$variation_id = isset($variation_ids[$index]) ? $variation_ids[$index] : 0;
+				if ($variation_id != 0) {
+					$this->db->where('id', $variation_id)->where('product_id', $id)->update('product_variation', $variation);
+				} else {
+					$this->db->insert('product_variation', $variation);
+				}
+			}
+		}
+
+		$new_product_data = $this->get_complete_product_log_data($id);
+		$log_json = array(
+			'old_data' => $old_product_data,
+			'new_data' => $new_product_data
+		);
+		$log_data = array(
+			'parent_id'      => NULL,
+			'ref_id'         => $id,
+			'module'         => 'product',
+			'action'         => 'update',
+			'message'        => 'Product CTN sections updated by ' . $this->session->userdata('super_name'),
+			'json'           => json_encode($log_json),
+			'table_name'     => 'raw_products',
+			'added_by'       => $this->session->userdata('super_user_id'),
+			'added_by_email' => $this->session->userdata('super_email'),
+			'added_by_name'  => $this->session->userdata('super_name'),
+			'added_by_type'  => $this->session->userdata('super_type')
+		);
+		$this->db->insert('sys_logs', $log_data);
+
+		return simple_json_output($resultpost);
+	}
+
+	public function update_raw_product_suppliers($id = "")
+	{
+		$id = (int)$id;
+		$resultpost = array(
+			"status" => 200,
+			"message" => "Suppliers updated successfully",
+		);
+
+		$product = $this->db->where('id', $id)->where('product_type', 'import')->where('is_deleted', '0')->get('raw_products')->row_array();
+		if (empty($product)) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Product not found",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$supplier_ids = $this->input->post('supplier_id');
+		if (!empty($supplier_ids) && !is_array($supplier_ids)) {
+			$supplier_ids = explode(',', $supplier_ids);
+		}
+		$supplier_ids = !empty($supplier_ids) ? array_filter($supplier_ids) : [];
+
+		if (empty($supplier_ids)) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => "Please select at least one supplier",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$old_product_data = $this->get_complete_product_log_data($id);
+
+		$supplier_usd_rates = $this->input->post('supplier_usd_rate');
+		$supplier_actual_usd_rates = $this->input->post('supplier_actual_usd_rate');
+		$supplier_rates = $this->input->post('supplier_rate');
+		$supplier_product_mrps = $this->input->post('supplier_product_mrp');
+		$supplier_costing_prices = $this->input->post('supplier_costing_price');
+		$supplier_intimations = $this->input->post('supplier_intimation');
+
+		$data = [];
+		$data['supplier_id'] = implode(',', $supplier_ids);
+		$this->db->select('name');
+		$this->db->where_in('id', $supplier_ids);
+		$query = $this->db->get('supplier');
+		$supplier_names = [];
+		foreach ($query->result_array() as $row) {
+			$supplier_names[] = $row['name'];
+		}
+		$data['supplier_name'] = implode(',', $supplier_names);
+
+		$first_supplier_id = reset($supplier_ids);
+		$first_usd_rate = isset($supplier_usd_rates[$first_supplier_id]) ? $supplier_usd_rates[$first_supplier_id] : 0;
+		$first_actual_usd_rate = isset($supplier_actual_usd_rates[$first_supplier_id]) ? $supplier_actual_usd_rates[$first_supplier_id] : 0;
+		$first_rate = isset($supplier_rates[$first_supplier_id]) ? $supplier_rates[$first_supplier_id] : 0;
+		$first_product_mrp = isset($supplier_product_mrps[$first_supplier_id]) ? $supplier_product_mrps[$first_supplier_id] : 0;
+		$first_costing_price = isset($supplier_costing_prices[$first_supplier_id]) ? $supplier_costing_prices[$first_supplier_id] : 0;
+		$first_intimation = isset($supplier_intimations[$first_supplier_id]) ? $supplier_intimations[$first_supplier_id] : 0;
+
+		$data['usd_rate'] = clean_and_escape($first_usd_rate);
+		$data['actual_usd_rate'] = clean_and_escape($first_actual_usd_rate);
+		$data['rate'] = clean_and_escape($first_rate);
+		$data['product_mrp'] = clean_and_escape($first_product_mrp);
+		$data['costing_price'] = clean_and_escape($first_costing_price);
+		$data['intimation'] = clean_and_escape($first_intimation);
+		$data['min_stock'] = clean_and_escape($first_intimation);
+
+		$this->db->where('id', $id);
+		$this->db->update('raw_products', $data);
+
+		$this->db->where('product_id', $id)->delete('product_variations');
+		foreach ($supplier_ids as $s_id) {
+			$p_var = [];
+			$p_var['product_id'] = $id;
+			$p_var['supplier_id'] = $s_id;
+			$p_var['usd_rate'] = clean_and_escape($supplier_usd_rates[$s_id] ?? 0);
+			$p_var['actual_usd_rate'] = clean_and_escape($supplier_actual_usd_rates[$s_id] ?? 0);
+			$p_var['rate'] = clean_and_escape($supplier_rates[$s_id] ?? 0);
+			$p_var['product_mrp'] = clean_and_escape($supplier_product_mrps[$s_id] ?? 0);
+			$p_var['costing_price'] = clean_and_escape($supplier_costing_prices[$s_id] ?? 0);
+			$p_var['intimation'] = clean_and_escape($supplier_intimations[$s_id] ?? 0);
+			$this->db->insert('product_variations', $p_var);
+		}
+
+		$new_product_data = $this->get_complete_product_log_data($id);
+		$log_json = array(
+			'old_data' => $old_product_data,
+			'new_data' => $new_product_data
+		);
+		$log_data = array(
+			'parent_id'      => NULL,
+			'ref_id'         => $id,
+			'module'         => 'product',
+			'action'         => 'update',
+			'message'        => 'Product suppliers updated by ' . $this->session->userdata('super_name'),
+			'json'           => json_encode($log_json),
+			'table_name'     => 'raw_products',
+			'added_by'       => $this->session->userdata('super_user_id'),
+			'added_by_email' => $this->session->userdata('super_email'),
+			'added_by_name'  => $this->session->userdata('super_name'),
+			'added_by_type'  => $this->session->userdata('super_type')
+		);
+		$this->db->insert('sys_logs', $log_data);
+
+		return simple_json_output($resultpost);
 	}
 
 	public function add_purchase_order()
@@ -8867,9 +9255,10 @@ class Inventory_model extends CI_Model
 					COALESCE(SUM(i.official_rate_rs * i.official_qty), 0) as official_cost_net_total
 				FROM raw_products p
 				LEFT JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $rp_keyword_filter
 				GROUP BY p.id 
-				ORDER BY id DESC, p.id DESC 
+				ORDER BY COALESCE(MAX(cat.id), 999999999) ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		} else {
@@ -8887,25 +9276,44 @@ class Inventory_model extends CI_Model
 
 			$query = $this->db->query("
 				SELECT 
-					MAX(id) as id, 
-					MAX(warehouse_name) as warehouse_name, 
-					product_name, 
-					item_code, 
-					product_id, 
-					categories,
-					SUM(quantity) as quantity, 
-					SUM(official_qty) as white_qty, 
-					SUM(black_qty) as black_qty,
-					SUM(pending_qty) as pending_qty,
-					SUM(actual_cost_with_exp * quantity) as actual_cost_with_exp_total,
-					SUM(actual_inr * quantity) as actual_cost_net_total,
-					SUM(official_exp_per_pc * official_qty) as official_cost_with_exp_total,
-					SUM(official_rate_rs * official_qty) as official_cost_net_total
-				FROM inventory 
-				WHERE (id!='') $keyword_filter 
-				GROUP BY product_id 
-				HAVING SUM(quantity) > 0
-				ORDER BY id DESC 
+					t.id,
+					t.warehouse_name,
+					t.product_name,
+					t.item_code,
+					t.product_id,
+					t.categories,
+					t.quantity,
+					t.white_qty,
+					t.black_qty,
+					t.pending_qty,
+					t.actual_cost_with_exp_total,
+					t.actual_cost_net_total,
+					t.official_cost_with_exp_total,
+					t.official_cost_net_total
+				FROM (
+					SELECT 
+						MAX(id) as id, 
+						MAX(warehouse_name) as warehouse_name, 
+						product_name, 
+						item_code, 
+						product_id, 
+						categories,
+						SUM(quantity) as quantity, 
+						SUM(official_qty) as white_qty, 
+						SUM(black_qty) as black_qty,
+						SUM(pending_qty) as pending_qty,
+						SUM(actual_cost_with_exp * quantity) as actual_cost_with_exp_total,
+						SUM(actual_inr * quantity) as actual_cost_net_total,
+						SUM(official_exp_per_pc * official_qty) as official_cost_with_exp_total,
+						SUM(official_rate_rs * official_qty) as official_cost_net_total
+					FROM inventory 
+					WHERE (id!='') $keyword_filter 
+					GROUP BY product_id 
+					HAVING SUM(quantity) > 0
+				) t
+				LEFT JOIN raw_products p ON p.id = t.product_id
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(COALESCE(p.categories, t.categories), ',', 1)
+				ORDER BY COALESCE(cat.id, 999999999) ASC, t.product_id ASC
 				LIMIT $start, $length
 			");
 		}
@@ -9081,7 +9489,10 @@ class Inventory_model extends CI_Model
 				$total_white_val = $white_qty_val + $pending_qty_val;
 
 				$show_item_code = (!empty($item['item_code']) && strtolower(trim($item['item_code'])) != strtolower(trim($item['product_name'])));
-				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name']) . '</div>' . ($show_item_code ? '<small class="text-muted font-small-1" style="display:block; margin-top:-2px;">' . htmlspecialchars($item['item_code']) . '</small>' : '');
+				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name']) . '</div>';
+				$model_no_html = $show_item_code
+					? '<span class="text-dark font-small-2">' . htmlspecialchars($item['item_code']) . '</span>'
+					: '<span class="stk-badge-zero">-</span>';
 
 				$black_qty_badge = ($black_qty_val > 0) ? '<span class="stk-badge stk-badge-black">' . number_format($black_qty_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
 				$white_qty_badge = ($white_qty_val > 0) ? '<span class="stk-badge stk-badge-white">' . number_format($white_qty_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
@@ -9096,6 +9507,7 @@ class Inventory_model extends CI_Model
 				$data[] = array(
 					"sr_no"             => $expand_btn,
 					"product_name"      => $prod_name_html,
+					"model_no"          => $model_no_html,
 					"quantity"          => '<span class="stk-qty-main">' . number_format($item['quantity']) . '</span>',
 					"black_qty"         => $black_qty_badge,
 					"white_qty"         => $white_qty_badge,
@@ -11630,6 +12042,7 @@ class Inventory_model extends CI_Model
 			"gst_name"       => $gst_name,
 			"gst_no"         => $gst_no,
 			"outstanding"    => ($this->input->post('outstanding') != '') ? clean_and_escape($this->input->post('outstanding')) : 0.00,
+			"outstanding_limit" => ($this->input->post('outstanding_limit') != '') ? clean_and_escape($this->input->post('outstanding_limit')) : 0.00,
 
 			"owner_name"     => $owner_name,
 			"owner_email"		 => $owner_email,
@@ -11648,6 +12061,7 @@ class Inventory_model extends CI_Model
 
 			"added_by_id"    => $staff_id,
 			"added_by_name"  => $staff_name,
+			"added_by_user_id" => $user_id,
 			"added_date"     => date("Y-m-d H:i:s"),
 			"is_deleted"     => 0,
 		);
@@ -11840,6 +12254,7 @@ class Inventory_model extends CI_Model
 			"gst_name"       => $gst_name,
 			"gst_no"         => $gst_no,
 			"outstanding"    => ($this->input->post('outstanding') != '') ? clean_and_escape($this->input->post('outstanding')) : 0.00,
+			"outstanding_limit" => ($this->input->post('outstanding_limit') != '') ? clean_and_escape($this->input->post('outstanding_limit')) : 0.00,
 
 			"owner_name"     => $owner_name,
 			"owner_email"    => $owner_email,
@@ -12481,14 +12896,29 @@ class Inventory_model extends CI_Model
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
+		$data_type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
-			$keyword_filter = " AND (name like '%" . $keyword . "%' 
-            OR contact_name like '%" . $keyword . "%')";
+			$keyword = $filter_data['keywords'];
+			if ($data_type == 'customer') {
+				$keyword_filter = " AND (
+					company_name LIKE '%" . $keyword . "%'
+					OR gst_name LIKE '%" . $keyword . "%'
+					OR gst_no LIKE '%" . $keyword . "%'
+					OR city_name LIKE '%" . $keyword . "%'
+					OR state_name LIKE '%" . $keyword . "%'
+					OR added_by_name LIKE '%" . $keyword . "%'
+					OR EXISTS (SELECT 1 FROM sys_users su WHERE su.id = customer.added_by_id AND su.first_name LIKE '%" . $keyword . "%')
+					OR EXISTS (SELECT 1 FROM sys_users su2 WHERE su2.id = customer.added_by_user_id AND su2.first_name LIKE '%" . $keyword . "%')
+				)";
+			} else {
+				$keyword_filter = " AND (company_name LIKE '%" . $keyword . "%'
+					OR owner_name LIKE '%" . $keyword . "%'
+					OR owner_mobile LIKE '%" . $keyword . "%'
+					OR gst_name LIKE '%" . $keyword . "%'
+					OR gst_no LIKE '%" . $keyword . "%')";
+			}
 		endif;
-
-		$data_type = $_REQUEST['type'];
 
 		$user_id = $this->session->userdata('super_user_id');
 		$type = $this->session->userdata('super_type');
@@ -12529,7 +12959,10 @@ class Inventory_model extends CI_Model
 		endif;
 
 		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_name, owner_name, owner_mobile, status, status_date, status_label, move_date, is_move, type FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_id, added_by_name, added_by_user_id, is_distributor, owner_name, owner_mobile, status, status_date, status_label, move_date, is_move, type,
+			(SELECT first_name FROM sys_users WHERE id = customer.added_by_id LIMIT 1) AS salesperson_name,
+			(SELECT first_name FROM sys_users WHERE id = customer.added_by_user_id LIMIT 1) AS added_by_user_name
+			FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 		// echo $this->db->last_query(); exit();
 
 		if (!empty($query)) {
@@ -12638,7 +13071,16 @@ class Inventory_model extends CI_Model
 					} 
 				}
 
-				$log = $this->common_model->getRowById('customer_log', 'added_by_name', ['customer_id' => $item['id'], 'action' => 'create']);
+				$salesperson = !empty($item['salesperson_name']) ? $item['salesperson_name'] : (!empty($item['added_by_name']) ? $item['added_by_name'] : '-');
+				$added_by_user = !empty($item['added_by_user_name']) ? $item['added_by_user_name'] : '-';
+				if ($added_by_user === '-') {
+					$log = $this->common_model->getRowById('customer_log', 'added_by_name', ['customer_id' => $item['id'], 'action' => 'create']);
+					$added_by_user = $log['added_by_name'] ?? '-';
+				}
+
+				$distributor = ((int) $item['is_distributor'] === 1)
+					? '<span class="badge bg-light-success text-success">Yes</span>'
+					: '<span class="badge bg-light-secondary text-secondary">No</span>';
 
 				$type_badge = ($item['type'] == 'leads') 
 					? '<span class="badge bg-light-warning text-warning" style="background: #ff9f4330 !important;">Leads</span>' 
@@ -12648,6 +13090,7 @@ class Inventory_model extends CI_Model
 					"sr_no"       		=> ++$start,
 					"id"          		=> $item['id'],
 					"name"        		=> $item['company_name'],
+					"distributor"			=> $distributor,
 					"gst_name"				=> ($item['gst_name']) ? $item['gst_name'] : '-',
 					"gst_no"					=> ($item['gst_no']) ? $item['gst_no'] : '-',
 					"owner_name"			=> ($item['owner_name']) ? $item['owner_name'] : '-',
@@ -12656,11 +13099,12 @@ class Inventory_model extends CI_Model
 					"city_name"				=> ($item['city_name']) ? $item['city_name'] : '-',
 					"state_name"			=> ($item['state_name']) ? $item['state_name'] : '-',
 					"pincode"					=> ($item['pincode']) ? $item['pincode'] : '-',
-					"staff"						=> ($item['added_by_name']) ? $item['added_by_name'] : '-',
+					"salesperson"			=> $salesperson,
+					"staff"						=> $salesperson,
 					"move_date"				=> date('d-m-Y', strtotime($item['move_date'])),
 					"status_date"				=> (!empty($item['status_date']) && $item['status_date'] != '0000-00-00 00:00:00') ? date('d-m-Y h:i A', strtotime($item['status_date'])) : '-',
 					"status"					=> $badge,
-					"added_by_name"		=> $log['added_by_name'] ?? '-',
+					"added_by_name"		=> $added_by_user,
 					"action"      		=> $action,
 				);
 			}
@@ -19745,7 +20189,11 @@ class Inventory_model extends CI_Model
 		$warehouse_id = $this->input->post('warehouse_id');
 		$product_id = $this->input->post('product_id');
 
-		$query = $this->db->query("SELECT SUM(official_qty) as total_white, SUM(black_qty) as total_black FROM inventory WHERE warehouse_id = '$warehouse_id' AND product_id = '$product_id'");
+		if (!empty($warehouse_id) && $warehouse_id != '0') {
+			$query = $this->db->query("SELECT SUM(official_qty) as total_white, SUM(black_qty) as total_black FROM inventory WHERE warehouse_id = '$warehouse_id' AND product_id = '$product_id'");
+		} else {
+			$query = $this->db->query("SELECT SUM(official_qty) as total_white, SUM(black_qty) as total_black FROM inventory WHERE product_id = '$product_id'");
+		}
 		$res = array('total_white' => 0, 'total_black' => 0);
 		if ($query->num_rows() > 0) {
 			$row = $query->row_array();
@@ -26947,9 +27395,10 @@ public function get_sales_return_reports()
 					COALESCE(SUM(i.official_rate_rs * i.official_qty), 0) as official_cost_net_total
 				FROM raw_products p
 				LEFT JOIN inventory i ON p.id = i.product_id
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $keyword_filter
 				GROUP BY p.id 
-				ORDER BY quantity DESC, p.name ASC 
+				ORDER BY COALESCE(MAX(cat.id), 999999999) ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		} else {
@@ -26982,10 +27431,11 @@ public function get_sales_return_reports()
 					SUM(i.official_rate_rs * i.official_qty) as official_cost_net_total
 				FROM raw_products p
 				JOIN inventory i ON p.id = i.product_id
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $keyword_filter 
 				GROUP BY p.id 
 				HAVING SUM(i.quantity) > 0
-				ORDER BY quantity DESC, p.name ASC 
+				ORDER BY COALESCE(MAX(cat.id), 999999999) ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		}
@@ -27219,7 +27669,10 @@ public function get_sales_return_reports()
 				$sr_no_html = '<div class="d-flex align-items-center justify-content-center">' . $expand_btn . '<span class="stk-sr-num ms-1">' . (++$row_num) . '</span></div>';
 
 				$show_item_code = (!empty($item['item_code']) && strtolower(trim($item['item_code'])) != strtolower(trim($item['product_name'])));
-				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name'] ?? 'Product #' . $product_id) . '</div>' . ($show_item_code ? '<small class="text-muted font-small-1" style="display:block; margin-top:-2px;">' . htmlspecialchars($item['item_code']) . '</small>' : '');
+				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name'] ?? 'Product #' . $product_id) . '</div>';
+				$model_no_html = $show_item_code
+					? '<span class="text-dark font-small-2">' . htmlspecialchars($item['item_code']) . '</span>'
+					: '<span class="stk-badge-zero">-</span>';
 
 				$action = '<div class="d-inline-flex align-items-center">';
 				$action .= '<a href="' . base_url() . 'inventory/my-stock-company/' . $product_id . '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View Company Stock"><i class="feather icon-eye"></i></a>';
@@ -27229,6 +27682,7 @@ public function get_sales_return_reports()
 					"sr_no"             => $sr_no_html,
 					"product_id"        => $product_id,
 					"product_name"      => $prod_name_html,
+					"model_no"          => $model_no_html,
 					"quantity"          => '<span class="stk-qty-main">' . number_format($item['quantity']) . '</span>',
 					"black_qty"         => $black_qty_badge,
 					"white_qty"         => $white_qty_badge,

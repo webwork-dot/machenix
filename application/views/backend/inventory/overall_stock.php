@@ -69,64 +69,139 @@
 		overflow: hidden;
 	}
 
-	/* Column & Data Filter Toolbar */
+	/* Column & Data Filter Toolbar — Dropdown */
 	.stock-filter-toolbar {
 		background: #ffffff;
 		padding: 8px 14px;
 		border-bottom: 1px solid #f1f5f9;
 		display: flex;
 		align-items: center;
+		justify-content: flex-start;
 	}
-	.filter-section-title {
-		font-size: 11px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.4px;
-		color: #64748b;
-		margin-right: 4px;
+	.btn-filter-dropdown {
 		display: inline-flex;
 		align-items: center;
+		gap: 7px;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 7px;
+		color: #334155;
+		font-size: 12.5px;
+		font-weight: 600;
+		padding: 6px 12px;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+	}
+	.btn-filter-dropdown:hover,
+	.btn-filter-dropdown:focus,
+	.btn-filter-dropdown.show {
+		background: #f8fafc;
+		border-color: #cbd5e1;
+		color: #0f172a;
+		outline: none;
+		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+	}
+	.btn-filter-dropdown .feather {
+		font-size: 14px;
+		color: #64748b;
+	}
+	.btn-filter-dropdown::after {
+		margin-left: 2px;
+		border-top-color: #94a3b8;
+	}
+	.filter-count-badge {
+		display: none;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		border-radius: 999px;
+		background: #16a34a;
+		color: #ffffff;
+		font-size: 10px;
+		font-weight: 700;
+		line-height: 18px;
+		text-align: center;
+	}
+	.filter-count-badge.has-count {
+		display: inline-block;
+	}
+	.stock-filter-menu {
+		min-width: 280px;
+		max-width: 320px;
+		padding: 0;
+		border: 1px solid #e2e8f0;
+		border-radius: 10px;
+		box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.18);
+		overflow: hidden;
+		margin-top: 6px !important;
+	}
+	.filter-menu-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		background: #f8fafc;
+		border-bottom: 1px solid #f1f5f9;
+	}
+	.filter-menu-header .title {
+		font-size: 12px;
+		font-weight: 700;
+		color: #0f172a;
+		letter-spacing: 0.2px;
+	}
+	.filter-menu-body {
+		max-height: 340px;
+		overflow-y: auto;
+		padding: 8px 0;
+	}
+	.filter-menu-label {
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: #94a3b8;
+		padding: 6px 14px 4px;
 	}
 	.filter-chip {
 		cursor: pointer;
-		margin-bottom: 0;
+		margin: 0;
 		user-select: none;
-		display: inline-flex;
+		display: flex;
 		align-items: center;
-		padding: 3px 9px;
-		border-radius: 5px;
-		font-size: 11.5px;
+		width: 100%;
+		padding: 8px 14px;
+		border-radius: 0;
+		font-size: 12.5px;
 		font-weight: 500;
-		color: #64748b;
-		background: #f8fafc;
-		border: 1px solid #e2e8f0;
-		transition: all 0.15s ease-in-out;
-		gap: 6px;
+		color: #475569;
+		background: transparent;
+		border: none;
+		transition: background 0.12s ease, color 0.12s ease;
+		gap: 10px;
 	}
 	.filter-chip:hover {
-		border-color: #cbd5e1;
-		color: #1e293b;
-		background: #f1f5f9;
+		background: #f8fafc;
+		color: #0f172a;
 	}
 	.filter-chip.active {
 		background: #f0fdf4;
 		color: #15803d;
-		border-color: #bbf7d0;
 		font-weight: 600;
 	}
 	.filter-chip input[type="checkbox"] {
 		display: none;
 	}
 	.filter-chip .chip-box {
-		width: 13px;
-		height: 13px;
-		border-radius: 3px;
-		border: 1px solid #cbd5e1;
+		width: 15px;
+		height: 15px;
+		border-radius: 4px;
+		border: 1.5px solid #cbd5e1;
 		background: #ffffff;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 9px;
+		font-size: 10px;
 		color: transparent;
 		transition: all 0.15s ease;
 		flex-shrink: 0;
@@ -136,18 +211,30 @@
 		border-color: #16a34a;
 		color: #ffffff;
 	}
+	.filter-chip .chip-text {
+		flex: 1;
+		line-height: 1.3;
+	}
+	.filter-menu-footer {
+		padding: 8px 12px;
+		border-top: 1px solid #f1f5f9;
+		background: #ffffff;
+	}
 	.btn-reset-filters {
-		background: transparent;
+		background: #f8fafc;
 		border: 1px solid #e2e8f0;
-		border-radius: 5px;
+		border-radius: 6px;
 		color: #64748b;
-		font-size: 11px;
-		font-weight: 500;
-		padding: 3px 8px;
+		font-size: 12px;
+		font-weight: 600;
+		padding: 6px 10px;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
+		width: 100%;
+		gap: 6px;
 	}
 	.btn-reset-filters:hover {
 		background: #f1f5f9;
@@ -803,58 +890,78 @@
 	<!-- Main Data Table -->
     <div class="col-12">
 		<div class="stock-table-card">
-			<!-- Column Visibility & Data Filter Toolbar -->
+			<!-- Column Visibility & Data Filter Dropdown -->
 			<div class="stock-filter-toolbar">
-				<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
-					<div class="d-flex align-items-center flex-wrap gap-1" id="column-filters-container">
-						<span class="filter-section-title">
-							<i class="feather icon-filter me-1"></i>Filters:
-						</span>
-						<label class="filter-chip" for="toggle-stock-batch" title="Expand or collapse all products with companies and batches">
-							<input type="checkbox" id="toggle-stock-batch">
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Stock with Batch</span>
-						</label>
-						<label class="filter-chip" for="toggle-zero-qty" title="Show products, companies and batches with zero quantity">
-							<input type="checkbox" id="toggle-zero-qty">
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Show Item/Batch with Zero Qty</span>
-						</label>
-						<label class="filter-chip active" for="toggle-booked-qty" title="Toggle Booked Quantity column">
-							<input type="checkbox" id="toggle-booked-qty" class="column-filter-checkbox" checked>
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Booked Qty</span>
-						</label>
-						<label class="filter-chip" for="toggle-po-qty" title="Toggle PO, Priority, Loading Quantity columns">
-							<input type="checkbox" id="toggle-po-qty" class="column-filter-checkbox">
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">PO/Priority/Loading Qty</span>
-						</label>
-						<label class="filter-chip active" for="toggle-act-cost-exp" title="Toggle Actual Cost with Expense column">
-							<input type="checkbox" id="toggle-act-cost-exp" class="column-filter-checkbox" checked>
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Actual Cost Exp</span>
-						</label>
-						<label class="filter-chip active" for="toggle-act-cost-amt" title="Toggle Actual Cost Net Amount column">
-							<input type="checkbox" id="toggle-act-cost-amt" class="column-filter-checkbox" checked>
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Actual Cost Amt</span>
-						</label>
-						<label class="filter-chip active" for="toggle-off-cost-exp" title="Toggle Official Cost with Expense column">
-							<input type="checkbox" id="toggle-off-cost-exp" class="column-filter-checkbox" checked>
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Official Cost Exp</span>
-						</label>
-						<label class="filter-chip active" for="toggle-off-cost-amt" title="Toggle Official Cost Net Amount column">
-							<input type="checkbox" id="toggle-off-cost-amt" class="column-filter-checkbox" checked>
-							<span class="chip-box"><i class="feather icon-check"></i></span>
-							<span class="chip-text">Official Cost Amt</span>
-						</label>
-					</div>
-					<div class="d-flex align-items-center">
-						<button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
-							<i class="feather icon-rotate-ccw me-1"></i> Reset
-						</button>
+				<div class="dropdown stock-filter-dropdown">
+					<button class="btn-filter-dropdown dropdown-toggle" type="button" id="stockFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+						<i class="feather icon-filter"></i>
+						<span>Filters</span>
+						<span class="filter-count-badge" id="filter-active-count">0</span>
+					</button>
+					<div class="dropdown-menu stock-filter-menu" aria-labelledby="stockFilterDropdown">
+						<div class="filter-menu-header">
+							<span class="title">Table Filters</span>
+						</div>
+						<div class="filter-menu-body" id="column-filters-container">
+							<div class="filter-menu-label">Data Options</div>
+							<label class="filter-chip" for="toggle-stock-batch" title="Expand or collapse all products with companies and batches">
+								<input type="checkbox" id="toggle-stock-batch">
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Stock with Batch</span>
+							</label>
+							<label class="filter-chip" for="toggle-zero-qty" title="Show products, companies and batches with zero quantity">
+								<input type="checkbox" id="toggle-zero-qty">
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Show Item/Batch with Zero Qty</span>
+							</label>
+
+							<div class="filter-menu-label">Columns</div>
+							<label class="filter-chip active" for="toggle-product-col" title="Toggle Product Name column">
+								<input type="checkbox" id="toggle-product-col" class="column-filter-checkbox" checked>
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Product</span>
+							</label>
+							<label class="filter-chip" for="toggle-model-col" title="Toggle Model No column">
+								<input type="checkbox" id="toggle-model-col" class="column-filter-checkbox">
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Model</span>
+							</label>
+							<label class="filter-chip active" for="toggle-booked-qty" title="Toggle Booked Quantity column">
+								<input type="checkbox" id="toggle-booked-qty" class="column-filter-checkbox" checked>
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Booked Qty</span>
+							</label>
+							<label class="filter-chip" for="toggle-po-qty" title="Toggle PO, Priority, Loading Quantity columns">
+								<input type="checkbox" id="toggle-po-qty" class="column-filter-checkbox">
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">PO/Priority/Loading Qty</span>
+							</label>
+							<label class="filter-chip active" for="toggle-act-cost-exp" title="Toggle Actual Cost with Expense column">
+								<input type="checkbox" id="toggle-act-cost-exp" class="column-filter-checkbox" checked>
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Actual Cost Exp</span>
+							</label>
+							<label class="filter-chip active" for="toggle-act-cost-amt" title="Toggle Actual Cost Net Amount column">
+								<input type="checkbox" id="toggle-act-cost-amt" class="column-filter-checkbox" checked>
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Actual Cost Amt</span>
+							</label>
+							<label class="filter-chip active" for="toggle-off-cost-exp" title="Toggle Official Cost with Expense column">
+								<input type="checkbox" id="toggle-off-cost-exp" class="column-filter-checkbox" checked>
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Official Cost Exp</span>
+							</label>
+							<label class="filter-chip active" for="toggle-off-cost-amt" title="Toggle Official Cost Net Amount column">
+								<input type="checkbox" id="toggle-off-cost-amt" class="column-filter-checkbox" checked>
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Official Cost Amt</span>
+							</label>
+						</div>
+						<div class="filter-menu-footer">
+							<button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
+								<i class="feather icon-rotate-ccw"></i> Reset Filters
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -865,6 +972,7 @@
 						<tr>
 							<th class="text-center" style="width: 50px;">#</th>
 							<th>Product Name</th>
+							<th>Model No</th>
 							<th class="text-end">Quantity</th>
 							<th class="text-end">Black Qty</th>
 							<th class="text-end">White Qty</th>
@@ -1258,6 +1366,7 @@
             "columns": [
                 { "data": "sr_no", "className": "text-center text-nowrap align-middle" },
                 { "data": "product_name", "className": "text-start align-middle" },
+                { "data": "model_no", "className": "text-start text-nowrap align-middle", "visible": false },
                 { "data": "quantity", "className": "text-end text-nowrap align-middle" },
                 { "data": "black_qty", "className": "text-end text-nowrap align-middle" },
                 { "data": "white_qty", "className": "text-end text-nowrap align-middle" },
@@ -1428,7 +1537,34 @@
         }
 
         // Dynamic Column Visibility Filters Function across all layers
+        function updateFilterCount() {
+            // Count only deviations from default so the badge stays hidden until filters change
+            var defaults = {
+                'toggle-stock-batch': false,
+                'toggle-zero-qty': false,
+                'toggle-product-col': true,
+                'toggle-model-col': false,
+                'toggle-booked-qty': true,
+                'toggle-po-qty': false,
+                'toggle-act-cost-exp': true,
+                'toggle-act-cost-amt': true,
+                'toggle-off-cost-exp': true,
+                'toggle-off-cost-amt': true
+            };
+            var count = 0;
+            $.each(defaults, function (id, defaultOn) {
+                if ($('#' + id).is(':checked') !== defaultOn) {
+                    count++;
+                }
+            });
+            var $badge = $('#filter-active-count');
+            $badge.text(count);
+            $badge.toggleClass('has-count', count > 0);
+        }
+
         function applyColumnFilters() {
+            var showProduct = $('#toggle-product-col').is(':checked');
+            var showModel = $('#toggle-model-col').is(':checked');
             var showBooked = $('#toggle-booked-qty').is(':checked');
             var showPo = $('#toggle-po-qty').is(':checked');
             var showActExp = $('#toggle-act-cost-exp').is(':checked');
@@ -1437,14 +1573,16 @@
             var showOffAmt = $('#toggle-off-cost-amt').is(':checked');
 
             // Toggle Layer 1 (Main table columns)
-            dataTable.column(7).visible(showBooked, false);
-            dataTable.column(8).visible(showPo, false);
+            dataTable.column(1).visible(showProduct, false);
+            dataTable.column(2).visible(showModel, false);
+            dataTable.column(8).visible(showBooked, false);
             dataTable.column(9).visible(showPo, false);
             dataTable.column(10).visible(showPo, false);
-            dataTable.column(11).visible(showActExp, false);
-            dataTable.column(12).visible(showActAmt, false);
-            dataTable.column(13).visible(showOffExp, false);
-            dataTable.column(14).visible(showOffAmt, false);
+            dataTable.column(11).visible(showPo, false);
+            dataTable.column(12).visible(showActExp, false);
+            dataTable.column(13).visible(showActAmt, false);
+            dataTable.column(14).visible(showOffExp, false);
+            dataTable.column(15).visible(showOffAmt, false);
             dataTable.columns.adjust();
             fitMainTableWidth();
             requestAnimationFrame(function () {
@@ -1459,12 +1597,14 @@
             $('.sub-company-table .col-batch-off-exp, .sub-batch-table .col-batch-off-exp').toggle(showOffExp);
             $('.sub-company-table .col-batch-off-amt, .sub-batch-table .col-batch-off-amt').toggle(showOffAmt);
             fitChildScrollPanels();
+            updateFilterCount();
         }
 
         // Stock with Batch Toggle Handler
         $('#toggle-stock-batch').on('change', function () {
             var isChecked = $(this).is(':checked');
             $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            updateFilterCount();
             if (isChecked) {
                 expandAllBatches();
             } else {
@@ -1476,6 +1616,7 @@
         $('#toggle-zero-qty').on('change', function () {
             var isChecked = $(this).is(':checked');
             $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            updateFilterCount();
             dataTable.ajax.reload();
         });
 
@@ -1489,12 +1630,15 @@
         // Reset Filter Handler
         $('#btn-reset-col-filters').on('click', function (e) {
             e.preventDefault();
+            e.stopPropagation();
             $('#toggle-stock-batch').prop('checked', false).closest('.filter-chip').removeClass('active');
             collapseAllBatches();
 
             var zeroWasChecked = $('#toggle-zero-qty').is(':checked');
             $('#toggle-zero-qty').prop('checked', false).closest('.filter-chip').removeClass('active');
 
+            $('#toggle-product-col').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-model-col').prop('checked', false).closest('.filter-chip').removeClass('active');
             $('#toggle-booked-qty').prop('checked', true).closest('.filter-chip').addClass('active');
             $('#toggle-po-qty').prop('checked', false).closest('.filter-chip').removeClass('active');
             $('#toggle-act-cost-exp').prop('checked', true).closest('.filter-chip').addClass('active');
@@ -1507,6 +1651,8 @@
                 dataTable.ajax.reload();
             }
         });
+
+        updateFilterCount();
 
         // Layer 1: Expand/Collapse Company Breakdown for a Product
         $('#report-datatable tbody').on('click', '.btn-expand-row', function (e) {

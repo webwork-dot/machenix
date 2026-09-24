@@ -424,6 +424,10 @@
                           <option value="<?php echo $pl['id']; ?>" <?php if($product['product_id'] == $pl['id']) echo 'selected'; ?>><?php echo $pl['name']; ?></option>
                         <?php } ?>
                       </select>
+                      <div class="product-qty-info mt-25" id="product_qty_info_<?php echo $k; ?>" style="display: none;">
+                        <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+                        <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; margin-left: 5px;">Avail. Black: <span class="avail-black-val">0</span></span>
+                      </div>
                     </td>
                     <td><input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo $product['qty']; ?>" class="form-control" required=""></td>
                     <td>
@@ -637,7 +641,7 @@
 <script>
 function get_per_total(amount, percent) {
   var final_amount = (amount * percent) / 100;
-  return parseFloat(final_amount.toFixed(2));
+  return parseFloat(cleanNum(final_amount));
 }
 
 
@@ -676,18 +680,18 @@ function subtotal_cal() {
     final_total_sum += Number(element.value) || 0;
   });
 
-  $("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
-  $("#net_sales_value_1").val(total_bill_amt_in_gst.toFixed(2));
-  $("#total_black_amount_summary").val(total_black_amount.toFixed(2));
-  $("#net_sales_value_2").val(final_total_sum.toFixed(2));
+  $("#basic_value").val(cleanNum(total_bill_amt_ex_gst));
+  $("#net_sales_value_1").val(cleanNum(total_bill_amt_in_gst));
+  $("#total_black_amount_summary").val(cleanNum(total_black_amount));
+  $("#net_sales_value_2").val(cleanNum(final_total_sum));
 
   if (gst_type === 'IGST') {
-    $('#igst').val(total_gst_amount.toFixed(2));
+    $('#igst').val(cleanNum(total_gst_amount));
     $('#central_gst').val('0.00');
     $('#state_gst').val('0.00');
   } else if (gst_type == 'Central GST / State GST') {
-    $('#central_gst').val((total_gst_amount / 2).toFixed(2));
-    $('#state_gst').val((total_gst_amount / 2).toFixed(2));
+    $('#central_gst').val(cleanNum((total_gst_amount / 2)));
+    $('#state_gst').val(cleanNum((total_gst_amount / 2)));
     $('#igst').val('0.00');
   } else {
     $('#central_gst').val('0.00');
@@ -701,15 +705,23 @@ function subtotal_cal() {
     total_charge_amt += Number(element.value) || 0;
   });
 
-  $("#other_charges_amount").val(total_charge_amt.toFixed(2));
+  $("#other_charges_amount").val(cleanNum(total_charge_amt));
 
   var round_of = parseFloat($("#round_of").val()) || 0;
 
   grand_total = final_total_sum + total_charge_amt + round_of;
-  $('#grand_total').val(grand_total.toFixed(2));
+  $('#grand_total').val(cleanNum(grand_total));
 }
 
-function recalculate() {
+
+  function cleanNum(n, d) {
+    d = (typeof d === 'undefined') ? 2 : d;
+    var x = parseFloat(n);
+    if (isNaN(x)) return 0;
+    return parseFloat(x.toFixed(d));
+  }
+
+  function recalculate() {
   subtotal_cal();
 };
 
@@ -774,6 +786,10 @@ function appendRequirement() {
             <select class="form-control select2 product_id" name="product_id[]" id="product_id_${nextindex}" onchange="get_details_by_product(this.value,'${nextindex}');" required>
               <option value="">Select Product</option>
             </select>
+            <div class="product-qty-info mt-25" id="product_qty_info_${nextindex}" style="display: none;">
+              <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #28c76f !important; color: #ffffff !important; font-weight: bold;">Avail. White: <span class="avail-white-val">0</span></span>
+              <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; margin-left: 5px;">Avail. Black: <span class="avail-black-val">0</span></span>
+            </div>
           </td>
           <td><input type="number" step="any" id="quantity_${nextindex}" name="quantity[]" placeholder="Qty" value="1" class="form-control" onkeyup="calculate_amt('${nextindex}')" required></td>
           <td>
@@ -844,7 +860,7 @@ function appendRequirement() {
       var total_amount = qty * amount;
 
       if (!is_manual && activeId !== 'bill_amount_' + index) {
-          bill_amt_el.val(amount.toFixed(2));
+          bill_amt_el.val(cleanNum(amount));
       }
 
       var bill_amt = Number(bill_amt_el.val()) || 0;
@@ -856,15 +872,15 @@ function appendRequirement() {
       var total_black_amt = total_amount - total_bill_amt;
       var final_total = total_black_amt + total_bill_gst_amt;
 
-      $('#total_amount_' + index).val(total_amount.toFixed(2));
+      $('#total_amount_' + index).val(cleanNum(total_amount));
       if (activeId !== 'bill_total_' + index) {
-          $('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+          $('#bill_total_' + index).val(cleanNum(total_bill_amt));
       }
-      $('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
-      $('#black_amount_' + index).val(total_black_amt.toFixed(2));
-      $('#gst_amount_' + index).val(gst_amt.toFixed(2));
-      $('#total_bill_gst_amount_' + index).val(total_bill_gst_amt.toFixed(2));
-      $('#final_total_' + index).val(final_total.toFixed(2));
+      $('#black_amount_per_unit_' + index).val(cleanNum(black_amt));
+      $('#black_amount_' + index).val(cleanNum(total_black_amt));
+      $('#gst_amount_' + index).val(cleanNum(gst_amt));
+      $('#total_bill_gst_amount_' + index).val(cleanNum(total_bill_gst_amt));
+      $('#final_total_' + index).val(cleanNum(final_total));
 
       recalculate();
   }
@@ -879,7 +895,7 @@ function appendRequirement() {
       if (qty > 0) {
           var bill_amt = bill_total / qty;
           if (activeId !== 'bill_amount_' + index) {
-              $('#bill_amount_' + index).val(bill_amt.toFixed(2));
+              $('#bill_amount_' + index).val(cleanNum(bill_amt));
           }
       }
 
@@ -916,11 +932,40 @@ function appendRequirement() {
     $('#black_amount_per_unit_' + index).val('');
     $('#black_amount_' + index).val('');
     $('#final_total_' + index).val('');
+    $('#product_qty_info_' + index).hide();
     recalculate();
   }
 
+  function updateProductOverallQty(index) {
+    var warehouse_id = $('#warehouse_id').val() || '0';
+    var product_val = $('#product_id_' + index).val();
+    var info_container = $('#product_qty_info_' + index);
+
+    if (!product_val) {
+      info_container.hide();
+      return;
+    }
+
+    var product_id = String(product_val).split('|')[0];
+
+    $.ajax({
+      type: "POST",
+      url: "<?php echo base_url(); ?>inventory/get_warehouse_product_qty",
+      data: { warehouse_id: warehouse_id, product_id: product_id },
+      dataType: "json",
+      success: function(res) {
+        info_container.find('.avail-white-val').text(res.total_white);
+        info_container.find('.avail-black-val').text(res.total_black);
+        info_container.show();
+      }
+    });
+  }
+
   function get_details_by_product(product_id, index) {
-    if(!product_id) return;
+    if(!product_id) {
+      $('#product_qty_info_' + index).hide();
+      return;
+    }
     if (isDuplicateProductSelection(product_id, index)) {
       Swal.fire({
         title: "Error!",
@@ -931,6 +976,8 @@ function appendRequirement() {
       resetLineItem(index);
       return;
     }
+
+    updateProductOverallQty(index);
 
     var customer_id = $('#customer_id').val();
 
@@ -1055,7 +1102,7 @@ function appendRequirement() {
     }
     
     var total = price + (price * gst / 100);
-    $('#charge_total_' + index).val(total.toFixed(2));
+    $('#charge_total_' + index).val(cleanNum(total));
     recalculate();
   }
 
@@ -1127,6 +1174,11 @@ function appendRequirement() {
 
     change_gst($('#gst_type').val());
     recalculate();
+
+    $('.sales-line-item').each(function() {
+      var index = $(this).data('id');
+      updateProductOverallQty(index);
+    });
 
     // Excel-like Keyboard Navigation
     $(document).on('keydown', '.compact-table input, .compact-table select', function(e) {

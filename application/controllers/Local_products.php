@@ -101,6 +101,16 @@ class Local_products extends CI_Controller
         }
     }
 
+    public function update_local_product_field()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->local_products_model->update_local_product_field();
+        }
+    }
+
     public function local_products_delete_sku()
     {
         $this->local_products_model->raw_products_delete_sku();

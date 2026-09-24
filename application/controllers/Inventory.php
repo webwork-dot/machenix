@@ -1049,6 +1049,36 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function update_raw_product_field()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->update_raw_product_field();
+        }
+    }
+
+    public function update_raw_product_ctn($id = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->update_raw_product_ctn($id);
+        }
+    }
+
+    public function update_raw_product_suppliers($id = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->update_raw_product_suppliers($id);
+        }
+    }
+
     public function update_product_price()
     {
         $id = $this->input->post('id');

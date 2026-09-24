@@ -370,42 +370,42 @@
 											</div>
 										</td>
 										<td>
-											<input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" value="<?php echo $qty; ?>" class="form-control text-center" readonly>
+											<input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" value="<?php echo clean_number($qty); ?>" class="form-control text-center" readonly>
 										</td>
 										<td class="col-intercompany" style="display: none;"></td>
 										<td class="col-intercompany" style="display: none;"></td>
 										<td>
-											<input type="number" step="any" id="master_amount_<?php echo $k; ?>" name="master_amount[]" value="<?php echo number_format($amount, 2, '.', ''); ?>" class="form-control text-center" readonly>
+											<input type="number" step="any" id="master_amount_<?php echo $k; ?>" name="master_amount[]" value="<?php echo clean_number($amount); ?>" class="form-control text-center" readonly>
 										</td>
 										<td></td>
 										<td>
-											<input type="hidden" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo number_format($total_amount, 2, '.', ''); ?>">
+											<input type="hidden" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo clean_number($total_amount); ?>">
 										</td>
 										<td>
-											<input type="hidden" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" value="<?php echo number_format($bill_amount, 2, '.', ''); ?>" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
+											<input type="hidden" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" value="<?php echo clean_number($bill_amount); ?>" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
 										</td>
 										<td></td>
 										<td>
-											<input type="hidden" id="bill_total_<?php echo $k; ?>" name="bill_total[]" value="<?php echo number_format($bill_total, 2, '.', ''); ?>">
+											<input type="hidden" id="bill_total_<?php echo $k; ?>" name="bill_total[]" value="<?php echo clean_number($bill_total); ?>">
 										</td>
 										<td>
-											<input type="number" step="any" id="gst_<?php echo $k; ?>" name="gst[]" value="<?php echo number_format($gst, 2, '.', ''); ?>" class="form-control text-center" readonly>
+											<input type="number" step="any" id="gst_<?php echo $k; ?>" name="gst[]" value="<?php echo clean_number($gst); ?>" class="form-control text-center" readonly>
 										</td>
 										<td>
-											<input type="hidden" id="gst_amount_<?php echo $k; ?>" name="gst_amount[]" value="<?php echo number_format($gst_amount, 2, '.', ''); ?>">
+											<input type="hidden" id="gst_amount_<?php echo $k; ?>" name="gst_amount[]" value="<?php echo clean_number($gst_amount); ?>">
 										</td>
 										<td>
-											<input type="hidden" id="total_bill_gst_amount_<?php echo $k; ?>" name="total_bill_gst_amount[]" value="<?php echo number_format($total_bill_gst_amount, 2, '.', ''); ?>">
+											<input type="hidden" id="total_bill_gst_amount_<?php echo $k; ?>" name="total_bill_gst_amount[]" value="<?php echo clean_number($total_bill_gst_amount); ?>">
 										</td>
 										<td>
-											<input type="hidden" id="black_amount_per_unit_<?php echo $k; ?>" name="black_amt[]" value="<?php echo number_format($black_amt, 2, '.', ''); ?>">
+											<input type="hidden" id="black_amount_per_unit_<?php echo $k; ?>" name="black_amt[]" value="<?php echo clean_number($black_amt); ?>">
 										</td>
 										<td>
-											<input type="hidden" id="black_amount_<?php echo $k; ?>" name="black_total[]" value="<?php echo number_format($black_total, 2, '.', ''); ?>">
+											<input type="hidden" id="black_amount_<?php echo $k; ?>" name="black_total[]" value="<?php echo clean_number($black_total); ?>">
 										</td>
 										<td>
-											<input type="hidden" id="final_total_<?php echo $k; ?>" name="final_total[]" value="<?php echo number_format($final_total, 2, '.', ''); ?>">
-											<input type="hidden" id="available_<?php echo $k; ?>" name="available[]" value="<?php echo (float) ($product['available'] ?? 0); ?>">
+											<input type="hidden" id="final_total_<?php echo $k; ?>" name="final_total[]" value="<?php echo clean_number($final_total); ?>">
+											<input type="hidden" id="available_<?php echo $k; ?>" name="available[]" value="<?php echo clean_number($product['available'] ?? 0); ?>">
 										</td>
 										<td class="text-center align-middle" style="white-space:nowrap;">
 											<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-batch" onclick="addBatch('<?php echo $k; ?>')">
@@ -448,9 +448,9 @@
 													<?php } ?>
 												</select>
 											</td>
-											<td><input type="number" step="any" id="charge_gst_<?php echo $c; ?>" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('<?php echo $c; ?>')" value="<?php echo $chg['gst']; ?>"></td>
-											<td><input type="number" step="any" id="charge_price_<?php echo $c; ?>" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('<?php echo $c; ?>')" value="<?php echo $chg['amount']; ?>"></td>
-											<td><input type="number" step="any" id="charge_total_<?php echo $c; ?>" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="<?php echo $chg['total_amt']; ?>"></td>
+											<td><input type="number" step="any" id="charge_gst_<?php echo $c; ?>" name="charge_gst[]" placeholder="GST %" class="form-control charge-input" onkeyup="calculate_charge('<?php echo $c; ?>')" value="<?php echo clean_number($chg['gst']); ?>"></td>
+											<td><input type="number" step="any" id="charge_price_<?php echo $c; ?>" name="charge_price[]" placeholder="Amount" class="form-control charge-input" onkeyup="calculate_charge('<?php echo $c; ?>')" value="<?php echo clean_number($chg['amount']); ?>"></td>
+											<td><input type="number" step="any" id="charge_total_<?php echo $c; ?>" name="charge_total[]" placeholder="Total Amount" class="form-control" tabindex="-1" readonly value="<?php echo clean_number($chg['total_amt']); ?>"></td>
 											<td class="text-center align-middle" style="white-space:nowrap;">
 												<button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-charge" onclick="appendCharge()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
 												<button type="button" class="btn btn-danger btn-sm waves-effect waves-float waves-light btn-remove-charge" onclick="removeCharge(this, <?php echo $c; ?>)"> <i class="fa fa-times" aria-hidden="true"></i> </button>
@@ -493,7 +493,7 @@
 												<label style="float:right;display: contents;">Total Bill Amt (Exc GST)</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value" value="<?php echo number_format((float) ($data['basic_value'] ?? 0), 2, '.', ''); ?>" placeholder="Total Bill Amt (Exc GST)" class="form-control" readonly></p>
+												<p class="td-blank"><input type="number" step="any" name="basic_value" id="basic_value" value="<?php echo clean_number($data['basic_value'] ?? 0); ?>" placeholder="Total Bill Amt (Exc GST)" class="form-control" readonly></p>
 											</td>
 										</tr>
 
@@ -510,15 +510,15 @@
 											<td colspan="1">
 												<div id="cgst_sgst_inputs">
 													<p class="td-blank mb-25">
-														<input type="number" step="any" name="central_gst" id="central_gst" value="<?php echo number_format((float) ($data['central_gst'] ?? 0), 2, '.', ''); ?>" placeholder="CGST Amount" class="form-control" readonly>
+														<input type="number" step="any" name="central_gst" id="central_gst" value="<?php echo clean_number($data['central_gst'] ?? 0); ?>" placeholder="CGST Amount" class="form-control" readonly>
 													</p>
 													<p class="td-blank mb-0">
-														<input type="number" step="any" name="state_gst" id="state_gst" value="<?php echo number_format((float) ($data['state_gst'] ?? 0), 2, '.', ''); ?>" placeholder="SGST Amount" class="form-control" readonly>
+														<input type="number" step="any" name="state_gst" id="state_gst" value="<?php echo clean_number($data['state_gst'] ?? 0); ?>" placeholder="SGST Amount" class="form-control" readonly>
 													</p>
 												</div>
 												<div id="igst_input" class="hidden">
 													<p class="td-blank mb-0">
-														<input type="number" step="any" name="igst" id="igst" value="<?php echo number_format((float) ($data['igst'] ?? 0), 2, '.', ''); ?>" placeholder="IGST Amount" class="form-control" readonly>
+														<input type="number" step="any" name="igst" id="igst" value="<?php echo clean_number($data['igst'] ?? 0); ?>" placeholder="IGST Amount" class="form-control" readonly>
 													</p>
 												</div>
 											</td>
@@ -529,7 +529,7 @@
 												<label>Total Bill Amt (Incl GST)</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="net_sales_value_1" id="net_sales_value_1" value="<?php echo number_format((float) ($data['net_sales_value_1'] ?? 0), 2, '.', ''); ?>" placeholder="Total Bill Amt (Incl GST)" class="form-control" readonly></p>
+												<p class="td-blank"><input type="number" step="any" name="net_sales_value_1" id="net_sales_value_1" value="<?php echo clean_number($data['net_sales_value_1'] ?? 0); ?>" placeholder="Total Bill Amt (Incl GST)" class="form-control" readonly></p>
 											</td>
 										</tr>
 										<tr>
@@ -537,7 +537,7 @@
 												<label>Total Black Amt</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="total_black_amount_summary" id="total_black_amount_summary" value="<?php echo number_format((float) ($data['total_black_amt'] ?? 0), 2, '.', ''); ?>" placeholder="Total Black Amt" class="form-control" readonly></p>
+												<p class="td-blank"><input type="number" step="any" name="total_black_amount_summary" id="total_black_amount_summary" value="<?php echo clean_number($data['total_black_amt'] ?? 0); ?>" placeholder="Total Black Amt" class="form-control" readonly></p>
 											</td>
 										</tr>
 										<tr>
@@ -545,7 +545,7 @@
 												<label>Final Total</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="net_sales_value_2" id="net_sales_value_2" value="<?php echo number_format((float) ($data['net_sales_value_2'] ?? 0), 2, '.', ''); ?>" placeholder="Final Total" class="form-control" readonly></p>
+												<p class="td-blank"><input type="number" step="any" name="net_sales_value_2" id="net_sales_value_2" value="<?php echo clean_number($data['net_sales_value_2'] ?? 0); ?>" placeholder="Final Total" class="form-control" readonly></p>
 											</td>
 										</tr>
 										<tr>
@@ -553,7 +553,7 @@
 												<label>Other Charges</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="other_charges_amount" id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo number_format((float) ($data['other_charges_amount'] ?? 0), 2, '.', ''); ?>" readonly></p>
+												<p class="td-blank"><input type="number" step="any" name="other_charges_amount" id="other_charges_amount" placeholder="Charge Amount" class="form-control" value="<?php echo clean_number($data['other_charges_amount'] ?? 0); ?>" readonly></p>
 											</td>
 										</tr>
 										<tr>
@@ -561,7 +561,7 @@
 												<label>Round Of</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="round_of" id="round_of" placeholder="Round Of" class="form-control" value="<?php echo number_format((float) ($data['round_of'] ?? 0), 2, '.', ''); ?>" onkeyup="recalculate()"></p>
+												<p class="td-blank"><input type="number" step="any" name="round_of" id="round_of" placeholder="Round Of" class="form-control" value="<?php echo clean_number($data['round_of'] ?? 0); ?>" onkeyup="recalculate()"></p>
 											</td>
 										</tr>
 										<tr>
@@ -569,7 +569,7 @@
 												<label>Grand Total</label>
 											</td>
 											<td colspan="1">
-												<p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total" value="<?php echo number_format((float) ($data['grand_total'] ?? 0), 2, '.', ''); ?>" placeholder="" class="form-control" readonly></p>
+												<p class="td-blank"><input type="number" step="any" name="grand_total" id="grand_total" value="<?php echo clean_number($data['grand_total'] ?? 0); ?>" placeholder="" class="form-control" readonly></p>
 											</td>
 										</tr>
 									</tbody>
@@ -618,19 +618,19 @@ function subtotal_cal() {
 		final_total_sum += parseFloat($(this).val()) || 0;
 	});
 
-	$("#basic_value").val(total_bill_amt_ex_gst.toFixed(2));
-	$("#net_sales_value_1").val(total_bill_amt_in_gst.toFixed(2));
-	$("#total_black_amount_summary").val(total_black_amount.toFixed(2));
-	$("#net_sales_value_2").val(final_total_sum.toFixed(2));
+	$("#basic_value").val(cleanNum(total_bill_amt_ex_gst));
+	$("#net_sales_value_1").val(cleanNum(total_bill_amt_in_gst));
+	$("#total_black_amount_summary").val(cleanNum(total_black_amount));
+	$("#net_sales_value_2").val(cleanNum(final_total_sum));
 
 	if (gst_type === 'IGST') {
-		$('#igst').val(total_gst_amount.toFixed(2));
+		$('#igst').val(cleanNum(total_gst_amount));
 		$('#central_gst').val('0.00');
 		$('#state_gst').val('0.00');
 	} else {
 		// Central GST / State GST: divide by 2
-		$('#central_gst').val((total_gst_amount / 2).toFixed(2));
-		$('#state_gst').val((total_gst_amount / 2).toFixed(2));
+		$('#central_gst').val(cleanNum((total_gst_amount / 2)));
+		$('#state_gst').val(cleanNum((total_gst_amount / 2)));
 		$('#igst').val('0.00');
 	}
 
@@ -640,16 +640,24 @@ function subtotal_cal() {
 		total_charge_amt += Number(element.value) || 0;
 	});
 
-	$("#other_charges_amount").val(total_charge_amt.toFixed(2));
+	$("#other_charges_amount").val(cleanNum(total_charge_amt));
 
 	var round_of = parseFloat($("#round_of").val()) || 0;
 	
 	// Grand Total = Final Total + Add : Other Charges + Round Of
 	var grand_total = final_total_sum + total_charge_amt + round_of;
-	$('#grand_total').val(grand_total.toFixed(2));
+	$('#grand_total').val(cleanNum(grand_total));
 }
 
-function recalculate() {
+
+  function cleanNum(n, d) {
+    d = (typeof d === 'undefined') ? 2 : d;
+    var x = parseFloat(n);
+    if (isNaN(x)) return 0;
+    return parseFloat(x.toFixed(d));
+  }
+
+  function recalculate() {
 	subtotal_cal();
 } 
 
@@ -682,7 +690,7 @@ function calculate_amt(index) {
 
 	var total_amount = qty * amount;
 	if (!is_manual && activeId !== 'bill_amount_' + index) {
-		bill_amt_el.val(amount.toFixed(2));
+		bill_amt_el.val(cleanNum(amount));
 	}
 
 	var bill_amt = Number(bill_amt_el.val()) || 0;
@@ -694,15 +702,15 @@ function calculate_amt(index) {
 	var total_black_amt = total_amount - total_bill_amt;
 	var final_total = total_black_amt + total_bill_gst_amt;
 
-	$('#total_amount_' + index).val(total_amount.toFixed(2));
+	$('#total_amount_' + index).val(cleanNum(total_amount));
 	if (activeId !== 'bill_total_' + index) {
-		$('#bill_total_' + index).val(total_bill_amt.toFixed(2));
+		$('#bill_total_' + index).val(cleanNum(total_bill_amt));
 	}
-	$('#black_amount_per_unit_' + index).val(black_amt.toFixed(2));
-	$('#black_amount_' + index).val(total_black_amt.toFixed(2));
-	$('#gst_amount_' + index).val(gst_amt.toFixed(2));
-	$('#total_bill_gst_amount_' + index).val(total_bill_gst_amt.toFixed(2));
-	$('#final_total_' + index).val(final_total.toFixed(2));
+	$('#black_amount_per_unit_' + index).val(cleanNum(black_amt));
+	$('#black_amount_' + index).val(cleanNum(total_black_amt));
+	$('#gst_amount_' + index).val(cleanNum(gst_amt));
+	$('#total_bill_gst_amount_' + index).val(cleanNum(total_bill_gst_amt));
+	$('#final_total_' + index).val(cleanNum(final_total));
 
 	recalculate();
 }
@@ -717,7 +725,7 @@ function calculate_amt_reverse(index) {
 	if (qty > 0) {
 		var bill_amt = bill_total / qty;
 		if (activeId !== 'bill_amount_' + index) {
-			$('#bill_amount_' + index).val(bill_amt.toFixed(2));
+			$('#bill_amount_' + index).val(cleanNum(bill_amt));
 		}
 	}
 
@@ -749,15 +757,15 @@ function rollup_product_totals(index) {
 
 	var total_allocated = total_white + total_black;
 
-	$('#bill_total_' + index).val(total_bill_amt.toFixed(2));
-	$('#gst_amount_' + index).val(total_gst_amt.toFixed(2));
-	$('#total_bill_gst_amount_' + index).val(total_bill_gst.toFixed(2));
-	$('#black_amount_' + index).val(total_black_amt.toFixed(2));
-	$('#final_total_' + index).val(total_final.toFixed(2));
+	$('#bill_total_' + index).val(cleanNum(total_bill_amt));
+	$('#gst_amount_' + index).val(cleanNum(total_gst_amt));
+	$('#total_bill_gst_amount_' + index).val(cleanNum(total_bill_gst));
+	$('#black_amount_' + index).val(cleanNum(total_black_amt));
+	$('#final_total_' + index).val(cleanNum(total_final));
 
 	if (total_allocated > 0) {
-		$('#bill_amount_' + index).val((total_bill_amt / total_allocated).toFixed(2));
-		$('#black_amount_per_unit_' + index).val((total_black_amt / total_allocated).toFixed(2));
+		$('#bill_amount_' + index).val(cleanNum((total_bill_amt / total_allocated)));
+		$('#black_amount_per_unit_' + index).val(cleanNum((total_black_amt / total_allocated)));
 	} else {
 		// Reset if no allocation
 		$('#bill_amount_' + index).val('0.00');
@@ -792,10 +800,10 @@ function calculate_batch_amt(element, index) {
 	var is_manual = bill_amt_el.attr('data-manual') === 'true';
 
 	if (activeId === rate_el.attr('id')) {
-		bill_amt_el.val(rate.toFixed(2));
+		bill_amt_el.val(cleanNum(rate));
 		bill_amt_el.attr('data-manual', 'false');
 	} else if (!is_manual && activeId !== bill_amt_el.attr('id')) {
-		bill_amt_el.val(rate.toFixed(2));
+		bill_amt_el.val(cleanNum(rate));
 	}
 
 	var bill_amt = parseFloat(bill_amt_el.val()) || 0;
@@ -860,15 +868,15 @@ function calculate_batch_amt(element, index) {
 	var total_batch_qty = white_qty + black_qty;
 	var total_batch_amount_val = total_batch_qty * rate;
 
-	row.find('.batch_total_amount').val(total_batch_amount_val.toFixed(2));
+	row.find('.batch_total_amount').val(cleanNum(total_batch_amount_val));
 	if (activeId !== row.find('.batch_bill_total').attr('id')) {
-		row.find('.batch_bill_total').val(bill_total.toFixed(2));
+		row.find('.batch_bill_total').val(cleanNum(bill_total));
 	}
-	row.find('.batch_gst_amt').val(gst_amt.toFixed(2));
-	row.find('.batch_total_bill_gst_amount').val(total_bill_gst_amt.toFixed(2));
-	row.find('.batch_black_amt').val(black_amt_unit.toFixed(2));
-	row.find('.batch_black_total_amt').val(black_total_amt.toFixed(2));
-	row.find('.batch_final_total').val(final_total.toFixed(2));
+	row.find('.batch_gst_amt').val(cleanNum(gst_amt));
+	row.find('.batch_total_bill_gst_amount').val(cleanNum(total_bill_gst_amt));
+	row.find('.batch_black_amt').val(cleanNum(black_amt_unit));
+	row.find('.batch_black_total_amt').val(cleanNum(black_total_amt));
+	row.find('.batch_final_total').val(cleanNum(final_total));
 
 	checkBatchRemarkRequirement(element);
 	checkBatchBillRemarkRequirement(element);
@@ -889,7 +897,7 @@ function calculate_batch_amt_reverse(element, index) {
 	if (total_qty > 0) {
 		var bill_amt = bill_total / total_qty;
 		if (activeId !== row.find('.batch_bill_amount').attr('id')) {
-			row.find('.batch_bill_amount').val(bill_amt.toFixed(2));
+			row.find('.batch_bill_amount').val(cleanNum(bill_amt));
 		}
 	}
 
@@ -1155,7 +1163,7 @@ function checkBatchRemarkRequirement(element) {
 
 	if (min_price > 0 && rate < min_price) {
 		indicator.removeClass('d-none').addClass('d-inline-flex');
-		min_price_span.text(min_price.toFixed(2));
+		min_price_span.text(cleanNum(min_price));
 		remark_input.prop('readonly', false).attr('required', 'required').addClass('border-danger');
 	} else {
 		indicator.addClass('d-none').removeClass('d-inline-flex');
@@ -1173,7 +1181,7 @@ function checkBatchBillRemarkRequirement(element) {
 
 	if (min_billing_price > 0 && bill_amt < min_billing_price) {
 		indicator.removeClass('d-none').addClass('d-inline-flex');
-		min_billing_span.text(min_billing_price.toFixed(2));
+		min_billing_span.text(cleanNum(min_billing_price));
 		remark_input.prop('readonly', false).attr('required', 'required').addClass('border-danger');
 	} else {
 		indicator.addClass('d-none').removeClass('d-inline-flex');
@@ -1279,8 +1287,8 @@ function getBatchDetails(element, index) {
 			row.attr('data-min-price', res.min_selling_price || 0);
 			row.attr('data-min-billing-price', res.min_billing_price || 0);
 			
-			row.find('.batch_actual_price').val(parseFloat(res.actual_cost_with_exp || 0).toFixed(2));
-			row.find('.batch_official_price').val(parseFloat(res.off_sale_price || 0).toFixed(2));
+			row.find('.batch_actual_price').val(parseFloatcleanNum((res.actual_cost_with_exp || 0)));
+			row.find('.batch_official_price').val(parseFloatcleanNum((res.off_sale_price || 0)));
 
 			// Initialize Rate and GST from main row
 			var main_rate = $('#master_amount_' + index).val();
@@ -1331,7 +1339,7 @@ function calculate_charge(index) {
 	}
 	
 	var total = price + (price * gst / 100);
-	$('#charge_total_' + index).val(total.toFixed(2));
+	$('#charge_total_' + index).val(cleanNum(total));
 	recalculate();
 }
 

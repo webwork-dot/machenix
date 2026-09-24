@@ -572,6 +572,21 @@ if (!function_exists('price_format_decimal')) {
 	}
 }
 
+if (!function_exists('clean_number')) {
+	/**
+	 * Format a number and strip trailing zeros (e.g. 10.00000 -> 10, 10.50 -> 10.5).
+	 */
+	function clean_number($number, $decimals = 5)
+	{
+		if ($number === null || $number === '') {
+			return '0';
+		}
+		$formatted = number_format((float) $number, (int) $decimals, '.', '');
+		$formatted = rtrim(rtrim($formatted, '0'), '.');
+		return ($formatted === '' || $formatted === '-') ? '0' : $formatted;
+	}
+}
+
 if( ! function_exists('get_time_difference_php'))
     {
         function get_time_difference_php($created_time)

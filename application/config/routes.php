@@ -155,6 +155,10 @@ $route[$r_inventory . '/raw-products']              = 'inventory/raw_products';
 $route[$r_inventory . '/import-products']           = 'inventory/raw_products_form/import';
 $route[$r_inventory . '/raw-products/add']          = 'inventory/raw_products_form/add';
 $route[$r_inventory . '/raw-products/edit/(:num)']  = 'inventory/raw_products_form/edit/$1';
+$route[$r_inventory . '/get_raw_products']          = 'inventory/get_raw_products';
+$route[$r_inventory . '/update_raw_product_field']  = 'inventory/update_raw_product_field';
+$route[$r_inventory . '/update_raw_product_ctn/(:num)'] = 'inventory/update_raw_product_ctn/$1';
+$route[$r_inventory . '/update_raw_product_suppliers/(:num)'] = 'inventory/update_raw_product_suppliers/$1';
 
 $route[$r_inventory . '/local-products']                      = 'local_products/index';
 $route[$r_inventory . '/local-products/add']                  = 'local_products/add';
@@ -165,6 +169,7 @@ $route[$r_inventory . '/local-products/delete/(:num)']        = 'local_products/
 $route[$r_inventory . '/local-products/delete_variation']     = 'local_products/local_products_delete_variation';
 $route[$r_inventory . '/local-products/delete_sku']           = 'local_products/local_products_delete_sku';
 $route[$r_inventory . '/get_local_products']                  = 'local_products/get_local_products';
+$route[$r_inventory . '/update_local_product_field']          = 'local_products/update_local_product_field';
 
 $route[$r_inventory . '/product-formula']                     = 'inventory/product_formula';
 $route[$r_inventory . '/product-formula/add']                 = 'inventory/product_formula_form/product_formula_add';

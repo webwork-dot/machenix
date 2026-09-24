@@ -28,13 +28,14 @@
                   <tr>
 					<th>#</th>
 					<th>Company Name</th>
+					<th>Distributor</th>
 					<th>GST Name</th>
-					<th>GST Number</th>
-                    <th>Pincode</th>
-                    <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-                        <th>Added By</th>
-					<?php } ?>
-                    <th>Actions</th>
+					<th>GST No</th>
+					<th>City</th>
+					<th>State</th>
+					<th>Salesperson</th>
+					<th>Added By</th>
+					<th>Actions</th>
                   </tr>
                </thead>
             </table>
@@ -82,12 +83,13 @@
             "columns": [
                 { "data": "sr_no" },
                 { "data": "name" },
+                { "data": "distributor" },
                 { "data": "gst_name" },
                 { "data": "gst_no" },
-                { "data": "pincode" },
-                <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-                    { "data": "added_by_name" },
-                <?php } ?>
+                { "data": "city_name" },
+                { "data": "state_name" },
+                { "data": "salesperson" },
+                { "data": "added_by_name" },
                 { "data": "action" },
             ], 
            
@@ -96,7 +98,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7,8]
                     }
                 },
                 {
@@ -104,7 +106,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
+                       "columns": [0,1,2,3,4,5,6,7,8]
                     }
                 }
             ], 

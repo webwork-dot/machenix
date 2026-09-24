@@ -153,6 +153,14 @@
             </div>
 
             <div class="col-12 col-sm-3 mb-1">
+              <div class="form-group">
+                <label>Outstanding Limit</label>
+                <input type="number" step="0.01" class="form-control" placeholder="Enter Outstanding Limit" name="outstanding_limit"
+                  value="<?php echo isset($data['outstanding_limit']) ? number_format($data['outstanding_limit'], 2, '.', '') : '0.00'; ?>">
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-3 mb-1">
               <div class="form-group" style="margin-top: 30px;">
                 <div class="form-check">
                   <input type="checkbox" class="form-check-input" name="is_distributor" id="is_distributor" value="1" <?php echo (isset($data['is_distributor']) && $data['is_distributor'] == 1) ? 'checked' : ''; ?>>
