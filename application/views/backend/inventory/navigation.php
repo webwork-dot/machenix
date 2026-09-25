@@ -148,13 +148,13 @@
         <?php } ?>
 
         <?php // if($user_id == 4 || in_array('23',$access_array)) {?>
-	    <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'my_stock_batch' || $page_name == 'overall_stock' || $page_name == 'low_stock') echo 'active'; ?>">
+	    <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'stock_history' || $page_name == 'my_stock_batch' || $page_name == 'overall_stock' || $page_name == 'low_stock') echo 'active'; ?>">
            <a class="d-flex align-items-center" href="#">
                <i data-feather="database"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Stock</span>
            </a>
            <ul class="menu-content">
-               <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'my_stock_batch') echo 'active'; ?>">
+               <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'stock_history' || $page_name == 'my_stock_batch') echo 'active'; ?>">
                   <a class="d-flex align-items-center" href="<?php echo site_url('inventory/my-stock'); ?>">
                       <i class="feather icon-circle"></i>
                       <span class="menu-title text-truncate">My Stock</span>

@@ -409,7 +409,8 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['suppliers'] = $this->inventory_model->get_import_suppliers();
+        $page_data['suppliers']     = $this->inventory_model->get_suppliers_for_adjustment();
+        $page_data['other_charges'] = $this->inventory_model->get_other_charges_list();
 
         if ($param1 == 'add') {
             $page_data['page_name']  = 'supplier_adjustment_add';
@@ -422,7 +423,7 @@ class Inventory extends CI_Controller
                 redirect(site_url('inventory/supplier-adjustment'), 'refresh');
             }
             $page_data['data']       = $data;
-            $page_data['batches']    = $this->inventory_model->get_batches_by_supplier_for_select($data['supplier_id']);
+            $page_data['details']    = $this->inventory_model->get_supplier_adjustment_details_by_parent_id($param2);
             $page_data['id']         = $param2;
             $page_data['page_name']  = 'supplier_adjustment_edit';
             $page_data['page_title'] = 'Edit Supplier Adjustment';
@@ -1393,7 +1394,7 @@ class Inventory extends CI_Controller
         }
 
         $company_id = $this->session->userdata('company_id');
-        $supplier_list = $this->common_model->getResultById('supplier', 'id, name', ['is_deleted' => '0', 'company_id' => $company_id]);
+        $supplier_list = $this->common_model->getResultById('supplier', 'id, name, type', ['is_deleted' => '0', 'company_id' => $company_id]);
         $page_data['supplier_list'] = ($supplier_list != '') ? $supplier_list : [];
 
         $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
@@ -3173,6 +3174,59 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function stock_history($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+
+            $product_id = (int) $param1;
+            $fy = $this->inventory_model->get_indian_fy_range();
+            $from = $fy['from'];
+            $to   = $fy['to'];
+            $date_range = trim((string) $this->input->get('date_range', true));
+            if ($date_range !== '' && strpos($date_range, ' - ') !== false) {
+                $parts = explode(' - ', $date_range);
+                $from_dt = DateTime::createFromFormat('d-m-Y', trim($parts[0]));
+                $to_dt   = DateTime::createFromFormat('d-m-Y', trim($parts[1]));
+                if ($from_dt && $to_dt) {
+                    $from = $from_dt->format('Y-m-d');
+                    $to   = $to_dt->format('Y-m-d');
+                }
+            }
+
+            $ledger = $this->inventory_model->build_product_stock_history($product_id, $from, $to);
+            if (!$ledger) {
+                $this->session->set_flashdata('error_message', get_phrase('product_not_found'));
+                redirect(site_url('inventory/my-stock'), 'refresh');
+                return;
+            }
+
+            $product = $ledger['product'];
+            $title = trim(($product['item_code'] ?? '') . ' - ' . ($product['product_name'] ?? ''), ' -');
+
+            $page_data['id']          = $product_id;
+            $page_data['ledger']      = $ledger;
+            $page_data['from_date']   = $from;
+            $page_data['to_date']     = $to;
+            $page_data['date_range']  = date('d-m-Y', strtotime($from)) . ' - ' . date('d-m-Y', strtotime($to));
+            $page_data['page_name']   = 'stock_history';
+            $page_data['page_title']  = get_phrase($title ?: 'Stock History');
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_stock_history()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_stock_history();
+        }
+    }
+
     public function overall_stock()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -3646,14 +3700,32 @@ class Inventory extends CI_Controller
             $page_data['page_title'] = 'Edit Customer';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'customer_ledger') {
-            $data                    = $this->inventory_model->get_customer_by_id($param2)->row_array();
-            $page_data['data']       = $data;
-            $page_data['id']         = $param2;
-            $page_data['outstanding'] = $this->inventory_model->get_customer_ledger($param2);
-            $page_data['payments']    = $this->inventory_model->get_customer_payments_by_id($param2);
-            $page_data['adjustments'] = $this->inventory_model->get_customer_adjustments($param2);
-            $page_data['page_name']  = 'customer_ledger';
-            $page_data['page_title'] = 'Customer Ledger';
+            $data = $this->inventory_model->get_customer_by_id($param2)->row_array();
+            $fy   = $this->inventory_model->get_indian_fy_range();
+
+            $from = $fy['from'];
+            $to   = $fy['to'];
+            $date_range = trim((string) $this->input->get('date_range', true));
+            if ($date_range !== '' && strpos($date_range, ' - ') !== false) {
+                $parts = explode(' - ', $date_range);
+                $from_dt = DateTime::createFromFormat('d-m-Y', trim($parts[0]));
+                $to_dt   = DateTime::createFromFormat('d-m-Y', trim($parts[1]));
+                if ($from_dt && $to_dt) {
+                    $from = $from_dt->format('Y-m-d');
+                    $to   = $to_dt->format('Y-m-d');
+                }
+            }
+
+            $ledger = $this->inventory_model->build_customer_ledger($param2, $from, $to);
+
+            $page_data['data']                   = $data;
+            $page_data['id']                     = $param2;
+            $page_data['ledger']                 = $ledger;
+            $page_data['from_date']              = $from;
+            $page_data['to_date']                = $to;
+            $page_data['date_range']             = date('d-m-Y', strtotime($from)) . ' - ' . date('d-m-Y', strtotime($to));
+            $page_data['page_name']              = 'customer_ledger';
+            $page_data['page_title']             = 'Customer Ledger';
             $this->load->view('backend/index', $page_data);
         }
     }

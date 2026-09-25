@@ -9406,12 +9406,14 @@ class Inventory_model extends CI_Model
 							$b_booked = $booked_qty;
 						}
 						
-						$b_action = '<div class="d-inline-flex align-items-center">';
-						$b_action .= '<a href="' . base_url() . 'inventory/my-stock-history/' . $b['id'] . '" class="btn-micro-action me-1" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-eye"></i></a>';
-						if ($b_batch_no != '' && $b_batch_no != '-') {
-							$b_action .= '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($b_batch_no) . '\', \'Generate Barcode\')" class="btn-micro-action btn-barcode" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><i class="fa fa-barcode"></i></a>';
-						}
-						$b_action .= '</div>';
+						$b_action = '';
+						// Batch action column hidden for now (history moved to product/company row)
+						// $b_action = '<div class="d-inline-flex align-items-center">';
+						// $b_action .= '<a href="' . base_url() . 'inventory/stock-history/' . $b['product_id'] . '" class="btn-micro-action me-1" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-clock"></i></a>';
+						// if ($b_batch_no != '' && $b_batch_no != '-') {
+						// 	$b_action .= '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($b_batch_no) . '\', \'Generate Barcode\')" class="btn-micro-action btn-barcode" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><i class="fa fa-barcode"></i></a>';
+						// }
+						// $b_action .= '</div>';
 						
 						$b_qty = intval($b['quantity']);
 						$b_white = intval($b['official_qty']);
@@ -9444,17 +9446,9 @@ class Inventory_model extends CI_Model
 					}
 				}
 
-				// Action column for main table
+				// Action column for main table (company product) — history only
 				$action = '<div class="d-inline-flex align-items-center">';
-				$target_batch_id = (!empty($id) && $id > 0) ? $id : $product_id;
-				$view_url = base_url() . 'inventory/my-stock-batch/' . $target_batch_id  . '/' . (isset($warehouse_id) ? $warehouse_id : '');
-				$action .= '<a href="' . $view_url . '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View Batches"><i class="feather icon-eye"></i></a>';
-
-				$latest_batch = $this->db->select('batch_no')->where('product_id', $product_id)->where('batch_no!=', '')->where('batch_no!=', null)->order_by('id', 'DESC')->limit(1)->get('inventory')->row_array();
-				$batch_no_val = $latest_batch ? $latest_batch['batch_no'] : '';
-				if ($batch_no_val != '') {
-					$action .= '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($batch_no_val) . '\', \'Generate Barcode\')" class="btn-table-action btn-action-barcode" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><i class="fa fa-barcode"></i></a>';
-				}
+				$action .= '<a href="' . base_url() . 'inventory/stock-history/' . $product_id . '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-clock"></i></a>';
 				$action .= '</div>';
 
 				// Clickable Qty badges
@@ -9773,6 +9767,186 @@ class Inventory_model extends CI_Model
 	}
 
 	public function get_my_stock_history()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($_REQUEST['id']) && $_REQUEST['id'] != ""):
+			$id        = $_REQUEST['id'];
+			if ($id != 'All') {
+				$keyword_filter .= " AND (parent_id='" . $id . "')";
+			}
+		endif;
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+		//$keyword_filter .= " AND (voucher_no like '%" . $keyword . "%' OR supplier_name like '%" . $keyword . "%' OR warehouse_name like '%" . $keyword . "%')";
+		endif;
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from =  date('Y-m-d', strtotime($added_date[0]));
+			$to =  date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(received_date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(received_date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		$total_count = $this->db->query("SELECT id FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id,warehouse_name,product_name,quantity,official_qty,black_qty,order_id,status,received_date,added_by_name,added_date FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY id ASC LIMIT $start, $length");
+		// $query = $this->db->query("SELECT id,warehouse_name,product_name,quantity,official_qty,black_qty,order_id,status,received_date,added_by_name,added_date FROM inventory_history WHERE (id!='') $keyword_filter ORDER BY received_date DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			$total_qty = 0;
+			$total_white = 0;
+			$total_black = 0;
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$order_id = $item['order_id'];
+
+				$total_qty += intval($item['quantity'] ?? 0);
+				$total_white += intval($item['official_qty'] ?? 0);
+				$total_black += intval($item['black_qty'] ?? 0);
+
+				$voucher_no = '-';
+				$supplier_name = '-';
+				$to = '-';
+				if ($item['status'] == 'manual_in') {
+					$supplier_name = $item['added_by_name'];
+					$status = '<span class="badge badge-success">Manual In</span>';
+				} else if ($item['status'] == 'manual_out') {
+					$supplier_name = $item['added_by_name'];
+					$status = '<span class="badge badge-danger">Manual Out</span>';
+				} else if ($item['status'] == 'product_delete') {
+					$supplier_name = $item['added_by_name'];
+					$status = '<span class="badge badge-danger">Product Delete</span>';
+				} else if ($item['status'] == 'in') {
+					$voucher_no = $this->common_model->selectByidParam($order_id, 'purchase_order', 'voucher_no');
+					$supplier_name = $this->common_model->selectByidParam($order_id, 'purchase_order', 'supplier_name');
+					$status = '<span class="badge badge-success">In</span>';
+				} else if ($item['status'] == 'transfer_out') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'stock_transfer', 'id');
+					$voucher_no = '<b>Transfer</b> <br/>GPS_ST_' . $voucher_id;
+					$to = $this->common_model->selectByidParam($order_id, 'stock_transfer', 'to_name');
+					$status = '<span class="badge badge badge-danger">Out</span>';
+				} else if ($item['status'] == 'transfer_in') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'stock_transfer', 'id');
+					$voucher_no = '<b>Transfer</b> <br/>GPS_ST_' . $voucher_id . '';
+					$supplier_name = $this->common_model->selectByidParam($order_id, 'stock_transfer', 'from_name');
+					$status = '<span class="badge badge-success">In</span>';
+				} else if ($item['status'] == 'reserved_out') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'reserved_order', 'id');
+					$voucher_no = '<b>Reserved </b> <br/>GPS_RS_' . $voucher_id . '';
+					$supplier_name = '-';
+					$status = '<span class="badge badge badge-danger">Out</span>';
+				} else if ($item['status'] == 'reserved_in') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'reserved_order', 'id');
+					$voucher_no = '<b>Reserved </b> <br/>GPS_RS_' . $voucher_id . '';
+					$supplier_name = '-';
+					$status = '<span class="badge badge-success">In</span>';
+				} else if ($item['status'] == 'damage_out') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'damage_stock', 'id');
+					$voucher_no = '<b>Damage </b> <br/>GPS_DM_' . $voucher_id . '';
+					$supplier_name = '-';
+					$status = '<span class="badge badge badge-danger">Out</span>';
+					$supplier_name = $this->common_model->selectByidParam($order_id, 'damage_stock', 'customer_name');
+					$to = $this->common_model->selectByidParam($order_id, 'damage_stock', 'company_name');
+				} else if ($item['status'] == 'damage_in') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'damage_stock', 'id');
+					$voucher_no = '<b>Damage </b> <br/>GPS_DM_' . $voucher_id . '';
+					$supplier_name = '-';
+					$status = '<span class="badge badge-warning">Damage Stock Delete</span>';
+					$supplier_name = $this->common_model->selectByidParam($order_id, 'damage_stock', 'customer_name');
+					$to = $this->common_model->selectByidParam($order_id, 'damage_stock', 'company_name');
+				} else if ($item['status'] == 'return') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'goods_return', 'id');
+					$voucher_no = '<b>Return </b> <br/>GPS_GR_' . $voucher_id . '';
+					$supplier_name = '-';
+					$status = '<span class="badge badge-success">In</span>';
+					$supplier_name = $this->common_model->selectByidParam($order_id, 'goods_return', 'customer_name');
+					$to = $this->common_model->selectByidParam($order_id, 'goods_return', 'company_name');
+				} else if ($item['status'] == 'sales_return_delete') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'goods_return', 'id');
+					$voucher_no = '<b>Return </b> <br/>GPS_GR_' . $voucher_id . '';
+					$supplier_name = '-';
+					$status = '<span class="badge badge-warning">Sales Return Delete</span>';
+					$supplier_name = $this->common_model->selectByidParam($order_id, 'goods_return', 'customer_name');
+					$to = $this->common_model->selectByidParam($order_id, 'goods_return', 'company_name');
+				} else if ($item['status'] == 'sales_delete') {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'sales_order', 'order_no');
+					$order_type = $this->common_model->selectByidParam($order_id, 'sales_order', 'order_type');
+					$customer_id = $this->common_model->selectByidParam($order_id, 'sales_order', 'customer_id');
+					$company_name = $this->common_model->selectByidParam($order_id, 'sales_order', 'company_name');
+					$x_type = ($order_type == 'normal') ? 'Sales Orders' : 'Excel Orders';
+					$voucher_no = '<b>' . $x_type . ' </b> <br/>' . $voucher_id . '';
+					$status = '<span class="badge badge badge-warning">Sales Delete</span>';
+					$supplier_name = $company_name;
+					$to = $this->common_model->selectByidParam($customer_id, 'customer', 'name');
+				} else {
+					$voucher_id = $this->common_model->selectByidParam($order_id, 'sales_order', 'order_no');
+					$order_type = $this->common_model->selectByidParam($order_id, 'sales_order', 'order_type');
+					$customer_id = $this->common_model->selectByidParam($order_id, 'sales_order', 'customer_id');
+					$company_name = $this->common_model->selectByidParam($order_id, 'sales_order', 'company_name');
+					$x_type = ($order_type == 'normal') ? 'Sales Orders' : 'Excel Orders';
+					$voucher_no = '<b>' . $x_type . ' </b> <br/>' . $voucher_id . '';
+					$status = '<span class="badge badge badge-danger">Out</span>';
+					$supplier_name = $company_name;
+					$to = $this->common_model->selectByidParam($customer_id, 'customer', 'name');
+				}
+
+				$received_date = date('d M, Y', strtotime($item['received_date']));
+
+				$data[] = array(
+					"sr_no"       => ++$start,
+					"id"          => $item['id'],
+					"date"        => $received_date,
+					"voucher_no"        => $voucher_no,
+					"product_name"        => $item['product_name'],
+					"status"        => $status,
+					"quantity"        => $item['quantity'],
+					"white_qty"       => $item['official_qty'],
+					"black_qty"       => $item['black_qty'],
+					"added_by_name"        => $item['added_by_name'],
+					"supplier_name"        => $supplier_name,
+					"to"        => $to,
+				);
+			}
+
+			// Append Total Row
+			$data[] = array(
+				"sr_no"       => "",
+				"id"          => "",
+				"date"        => "<b>Total</b>",
+				"voucher_no"        => "",
+				"product_name"        => "",
+				"status"        => "",
+				"quantity"        => "<b>" . $total_qty . "</b>",
+				"white_qty"       => "<b>" . $total_white . "</b>",
+				"black_qty"       => "<b>" . $total_black . "</b>",
+				"added_by_name"        => "",
+				"supplier_name"        => "",
+				"to"        => "",
+			);
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
+
+	public function get_stock_history()
 	{
 		$params['draw'] = $_REQUEST['draw'];
 		$start = $_REQUEST['start'];
@@ -27565,12 +27739,14 @@ public function get_sales_return_reports()
 									$b_booked = $c_booked_qty;
 								}
 
-								$b_action = '<div class="d-inline-flex align-items-center">';
-								$b_action .= '<a href="' . base_url() . 'inventory/my-stock-history/' . $b['id'] . '" class="btn-micro-action me-1" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-eye"></i></a>';
-								if ($b_batch_no != '' && $b_batch_no != '-') {
-									$b_action .= '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($b_batch_no) . '\', \'Generate Barcode\')" class="btn-micro-action btn-barcode" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><i class="fa fa-barcode"></i></a>';
-								}
-								$b_action .= '</div>';
+								$b_action = '';
+								// Batch action column hidden for now (history moved to company row)
+								// $b_action = '<div class="d-inline-flex align-items-center">';
+								// $b_action .= '<a href="' . base_url() . 'inventory/stock-history/' . $b['product_id'] . '" class="btn-micro-action me-1" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-clock"></i></a>';
+								// if ($b_batch_no != '' && $b_batch_no != '-') {
+								// 	$b_action .= '<a href="javascript:void(0);" onclick="showAjaxModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($b_batch_no) . '\', \'Generate Barcode\')" class="btn-micro-action btn-barcode" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><i class="fa fa-barcode"></i></a>';
+								// }
+								// $b_action .= '</div>';
 
 								$b_qty = intval($b['quantity']);
 								$b_white = intval($b['official_qty']);
@@ -27674,9 +27850,8 @@ public function get_sales_return_reports()
 					? '<span class="text-dark font-small-2">' . htmlspecialchars($item['item_code']) . '</span>'
 					: '<span class="stk-badge-zero">-</span>';
 
-				$action = '<div class="d-inline-flex align-items-center">';
-				$action .= '<a href="' . base_url() . 'inventory/my-stock-company/' . $product_id . '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View Company Stock"><i class="feather icon-eye"></i></a>';
-				$action .= '</div>';
+				// Main overall-stock action column hidden — history lives on company rows
+				$action = '';
 
 				$data[] = array(
 					"sr_no"             => $sr_no_html,
@@ -27778,8 +27953,8 @@ public function get_sales_return_reports()
 				$cid = $item['company_id'];
 				$inv_id = $item['inventory_id'];
 
-				$batch_url = base_url() . 'inventory/my-stock-batch/' . $inv_id . '/' . $wid;
-				$action = '<a href="' . $batch_url . '" data-toggle="tooltip" data-bs-placement="top" title="View Batches"><button type="button" class="btn btn-sm btn-primary"><i class="fa fa-eye"></i></button></a>';
+				$batch_url = base_url() . 'inventory/stock-history/' . $pid;
+				$action = '<a href="' . $batch_url . '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-clock"></i></a>';
 				
 				$po_qty_arr = $this->get_product_po_list($pid, $cid, 'po', $wid);
 				$po_qty = array_sum(array_column($po_qty_arr, 'quantity'));
@@ -28019,13 +28194,29 @@ public function get_sales_return_reports()
 
 	public function get_batches_by_supplier($supplier_id)
 	{
-		$query = $this->db->query("SELECT DISTINCT po.voucher_no
-									FROM purchase_order po
-									JOIN po_products pp ON po.id = pp.parent_id
-									WHERE pp.supplier_id = '$supplier_id'
-									AND po.delivery_status = 'purchase_in'
-									AND po.is_deleted = '0'
-									ORDER BY po.voucher_no ASC");
+		$supplier_id = (int) $supplier_id;
+		$supplier = $this->db->get_where('supplier', array('id' => $supplier_id))->row_array();
+		$is_local = (!empty($supplier['type']) && $supplier['type'] === 'local');
+
+		if ($is_local) {
+			$query = $this->db->query("SELECT DISTINCT po.voucher_no
+										FROM purchase_order po
+										WHERE po.supplier_id = '$supplier_id'
+										AND po.method = 'local'
+										AND po.delivery_status = 'purchase_in'
+										AND po.is_deleted = '0'
+										AND po.voucher_no IS NOT NULL AND po.voucher_no != ''
+										ORDER BY po.voucher_no ASC");
+		} else {
+			$query = $this->db->query("SELECT DISTINCT po.voucher_no
+										FROM purchase_order po
+										JOIN po_products pp ON po.id = pp.parent_id
+										WHERE pp.supplier_id = '$supplier_id'
+										AND po.method = 'import'
+										AND po.delivery_status = 'purchase_in'
+										AND po.is_deleted = '0'
+										ORDER BY po.voucher_no ASC");
+		}
 		return $query->result_array();
 	}
 	public function get_customer_ledger($customer_id)
@@ -28038,6 +28229,1562 @@ public function get_sales_return_reports()
 									AND is_approved = '1'
 									ORDER BY date DESC, id DESC");
 		return $query->result_array();
+	}
+
+	/**
+	 * Indian FY date range helper.
+	 * Apr–Mar: if month >= 4 → Apr 1 Y .. Mar 31 Y+1, else Apr 1 Y-1 .. Mar 31 Y.
+	 */
+	public function get_indian_fy_range($ref_date = null)
+	{
+		$ts = $ref_date ? strtotime($ref_date) : time();
+		$y = (int) date('Y', $ts);
+		$m = (int) date('n', $ts);
+		if ($m >= 4) {
+			return ['from' => sprintf('%04d-04-01', $y), 'to' => sprintf('%04d-03-31', $y + 1)];
+		}
+		return ['from' => sprintf('%04d-04-01', $y - 1), 'to' => sprintf('%04d-03-31', $y)];
+	}
+
+	/**
+	 * Product-level stock history (Actual / White / Black) with monthly + date-wise drilldown.
+	 *
+	 * @param int    $product_id
+	 * @param string $from_date Y-m-d
+	 * @param string $to_date   Y-m-d
+	 * @return array|null
+	 */
+	public function build_product_stock_history($product_id, $from_date, $to_date)
+	{
+		$product_id = (int) $product_id;
+		$company_id = (int) $this->session->userdata('company_id');
+
+		$fy = $this->get_indian_fy_range();
+		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
+			$from_date = $fy['from'];
+		}
+		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
+			$to_date = $fy['to'];
+		}
+
+		$product = $this->db->query(
+			"SELECT id, item_code, name AS product_name, categories
+			 FROM raw_products WHERE id = {$product_id} LIMIT 1"
+		)->row_array();
+
+		if (!$product) {
+			$inv = $this->db->query(
+				"SELECT product_id, item_code, product_name, categories
+				 FROM inventory WHERE product_id = {$product_id} AND company_id = {$company_id}
+				 ORDER BY id ASC LIMIT 1"
+			)->row_array();
+			if (!$inv) {
+				return null;
+			}
+			$product = [
+				'id'           => $product_id,
+				'item_code'    => $inv['item_code'] ?? '',
+				'product_name' => $inv['product_name'] ?? '',
+				'categories'   => $inv['categories'] ?? '',
+			];
+		} else {
+			$product['product_name'] = $product['product_name'] ?? '';
+		}
+
+		$rows = $this->db->query(
+			"SELECT *
+			 FROM inventory_history
+			 WHERE product_id = {$product_id}
+			   AND company_id = {$company_id}
+			   AND (is_deleted = 0 OR is_deleted IS NULL)
+			 ORDER BY received_date ASC, id ASC"
+		)->result_array();
+
+		$inward_statuses = [
+			'in', 'transfer_in', 'reserved_in', 'damage_in', 'return',
+			'purchase_return_delete', 'manual_in', 'sales_delete',
+		];
+		$outward_statuses = [
+			'out', 'transfer_out', 'reserved_out', 'damage_out', 'purchase_out',
+			'purchase_delete', 'sales_return_delete', 'manual_out', 'product_delete',
+		];
+
+		$so_cache = [];
+		$io_cache = [];
+		$po_cache = [];
+		$st_cache = [];
+		$ds_cache = [];
+		$gr_cache = [];
+		$pr_cache = [];
+		$ro_cache = [];
+		$cust_cache = [];
+
+		$get_so = function ($oid) use (&$so_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $so_cache)) {
+				$so_cache[$oid] = $this->db->get_where('sales_order', ['id' => $oid])->row_array();
+			}
+			return $so_cache[$oid];
+		};
+		$get_io_for_so = function ($so) use (&$io_cache) {
+			if (!$so) {
+				return null;
+			}
+			$sid = (int) ($so['id'] ?? 0);
+			if ($sid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($sid, $io_cache)) {
+				$io_cache[$sid] = $this->db->query(
+					"SELECT * FROM invoice_order
+					 WHERE unique_id = {$sid}
+					   AND type IN ('conversion','bill')
+					   AND (is_deleted = 0 OR is_deleted IS NULL)
+					 ORDER BY id DESC LIMIT 1"
+				)->row_array();
+			}
+			return $io_cache[$sid];
+		};
+		$get_po = function ($oid) use (&$po_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $po_cache)) {
+				$po_cache[$oid] = $this->db->get_where('purchase_order', ['id' => $oid])->row_array();
+			}
+			return $po_cache[$oid];
+		};
+		$get_st = function ($oid) use (&$st_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $st_cache)) {
+				$st_cache[$oid] = $this->db->get_where('stock_transfer', ['id' => $oid])->row_array();
+			}
+			return $st_cache[$oid];
+		};
+		$get_ds = function ($oid) use (&$ds_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $ds_cache)) {
+				$ds_cache[$oid] = $this->db->get_where('damage_stock', ['id' => $oid])->row_array();
+			}
+			return $ds_cache[$oid];
+		};
+		$get_gr = function ($oid) use (&$gr_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $gr_cache)) {
+				$gr_cache[$oid] = $this->db->get_where('goods_return', ['id' => $oid])->row_array();
+			}
+			return $gr_cache[$oid];
+		};
+		$get_pr = function ($oid) use (&$pr_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $pr_cache)) {
+				$pr_cache[$oid] = $this->db->get_where('purchase_return', ['id' => $oid])->row_array();
+			}
+			return $pr_cache[$oid];
+		};
+		$get_ro = function ($oid) use (&$ro_cache) {
+			$oid = (int) $oid;
+			if ($oid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($oid, $ro_cache)) {
+				$ro_cache[$oid] = $this->db->get_where('reserved_order', ['id' => $oid])->row_array();
+			}
+			return $ro_cache[$oid];
+		};
+		$get_cust = function ($cid) use (&$cust_cache) {
+			$cid = (int) $cid;
+			if ($cid <= 0) {
+				return null;
+			}
+			if (!array_key_exists($cid, $cust_cache)) {
+				$cust_cache[$cid] = $this->db->get_where('customer', ['id' => $cid])->row_array();
+			}
+			return $cust_cache[$cid];
+		};
+
+		$classified = [];
+		foreach ($rows as $item) {
+			$status = (string) ($item['status'] ?? '');
+			$order_id = (int) ($item['order_id'] ?? 0);
+			$qty = (int) ($item['quantity'] ?? 0);
+			$off_qty = (int) ($item['official_qty'] ?? 0);
+			$blk_qty = (int) ($item['black_qty'] ?? 0);
+
+			$dir = 'none';
+			if (in_array($status, $inward_statuses, true)) {
+				$dir = 'in';
+			} elseif (in_array($status, $outward_statuses, true) || $status === '' || $status === 'out') {
+				$dir = 'out';
+			}
+
+			$particular = '-';
+			$voucher_type = 'Other';
+			$voucher_no = '-';
+			$is_conversion = false;
+			$is_pen_black = false;
+			$is_purchase_conv = false;
+			$is_sales_conv = false;
+
+			if ($status === 'manual_in') {
+				$voucher_type = 'Manual In';
+				$particular = $item['added_by_name'] ?: '-';
+			} elseif ($status === 'manual_out') {
+				$voucher_type = 'Manual Out';
+				$particular = $item['added_by_name'] ?: '-';
+			} elseif ($status === 'product_delete') {
+				$voucher_type = 'Product Delete';
+				$particular = $item['added_by_name'] ?: '-';
+			} elseif ($status === 'in') {
+				$po = $get_po($order_id);
+				$voucher_type = 'Purchase';
+				$particular = $po['supplier_name'] ?? '-';
+				$voucher_no = $po['voucher_no'] ?? ($item['invoice_no'] ?: ($item['batch_no'] ?: '-'));
+
+				$so = $get_so($order_id);
+				if ($so && ($so['type'] ?? '') === 'conversion' && $blk_qty > 0) {
+					$is_conversion = true;
+					$is_purchase_conv = true;
+					$voucher_type = 'Purchase [Purchase Conv]';
+					$cust = $get_cust($so['customer_id'] ?? 0);
+					$particular = $so['company_name'] ?: ($cust['name'] ?? $particular);
+					$voucher_no = $so['order_no'] ?? $voucher_no;
+				}
+			} elseif ($status === 'transfer_out' || $status === 'transfer_in') {
+				$st = $get_st($order_id);
+				$voucher_type = 'Transfer';
+				$particular = ($status === 'transfer_out')
+					? ($st['to_name'] ?? '-')
+					: ($st['from_name'] ?? '-');
+				$voucher_no = 'GPS_ST_' . ($st['id'] ?? $order_id);
+			} elseif ($status === 'reserved_out' || $status === 'reserved_in') {
+				$ro = $get_ro($order_id);
+				$voucher_type = 'Reserved';
+				$particular = '-';
+				$voucher_no = 'GPS_RS_' . ($ro['id'] ?? $order_id);
+			} elseif ($status === 'damage_out' || $status === 'damage_in') {
+				$ds = $get_ds($order_id);
+				$voucher_type = ($status === 'damage_in') ? 'Damage Delete' : 'Damage';
+				$particular = $ds['customer_name'] ?? ($ds['company_name'] ?? '-');
+				$voucher_no = 'GPS_DM_' . ($ds['id'] ?? $order_id);
+			} elseif ($status === 'return') {
+				$gr = $get_gr($order_id);
+				$voucher_type = 'Sales Return';
+				$particular = $gr['customer_name'] ?? ($gr['company_name'] ?? '-');
+				$voucher_no = 'GPS_GR_' . ($gr['id'] ?? $order_id);
+			} elseif ($status === 'sales_return_delete') {
+				$gr = $get_gr($order_id);
+				$voucher_type = 'Sales Return Delete';
+				$particular = $gr['customer_name'] ?? ($gr['company_name'] ?? '-');
+				$voucher_no = 'GPS_GR_' . ($gr['id'] ?? $order_id);
+			} elseif ($status === 'purchase_out') {
+				$pr = $get_pr($order_id);
+				$voucher_type = 'Purchase Return';
+				$particular = $pr['supplier_name'] ?? '-';
+				$voucher_no = $pr['invoice_no'] ?? ('PR_' . $order_id);
+			} elseif ($status === 'purchase_return_delete') {
+				$pr = $get_pr($order_id);
+				$voucher_type = 'Purchase Return Delete';
+				$particular = $pr['supplier_name'] ?? '-';
+				$voucher_no = $pr['invoice_no'] ?? ('PR_' . $order_id);
+			} elseif ($status === 'purchase_delete') {
+				$po = $get_po($order_id);
+				$voucher_type = 'Purchase Delete';
+				$particular = $po['supplier_name'] ?? '-';
+				$voucher_no = $po['voucher_no'] ?? '-';
+			} elseif ($status === 'sales_delete') {
+				$so = $get_so($order_id);
+				$voucher_type = 'Sales Delete';
+				$cust = $get_cust($so['customer_id'] ?? 0);
+				$particular = $so['company_name'] ?: ($cust['name'] ?? '-');
+				$voucher_no = $so['order_no'] ?? '-';
+			} else {
+				$so = $get_so($order_id);
+				$io = $get_io_for_so($so);
+				$cust = $get_cust($so['customer_id'] ?? 0);
+				$particular = $so['company_name'] ?: ($cust['name'] ?? '-');
+				$voucher_no = $so['order_no'] ?? ($item['invoice_no'] ?: '-');
+
+				$so_type = $so['type'] ?? '';
+				$io_type = $io['type'] ?? '';
+
+				if ($so_type === 'conversion' || $io_type === 'conversion') {
+					$is_conversion = true;
+					if ($dir === 'out' && $off_qty > 0) {
+						$is_sales_conv = true;
+						$voucher_type = 'Sales [Sales Conversion]';
+					} elseif ($dir === 'in' && $blk_qty > 0) {
+						$is_purchase_conv = true;
+						$voucher_type = 'Purchase [Purchase Conv]';
+					} else {
+						$is_sales_conv = true;
+						$voucher_type = 'Sales [Sales Conversion]';
+					}
+				} elseif ($io_type === 'bill') {
+					$is_pen_black = true;
+					$voucher_type = 'Sales [PEN Black Order]';
+					if (!empty($io['invoice_no'])) {
+						$voucher_no = $io['invoice_no'];
+					}
+				} else {
+					$voucher_type = 'Sales';
+				}
+			}
+
+			if (!empty($item['batch_no'])) {
+				$voucher_no = $item['batch_no'];
+			}
+
+			$actual_val = (float) ($item['total_amt'] ?? 0);
+			if ($actual_val == 0.0 && $qty != 0) {
+				$actual_val = (float) ($item['actual_inr'] ?? 0) * $qty;
+			}
+			$white_val = (float) ($item['official_total_rs'] ?? 0);
+			if ($white_val == 0.0 && $off_qty != 0) {
+				$white_val = (float) ($item['official_rate_rs'] ?? 0) * $off_qty;
+			}
+			$black_val = (float) ($item['black_total_rs'] ?? 0);
+			if ($black_val == 0.0 && $blk_qty != 0) {
+				$black_val = (float) ($item['black_rate_rs'] ?? 0) * $blk_qty;
+			}
+
+			$actual_qty = $qty;
+
+			$white_qty = $off_qty;
+			$white_channel_val = $white_val;
+			if ($is_pen_black || $is_sales_conv) {
+				$white_qty = max($off_qty, $qty);
+				if ($white_channel_val == 0.0) {
+					$white_channel_val = $actual_val ?: $white_val;
+				}
+			}
+			if ($is_purchase_conv) {
+				$white_qty = max($blk_qty, $qty);
+				if ($white_channel_val == 0.0) {
+					$white_channel_val = $black_val ?: $actual_val;
+				}
+			}
+
+			$black_qty_ch = $blk_qty;
+			$black_channel_val = $black_val;
+			if ($is_purchase_conv && $black_qty_ch == 0) {
+				$black_qty_ch = $qty;
+				if ($black_channel_val == 0.0) {
+					$black_channel_val = $actual_val;
+				}
+			}
+
+			$recv = $item['received_date'] ?? null;
+			if (!$recv || $recv === '0000-00-00') {
+				$recv = !empty($item['added_date']) ? date('Y-m-d', strtotime($item['added_date'])) : null;
+			}
+
+			$classified[] = [
+				'id'               => (int) $item['id'],
+				'date'             => $recv,
+				'date_label'       => $recv ? date('d-m-Y', strtotime($recv)) : '-',
+				'status'           => $status,
+				'direction'        => $dir,
+				'particular'       => $particular ?: '-',
+				'voucher_type'     => $voucher_type,
+				'voucher_no'       => $voucher_no ?: '-',
+				'added_by'         => $item['added_by_name'] ?: '-',
+				'is_pen_black'     => $is_pen_black,
+				'is_sales_conv'    => $is_sales_conv,
+				'is_purchase_conv' => $is_purchase_conv,
+				'is_conversion'    => $is_conversion,
+				'actual_qty'       => $actual_qty,
+				'actual_val'       => abs($actual_val),
+				'white_qty'        => $white_qty,
+				'white_val'        => abs($white_channel_val),
+				'black_qty'        => $black_qty_ch,
+				'black_val'        => abs($black_channel_val),
+			];
+		}
+
+		$build_channel = function ($channel) use ($classified, $from_date, $to_date) {
+			$qty_key = $channel . '_qty';
+			$val_key = $channel . '_val';
+
+			$open_qty = 0;
+			$open_val = 0.0;
+			$months = [];
+			$grand_in_qty = 0;
+			$grand_in_val = 0.0;
+			$grand_out_qty = 0;
+			$grand_out_val = 0.0;
+
+			foreach ($classified as $row) {
+				$q = (int) ($row[$qty_key] ?? 0);
+				$v = (float) ($row[$val_key] ?? 0);
+
+				if ($channel === 'white') {
+					$include = ($q != 0)
+						|| !empty($row['is_pen_black'])
+						|| !empty($row['is_sales_conv'])
+						|| !empty($row['is_purchase_conv']);
+					if (!$include) {
+						continue;
+					}
+				} elseif ($channel === 'black') {
+					if ($q == 0) {
+						continue;
+					}
+				} else {
+					if ($q == 0 && $row['direction'] === 'none') {
+						continue;
+					}
+				}
+
+				if (empty($row['date'])) {
+					continue;
+				}
+
+				$sign = ($row['direction'] === 'in') ? 1 : (($row['direction'] === 'out') ? -1 : 0);
+
+				if ($row['date'] < $from_date) {
+					$open_qty += $sign * $q;
+					$open_val += $sign * $v;
+					continue;
+				}
+				if ($row['date'] > $to_date) {
+					continue;
+				}
+
+				$mkey = date('Y-m', strtotime($row['date']));
+				if (!isset($months[$mkey])) {
+					$months[$mkey] = [
+						'key'       => $mkey,
+						'label'     => date('F Y', strtotime($row['date'])),
+						'in_qty'    => 0,
+						'in_val'    => 0.0,
+						'out_qty'   => 0,
+						'out_val'   => 0.0,
+						'close_qty' => 0,
+						'close_val' => 0.0,
+						'entries'   => [],
+					];
+				}
+
+				$in_q = ($row['direction'] === 'in') ? $q : 0;
+				$in_v = ($row['direction'] === 'in') ? $v : 0.0;
+				$out_q = ($row['direction'] === 'out') ? $q : 0;
+				$out_v = ($row['direction'] === 'out') ? $v : 0.0;
+
+				$months[$mkey]['in_qty'] += $in_q;
+				$months[$mkey]['in_val'] += $in_v;
+				$months[$mkey]['out_qty'] += $out_q;
+				$months[$mkey]['out_val'] += $out_v;
+
+				$grand_in_qty += $in_q;
+				$grand_in_val += $in_v;
+				$grand_out_qty += $out_q;
+				$grand_out_val += $out_v;
+
+				$months[$mkey]['entries'][] = [
+					'id'           => $row['id'],
+					'date'         => $row['date_label'],
+					'particular'   => $row['particular'],
+					'voucher_type' => $row['voucher_type'],
+					'voucher_no'   => $row['voucher_no'],
+					'in_qty'       => $in_q,
+					'in_val'       => $in_v,
+					'out_qty'      => $out_q,
+					'out_val'      => $out_v,
+					'added_by'     => $row['added_by'],
+					'_signed_qty'  => $sign * $q,
+					'_signed_val'  => $sign * $v,
+				];
+			}
+
+			ksort($months);
+
+			$run_qty = $open_qty;
+			$run_val = $open_val;
+			$month_list = [];
+			foreach ($months as $m) {
+				$entry_run_q = $run_qty;
+				$entry_run_v = $run_val;
+				$entries_out = [];
+				foreach ($m['entries'] as $e) {
+					$entry_run_q += $e['_signed_qty'];
+					$entry_run_v += $e['_signed_val'];
+					$entries_out[] = [
+						'id'           => $e['id'],
+						'date'         => $e['date'],
+						'particular'   => $e['particular'],
+						'voucher_type' => $e['voucher_type'],
+						'voucher_no'   => $e['voucher_no'],
+						'in_qty'       => $e['in_qty'],
+						'in_val'       => $e['in_val'],
+						'out_qty'      => $e['out_qty'],
+						'out_val'      => $e['out_val'],
+						'close_qty'    => $entry_run_q,
+						'close_val'    => $entry_run_v,
+						'added_by'     => $e['added_by'],
+					];
+				}
+				$run_qty += $m['in_qty'] - $m['out_qty'];
+				$run_val += $m['in_val'] - $m['out_val'];
+				$m['close_qty'] = $run_qty;
+				$m['close_val'] = $run_val;
+				$m['entries'] = $entries_out;
+				$m['entries_grand'] = [
+					'in_qty'    => $m['in_qty'],
+					'in_val'    => $m['in_val'],
+					'out_qty'   => $m['out_qty'],
+					'out_val'   => $m['out_val'],
+					'close_qty' => $m['close_qty'],
+					'close_val' => $m['close_val'],
+				];
+				$month_list[] = $m;
+			}
+
+			return [
+				'opening' => [
+					'qty' => $open_qty,
+					'val' => $open_val,
+				],
+				'months' => $month_list,
+				'grand' => [
+					'in_qty'    => $grand_in_qty,
+					'in_val'    => $grand_in_val,
+					'out_qty'   => $grand_out_qty,
+					'out_val'   => $grand_out_val,
+					'close_qty' => $run_qty,
+					'close_val' => $run_val,
+				],
+			];
+		};
+
+		return [
+			'product' => $product,
+			'from'    => $from_date,
+			'to'      => $to_date,
+			'fy'      => $fy,
+			'actual'  => $build_channel('actual'),
+			'white'   => $build_channel('white'),
+			'black'   => $build_channel('black'),
+		];
+	}
+
+	/**
+	 * Build full customer ledger (Order Wise + Product Wise) matching Ledger.xlsx.
+	 *
+	 * @param int    $customer_id
+	 * @param string $from_date Y-m-d
+	 * @param string $to_date   Y-m-d
+	 * @param array  $opts
+	 * @return array
+	 */
+	public function build_customer_ledger($customer_id, $from_date, $to_date, $opts = [])
+	{
+		$customer_id = (int) $customer_id;
+
+		$customer = $this->db->get_where('customer', ['id' => $customer_id])->row_array();
+		if (!$customer) {
+			return null;
+		}
+
+		$fy = $this->get_indian_fy_range();
+		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
+			$from_date = $fy['from'];
+		}
+		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
+			$to_date = $fy['to'];
+		}
+
+		$seed_outstanding = (float) ($customer['outstanding'] ?? 0);
+
+		// Salesperson
+		$salesperson = $customer['added_by_name'] ?? '';
+		if (!empty($customer['added_by_id'])) {
+			$sp = $this->db->query(
+				"SELECT CONCAT(first_name, ' ', IFNULL(last_name, '')) AS n FROM sys_users WHERE id = " . (int) $customer['added_by_id'] . " LIMIT 1"
+			)->row_array();
+			if (!empty($sp['n'])) {
+				$salesperson = trim($sp['n']);
+			}
+		}
+
+		// --- Fetch raw sources ---
+		$sales = $this->db->query(
+			"SELECT so.* FROM sales_order so
+			 WHERE so.customer_id = {$customer_id}
+			   AND so.is_deleted = 0
+			   AND so.is_approved = 1
+			   AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+			   AND so.type != 'company'
+			 ORDER BY so.date ASC, so.id ASC"
+		)->result_array();
+
+		$order_ids = array_column($sales, 'id');
+		$products_by_order = [];
+		if (!empty($order_ids)) {
+			$id_list = implode(',', array_map('intval', $order_ids));
+			$prods = $this->db->query(
+				"SELECT * FROM sales_order_product WHERE order_id IN ({$id_list}) ORDER BY id ASC"
+			)->result_array();
+			foreach ($prods as $p) {
+				$products_by_order[$p['order_id']][] = $p;
+			}
+		}
+
+		// Black Order bill invoices keyed by order_no
+		$bill_order_nos = [];
+		$bill_invoices = $this->db->query(
+			"SELECT * FROM invoice_order
+			 WHERE customer_id = {$customer_id}
+			   AND type = 'bill'
+			   AND is_deleted = 0
+			   AND (is_cancelled = 0 OR is_cancelled IS NULL)
+			 ORDER BY date ASC, id ASC"
+		)->result_array();
+		foreach ($bill_invoices as $bi) {
+			$bill_order_nos[trim($bi['order_no'] ?? '')] = $bi;
+		}
+
+		$payments = $this->db->query(
+			"SELECT p.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name,
+			        ba.bank_name, ba.name AS bank_account_name
+			 FROM customer_payment p
+			 LEFT JOIN sys_users u ON p.added_by = u.id
+			 LEFT JOIN bank_accounts ba ON ba.id = p.company_bank_account
+			 WHERE p.customer_id = {$customer_id}
+			 ORDER BY p.date ASC, p.id ASC"
+		)->result_array();
+
+		$adjustments = $this->db->query(
+			"SELECT ca.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name
+			 FROM customer_adjustments ca
+			 LEFT JOIN sys_users u ON ca.added_by_id = u.id
+			 WHERE ca.customer_id = {$customer_id} AND ca.is_deleted = 0
+			 ORDER BY ca.date ASC, ca.id ASC"
+		)->result_array();
+
+		$returns = $this->db->query(
+			"SELECT * FROM goods_return
+			 WHERE customer_id = {$customer_id} AND is_deleted = 0
+			 ORDER BY date ASC, id ASC"
+		)->result_array();
+
+		// --- Normalize to ledger entries ---
+		$entries = [];
+
+		foreach ($sales as $so) {
+			$order_no = trim($so['order_no'] ?? '');
+			$is_conversion = (($so['type'] ?? '') === 'conversion');
+			$is_black_order = !$is_conversion && isset($bill_order_nos[$order_no]);
+
+			$gst_type = $so['gst_type'] ?? '';
+			$is_igst = (stripos($gst_type, 'IGST') !== false);
+
+			$bill_amt = (float) ($so['basic_value'] ?? 0);
+			$cgst = (float) ($so['central_gst'] ?? 0);
+			$sgst = (float) ($so['state_gst'] ?? 0);
+			$igst = (float) ($so['igst'] ?? 0);
+			$gst_total = (float) ($so['gst_total'] ?? ($cgst + $sgst + $igst));
+			$final_bill = (float) ($so['net_sales_value_1'] ?? 0);
+			$cash = (float) ($so['total_black_amt'] ?? 0);
+			$final_sale = (float) ($so['grand_total'] ?? ($final_bill + $cash));
+			$rate = $bill_amt + $cash;
+
+			if ($is_conversion) {
+				$vch_type = 'Conversion';
+				$balance_mode = 'tax_only_final';
+			} elseif ($is_black_order) {
+				$vch_type = 'Black Order';
+				$balance_mode = 'tax_only_final';
+			} else {
+				$vch_type = 'Sales';
+				$balance_mode = 'normal';
+			}
+
+			$particulars = $is_igst ? 'IGST Sales' : 'CGST/SGST Sales';
+
+			$product_children = [];
+			foreach ($products_by_order[$so['id']] ?? [] as $p) {
+				$line_gst = (float) ($p['gst_amount'] ?? 0);
+				$line_cgst = $is_igst ? 0 : $line_gst / 2;
+				$line_sgst = $is_igst ? 0 : $line_gst / 2;
+				$line_igst = $is_igst ? $line_gst : 0;
+				$product_children[] = [
+					'is_product'     => true,
+					'date'           => $so['date'],
+					'particulars'    => $p['product_name'] ?? '',
+					'vch_type'       => '',
+					'vch_no'         => '',
+					'qty'            => (float) ($p['qty'] ?? 0),
+					'rate_pc'        => (float) ($p['amount'] ?? 0),
+					'rate'           => (float) ($p['total_amount'] ?? 0),
+					'bill_amt_pc'    => (float) ($p['bill_amount'] ?? 0),
+					'bill_amt'       => (float) ($p['bill_total'] ?? 0),
+					'cgst'           => $line_cgst,
+					'sgst'           => $line_sgst,
+					'igst'           => $line_igst,
+					'final_bill'     => (float) ($p['total_bill_gst_amount'] ?? 0),
+					'cash'           => (float) ($p['black_total'] ?? 0),
+					'final_sale'     => (float) ($p['final_total'] ?? 0),
+					'bank_amt'       => 0,
+					'cash_amt'       => 0,
+					'added_by'       => '',
+					'affects_balance'=> false,
+				];
+			}
+
+			$entries[] = [
+				'entry_type'     => 'sales',
+				'balance_mode'   => $balance_mode,
+				'sort_date'      => $so['date'],
+				'sort_id'        => (int) $so['id'],
+				'date'           => $so['date'],
+				'particulars'    => $particulars,
+				'vch_type'       => $vch_type,
+				'vch_no'         => $order_no ?: ($so['invoice_no'] ?? ''),
+				'qty'            => null,
+				'rate_pc'        => null,
+				'rate'           => $rate,
+				'bill_amt_pc'    => null,
+				'bill_amt'       => $bill_amt,
+				'cgst'           => $cgst,
+				'sgst'           => $sgst,
+				'igst'           => $igst,
+				'gst_total'      => $gst_total,
+				'final_bill'     => $final_bill,
+				'cash'           => $cash,
+				'final_sale'     => $final_sale,
+				'bank_amt'       => 0,
+				'cash_amt'       => 0,
+				'added_by'       => $so['added_by_name'] ?? '—',
+				'is_product'     => false,
+				'affects_balance'=> true,
+				'products'       => $product_children,
+			];
+		}
+
+		foreach ($payments as $pay) {
+			$is_official = (($pay['payment_type'] ?? '') === 'official');
+			$amt = (float) ($pay['amount'] ?? 0);
+			if ($is_official) {
+				$bank_label = trim($pay['bank_name'] ?? '') ?: trim($pay['bank_account_name'] ?? '') ?: 'Bank';
+			} else {
+				$bank_label = 'Cash';
+			}
+
+			$entries[] = [
+				'entry_type'     => 'payment',
+				'balance_mode'   => 'receipt',
+				'sort_date'      => $pay['date'],
+				'sort_id'        => (int) $pay['id'],
+				'date'           => $pay['date'],
+				'particulars'    => $bank_label,
+				'vch_type'       => 'Receipt',
+				'vch_no'         => $pay['inv_no'] ?? '',
+				'qty'            => null,
+				'rate_pc'        => null,
+				'rate'           => 0,
+				'bill_amt_pc'    => null,
+				'bill_amt'       => 0,
+				'cgst'           => 0,
+				'sgst'           => 0,
+				'igst'           => 0,
+				'gst_total'      => 0,
+				'final_bill'     => 0,
+				'cash'           => 0,
+				'final_sale'     => 0,
+				'bank_amt'       => $is_official ? $amt : 0,
+				'cash_amt'       => $is_official ? 0 : $amt,
+				'added_by'       => trim($pay['added_by_name'] ?? '') ?: '—',
+				'is_product'     => false,
+				'affects_balance'=> true,
+				'is_official'    => $is_official,
+				'products'       => [],
+			];
+		}
+
+		foreach ($adjustments as $adj) {
+			$is_official = (($adj['type'] ?? '') === 'official');
+			$is_plus = (($adj['amt_type'] ?? '') === 'plus');
+			$amt = (float) ($adj['inr'] ?? 0);
+			$signed = $is_plus ? $amt : -$amt;
+
+			$entries[] = [
+				'entry_type'     => 'adjustment',
+				'balance_mode'   => 'adjustment',
+				'sort_date'      => $adj['date'],
+				'sort_id'        => (int) $adj['id'],
+				'date'           => $adj['date'],
+				'particulars'    => !empty($adj['remark']) ? $adj['remark'] : ($adj['amt_type_name'] ?? 'Adjustment'),
+				'vch_type'       => $is_plus ? 'Adjustment (+)' : 'Adjustment (−)',
+				'vch_no'         => (string) ($adj['id'] ?? ''),
+				'qty'            => null,
+				'rate_pc'        => null,
+				'rate'           => 0,
+				'bill_amt_pc'    => null,
+				'bill_amt'       => 0,
+				'cgst'           => 0,
+				'sgst'           => 0,
+				'igst'           => 0,
+				'gst_total'      => 0,
+				'final_bill'     => 0,
+				'cash'           => 0,
+				'final_sale'     => 0,
+				'bank_amt'       => 0,
+				'cash_amt'       => 0,
+				'adj_final'      => $signed,
+				'adj_bank'       => $is_official ? $signed : 0,
+				'adj_cash'       => $is_official ? 0 : $signed,
+				'added_by'       => trim($adj['added_by_name'] ?? '') ?: ($adj['added_by'] ?? '—'),
+				'is_product'     => false,
+				'affects_balance'=> true,
+				'is_official'    => $is_official,
+				'amt_type'       => $adj['amt_type'] ?? '',
+				'products'       => [],
+			];
+		}
+
+		foreach ($returns as $ret) {
+			$white = (float) ($ret['white_total'] ?? 0);
+			$cgst = (float) ($ret['cgst_amt'] ?? 0);
+			$sgst = (float) ($ret['sgst_amt'] ?? 0);
+			$igst = (float) ($ret['igst_amt'] ?? 0);
+			$gst_total = (float) ($ret['gst_total_amt'] ?? 0);
+			$final_bill = $white + $gst_total;
+			$cash = (float) ($ret['black_total'] ?? 0);
+			$final_sale = (float) ($ret['grand_total'] ?? ($final_bill + $cash));
+
+			// Detailed: negative debit columns (credit-side handled via balance rules)
+			$entries[] = [
+				'entry_type'     => 'sales_return',
+				'balance_mode'   => 'sales_return',
+				'sort_date'      => $ret['date'],
+				'sort_id'        => (int) $ret['id'],
+				'date'           => $ret['date'],
+				'particulars'    => !empty($ret['reason']) ? $ret['reason'] : 'Sales Return',
+				'vch_type'       => 'Sales Return',
+				'vch_no'         => is_string($ret['order_no'] ?? '') ? $ret['order_no'] : (string) ($ret['id'] ?? ''),
+				'qty'            => null,
+				'rate_pc'        => null,
+				'rate'           => -($white + $cash),
+				'bill_amt_pc'    => null,
+				'bill_amt'       => -$white,
+				'cgst'           => -$cgst,
+				'sgst'           => -$sgst,
+				'igst'           => -$igst,
+				'gst_total'      => -$gst_total,
+				'final_bill'     => -$final_bill,
+				'cash'           => -$cash,
+				'final_sale'     => -$final_sale,
+				'bank_amt'       => 0,
+				'cash_amt'       => 0,
+				'added_by'       => $ret['added_by_name'] ?? '—',
+				'is_product'     => false,
+				'affects_balance'=> true,
+				'products'       => [],
+			];
+		}
+
+		// Sort chronologically
+		usort($entries, function ($a, $b) {
+			$da = strtotime($a['sort_date'] ?? '1970-01-01');
+			$db = strtotime($b['sort_date'] ?? '1970-01-01');
+			if ($da === $db) {
+				return ($a['sort_id'] ?? 0) - ($b['sort_id'] ?? 0);
+			}
+			return $da - $db;
+		});
+
+		// Running balances helper
+		$apply_delta = function (&$final, &$bank, &$cash, $entry) {
+			$mode = $entry['balance_mode'] ?? 'normal';
+			switch ($mode) {
+				case 'tax_only_final':
+					// Black Order / Sales conversion: Final += tax only; Bank += full Final Bill; Cash unchanged
+					$final += (float) ($entry['gst_total'] ?? 0);
+					$bank  += (float) ($entry['final_bill'] ?? 0);
+					break;
+				case 'receipt':
+					$final -= ((float) ($entry['bank_amt'] ?? 0) + (float) ($entry['cash_amt'] ?? 0));
+					$bank  -= (float) ($entry['bank_amt'] ?? 0);
+					$cash  -= (float) ($entry['cash_amt'] ?? 0);
+					break;
+				case 'adjustment':
+					$final += (float) ($entry['adj_final'] ?? 0);
+					$bank  += (float) ($entry['adj_bank'] ?? 0);
+					$cash  += (float) ($entry['adj_cash'] ?? 0);
+					break;
+				case 'sales_return':
+					// Credit: reduce outstanding (use absolute final_sale / bill / cash)
+					$final -= abs((float) ($entry['final_sale'] ?? 0));
+					$bank  -= abs((float) ($entry['final_bill'] ?? 0));
+					$cash  -= abs((float) ($entry['cash'] ?? 0));
+					break;
+				case 'normal':
+				default:
+					$final += (float) ($entry['final_sale'] ?? 0);
+					$bank  += (float) ($entry['final_bill'] ?? 0);
+					$cash  += (float) ($entry['cash'] ?? 0);
+					break;
+			}
+		};
+
+		$final_bal = $seed_outstanding;
+		$bank_bal  = 0.0;
+		$cash_bal  = 0.0;
+
+		// Opening: replay entries before from_date
+		foreach ($entries as $entry) {
+			if (($entry['sort_date'] ?? '') >= $from_date) {
+				continue;
+			}
+			if (empty($entry['affects_balance'])) {
+				continue;
+			}
+			$apply_delta($final_bal, $bank_bal, $cash_bal, $entry);
+		}
+
+		$opening = [
+			'final' => $final_bal,
+			'bank'  => $bank_bal,
+			'cash'  => $cash_bal,
+		];
+
+		// In-range rows with running balances
+		$order_rows = [];
+		$product_rows = [];
+
+		$order_rows[] = [
+			'is_opening'     => true,
+			'date'           => '',
+			'particulars'    => 'Opening Balance',
+			'vch_type'       => '',
+			'vch_no'         => '',
+			'qty'            => null,
+			'rate_pc'        => null,
+			'rate'           => 0,
+			'bill_amt_pc'    => null,
+			'bill_amt'       => 0,
+			'cgst'           => 0,
+			'sgst'           => 0,
+			'igst'           => 0,
+			'final_bill'     => 0,
+			'cash'           => 0,
+			'final_sale'     => 0,
+			'bank_amt'       => 0,
+			'cash_amt'       => 0,
+			'final_balance'  => $final_bal,
+			'bank_balance'   => $bank_bal,
+			'cash_balance'   => $cash_bal,
+			'added_by'       => $customer['added_by_name'] ?? '—',
+			'is_product'     => false,
+			'entry_type'     => 'opening',
+		];
+		$product_rows[] = $order_rows[0];
+
+		// Summary accumulators (in-range only)
+		$summary = [
+			'opening' => [
+				'final' => $opening['final'],
+				'white' => $opening['bank'],
+				'black' => $opening['cash'],
+			],
+			'sales' => [
+				'total' => 0, 'white' => 0, 'black' => 0,
+				'by_type' => [],
+			],
+			'receipts' => ['total' => 0, 'official' => 0, 'unofficial' => 0],
+			'payments' => ['total' => 0, 'official' => 0, 'unofficial' => 0],
+			'adjustments' => [
+				'total' => 0, 'official' => 0, 'unofficial' => 0,
+			],
+			'returns' => ['total' => 0, 'white' => 0, 'black' => 0],
+			'column_totals' => [
+				'rate' => 0, 'bill_amt' => 0, 'cgst' => 0, 'sgst' => 0, 'igst' => 0,
+				'final_bill' => 0, 'cash' => 0, 'final_sale' => 0,
+				'bank_amt' => 0, 'cash_amt' => 0,
+			],
+		];
+
+		foreach ($entries as $entry) {
+			$d = $entry['sort_date'] ?? '';
+			if ($d < $from_date || $d > $to_date) {
+				continue;
+			}
+
+			if (!empty($entry['affects_balance'])) {
+				$apply_delta($final_bal, $bank_bal, $cash_bal, $entry);
+			}
+
+			$row = [
+				'is_opening'     => false,
+				'date'           => $entry['date'],
+				'particulars'    => $entry['particulars'],
+				'vch_type'       => $entry['vch_type'],
+				'vch_no'         => $entry['vch_no'],
+				'qty'            => $entry['qty'],
+				'rate_pc'        => $entry['rate_pc'],
+				'rate'           => (float) ($entry['rate'] ?? 0),
+				'bill_amt_pc'    => $entry['bill_amt_pc'],
+				'bill_amt'       => (float) ($entry['bill_amt'] ?? 0),
+				'cgst'           => (float) ($entry['cgst'] ?? 0),
+				'sgst'           => (float) ($entry['sgst'] ?? 0),
+				'igst'           => (float) ($entry['igst'] ?? 0),
+				'final_bill'     => (float) ($entry['final_bill'] ?? 0),
+				'cash'           => (float) ($entry['cash'] ?? 0),
+				'final_sale'     => (float) ($entry['final_sale'] ?? 0),
+				'bank_amt'       => (float) ($entry['bank_amt'] ?? 0),
+				'cash_amt'       => (float) ($entry['cash_amt'] ?? 0),
+				'final_balance'  => $final_bal,
+				'bank_balance'   => $bank_bal,
+				'cash_balance'   => $cash_bal,
+				'added_by'       => $entry['added_by'] ?? '—',
+				'is_product'     => false,
+				'entry_type'     => $entry['entry_type'],
+				'balance_mode'   => $entry['balance_mode'] ?? '',
+			];
+
+			$order_rows[] = $row;
+
+			// Product-wise: parent + children (balances only on parent)
+			$product_rows[] = $row;
+			foreach ($entry['products'] ?? [] as $child) {
+				$product_rows[] = array_merge($child, [
+					'is_opening'    => false,
+					'final_balance' => null,
+					'bank_balance'  => null,
+					'cash_balance'  => null,
+					'entry_type'    => 'product',
+				]);
+			}
+
+			// Summary
+			$etype = $entry['entry_type'];
+			if ($etype === 'sales') {
+				$summary['sales']['total'] += abs((float) $entry['final_sale']);
+				$summary['sales']['white'] += abs((float) $entry['final_bill']);
+				$summary['sales']['black'] += abs((float) $entry['cash']);
+				$vt = $entry['vch_type'];
+				if (!isset($summary['sales']['by_type'][$vt])) {
+					$summary['sales']['by_type'][$vt] = 0;
+				}
+				$summary['sales']['by_type'][$vt] += abs((float) $entry['final_sale']);
+			} elseif ($etype === 'payment') {
+				$amt = (float) $entry['bank_amt'] + (float) $entry['cash_amt'];
+				$summary['receipts']['total'] += $amt;
+				if (!empty($entry['is_official'])) {
+					$summary['receipts']['official'] += $amt;
+				} else {
+					$summary['receipts']['unofficial'] += $amt;
+				}
+			} elseif ($etype === 'adjustment') {
+				$signed = (float) ($entry['adj_final'] ?? 0);
+				$summary['adjustments']['total'] += $signed;
+				if (!empty($entry['is_official'])) {
+					$summary['adjustments']['official'] += $signed;
+				} else {
+					$summary['adjustments']['unofficial'] += $signed;
+				}
+			} elseif ($etype === 'sales_return') {
+				$summary['returns']['total'] += abs((float) $entry['final_sale']);
+				$summary['returns']['white'] += abs((float) $entry['final_bill']);
+				$summary['returns']['black'] += abs((float) $entry['cash']);
+			}
+
+			$ct = &$summary['column_totals'];
+			$ct['rate']       += (float) ($entry['rate'] ?? 0);
+			$ct['bill_amt']   += (float) ($entry['bill_amt'] ?? 0);
+			$ct['cgst']       += (float) ($entry['cgst'] ?? 0);
+			$ct['sgst']       += (float) ($entry['sgst'] ?? 0);
+			$ct['igst']       += (float) ($entry['igst'] ?? 0);
+			$ct['final_bill'] += (float) ($entry['final_bill'] ?? 0);
+			$ct['cash']       += (float) ($entry['cash'] ?? 0);
+			$ct['final_sale'] += (float) ($entry['final_sale'] ?? 0);
+			$ct['bank_amt']   += (float) ($entry['bank_amt'] ?? 0);
+			$ct['cash_amt']   += (float) ($entry['cash_amt'] ?? 0);
+		}
+
+		$summary['outstanding'] = [
+			'final'      => $final_bal,
+			'official'   => $bank_bal,
+			'unofficial' => $cash_bal,
+		];
+
+		$summary['closing'] = [
+			'final' => $final_bal,
+			'bank'  => $bank_bal,
+			'cash'  => $cash_bal,
+		];
+
+		return [
+			'customer'                 => $customer,
+			'salesperson'              => $salesperson,
+			'from_date'                => $from_date,
+			'to_date'                  => $to_date,
+			'opening'                  => $opening,
+			'order_rows'               => $order_rows,
+			'product_rows'             => $product_rows,
+			'summary'                  => $summary,
+			'outstanding_limit'        => (float) ($customer['outstanding_limit'] ?? 0),
+		];
+	}
+
+	/**
+	 * Local supplier ledger (Order Wise + Product Wise), same shape as customer ledger.
+	 * Purchases from local purchase_order / purchase_order_product; payments; adjustments.
+	 */
+	public function build_local_supplier_ledger($supplier_id, $from_date, $to_date)
+	{
+		$supplier_id = (int) $supplier_id;
+
+		$supplier = $this->db->get_where('supplier', ['id' => $supplier_id, 'is_deleted' => 0])->row_array();
+		if (!$supplier) {
+			return null;
+		}
+
+		$fy = $this->get_indian_fy_range();
+		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
+			$from_date = $fy['from'];
+		}
+		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
+			$to_date = $fy['to'];
+		}
+
+		$seed_outstanding = (float) ($supplier['outstanding_inr'] ?? 0);
+
+		$purchases = $this->db->query(
+			"SELECT po.* FROM purchase_order po
+			 WHERE po.supplier_id = {$supplier_id}
+			   AND po.method = 'local'
+			   AND po.delivery_status = 'purchase_in'
+			   AND po.is_deleted = 0
+			 ORDER BY po.date ASC, po.id ASC"
+		)->result_array();
+
+		$po_ids = array_column($purchases, 'id');
+		$products_by_po = [];
+		if (!empty($po_ids)) {
+			$id_list = implode(',', array_map('intval', $po_ids));
+			$prods = $this->db->query(
+				"SELECT * FROM purchase_order_product WHERE parent_id IN ({$id_list}) ORDER BY id ASC"
+			)->result_array();
+			foreach ($prods as $p) {
+				$products_by_po[$p['parent_id']][] = $p;
+			}
+		}
+
+		$payments = $this->db->query(
+			"SELECT p.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name,
+			        ba.bank_name
+			 FROM payments p
+			 LEFT JOIN sys_users u ON p.added_by = u.id
+			 LEFT JOIN bank_accounts ba ON ba.id = p.bank_account
+			 WHERE p.supplier_id = {$supplier_id}
+			   AND p.is_delete = 0
+			 ORDER BY p.payment_date ASC, p.id ASC"
+		)->result_array();
+
+		$adjustments = $this->db->query(
+			"SELECT sa.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name
+			 FROM supplier_adjustments sa
+			 LEFT JOIN sys_users u ON sa.added_by_id = u.id
+			 WHERE sa.supplier_id = {$supplier_id} AND sa.is_deleted = 0
+			 ORDER BY sa.date ASC, sa.id ASC"
+		)->result_array();
+
+		$entries = [];
+
+		foreach ($purchases as $po) {
+			$gst_type = $po['gst_type'] ?? '';
+			$is_igst = (stripos($gst_type, 'IGST') !== false);
+
+			$bill_amt = (float) ($po['basic_value'] ?? 0);
+			$cgst = (float) ($po['cgst_amount'] ?? 0);
+			$sgst = (float) ($po['sgst_amount'] ?? 0);
+			$igst = (float) ($po['igst_amount'] ?? 0);
+			$gst_total = $cgst + $sgst + $igst;
+			$final_bill = (float) ($po['net_sales_value_1'] ?? 0);
+			$cash = (float) ($po['total_black_amount_summary'] ?? 0);
+			$final_sale = (float) ($po['grand_total'] ?? ($final_bill + $cash));
+			$rate = $bill_amt + $cash;
+
+			$particulars = $is_igst ? 'IGST Purchase' : 'CGST/SGST Purchase';
+
+			$product_children = [];
+			foreach ($products_by_po[$po['id']] ?? [] as $p) {
+				$line_gst = (float) ($p['gst_amount'] ?? 0);
+				$line_cgst = $is_igst ? 0 : $line_gst / 2;
+				$line_sgst = $is_igst ? 0 : $line_gst / 2;
+				$line_igst = $is_igst ? $line_gst : 0;
+				$qty = (float) ($p['quantity'] ?? 0);
+				$rate_pc = (float) ($p['rate'] ?? 0);
+				$bill_amt_pc = (float) ($p['basic_amount'] ?? 0);
+				$white_qty = (float) ($p['white_qty'] ?? 0);
+				$bill_line = $white_qty > 0 ? ($bill_amt_pc * $white_qty) : ($bill_amt_pc * $qty);
+
+				$product_children[] = [
+					'is_product'      => true,
+					'date'            => $po['date'],
+					'particulars'     => $p['product_name'] ?? '',
+					'vch_type'        => '',
+					'vch_no'          => '',
+					'qty'             => $qty,
+					'rate_pc'         => $rate_pc,
+					'rate'            => $rate_pc * $qty,
+					'bill_amt_pc'     => $bill_amt_pc,
+					'bill_amt'        => $bill_line,
+					'cgst'            => $line_cgst,
+					'sgst'            => $line_sgst,
+					'igst'            => $line_igst,
+					'final_bill'      => (float) ($p['total_val'] ?? 0),
+					'cash'            => (float) ($p['black_amt_total'] ?? 0),
+					'final_sale'      => (float) ($p['grand_total'] ?? 0),
+					'bank_amt'        => 0,
+					'cash_amt'        => 0,
+					'added_by'        => '',
+					'affects_balance' => false,
+				];
+			}
+
+			$entries[] = [
+				'entry_type'      => 'purchase',
+				'balance_mode'    => 'normal',
+				'sort_date'       => $po['date'],
+				'sort_id'         => (int) $po['id'],
+				'date'            => $po['date'],
+				'particulars'     => $particulars,
+				'vch_type'        => 'Purchase',
+				'vch_no'          => $po['voucher_no'] ?? '',
+				'qty'             => null,
+				'rate_pc'         => null,
+				'rate'            => $rate,
+				'bill_amt_pc'     => null,
+				'bill_amt'        => $bill_amt,
+				'cgst'            => $cgst,
+				'sgst'            => $sgst,
+				'igst'            => $igst,
+				'gst_total'       => $gst_total,
+				'final_bill'      => $final_bill,
+				'cash'            => $cash,
+				'final_sale'      => $final_sale,
+				'bank_amt'        => 0,
+				'cash_amt'        => 0,
+				'added_by'        => $po['added_by_name'] ?? '—',
+				'is_product'      => false,
+				'affects_balance' => true,
+				'products'        => $product_children,
+			];
+		}
+
+		foreach ($payments as $pay) {
+			$ptype = $pay['payment_type'] ?? '';
+			$is_official = ($ptype === 'official');
+			$amt = (float) ($pay['amount_rs'] ?? 0);
+			if ($is_official) {
+				$bank_label = trim($pay['bank_name'] ?? '') ?: trim($pay['bank_account_name'] ?? '') ?: 'Bank';
+			} else {
+				$bank_label = ($ptype === 'extras') ? 'Extras' : 'Cash';
+			}
+
+			$entries[] = [
+				'entry_type'      => 'payment',
+				'balance_mode'    => 'payment',
+				'sort_date'       => $pay['payment_date'],
+				'sort_id'         => (int) $pay['id'],
+				'date'            => $pay['payment_date'],
+				'particulars'     => $bank_label,
+				'vch_type'        => 'Payment',
+				'vch_no'          => !empty($pay['invoice_no']) ? $pay['invoice_no'] : ($pay['batch_no'] ?? ''),
+				'qty'             => null,
+				'rate_pc'         => null,
+				'rate'            => 0,
+				'bill_amt_pc'     => null,
+				'bill_amt'        => 0,
+				'cgst'            => 0,
+				'sgst'            => 0,
+				'igst'            => 0,
+				'gst_total'       => 0,
+				'final_bill'      => 0,
+				'cash'            => 0,
+				'final_sale'      => 0,
+				'bank_amt'        => $is_official ? $amt : 0,
+				'cash_amt'        => $is_official ? 0 : $amt,
+				'added_by'        => trim($pay['added_by_name'] ?? '') ?: '—',
+				'is_product'      => false,
+				'affects_balance' => true,
+				'is_official'     => $is_official,
+				'products'        => [],
+			];
+		}
+
+		foreach ($adjustments as $adj) {
+			$is_official = (($adj['type'] ?? '') === 'official');
+			$is_plus = (($adj['amt_type'] ?? '') === 'plus');
+			$amt = (float) ($adj['inr'] ?? 0);
+			$signed = $is_plus ? $amt : -$amt;
+
+			$entries[] = [
+				'entry_type'      => 'adjustment',
+				'balance_mode'    => 'adjustment',
+				'sort_date'       => $adj['date'],
+				'sort_id'         => (int) $adj['id'],
+				'date'            => $adj['date'],
+				'particulars'     => !empty($adj['remark']) ? $adj['remark'] : ($adj['amt_type_name'] ?? 'Adjustment'),
+				'vch_type'        => $is_plus ? 'Adjustment (+)' : 'Adjustment (−)',
+				'vch_no'          => (string) ($adj['batch_no'] ?? $adj['id'] ?? ''),
+				'qty'             => null,
+				'rate_pc'         => null,
+				'rate'            => 0,
+				'bill_amt_pc'     => null,
+				'bill_amt'        => 0,
+				'cgst'            => 0,
+				'sgst'            => 0,
+				'igst'            => 0,
+				'gst_total'       => 0,
+				'final_bill'      => 0,
+				'cash'            => 0,
+				'final_sale'      => 0,
+				'bank_amt'        => 0,
+				'cash_amt'        => 0,
+				'adj_final'       => $signed,
+				'adj_bank'        => $is_official ? $signed : 0,
+				'adj_cash'        => $is_official ? 0 : $signed,
+				'added_by'        => trim($adj['added_by_name'] ?? '') ?: ($adj['added_by'] ?? '—'),
+				'is_product'      => false,
+				'affects_balance' => true,
+				'is_official'     => $is_official,
+				'products'        => [],
+			];
+		}
+
+		usort($entries, function ($a, $b) {
+			$da = strtotime($a['sort_date'] ?? '1970-01-01');
+			$db = strtotime($b['sort_date'] ?? '1970-01-01');
+			if ($da === $db) {
+				return ($a['sort_id'] ?? 0) - ($b['sort_id'] ?? 0);
+			}
+			return $da - $db;
+		});
+
+		$apply_delta = function (&$final, &$bank, &$cash, $entry) {
+			$mode = $entry['balance_mode'] ?? 'normal';
+			switch ($mode) {
+				case 'payment':
+					$final -= ((float) ($entry['bank_amt'] ?? 0) + (float) ($entry['cash_amt'] ?? 0));
+					$bank  -= (float) ($entry['bank_amt'] ?? 0);
+					$cash  -= (float) ($entry['cash_amt'] ?? 0);
+					break;
+				case 'adjustment':
+					$final += (float) ($entry['adj_final'] ?? 0);
+					$bank  += (float) ($entry['adj_bank'] ?? 0);
+					$cash  += (float) ($entry['adj_cash'] ?? 0);
+					break;
+				case 'normal':
+				default:
+					$final += (float) ($entry['final_sale'] ?? 0);
+					$bank  += (float) ($entry['final_bill'] ?? 0);
+					$cash  += (float) ($entry['cash'] ?? 0);
+					break;
+			}
+		};
+
+		$final_bal = $seed_outstanding;
+		$bank_bal  = 0.0;
+		$cash_bal  = 0.0;
+
+		foreach ($entries as $entry) {
+			if (($entry['sort_date'] ?? '') >= $from_date) {
+				continue;
+			}
+			if (empty($entry['affects_balance'])) {
+				continue;
+			}
+			$apply_delta($final_bal, $bank_bal, $cash_bal, $entry);
+		}
+
+		$opening = [
+			'final' => $final_bal,
+			'bank'  => $bank_bal,
+			'cash'  => $cash_bal,
+		];
+
+		$order_rows = [];
+		$product_rows = [];
+
+		$order_rows[] = [
+			'is_opening'     => true,
+			'date'           => '',
+			'particulars'    => 'Opening Balance',
+			'vch_type'       => '',
+			'vch_no'         => '',
+			'qty'            => null,
+			'rate_pc'        => null,
+			'rate'           => 0,
+			'bill_amt_pc'    => null,
+			'bill_amt'       => 0,
+			'cgst'           => 0,
+			'sgst'           => 0,
+			'igst'           => 0,
+			'final_bill'     => 0,
+			'cash'           => 0,
+			'final_sale'     => 0,
+			'bank_amt'       => 0,
+			'cash_amt'       => 0,
+			'final_balance'  => $final_bal,
+			'bank_balance'   => $bank_bal,
+			'cash_balance'   => $cash_bal,
+			'added_by'       => $supplier['added_by_name'] ?? '—',
+			'is_product'     => false,
+			'entry_type'     => 'opening',
+		];
+		$product_rows[] = $order_rows[0];
+
+		$summary = [
+			'opening' => [
+				'final' => $opening['final'],
+				'white' => $opening['bank'],
+				'black' => $opening['cash'],
+			],
+			'purchases' => [
+				'total' => 0, 'white' => 0, 'black' => 0,
+			],
+			'payments' => ['total' => 0, 'official' => 0, 'unofficial' => 0],
+			'adjustments' => [
+				'total' => 0, 'official' => 0, 'unofficial' => 0,
+			],
+			'column_totals' => [
+				'rate' => 0, 'bill_amt' => 0, 'cgst' => 0, 'sgst' => 0, 'igst' => 0,
+				'final_bill' => 0, 'cash' => 0, 'final_sale' => 0,
+				'bank_amt' => 0, 'cash_amt' => 0,
+			],
+		];
+
+		foreach ($entries as $entry) {
+			$d = $entry['sort_date'] ?? '';
+			if ($d < $from_date || $d > $to_date) {
+				continue;
+			}
+
+			if (!empty($entry['affects_balance'])) {
+				$apply_delta($final_bal, $bank_bal, $cash_bal, $entry);
+			}
+
+			$row = [
+				'is_opening'     => false,
+				'date'           => $entry['date'],
+				'particulars'    => $entry['particulars'],
+				'vch_type'       => $entry['vch_type'],
+				'vch_no'         => $entry['vch_no'],
+				'qty'            => $entry['qty'],
+				'rate_pc'        => $entry['rate_pc'],
+				'rate'           => (float) ($entry['rate'] ?? 0),
+				'bill_amt_pc'    => $entry['bill_amt_pc'],
+				'bill_amt'       => (float) ($entry['bill_amt'] ?? 0),
+				'cgst'           => (float) ($entry['cgst'] ?? 0),
+				'sgst'           => (float) ($entry['sgst'] ?? 0),
+				'igst'           => (float) ($entry['igst'] ?? 0),
+				'final_bill'     => (float) ($entry['final_bill'] ?? 0),
+				'cash'           => (float) ($entry['cash'] ?? 0),
+				'final_sale'     => (float) ($entry['final_sale'] ?? 0),
+				'bank_amt'       => (float) ($entry['bank_amt'] ?? 0),
+				'cash_amt'       => (float) ($entry['cash_amt'] ?? 0),
+				'final_balance'  => $final_bal,
+				'bank_balance'   => $bank_bal,
+				'cash_balance'   => $cash_bal,
+				'added_by'       => $entry['added_by'] ?? '—',
+				'is_product'     => false,
+				'entry_type'     => $entry['entry_type'],
+				'balance_mode'   => $entry['balance_mode'] ?? '',
+			];
+
+			$order_rows[] = $row;
+			$product_rows[] = $row;
+			foreach ($entry['products'] ?? [] as $child) {
+				$product_rows[] = array_merge($child, [
+					'is_opening'    => false,
+					'final_balance' => null,
+					'bank_balance'  => null,
+					'cash_balance'  => null,
+					'entry_type'    => 'product',
+				]);
+			}
+
+			$etype = $entry['entry_type'];
+			if ($etype === 'purchase') {
+				$summary['purchases']['total'] += abs((float) $entry['final_sale']);
+				$summary['purchases']['white'] += abs((float) $entry['final_bill']);
+				$summary['purchases']['black'] += abs((float) $entry['cash']);
+			} elseif ($etype === 'payment') {
+				$amt = (float) $entry['bank_amt'] + (float) $entry['cash_amt'];
+				$summary['payments']['total'] += $amt;
+				if (!empty($entry['is_official'])) {
+					$summary['payments']['official'] += $amt;
+				} else {
+					$summary['payments']['unofficial'] += $amt;
+				}
+			} elseif ($etype === 'adjustment') {
+				$signed = (float) ($entry['adj_final'] ?? 0);
+				$summary['adjustments']['total'] += $signed;
+				if (!empty($entry['is_official'])) {
+					$summary['adjustments']['official'] += $signed;
+				} else {
+					$summary['adjustments']['unofficial'] += $signed;
+				}
+			}
+
+			$ct = &$summary['column_totals'];
+			$ct['rate']       += (float) ($entry['rate'] ?? 0);
+			$ct['bill_amt']   += (float) ($entry['bill_amt'] ?? 0);
+			$ct['cgst']       += (float) ($entry['cgst'] ?? 0);
+			$ct['sgst']       += (float) ($entry['sgst'] ?? 0);
+			$ct['igst']       += (float) ($entry['igst'] ?? 0);
+			$ct['final_bill'] += (float) ($entry['final_bill'] ?? 0);
+			$ct['cash']       += (float) ($entry['cash'] ?? 0);
+			$ct['final_sale'] += (float) ($entry['final_sale'] ?? 0);
+			$ct['bank_amt']   += (float) ($entry['bank_amt'] ?? 0);
+			$ct['cash_amt']   += (float) ($entry['cash_amt'] ?? 0);
+		}
+
+		$summary['outstanding'] = [
+			'final'      => $final_bal,
+			'official'   => $bank_bal,
+			'unofficial' => $cash_bal,
+		];
+
+		$summary['closing'] = [
+			'final' => $final_bal,
+			'bank'  => $bank_bal,
+			'cash'  => $cash_bal,
+		];
+
+		return [
+			'supplier'         => $supplier,
+			'from_date'        => $from_date,
+			'to_date'          => $to_date,
+			'opening'          => $opening,
+			'order_rows'       => $order_rows,
+			'product_rows'     => $product_rows,
+			'summary'          => $summary,
+		];
 	}
 
 	public function get_unpaid_sales_orders_by_customer($customer_id, $payment_type)
@@ -31307,103 +33054,679 @@ public function get_sales_return_reports()
 		return $this->db->get('supplier')->result_array();
 	}
 
+	public function get_suppliers_for_adjustment()
+	{
+		$company_id = $this->session->userdata('company_id');
+		$this->db->where('is_deleted', '0');
+		$this->db->where_in('type', array('import', 'local'));
+		if ($company_id) {
+			$this->db->where('company_id', $company_id);
+		}
+		$this->db->order_by('type', 'ASC');
+		$this->db->order_by('name', 'ASC');
+		return $this->db->get('supplier')->result_array();
+	}
+
+	/**
+	 * Normalize adjustment amounts by supplier type.
+	 * Local suppliers only use INR (USD/RMB forced to 0).
+	 */
+	private function normalize_supplier_adj_row($supplier_id, $inr, $usd, $rmb)
+	{
+		$supplier = $this->db->get_where('supplier', array('id' => (int) $supplier_id))->row_array();
+		$stype = (!empty($supplier['type'])) ? $supplier['type'] : 'import';
+		$inr = (float) $inr;
+		$usd = (float) $usd;
+		$rmb = (float) $rmb;
+		if ($stype === 'local') {
+			$usd = 0.0;
+			$rmb = 0.0;
+		}
+		return array(
+			'supplier_type' => $stype,
+			'supplier_name' => isset($supplier['name']) ? $supplier['name'] : '',
+			'inr'           => $inr,
+			'usd'           => $usd,
+			'rmb'           => $rmb,
+		);
+	}
+
+	private function validate_supplier_adj_same_type($valid_rows, $redirect_url)
+	{
+		$locked = null;
+		foreach ($valid_rows as $row) {
+			$norm = $this->normalize_supplier_adj_row($row['supplier_id'], $row['inr'], $row['usd'], $row['rmb']);
+			if ($locked === null) {
+				$locked = $norm['supplier_type'];
+			} elseif ($norm['supplier_type'] !== $locked) {
+				$this->session->set_flashdata('error_message', 'Local and Import suppliers cannot be adjusted against each other. Use only one supplier type per adjustment.');
+				redirect($redirect_url, 'refresh');
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public function add_supplier_adjustment()
 	{
 		$company_id = $this->session->userdata('company_id');
 		$user_id = $this->session->userdata('super_user_id');
 		$user_name = $this->session->userdata('super_name');
 
-		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
-		$batch_no = clean_and_escape($this->input->post('batch_no'));
 		$date = clean_and_escape($this->input->post('date'));
-		$rmb = clean_and_escape($this->input->post('rmb'));
-		$usd = clean_and_escape($this->input->post('usd'));
-		$inr = clean_and_escape($this->input->post('inr'));
-		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$date = !empty($date) ? $date : date('Y-m-d');
 		$type = clean_and_escape($this->input->post('type'));
-		$remark = clean_and_escape($this->input->post('remark'));
+		$type = in_array($type, ['official', 'unofficial']) ? $type : 'unofficial';
 
-		$supplier = $this->db->get_where('supplier', array('id' => $supplier_id))->row_array();
-		$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+		$adj_mode = clean_and_escape($this->input->post('adjustment_mode'));
 
-		$po = $this->db->get_where('purchase_order', array('voucher_no' => $batch_no, 'is_deleted' => 0))->row_array();
-		$batch_id = isset($po['id']) ? $po['id'] : NULL;
+		if ($adj_mode === 'ledger') {
+			// Ledger Mode
+			$supplier_ids   = (array) $this->input->post('ledger_supplier_id');
+			$amt_type_ids = (array) $this->input->post('ledger_amt_type_id');
+			$amt_types    = (array) $this->input->post('ledger_amt_type');
+			$inrs         = (array) $this->input->post('ledger_inr');
+			$usds         = (array) $this->input->post('ledger_usd');
+			$rmbs         = (array) $this->input->post('ledger_rmb');
+			$remarks      = (array) $this->input->post('ledger_remark');
 
-		$data = array(
-			'company_id'    => $company_id ? $company_id : 0,
-			'supplier_id'   => $supplier_id,
-			'supplier_name' => $supplier_name,
-			'batch_id'      => $batch_id,
-			'batch_no'      => $batch_no,
-			'date'          => $date ? $date : date('Y-m-d'),
-			'rmb'           => !empty($rmb) ? $rmb : 0.00,
-			'usd'           => !empty($usd) ? $usd : 0.00,
-			'inr'           => !empty($inr) ? $inr : 0.00,
-			'amt_type'      => $amt_type,
-			'type'          => $type,
-			'remark'        => $remark,
-			'is_deleted'    => 0,
-			'added_by'      => $user_name,
-			'added_by_id'   => $user_id,
-			'created_at'    => date('Y-m-d H:i:s'),
-			'updated_at'    => date('Y-m-d H:i:s')
-		);
+			$valid_rows = [];
+			$row_count = count($supplier_ids);
+			for ($i = 0; $i < $row_count; $i++) {
+				$sid = isset($supplier_ids[$i]) ? intval($supplier_ids[$i]) : 0;
+				if ($sid <= 0) continue;
 
-		$this->db->insert('supplier_adjustments', $data);
-		$this->session->set_flashdata('flash_message', 'Supplier Adjustment Added Successfully');
-		redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+				$inr = isset($inrs[$i]) ? (float)$inrs[$i] : 0.0;
+				$usd = isset($usds[$i]) ? (float)$usds[$i] : 0.0;
+				$rmb = isset($rmbs[$i]) ? (float)$rmbs[$i] : 0.0;
+
+				if ($inr <= 0 && $usd <= 0 && $rmb <= 0) continue;
+
+				$amt_t = isset($amt_types[$i]) && in_array($amt_types[$i], ['plus', 'minus']) ? $amt_types[$i] : 'plus';
+				$at_id = isset($amt_type_ids[$i]) ? intval($amt_type_ids[$i]) : 0;
+				$at_name = null;
+				if ($at_id > 0) {
+					$charge = $this->db->get_where('other_charges', ['id' => $at_id])->row_array();
+					if ($charge) {
+						$at_name = $charge['name'];
+					} else {
+						$at_id = null;
+					}
+				} else {
+					$at_id = null;
+				}
+
+				$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+				$norm = $this->normalize_supplier_adj_row($sid, $inr, $usd, $rmb);
+				$inr = $norm['inr'];
+				$usd = $norm['usd'];
+				$rmb = $norm['rmb'];
+
+				$valid_rows[] = [
+					'supplier_id'     => $sid,
+					'inr'           => $inr,
+					'usd'           => $usd,
+					'rmb'           => $rmb,
+					'amt_type'      => $amt_t,
+					'amt_type_id'   => $at_id,
+					'amt_type_name' => $at_name,
+					'remark'        => $row_remark
+				];
+			}
+
+			if (empty($valid_rows)) {
+				$this->session->set_flashdata('error_message', 'Please add at least one valid Supplier Adjustment entry.');
+				redirect(site_url('inventory/add-supplier-adjustment'), 'refresh');
+				return;
+			}
+
+			$this->db->trans_begin();
+
+			$parent_data = array(
+				'date'          => $date,
+				'adjust_type'   => 'suppliers',
+				'type'          => $type,
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('adjustments', $parent_data);
+			$parent_id = $this->db->insert_id();
+
+			foreach ($valid_rows as $row) {
+				$supplier = $this->db->get_where('supplier', array('id' => $row['supplier_id']))->row_array();
+				$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+
+				$child_data = array(
+					'parent_id'     => $parent_id,
+					'company_id'    => $company_id ? $company_id : 0,
+					'supplier_id'     => $row['supplier_id'],
+					'supplier_name'   => $supplier_name,
+					'date'          => $date,
+					'rmb'           => $row['rmb'],
+					'usd'           => $row['usd'],
+					'inr'           => $row['inr'],
+					'amt_type'      => $row['amt_type'],
+					'amt_type_id'   => $row['amt_type_id'],
+					'amt_type_name' => $row['amt_type_name'],
+					'type'          => $type,
+					'remark'        => $row['remark'],
+					'is_deleted'    => 0,
+					'added_by'      => $user_name,
+					'added_by_id'   => $user_id,
+					'created_at'    => date('Y-m-d H:i:s'),
+					'updated_at'    => date('Y-m-d H:i:s')
+				);
+				$this->db->insert('supplier_adjustments', $child_data);
+			}
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$this->session->set_flashdata('error_message', 'Failed to save Supplier Adjustment. Please try again.');
+				redirect(site_url('inventory/add-supplier-adjustment'), 'refresh');
+				return;
+			}
+
+			$this->db->trans_commit();
+			$this->session->set_flashdata('flash_message', 'Supplier Adjustment Added Successfully');
+			redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+			return;
+
+		} else {
+			// To Suppliers Mode
+			$supplier_ids  = (array) $this->input->post('supplier_id');
+			$debit_inrs  = (array) $this->input->post('debit_inr');
+			$debit_usds  = (array) $this->input->post('debit_usd');
+			$debit_rmbs  = (array) $this->input->post('debit_rmb');
+			$credit_inrs = (array) $this->input->post('credit_inr');
+			$credit_usds = (array) $this->input->post('credit_usd');
+			$credit_rmbs = (array) $this->input->post('credit_rmb');
+			$remarks     = (array) $this->input->post('remark');
+
+			$valid_rows = [];
+			$total_deb_inr = 0.0;
+			$total_deb_usd = 0.0;
+			$total_deb_rmb = 0.0;
+			$total_crd_inr = 0.0;
+			$total_crd_usd = 0.0;
+			$total_crd_rmb = 0.0;
+
+			$row_count = count($supplier_ids);
+			for ($i = 0; $i < $row_count; $i++) {
+				$sid = isset($supplier_ids[$i]) ? intval($supplier_ids[$i]) : 0;
+				if ($sid <= 0) continue;
+
+				$d_inr = isset($debit_inrs[$i]) ? (float)$debit_inrs[$i] : 0.0;
+				$d_usd = isset($debit_usds[$i]) ? (float)$debit_usds[$i] : 0.0;
+				$d_rmb = isset($debit_rmbs[$i]) ? (float)$debit_rmbs[$i] : 0.0;
+
+				$c_inr = isset($credit_inrs[$i]) ? (float)$credit_inrs[$i] : 0.0;
+				$c_usd = isset($credit_usds[$i]) ? (float)$credit_usds[$i] : 0.0;
+				$c_rmb = isset($credit_rmbs[$i]) ? (float)$credit_rmbs[$i] : 0.0;
+
+				$has_debit  = ($d_inr > 0 || $d_usd > 0 || $d_rmb > 0);
+				$has_credit = ($c_inr > 0 || $c_usd > 0 || $c_rmb > 0);
+
+				if ($has_debit && $has_credit) {
+					$this->session->set_flashdata('error_message', 'Each row can only contain either Debit or Credit amount, not both.');
+					redirect(site_url('inventory/add-supplier-adjustment'), 'refresh');
+					return;
+				}
+
+				if (!$has_debit && !$has_credit) {
+					continue;
+				}
+
+				$amt_type = $has_debit ? 'minus' : 'plus';
+				$inr = $has_debit ? $d_inr : $c_inr;
+				$usd = $has_debit ? $d_usd : $c_usd;
+				$rmb = $has_debit ? $d_rmb : $c_rmb;
+				$norm = $this->normalize_supplier_adj_row($sid, $inr, $usd, $rmb);
+				$inr = $norm['inr'];
+				$usd = $norm['usd'];
+				$rmb = $norm['rmb'];
+				if ($has_debit) { $d_inr = $inr; $d_usd = $usd; $d_rmb = $rmb; }
+				else { $c_inr = $inr; $c_usd = $usd; $c_rmb = $rmb; }
+				$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+				if ($has_debit) {
+					$total_deb_inr += $d_inr;
+					$total_deb_usd += $d_usd;
+					$total_deb_rmb += $d_rmb;
+				} else {
+					$total_crd_inr += $c_inr;
+					$total_crd_usd += $c_usd;
+					$total_crd_rmb += $c_rmb;
+				}
+
+				$valid_rows[] = [
+					'supplier_id'     => $sid,
+					'inr'           => $inr,
+					'usd'           => $usd,
+					'rmb'           => $rmb,
+					'amt_type'      => $amt_type,
+					'amt_type_id'   => null,
+					'amt_type_name' => null,
+					'remark'        => $row_remark
+				];
+			}
+
+			if (empty($valid_rows)) {
+				$this->session->set_flashdata('error_message', 'Please add at least one valid Supplier Adjustment entry.');
+				redirect(site_url('inventory/add-supplier-adjustment'), 'refresh');
+				return;
+			}
+
+			if (!$this->validate_supplier_adj_same_type($valid_rows, site_url('inventory/add-supplier-adjustment'))) {
+				return;
+			}
+
+			if (count($valid_rows) > 1) {
+				if (abs($total_deb_inr - $total_crd_inr) > 0.01 || abs($total_deb_usd - $total_crd_usd) > 0.0001 || abs($total_deb_rmb - $total_crd_rmb) > 0.0001) {
+					$this->session->set_flashdata('error_message', 'Debit and Credit amounts must match when there are more than 1 entries.');
+					redirect(site_url('inventory/add-supplier-adjustment'), 'refresh');
+					return;
+				}
+			}
+
+			$this->db->trans_begin();
+
+			$parent_data = array(
+				'date'          => $date,
+				'adjust_type'   => 'suppliers',
+				'type'          => $type,
+				'is_deleted'    => 0,
+				'added_by'      => $user_name,
+				'added_by_id'   => $user_id,
+				'created_at'    => date('Y-m-d H:i:s'),
+				'updated_at'    => date('Y-m-d H:i:s')
+			);
+			$this->db->insert('adjustments', $parent_data);
+			$parent_id = $this->db->insert_id();
+
+			foreach ($valid_rows as $row) {
+				$supplier = $this->db->get_where('supplier', array('id' => $row['supplier_id']))->row_array();
+				$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+
+				$child_data = array(
+					'parent_id'     => $parent_id,
+					'company_id'    => $company_id ? $company_id : 0,
+					'supplier_id'     => $row['supplier_id'],
+					'supplier_name'   => $supplier_name,
+					'date'          => $date,
+					'rmb'           => $row['rmb'],
+					'usd'           => $row['usd'],
+					'inr'           => $row['inr'],
+					'amt_type'      => $row['amt_type'],
+					'amt_type_id'   => null,
+					'amt_type_name' => null,
+					'type'          => $type,
+					'remark'        => $row['remark'],
+					'is_deleted'    => 0,
+					'added_by'      => $user_name,
+					'added_by_id'   => $user_id,
+					'created_at'    => date('Y-m-d H:i:s'),
+					'updated_at'    => date('Y-m-d H:i:s')
+				);
+				$this->db->insert('supplier_adjustments', $child_data);
+			}
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$this->session->set_flashdata('error_message', 'Failed to save Supplier Adjustment. Please try again.');
+				redirect(site_url('inventory/add-supplier-adjustment'), 'refresh');
+				return;
+			}
+
+			$this->db->trans_commit();
+			$this->session->set_flashdata('flash_message', 'Supplier Adjustment Added Successfully');
+			redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+		}
 	}
 
 	public function edit_supplier_adjustment($id)
 	{
-		$supplier_id = clean_and_escape($this->input->post('supplier_id'));
-		$batch_no = clean_and_escape($this->input->post('batch_no'));
+		$id = intval($id);
+		$company_id = $this->session->userdata('company_id');
+		$user_id = $this->session->userdata('super_user_id');
+		$user_name = $this->session->userdata('super_name');
+
 		$date = clean_and_escape($this->input->post('date'));
-		$rmb = clean_and_escape($this->input->post('rmb'));
-		$usd = clean_and_escape($this->input->post('usd'));
-		$inr = clean_and_escape($this->input->post('inr'));
-		$amt_type = clean_and_escape($this->input->post('amt_type'));
+		$date = !empty($date) ? $date : date('Y-m-d');
 		$type = clean_and_escape($this->input->post('type'));
-		$remark = clean_and_escape($this->input->post('remark'));
+		$type = in_array($type, ['official', 'unofficial']) ? $type : 'unofficial';
 
-		$supplier = $this->db->get_where('supplier', array('id' => $supplier_id))->row_array();
-		$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+		$adj_mode = clean_and_escape($this->input->post('adjustment_mode'));
 
-		$po = $this->db->get_where('purchase_order', array('voucher_no' => $batch_no, 'is_deleted' => 0))->row_array();
-		$batch_id = isset($po['id']) ? $po['id'] : NULL;
+		if ($adj_mode === 'ledger') {
+			// Ledger Mode
+			$supplier_ids   = (array) $this->input->post('ledger_supplier_id');
+			$amt_type_ids = (array) $this->input->post('ledger_amt_type_id');
+			$amt_types    = (array) $this->input->post('ledger_amt_type');
+			$inrs         = (array) $this->input->post('ledger_inr');
+			$usds         = (array) $this->input->post('ledger_usd');
+			$rmbs         = (array) $this->input->post('ledger_rmb');
+			$remarks      = (array) $this->input->post('ledger_remark');
 
-		$data = array(
-			'supplier_id'   => $supplier_id,
-			'supplier_name' => $supplier_name,
-			'batch_id'      => $batch_id,
-			'batch_no'      => $batch_no,
-			'date'          => $date,
-			'rmb'           => !empty($rmb) ? $rmb : 0.00,
-			'usd'           => !empty($usd) ? $usd : 0.00,
-			'inr'           => !empty($inr) ? $inr : 0.00,
-			'amt_type'      => $amt_type,
-			'type'          => $type,
-			'remark'        => $remark,
-			'updated_at'    => date('Y-m-d H:i:s')
-		);
+			$valid_rows = [];
+			$row_count = count($supplier_ids);
+			for ($i = 0; $i < $row_count; $i++) {
+				$sid = isset($supplier_ids[$i]) ? intval($supplier_ids[$i]) : 0;
+				if ($sid <= 0) continue;
 
-		$this->db->where('id', $id);
-		$this->db->update('supplier_adjustments', $data);
-		$this->session->set_flashdata('flash_message', 'Supplier Adjustment Updated Successfully');
-		redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+				$inr = isset($inrs[$i]) ? (float)$inrs[$i] : 0.0;
+				$usd = isset($usds[$i]) ? (float)$usds[$i] : 0.0;
+				$rmb = isset($rmbs[$i]) ? (float)$rmbs[$i] : 0.0;
+
+				if ($inr <= 0 && $usd <= 0 && $rmb <= 0) continue;
+
+				$amt_t = isset($amt_types[$i]) && in_array($amt_types[$i], ['plus', 'minus']) ? $amt_types[$i] : 'plus';
+				$at_id = isset($amt_type_ids[$i]) ? intval($amt_type_ids[$i]) : 0;
+				$at_name = null;
+				if ($at_id > 0) {
+					$charge = $this->db->get_where('other_charges', ['id' => $at_id])->row_array();
+					if ($charge) {
+						$at_name = $charge['name'];
+					} else {
+						$at_id = null;
+					}
+				} else {
+					$at_id = null;
+				}
+
+				$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+				$norm = $this->normalize_supplier_adj_row($sid, $inr, $usd, $rmb);
+				$inr = $norm['inr'];
+				$usd = $norm['usd'];
+				$rmb = $norm['rmb'];
+
+				$valid_rows[] = [
+					'supplier_id'     => $sid,
+					'inr'           => $inr,
+					'usd'           => $usd,
+					'rmb'           => $rmb,
+					'amt_type'      => $amt_t,
+					'amt_type_id'   => $at_id,
+					'amt_type_name' => $at_name,
+					'remark'        => $row_remark
+				];
+			}
+
+			if (empty($valid_rows)) {
+				$this->session->set_flashdata('error_message', 'Please add at least one valid Supplier Adjustment entry.');
+				redirect(site_url('inventory/edit-supplier-adjustment/' . $id), 'refresh');
+				return;
+			}
+
+			$this->db->trans_begin();
+
+			// Update or insert parent
+			$existing_parent = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'suppliers'))->row_array();
+			if ($existing_parent) {
+				$this->db->where('id', $id);
+				$this->db->update('adjustments', array(
+					'date'       => $date,
+					'type'       => $type,
+					'updated_at' => date('Y-m-d H:i:s')
+				));
+			} else {
+				$parent_data = array(
+					'id'            => $id,
+					'date'          => $date,
+					'adjust_type'   => 'suppliers',
+					'type'          => $type,
+					'is_deleted'    => 0,
+					'added_by'      => $user_name,
+					'added_by_id'   => $user_id,
+					'created_at'    => date('Y-m-d H:i:s'),
+					'updated_at'    => date('Y-m-d H:i:s')
+				);
+				$this->db->insert('adjustments', $parent_data);
+			}
+
+			// Delete existing child rows for parent
+			$this->db->where('parent_id', $id)->delete('supplier_adjustments');
+
+			foreach ($valid_rows as $row) {
+				$supplier = $this->db->get_where('supplier', array('id' => $row['supplier_id']))->row_array();
+				$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+
+				$child_data = array(
+					'parent_id'     => $id,
+					'company_id'    => $company_id ? $company_id : 0,
+					'supplier_id'     => $row['supplier_id'],
+					'supplier_name'   => $supplier_name,
+					'date'          => $date,
+					'rmb'           => $row['rmb'],
+					'usd'           => $row['usd'],
+					'inr'           => $row['inr'],
+					'amt_type'      => $row['amt_type'],
+					'amt_type_id'   => $row['amt_type_id'],
+					'amt_type_name' => $row['amt_type_name'],
+					'type'          => $type,
+					'remark'        => $row['remark'],
+					'is_deleted'    => 0,
+					'added_by'      => $user_name,
+					'added_by_id'   => $user_id,
+					'created_at'    => date('Y-m-d H:i:s'),
+					'updated_at'    => date('Y-m-d H:i:s')
+				);
+				$this->db->insert('supplier_adjustments', $child_data);
+			}
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$this->session->set_flashdata('error_message', 'Failed to update Supplier Adjustment. Please try again.');
+				redirect(site_url('inventory/edit-supplier-adjustment/' . $id), 'refresh');
+				return;
+			}
+
+			$this->db->trans_commit();
+			$this->session->set_flashdata('flash_message', 'Supplier Adjustment Updated Successfully');
+			redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+			return;
+
+		} else {
+			// To Suppliers Mode
+			$supplier_ids  = (array) $this->input->post('supplier_id');
+			$debit_inrs  = (array) $this->input->post('debit_inr');
+			$debit_usds  = (array) $this->input->post('debit_usd');
+			$debit_rmbs  = (array) $this->input->post('debit_rmb');
+			$credit_inrs = (array) $this->input->post('credit_inr');
+			$credit_usds = (array) $this->input->post('credit_usd');
+			$credit_rmbs = (array) $this->input->post('credit_rmb');
+			$remarks     = (array) $this->input->post('remark');
+
+			$valid_rows = [];
+			$total_deb_inr = 0.0;
+			$total_deb_usd = 0.0;
+			$total_deb_rmb = 0.0;
+			$total_crd_inr = 0.0;
+			$total_crd_usd = 0.0;
+			$total_crd_rmb = 0.0;
+
+			$row_count = count($supplier_ids);
+			for ($i = 0; $i < $row_count; $i++) {
+				$sid = isset($supplier_ids[$i]) ? intval($supplier_ids[$i]) : 0;
+				if ($sid <= 0) continue;
+
+				$d_inr = isset($debit_inrs[$i]) ? (float)$debit_inrs[$i] : 0.0;
+				$d_usd = isset($debit_usds[$i]) ? (float)$debit_usds[$i] : 0.0;
+				$d_rmb = isset($debit_rmbs[$i]) ? (float)$debit_rmbs[$i] : 0.0;
+
+				$c_inr = isset($credit_inrs[$i]) ? (float)$credit_inrs[$i] : 0.0;
+				$c_usd = isset($credit_usds[$i]) ? (float)$credit_usds[$i] : 0.0;
+				$c_rmb = isset($credit_rmbs[$i]) ? (float)$credit_rmbs[$i] : 0.0;
+
+				$has_debit  = ($d_inr > 0 || $d_usd > 0 || $d_rmb > 0);
+				$has_credit = ($c_inr > 0 || $c_usd > 0 || $c_rmb > 0);
+
+				if ($has_debit && $has_credit) {
+					$this->session->set_flashdata('error_message', 'Each row can only contain either Debit or Credit amount, not both.');
+					redirect(site_url('inventory/edit-supplier-adjustment/' . $id), 'refresh');
+					return;
+				}
+
+				if (!$has_debit && !$has_credit) {
+					continue;
+				}
+
+				$amt_type = $has_debit ? 'minus' : 'plus';
+				$inr = $has_debit ? $d_inr : $c_inr;
+				$usd = $has_debit ? $d_usd : $c_usd;
+				$rmb = $has_debit ? $d_rmb : $c_rmb;
+				$norm = $this->normalize_supplier_adj_row($sid, $inr, $usd, $rmb);
+				$inr = $norm['inr'];
+				$usd = $norm['usd'];
+				$rmb = $norm['rmb'];
+				if ($has_debit) { $d_inr = $inr; $d_usd = $usd; $d_rmb = $rmb; }
+				else { $c_inr = $inr; $c_usd = $usd; $c_rmb = $rmb; }
+				$row_remark = isset($remarks[$i]) ? clean_and_escape($remarks[$i]) : '';
+
+				if ($has_debit) {
+					$total_deb_inr += $d_inr;
+					$total_deb_usd += $d_usd;
+					$total_deb_rmb += $d_rmb;
+				} else {
+					$total_crd_inr += $c_inr;
+					$total_crd_usd += $c_usd;
+					$total_crd_rmb += $c_rmb;
+				}
+
+				$valid_rows[] = [
+					'supplier_id'     => $sid,
+					'inr'           => $inr,
+					'usd'           => $usd,
+					'rmb'           => $rmb,
+					'amt_type'      => $amt_type,
+					'amt_type_id'   => null,
+					'amt_type_name' => null,
+					'remark'        => $row_remark
+				];
+			}
+
+			if (empty($valid_rows)) {
+				$this->session->set_flashdata('error_message', 'Please add at least one valid Supplier Adjustment entry.');
+				redirect(site_url('inventory/edit-supplier-adjustment/' . $id), 'refresh');
+				return;
+			}
+
+			if (!$this->validate_supplier_adj_same_type($valid_rows, site_url('inventory/edit-supplier-adjustment/' . $id))) {
+				return;
+			}
+
+			if (count($valid_rows) > 1) {
+				if (abs($total_deb_inr - $total_crd_inr) > 0.01 || abs($total_deb_usd - $total_crd_usd) > 0.0001 || abs($total_deb_rmb - $total_crd_rmb) > 0.0001) {
+					$this->session->set_flashdata('error_message', 'Debit and Credit amounts must match when there are more than 1 entries.');
+					redirect(site_url('inventory/edit-supplier-adjustment/' . $id), 'refresh');
+					return;
+				}
+			}
+
+			$this->db->trans_begin();
+
+			// Update or insert parent
+			$existing_parent = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'suppliers'))->row_array();
+			if ($existing_parent) {
+				$this->db->where('id', $id);
+				$this->db->update('adjustments', array(
+					'date'       => $date,
+					'type'       => $type,
+					'updated_at' => date('Y-m-d H:i:s')
+				));
+			} else {
+				$parent_data = array(
+					'id'            => $id,
+					'date'          => $date,
+					'adjust_type'   => 'suppliers',
+					'type'          => $type,
+					'is_deleted'    => 0,
+					'added_by'      => $user_name,
+					'added_by_id'   => $user_id,
+					'created_at'    => date('Y-m-d H:i:s'),
+					'updated_at'    => date('Y-m-d H:i:s')
+				);
+				$this->db->insert('adjustments', $parent_data);
+			}
+
+			// Delete existing child rows for parent
+			$this->db->where('parent_id', $id)->delete('supplier_adjustments');
+
+			foreach ($valid_rows as $row) {
+				$supplier = $this->db->get_where('supplier', array('id' => $row['supplier_id']))->row_array();
+				$supplier_name = isset($supplier['name']) ? $supplier['name'] : '';
+
+				$child_data = array(
+					'parent_id'     => $id,
+					'company_id'    => $company_id ? $company_id : 0,
+					'supplier_id'     => $row['supplier_id'],
+					'supplier_name'   => $supplier_name,
+					'date'          => $date,
+					'rmb'           => $row['rmb'],
+					'usd'           => $row['usd'],
+					'inr'           => $row['inr'],
+					'amt_type'      => $row['amt_type'],
+					'amt_type_id'   => null,
+					'amt_type_name' => null,
+					'type'          => $type,
+					'remark'        => $row['remark'],
+					'is_deleted'    => 0,
+					'added_by'      => $user_name,
+					'added_by_id'   => $user_id,
+					'created_at'    => date('Y-m-d H:i:s'),
+					'updated_at'    => date('Y-m-d H:i:s')
+				);
+				$this->db->insert('supplier_adjustments', $child_data);
+			}
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->db->trans_rollback();
+				$this->session->set_flashdata('error_message', 'Failed to update Supplier Adjustment. Please try again.');
+				redirect(site_url('inventory/edit-supplier-adjustment/' . $id), 'refresh');
+				return;
+			}
+
+			$this->db->trans_commit();
+			$this->session->set_flashdata('flash_message', 'Supplier Adjustment Updated Successfully');
+			redirect(site_url('inventory/supplier-adjustment'), 'refresh');
+		}
 	}
 
 	public function delete_supplier_adjustment($id)
 	{
-		$this->db->where('id', $id);
-		$this->db->update('supplier_adjustments', array('is_deleted' => 1));
+		$id = intval($id);
+		$this->db->trans_begin();
+		$this->db->where('id', $id)->update('adjustments', array('is_deleted' => 1));
+		$this->db->where('parent_id', $id)->update('supplier_adjustments', array('is_deleted' => 1));
+		$this->db->where('id', $id)->update('supplier_adjustments', array('is_deleted' => 1));
+		$this->db->trans_commit();
+
 		$this->session->set_flashdata('flash_message', 'Supplier Adjustment Deleted Successfully');
 		redirect(site_url('inventory/supplier-adjustment'), 'refresh');
 	}
 
 	public function get_supplier_adjustment_by_id($id)
 	{
-		return $this->db->get_where('supplier_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+		$id = intval($id);
+		$adj = $this->db->get_where('adjustments', array('id' => $id, 'adjust_type' => 'suppliers', 'is_deleted' => 0))->row_array();
+		if (empty($adj)) {
+			$adj = $this->db->get_where('supplier_adjustments', array('id' => $id, 'is_deleted' => 0))->row_array();
+		}
+		return $adj;
+	}
+
+	public function get_supplier_adjustment_details_by_parent_id($parent_id)
+	{
+		$parent_id = intval($parent_id);
+		$details = $this->db->get_where('supplier_adjustments', array('parent_id' => $parent_id, 'is_deleted' => 0))->result_array();
+		if (empty($details)) {
+			$details = $this->db->get_where('supplier_adjustments', array('id' => $parent_id, 'is_deleted' => 0))->result_array();
+		}
+		return $details;
 	}
 
 	public function get_supplier_adjustment_datatable()
@@ -31413,26 +33736,49 @@ public function get_sales_return_reports()
 		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
 
 		$search_val = isset($_REQUEST['search']['value']) ? clean_and_escape($_REQUEST['search']['value']) : '';
-		$where = "sa.is_deleted = '0'";
+		$where = "a.is_deleted = 0 AND a.adjust_type = 'suppliers'";
 
 		$company_id = $this->session->userdata('company_id');
 		if ($company_id) {
-			$where .= " AND sa.company_id = '" . $company_id . "'";
+			$where .= " AND (sa.company_id = '" . $company_id . "' OR sa.company_id = 0 OR sa.company_id IS NULL)";
 		}
 
 		if ($search_val != '') {
-			$where .= " AND (sa.supplier_name LIKE '%" . $search_val . "%' OR sa.batch_no LIKE '%" . $search_val . "%' OR sa.remark LIKE '%" . $search_val . "%' OR sa.amt_type LIKE '%" . $search_val . "%' OR sa.type LIKE '%" . $search_val . "%')";
+			$where .= " AND (sa.supplier_name LIKE '%" . $search_val . "%' OR sa.remark LIKE '%" . $search_val . "%' OR a.type LIKE '%" . $search_val . "%' OR a.date LIKE '%" . $search_val . "%')";
 		}
 
-		$total_count = $this->db->query("SELECT sa.id FROM supplier_adjustments sa WHERE $where")->num_rows();
+		$total_count_query = $this->db->query("SELECT COUNT(DISTINCT a.id) as cnt 
+												FROM adjustments a 
+												LEFT JOIN supplier_adjustments sa ON sa.parent_id = a.id AND sa.is_deleted = 0
+												WHERE $where");
+		$total_count = $total_count_query ? $total_count_query->row()->cnt : 0;
 
 		$query = $this->db->query("SELECT 
-										sa.*,
-										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
-									FROM supplier_adjustments sa
-									LEFT JOIN sys_users u ON sa.added_by = u.id
+										a.id,
+										a.date,
+										a.type,
+										a.adjust_type,
+										a.added_by,
+										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name,
+										GROUP_CONCAT(DISTINCT sa.supplier_name ORDER BY sa.id ASC SEPARATOR ', ') as supplier_name,
+										COUNT(sa.id) as row_count,
+										MAX(sa.amt_type) as single_amt_type,
+										SUM(CASE WHEN sa.amt_type = 'minus' THEN sa.usd ELSE 0 END) as deb_usd,
+										SUM(CASE WHEN sa.amt_type = 'plus' THEN sa.usd ELSE 0 END) as crd_usd,
+										SUM(CASE WHEN sa.amt_type = 'minus' THEN sa.rmb ELSE 0 END) as deb_rmb,
+										SUM(CASE WHEN sa.amt_type = 'plus' THEN sa.rmb ELSE 0 END) as crd_rmb,
+										SUM(CASE WHEN sa.amt_type = 'minus' THEN sa.inr ELSE 0 END) as deb_inr,
+										SUM(CASE WHEN sa.amt_type = 'plus' THEN sa.inr ELSE 0 END) as crd_inr,
+										SUM(sa.usd) as total_usd,
+										SUM(sa.rmb) as total_rmb,
+										SUM(sa.inr) as total_inr,
+										GROUP_CONCAT(DISTINCT NULLIF(sa.remark, '') SEPARATOR '; ') as remark
+									FROM adjustments a
+									LEFT JOIN supplier_adjustments sa ON sa.parent_id = a.id AND sa.is_deleted = 0
+									LEFT JOIN sys_users u ON a.added_by_id = u.id
 									WHERE $where
-									ORDER BY sa.id DESC
+									GROUP BY a.id
+									ORDER BY a.id DESC
 									LIMIT $start, $length");
 
 		$data = array();
@@ -31445,9 +33791,40 @@ public function get_sales_return_reports()
 				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
 
-				$amt_type_badge = ($item['amt_type'] == 'plus') 
-					? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
-					: '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+				$deb_usd = (float)$item['deb_usd'];
+				$crd_usd = (float)$item['crd_usd'];
+				$deb_rmb = (float)$item['deb_rmb'];
+				$crd_rmb = (float)$item['crd_rmb'];
+				$deb_inr = (float)$item['deb_inr'];
+				$crd_inr = (float)$item['crd_inr'];
+				$row_cnt = intval($item['row_count']);
+
+				$has_deb = ($deb_inr > 0 || $deb_usd > 0 || $deb_rmb > 0);
+				$has_crd = ($crd_inr > 0 || $crd_usd > 0 || $crd_rmb > 0);
+
+				if ($row_cnt > 1 && $has_deb && $has_crd) {
+					$amt_type_badge = '<span class="badge bg-primary" style="font-size:11px;">Balanced (±)</span>';
+					$show_usd = max($deb_usd, $crd_usd);
+					$show_rmb = max($deb_rmb, $crd_rmb);
+					$show_inr = max($deb_inr, $crd_inr);
+				} elseif ($has_deb && !$has_crd) {
+					$amt_type_badge = '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>';
+					$show_usd = $deb_usd;
+					$show_rmb = $deb_rmb;
+					$show_inr = $deb_inr;
+				} elseif ($has_crd && !$has_deb) {
+					$amt_type_badge = '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>';
+					$show_usd = $crd_usd;
+					$show_rmb = $crd_rmb;
+					$show_inr = $crd_inr;
+				} else {
+					$amt_type_badge = ($item['single_amt_type'] == 'plus') 
+						? '<span class="badge bg-success" style="font-size:11px;">Plus (+)</span>' 
+						: (($item['single_amt_type'] == 'minus') ? '<span class="badge bg-danger" style="font-size:11px;">Minus (-)</span>' : '<span class="badge bg-info" style="font-size:11px;">Mixed (±)</span>');
+					$show_usd = (float)$item['total_usd'];
+					$show_rmb = (float)$item['total_rmb'];
+					$show_inr = (float)$item['total_inr'];
+				}
 
 				$type_badge = ($item['type'] == 'official')
 					? '<span class="badge bg-info" style="font-size:11px;">Official</span>'
@@ -31457,15 +33834,14 @@ public function get_sales_return_reports()
 					"sr_no"         => ++$start,
 					"id"            => $item['id'],
 					"date"          => date('d M Y', strtotime($item['date'])),
-					"supplier_name" => html_escape($item['supplier_name']),
-					"batch_no"      => html_escape($item['batch_no'] ? $item['batch_no'] : '—'),
-					"rmb"           => number_format((float)$item['rmb'], 2),
-					"usd"           => number_format((float)$item['usd'], 2),
-					"inr"           => number_format((float)$item['inr'], 2),
+					"supplier_name"   => html_escape($item['supplier_name'] ? $item['supplier_name'] : '—'),
+					"usd"           => number_format($show_usd, 2),
+					"rmb"           => number_format($show_rmb, 2),
+					"inr"           => number_format($show_inr, 2),
 					"amt_type"      => $amt_type_badge,
 					"type"          => $type_badge,
 					"remark"        => html_escape($item['remark'] ? $item['remark'] : '—'),
-					"added_by"      => html_escape($item['added_by_name'] ? $item['added_by_name'] : '—'),
+					"added_by"      => html_escape($item['added_by_name'] ? $item['added_by_name'] : ($item['added_by'] ? $item['added_by'] : '—')),
 					"action"        => $action,
 				);
 			}
@@ -31557,7 +33933,7 @@ public function get_sales_return_reports()
 
 		$adj_where = "sa.supplier_id = '$supplier_id' AND sa.batch_no = " . $this->db->escape($batch_no) . " AND sa.is_deleted = 0";
 		if ($current_adj_id) {
-			$adj_where .= " AND sa.id != " . intval($current_adj_id);
+			$adj_where .= " AND (sa.id != " . intval($current_adj_id) . " AND (sa.parent_id IS NULL OR sa.parent_id != " . intval($current_adj_id) . "))";
 		}
 
 		$query_adjustments = $this->db->query("SELECT 
@@ -31625,7 +34001,7 @@ public function get_sales_return_reports()
 			$adj_where .= " AND sa.type = 'official'";
 		}
 		if ($current_adj_id) {
-			$adj_where .= " AND sa.id != " . intval($current_adj_id);
+			$adj_where .= " AND (sa.id != " . intval($current_adj_id) . " AND (sa.parent_id IS NULL OR sa.parent_id != " . intval($current_adj_id) . "))";
 		}
 		$adjustments = $this->db->query("SELECT sa.* FROM supplier_adjustments sa WHERE $adj_where")->result_array();
 
@@ -31802,7 +34178,7 @@ public function get_sales_return_reports()
 
 			foreach ($valid_rows as $row) {
 				$vendor = $this->db->get_where('my_companies', array('id' => $row['vendor_id']))->row_array();
-				$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+				$vendor_name = isset($supplier['name']) ? $supplier['name'] : '';
 
 				$child_data = array(
 					'parent_id'     => $parent_id,
@@ -31840,7 +34216,7 @@ public function get_sales_return_reports()
 			return;
 
 		} else {
-			// To Vendors Mode
+			// To Suppliers Mode
 			$vendor_ids  = (array) $this->input->post('vendor_id');
 			$debit_inrs  = (array) $this->input->post('debit_inr');
 			$debit_usds  = (array) $this->input->post('debit_usd');
@@ -31943,7 +34319,7 @@ public function get_sales_return_reports()
 
 			foreach ($valid_rows as $row) {
 				$vendor = $this->db->get_where('my_companies', array('id' => $row['vendor_id']))->row_array();
-				$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+				$vendor_name = isset($supplier['name']) ? $supplier['name'] : '';
 
 				$child_data = array(
 					'parent_id'     => $parent_id,
@@ -32082,7 +34458,7 @@ public function get_sales_return_reports()
 
 			foreach ($valid_rows as $row) {
 				$vendor = $this->db->get_where('my_companies', array('id' => $row['vendor_id']))->row_array();
-				$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+				$vendor_name = isset($supplier['name']) ? $supplier['name'] : '';
 
 				$child_data = array(
 					'parent_id'     => $id,
@@ -32120,7 +34496,7 @@ public function get_sales_return_reports()
 			return;
 
 		} else {
-			// To Vendors Mode
+			// To Suppliers Mode
 			$vendor_ids  = (array) $this->input->post('vendor_id');
 			$debit_inrs  = (array) $this->input->post('debit_inr');
 			$debit_usds  = (array) $this->input->post('debit_usd');
@@ -32237,7 +34613,7 @@ public function get_sales_return_reports()
 
 			foreach ($valid_rows as $row) {
 				$vendor = $this->db->get_where('my_companies', array('id' => $row['vendor_id']))->row_array();
-				$vendor_name = isset($vendor['name']) ? $vendor['name'] : '';
+				$vendor_name = isset($supplier['name']) ? $supplier['name'] : '';
 
 				$child_data = array(
 					'parent_id'     => $id,

@@ -29,6 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `supplier_adjustments` (
   `id` int(11) NOT NULL,
+  `parent_id` int(11) DEFAULT NULL,
   `company_id` int(11) NOT NULL,
   `supplier_id` int(11) NOT NULL,
   `supplier_name` varchar(255) NOT NULL,
@@ -39,6 +40,8 @@ CREATE TABLE `supplier_adjustments` (
   `usd` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `inr` decimal(16,5) NOT NULL DEFAULT 0.00000,
   `amt_type` enum('plus','minus','') NOT NULL,
+    `amt_type_id` int(11) DEFAULT NULL,
+  `amt_type_name` varchar(255) DEFAULT NULL,
   `type` enum('official','unofficial','') NOT NULL,
   `remark` text DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,

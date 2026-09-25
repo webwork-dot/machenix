@@ -1127,7 +1127,6 @@
             html += '        <th class="text-end col-batch-off-exp" ' + styleOffExp + '>Official Cost with Exp</th>';
             html += '        <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Per Pc Net Amt</th>';
             html += '        <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Net Amt</th>';
-            html += '        <th class="text-center" style="width: 70px;">Action</th>';
             html += '      </tr>';
             html += '    </thead>';
             html += '    <tbody>';
@@ -1167,7 +1166,6 @@
                 html += '        <td class="text-end stk-cost col-batch-off-exp ' + (parseFloat(b.official_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffExp + '>₹' + b.official_cost_with_exp + '</td>';
                 html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_per_pc_net + '</td>';
                 html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_net + '</td>';
-                html += '        <td class="text-center">' + b.action + '</td>';
                 html += '      </tr>';
             }
 

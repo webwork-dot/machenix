@@ -14,7 +14,9 @@
               <select class="form-control select2" name="supplier_id" id="supplier_id" required>
                 <option value="">Select</option>
                 <?php foreach ($supplier_list as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>"><?php echo $value['name'];?></option>
+                  <option value="<?php echo $value['id'];?>" data-type="<?php echo html_escape($value['type'] ?? ''); ?>">
+                    <?php echo $value['name'];?>
+                  </option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -39,10 +41,10 @@
             </div>
           </div>
 
-          <div class="col-md-4 mb-1">
+          <div class="col-md-4 mb-1" id="amount_dollar_wrap">
             <div class="form-group">
               <label>Amount (in dollar)</label>
-              <input type="number" name="amount_dollar" class="form-control" value="0" min="0" step="0.01">
+              <input type="number" name="amount_dollar" id="amount_dollar" class="form-control" value="0" min="0" step="0.01">
             </div>
           </div>
           <div class="col-md-4 mb-1">
@@ -51,10 +53,10 @@
               <input type="number" name="amount_rs" class="form-control" value="0" min="0" step="0.01">
             </div>
           </div>
-          <div class="col-md-4 mb-1">
+          <div class="col-md-4 mb-1" id="amount_rmb_wrap">
             <div class="form-group">
               <label>Amount (in RMB)</label>
-              <input type="number" name="amount_rmb" class="form-control" value="0" min="0" step="0.01">
+              <input type="number" name="amount_rmb" id="amount_rmb" class="form-control" value="0" min="0" step="0.01">
             </div>
           </div>
 
@@ -127,10 +129,24 @@
       }
     }
 
+    function toggleCurrencyFields() {
+      const supplierType = $('#supplier_id option:selected').data('type') || '';
+      const isLocal = supplierType === 'local';
+
+      $('#amount_dollar_wrap').toggle(!isLocal);
+      $('#amount_rmb_wrap').toggle(!isLocal);
+
+      if (isLocal) {
+        $('#amount_dollar').val(0);
+        $('#amount_rmb').val(0);
+      }
+    }
+
     $('#payment_type').on('change', toggleBankAccount);
 
     // run once on page load (for edit pages too)
     toggleBankAccount();
+    toggleCurrencyFields();
 
     // Dynamic Batch Loading
     function loadSupplierBatches() {
@@ -166,7 +182,10 @@
       });
     }
 
-    $('#supplier_id').on('change', loadSupplierBatches);
+    $('#supplier_id').on('change', function() {
+      toggleCurrencyFields();
+      loadSupplierBatches();
+    });
 
     // If supplier is pre-selected
     if ($('#supplier_id').val()) {

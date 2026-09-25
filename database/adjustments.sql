@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `adjustments` (
   `id` int(11) NOT NULL,
   `date` date NOT NULL,
-  `adjust_type` enum('customers','vendors','') NOT NULL DEFAULT '',
+  `adjust_type` enum('customers','vendors','suppliers','') NOT NULL DEFAULT '',
   `type` enum('official','unofficial','') NOT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `added_by` varchar(255) DEFAULT NULL,

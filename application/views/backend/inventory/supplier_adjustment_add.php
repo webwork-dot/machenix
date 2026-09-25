@@ -1,545 +1,988 @@
-<style>
-  .ledger-card-shell {
-    border: 1px solid #e8eaed;
-    border-radius: 10px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+﻿<style>
+  .adj-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     background: #ffffff;
   }
-  .card-soft-header { background: #fafbfc; border-bottom: 1px solid #f0f2f5; }
-  .fs-10 { font-size: 10px; }
-  .fs-11 { font-size: 11px; }
-  .fs-12 { font-size: 12px; }
-  .fs-13 { font-size: 13px; }
-  .fs-14 { font-size: 14px; }
-  .fs-15 { font-size: 15px; }
-  .supplier-main-text { color: #111827; }
-  .supplier-soft-text { color: #1f2937; }
-  .mono-amount { font-family: "DM Mono", monospace; }
-  .summary-pill {
-    font-size: 11px;
-    font-weight: 500;
-    color: #4b5563;
-    padding: 3px 10px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
+  .adj-card .card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #edf2f7;
+    padding: 10px 16px;
   }
-  .balance-pill {
+  .adj-nav-pills {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 2px;
+    border-radius: 6px;
+    gap: 2px;
+  }
+  .adj-nav-pills .nav-link {
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 4px 12px;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+  }
+  .adj-nav-pills .nav-link:hover {
+    color: #1e293b;
+  }
+  .adj-nav-pills .nav-link.active {
+    background: #3b82f6;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.25);
+  }
+  .adj-table {
+    border: 1px solid #e2e8f0;
+    margin-bottom: 0;
+    width: 100%;
+  }
+  .adj-table thead th {
+    background: #f8fafc;
+    color: #475569;
     font-size: 11px;
     font-weight: 700;
-    border-radius: 20px;
-    padding: 3px 12px;
-  }
-  .balance-pill-due { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-  .balance-pill-credit { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
-  .ledger-table thead th {
-    font-size: 11px;
-    letter-spacing: 0.5px;
     text-transform: uppercase;
-    background: #f9fafb;
-    border-bottom: 1px solid #e8eaed;
-    color: #374151;
+    letter-spacing: 0.3px;
+    border: 1px solid #e2e8f0;
+    padding: 5px 7px;
+    vertical-align: middle;
     white-space: nowrap;
   }
-  .ledger-row { border-bottom: 1px solid #f3f4f6; }
-  .ledger-row-purchase { background: #ffffff; }
-  .ledger-row-purchase:hover { background: #f9fafb; }
-  .ledger-row-payment { background: #f0fdf4; }
-  .ledger-row-payment:hover { background: #dcfce7; }
-  .ledger-row-adj-plus { background: #eff6ff; }
-  .ledger-row-adj-plus:hover { background: #dbeafe; }
-  .ledger-row-adj-minus { background: #fff5f5; }
-  .ledger-row-adj-minus:hover { background: #fee2e2; }
-  .type-badge {
-    display: inline-block;
-    font-size: 10px;
+  .adj-table thead tr:first-child th.group-header {
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.4px;
-    border-radius: 4px;
-    padding: 2px 7px;
-    text-transform: uppercase;
   }
-  .type-badge-po { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
-  .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
-  .type-badge-adj-plus { color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; }
-  .type-badge-adj-minus { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-  .amount-positive { color: #dc2626; font-weight: 600; }
-  .amount-negative { color: #16a34a; font-weight: 600; }
-  .tfoot-border-top { border-top: 2px solid #e8eaed; }
-  .balance-row-due { background: #fff5f5; }
-  .balance-row-credit { background: #f0fdf4; }
-  .balance-text-due { color: #dc2626; }
-  .balance-text-credit { color: #16a34a; }
+  .adj-table tbody td {
+    padding: 4px 6px;
+    vertical-align: middle;
+    border: 1px solid #f1f5f9;
+  }
+  .adj-table tfoot td {
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    border-left: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+    padding: 6px 7px;
+    vertical-align: middle;
+    font-weight: 700;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .mono-amount {
+    font-family: "DM Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+  .table-input {
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    font-size: 12px;
+    padding: 2px 7px;
+    transition: all 0.15s ease;
+  }
+  .table-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+  }
+  .table-input-disabled {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed;
+  }
+  .btn-remove-row {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid #fecaca;
+    background: #fff5f5;
+    color: #ef4444;
+    transition: all 0.15s ease;
+    padding: 0;
+    cursor: pointer;
+  }
+  .btn-remove-row i {
+    pointer-events: none;
+    font-size: 13px;
+  }
+  .btn-remove-row:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+  }
+  .select2-container--default .select2-selection--single {
+    height: 32px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    position: relative;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 30px !important;
+    font-size: 12px;
+    padding-left: 8px;
+    padding-right: 22px;
+    color: #1e293b;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 30px !important;
+    position: absolute;
+    top: 1px;
+    right: 4px;
+    width: 18px;
+  }
+  .ledger-badge-due {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 3px;
+    padding: 0 4px;
+    line-height: 1.3;
+  }
+  .ledger-badge-advance {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: #16a34a;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 3px;
+    padding: 0 4px;
+    line-height: 1.3;
+  }
+  .ledger-badge-zero {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 500;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 3px;
+    padding: 0 4px;
+    line-height: 1.3;
+  }
+  .supplier-ledger-info {
+    margin-top: 2px;
+    line-height: 1;
+  }
 </style>
 
 <div class="row">
   <div class="col-12">
-    <!-- Compact Add Adjustment Form Card -->
-    <div class="card mb-2">
-      <div class="card-body py-2">
-        <form action="<?= base_url('inventory/supplier-adjustment/add_post') ?>" method="post" id="adjustmentForm">
-          
-          <div class="row g-2">
-            <!-- Select Supplier -->
-            <div class="col-md-6 mb-2">
-              <label for="supplier_id" class="form-label fw-semibold fs-12 mb-1">Select Supplier <span class="text-danger">*</span></label>
-              <select name="supplier_id" id="supplier_id" class="form-select select2" required>
-                <option value="">-- Select Supplier --</option>
-                <?php if (!empty($suppliers)): ?>
-                  <?php foreach ($suppliers as $sup): ?>
-                    <option value="<?= $sup['id'] ?>"><?= html_escape($sup['name']) ?></option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
-            </div>
-
-            <!-- Batch Number -->
-            <div class="col-md-6 mb-2">
-              <label for="batch_no" class="form-label fw-semibold fs-12 mb-1">Batch Number</label>
-              <select name="batch_no" id="batch_no" class="form-select select2" disabled>
-                <option value="">-- Select Batch Number --</option>
-              </select>
-            </div>
+    <div class="card adj-card mb-3">
+      <form action="<?= base_url('inventory/supplier-adjustment/add_post') ?>" method="post" id="adjustmentForm" novalidate>
+        
+        <!-- Header Bar with Title, Tabs, Date, Type & Add Row Button -->
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-3">
+            <h5 class="mb-0 fw-bold text-dark fs-14">Add Supplier Adjustment</h5>
+            
+            <ul class="nav adj-nav-pills" id="adjustmentTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-to-suppliers-btn" data-bs-toggle="pill" data-bs-target="#tab-to-suppliers" type="button" role="tab" aria-controls="tab-to-suppliers" aria-selected="true">
+                  <i class="feather icon-truck me-1"></i> To Suppliers
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-ledger-btn" data-bs-toggle="pill" data-bs-target="#tab-ledger" type="button" role="tab" aria-controls="tab-ledger" aria-selected="false">
+                  <i class="feather icon-book me-1"></i> Ledger
+                </button>
+              </li>
+            </ul>
+            <input type="hidden" name="adjustment_mode" id="adjustment_mode" value="to_suppliers">
           </div>
 
-          <div class="row g-2">
-            <!-- Date -->
-            <div class="col-md-4 mb-2">
-              <label for="date" class="form-label fw-semibold fs-12 mb-1">Date <span class="text-danger">*</span></label>
-              <input type="date" name="date" id="date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+          <!-- Date & Type & Add Row Button on Right -->
+          <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-1">
+              <label for="date" class="form-label fw-semibold fs-11 text-secondary mb-0 text-nowrap">Date <span class="text-danger">*</span>:</label>
+              <input type="date" name="date" id="date" class="form-control table-input" style="width: 135px;" value="<?= date('Y-m-d') ?>">
             </div>
-
-            <!-- Amount Type -->
-            <div class="col-md-4 mb-2">
-              <label for="amt_type" class="form-label fw-semibold fs-12 mb-1">Amount Type <span class="text-danger">*</span></label>
-              <select name="amt_type" id="amt_type" class="form-select" required>
-                <option value="plus" selected>Plus (+)</option>
-                <option value="minus">Minus (-)</option>
-              </select>
-            </div>
-
-            <!-- Type -->
-            <div class="col-md-4 mb-2">
-              <label for="type" class="form-label fw-semibold fs-12 mb-1">Type <span class="text-danger">*</span></label>
-              <select name="type" id="type" class="form-select" required>
+            <div class="d-flex align-items-center gap-1">
+              <label for="type" class="form-label fw-semibold fs-11 text-secondary mb-0 text-nowrap">Type <span class="text-danger">*</span>:</label>
+              <select name="type" id="type" class="form-select table-input" style="width: 115px;">
                 <option value="unofficial" selected>Unofficial</option>
                 <option value="official">Official</option>
               </select>
             </div>
-          </div>
-
-          <div class="row g-2">
-            <!-- Amounts (USD, RMB, INR) -->
-            <div class="col-md-4 mb-2" id="usd_col">
-              <label for="usd" class="form-label fw-semibold fs-12 mb-1">Amount (USD)</label>
-              <div class="input-group">
-                <span class="input-group-text">$</span>
-                <input type="number" step="0.00001" name="usd" id="usd" class="form-control amount-field" placeholder="0.00" value="0.00">
-              </div>
-            </div>
-
-            <div class="col-md-4 mb-2" id="rmb_col">
-              <label for="rmb" class="form-label fw-semibold fs-12 mb-1">Amount (RMB)</label>
-              <div class="input-group">
-                <span class="input-group-text">¥</span>
-                <input type="number" step="0.00001" name="rmb" id="rmb" class="form-control amount-field" placeholder="0.00" value="0.00">
-              </div>
-            </div>
-
-            <div class="col-md-4 mb-2" id="inr_col">
-              <label for="inr" class="form-label fw-semibold fs-12 mb-1">Amount (INR)</label>
-              <div class="input-group">
-                <span class="input-group-text">₹</span>
-                <input type="number" step="0.00001" name="inr" id="inr" class="form-control amount-field" placeholder="0.00" value="0.00">
-              </div>
-            </div>
-          </div>
-
-          <!-- Remark -->
-          <div class="row g-2">
-            <div class="col-12 mb-2">
-              <label for="remark" class="form-label fw-semibold fs-12 mb-1">Remark</label>
-              <textarea name="remark" id="remark" class="form-control" rows="2" placeholder="Enter remarks..."></textarea>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-end mb-1">
-            <button type="submit" class="btn btn-primary px-4 py-1">
-              <i class="feather icon-check"></i> Submit
+            <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 px-2 py-1 fs-12 ms-1" id="btnAddRowBtn" style="border-radius: 4px; height: 32px;">
+              <i class="feather icon-plus"></i> Add Row
             </button>
           </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Supplier Overall Ledger Outstanding / Balance Summary (When No Batch Selected) -->
-    <div id="supplier_summary_wrapper" style="display: none;">
-      <div class="ledger-card-shell mb-4">
-        
-        <!-- Header with Summary Pills -->
-        <div class="d-flex align-items-center justify-content-between px-3 py-2 card-soft-header flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold supplier-main-text fs-13"><i class="feather icon-user me-1 text-primary"></i> Supplier Balance: <span id="lbl_supplier_name"></span></span>
-            <span id="selected_supplier_type_badge" class="type-badge type-badge-po"></span>
-          </div>
-          
-          <div class="d-flex align-items-center flex-wrap gap-2">
-            <div class="summary-pill" id="sup_opening_pill">Opening: <strong class="supplier-soft-text mono-amount" id="sup_hdr_open_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Purchases: <strong class="supplier-soft-text mono-amount" id="sup_hdr_po_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Payments: <strong class="text-success mono-amount" id="sup_hdr_pay_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Adjustments: <strong class="text-info mono-amount" id="sup_hdr_adj_inr">₹ 0.00</strong></div>
-            <div class="balance-pill balance-pill-due" id="sup_hdr_bal_pill">Outstanding: ₹ 0.00</div>
-          </div>
         </div>
 
-        <!-- Total Outstanding Balance Summary -->
-        <div class="p-3 bg-white">
-          <div class="row g-2">
-            <div class="col-md-4 col-12" id="sup_bal_box_inr">
-              <div class="p-2 rounded border" style="background-color: #fafbfc;">
-                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (INR)</div>
-                <div class="fs-16 fw-bold mono-amount" id="sup_bal_inr">₹ 0.00</div>
+        <div class="card-body p-3">
+          <!-- Tab Content -->
+          <div class="tab-content" id="adjustmentTabsContent">
+            
+            <!-- Tab 1: To Suppliers -->
+            <div class="tab-pane fade show active" id="tab-to-suppliers" role="tabpanel" aria-labelledby="tab-to-suppliers-btn">
+              <div class="table-responsive rounded-2">
+                <table class="table adj-table align-middle" id="toSuppliersTable">
+                  <thead>
+                    <tr>
+                      <th rowspan="2" style="width: 35px;" class="text-center">#</th>
+                      <th rowspan="2" style="min-width: 220px;">Supplier <span class="text-danger">*</span></th>
+                      <th colspan="3" class="text-center group-header">Debit</th>
+                      <th colspan="3" class="text-center group-header">Credit</th>
+                      <th rowspan="2" style="min-width: 160px;">Remark</th>
+                      <th rowspan="2" style="width: 38px;" class="text-center"></th>
+                    </tr>
+                    <tr>
+                      <th style="width: 110px;" class="text-end">INR (₹)</th>
+                      <th style="width: 105px;" class="text-end col-fx">USD ($)</th>
+                      <th style="width: 105px;" class="text-end col-fx">RMB (¥)</th>
+                      <th style="width: 110px;" class="text-end">INR (₹)</th>
+                      <th style="width: 105px;" class="text-end col-fx">USD ($)</th>
+                      <th style="width: 105px;" class="text-end col-fx">RMB (¥)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="toSuppliersTableBody">
+                    <tr class="adj-row">
+                      <td class="text-center row-index fw-semibold text-muted fs-12">1</td>
+                      <td>
+                        <select name="supplier_id[]" class="form-select select2-dynamic supplier-select">
+                          <option value="">-- Select Supplier --</option>
+                          <?php if (!empty($suppliers)): ?>
+                            <?php foreach ($suppliers as $s): ?>
+                              <option value="<?= $s['id'] ?>" data-type="<?= html_escape($s['type'] ?? '') ?>"><?= html_escape($s['name']) ?><?= (($s['type'] ?? '') === 'local') ? ' (Local)' : '' ?></option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                        <div class="supplier-ledger-info d-none"></div>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td class="col-fx">
+                        <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td class="col-fx">
+                        <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td class="col-fx">
+                        <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td class="col-fx">
+                        <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn-remove-row btn-remove-row-tosuppliers" title="Delete / Clear Row">
+                          <i class="feather icon-trash-2"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="2" class="text-end text-secondary fw-semibold">Total:</td>
+                      <td class="text-end mono-amount fw-bold" id="totalDebitINR">₹ 0.00</td>
+                      <td class="text-end mono-amount fw-bold col-fx" id="totalDebitUSD">$ 0.00</td>
+                      <td class="text-end mono-amount fw-bold col-fx" id="totalDebitRMB">¥ 0.00</td>
+                      <td class="text-end mono-amount fw-bold" id="totalCreditINR">₹ 0.00</td>
+                      <td class="text-end mono-amount fw-bold col-fx" id="totalCreditUSD">$ 0.00</td>
+                      <td class="text-end mono-amount fw-bold col-fx" id="totalCreditRMB">¥ 0.00</td>
+                      <td colspan="2"></td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
-            <div class="col-md-4 col-12" id="sup_bal_box_usd">
-              <div class="p-2 rounded border" style="background-color: #fafbfc;">
-                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (USD)</div>
-                <div class="fs-16 fw-bold mono-amount" id="sup_bal_usd">$ 0.00</div>
+
+            <!-- Tab 2: Ledger -->
+            <div class="tab-pane fade" id="tab-ledger" role="tabpanel" aria-labelledby="tab-ledger-btn">
+              <div class="table-responsive rounded-2">
+                <table class="table adj-table align-middle" id="ledgerTable">
+                  <thead>
+                    <tr>
+                      <th style="width: 35px;" class="text-center">#</th>
+                      <th style="min-width: 220px;">Supplier <span class="text-danger">*</span></th>
+                      <th style="width: 180px;">Amount Type</th>
+                      <th style="width: 120px;">Type <span class="text-danger">*</span></th>
+                      <th style="width: 110px;" class="text-end">INR (₹)</th>
+                      <th style="width: 105px;" class="text-end col-fx">USD ($)</th>
+                      <th style="width: 105px;" class="text-end col-fx">RMB (¥)</th>
+                      <th style="min-width: 160px;">Remark</th>
+                      <th style="width: 38px;" class="text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="ledgerTableBody">
+                    <tr class="adj-row">
+                      <td class="text-center row-index fw-semibold text-muted fs-12">1</td>
+                      <td>
+                        <select name="ledger_supplier_id[]" class="form-select select2-dynamic supplier-select">
+                          <option value="">-- Select Supplier --</option>
+                          <?php if (!empty($suppliers)): ?>
+                            <?php foreach ($suppliers as $s): ?>
+                              <option value="<?= $s['id'] ?>" data-type="<?= html_escape($s['type'] ?? '') ?>"><?= html_escape($s['name']) ?><?= (($s['type'] ?? '') === 'local') ? ' (Local)' : '' ?></option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                        <div class="supplier-ledger-info d-none"></div>
+                      </td>
+                      <td>
+                        <select name="ledger_amt_type_id[]" class="form-select table-input select2-dynamic amt-type-select">
+                          <option value="">-- Select Amount Type --</option>
+                          <?php if (!empty($other_charges)): ?>
+                            <?php foreach ($other_charges as $oc): ?>
+                              <option value="<?= $oc['id'] ?>"><?= html_escape($oc['name']) ?></option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                      </td>
+                      <td>
+                        <select name="ledger_amt_type[]" class="form-select table-input">
+                          <option value="plus">Plus (+)</option>
+                          <option value="minus">Minus (-)</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" name="ledger_inr[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td class="col-fx">
+                        <input type="number" step="0.00001" min="0" name="ledger_usd[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td class="col-fx">
+                        <input type="number" step="0.00001" min="0" name="ledger_rmb[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+                      </td>
+                      <td>
+                        <input type="text" name="ledger_remark[]" class="form-control table-input" placeholder="Enter remark...">
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn-remove-row btn-remove-row-ledger" title="Delete / Clear Row">
+                          <i class="feather icon-trash-2"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div class="col-md-4 col-12 sup-rmb-col" id="sup_bal_box_rmb">
-              <div class="p-2 rounded border" style="background-color: #fafbfc;">
-                <div class="text-muted fs-11 fw-bold text-uppercase mb-1">Total Outstanding (RMB)</div>
-                <div class="fs-16 fw-bold mono-amount" id="sup_bal_rmb">¥ 0.00</div>
-              </div>
-            </div>
+
+          </div>
+
+          <!-- Bottom Actions -->
+          <div class="d-flex justify-content-end align-items-center gap-2 pt-3 mt-2 border-top">
+            <a href="<?= base_url('inventory/supplier-adjustment') ?>" class="btn btn-light px-3 py-1 fs-13" style="border-radius: 4px; font-weight: 500;">Cancel</a>
+            <button type="submit" class="btn btn-primary px-3 py-1 fs-13" id="btnSubmit" style="border-radius: 4px; font-weight: 500;">
+              <i class="feather icon-check me-1"></i> Submit
+            </button>
           </div>
         </div>
 
-      </div>
+      </form>
     </div>
-
-    <!-- Unified Single Batch Ledger & Outstanding Difference Table -->
-    <div id="batch_summary_wrapper" style="display: none;">
-      <div class="ledger-card-shell mb-4">
-        
-        <!-- Header with Summary Pills -->
-        <div class="d-flex align-items-center justify-content-between px-3 py-2 card-soft-header flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold supplier-main-text fs-13"><i class="feather icon-layers me-1 text-primary"></i> Batch Ledger: <span id="lbl_batch_no"></span></span>
-            <span id="selected_type_badge" class="type-badge type-badge-po"></span>
-          </div>
-          
-          <div class="d-flex align-items-center flex-wrap gap-2">
-            <div class="summary-pill">Batch: <strong class="supplier-soft-text mono-amount" id="hdr_batch_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Payments: <strong class="text-success mono-amount" id="hdr_pay_inr">₹ 0.00</strong></div>
-            <div class="summary-pill">Adjustments: <strong class="text-info mono-amount" id="hdr_adj_inr">₹ 0.00</strong></div>
-            <div class="balance-pill balance-pill-due" id="hdr_bal_pill">Bal: ₹ 0.00</div>
-          </div>
-        </div>
-
-        <!-- Single Unified Table (Batch -> Payments -> Adjustments) -->
-        <div class="table-responsive">
-          <table class="table table-borderless mb-0 align-middle ledger-table fs-12">
-            <thead>
-              <tr>
-                <th class="text-start px-3 py-2">Date</th>
-                <th class="text-start px-2 py-2">Type</th>
-                <th class="text-start px-2 py-2">Detail / Remark</th>
-                <th class="text-end px-2 py-2 rmb-col">RMB</th>
-                <th class="text-end px-2 py-2">USD</th>
-                <th class="text-end px-2 py-2">INR</th>
-                <th class="text-start px-3 py-2">Added By</th>
-              </tr>
-            </thead>
-            <tbody id="tbl_ledger_body">
-              <!-- Single Ledger Rows dynamically generated here -->
-            </tbody>
-            <tfoot>
-              <tr class="balance-row-due tfoot-border-top fw-bold fs-12" id="tfoot_balance_row">
-                <td colspan="3" class="px-3 py-2 text-end supplier-main-text">Net Batch Outstanding Difference</td>
-                <td class="px-2 py-2 text-end mono-amount rmb-col" id="ftr_bal_rmb">¥ 0.00</td>
-                <td class="px-2 py-2 text-end mono-amount" id="ftr_bal_usd">$ 0.00</td>
-                <td class="px-2 py-2 text-end mono-amount" id="ftr_bal_inr">₹ 0.00</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-      </div>
-    </div>
-
   </div>
 </div>
+
+<!-- Template for dynamic clean rows in To Suppliers Tab -->
+<template id="toSuppliersRowTemplate">
+  <tr class="adj-row">
+    <td class="text-center row-index fw-semibold text-muted fs-12"></td>
+    <td>
+      <select name="supplier_id[]" class="form-select select2-dynamic supplier-select">
+        <option value="">-- Select Supplier --</option>
+        <?php if (!empty($suppliers)): ?>
+          <?php foreach ($suppliers as $s): ?>
+            <option value="<?= $s['id'] ?>" data-type="<?= html_escape($s['type'] ?? '') ?>"><?= html_escape($s['name']) ?><?= (($s['type'] ?? '') === 'local') ? ' (Local)' : '' ?></option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+      <div class="supplier-ledger-info d-none"></div>
+    </td>
+    <td>
+      <input type="number" step="0.01" min="0" name="debit_inr[]" class="form-control table-input debit-field debit-inr mono-amount text-end" placeholder="0.00">
+    </td>
+    <td class="col-fx">
+      <input type="number" step="0.00001" min="0" name="debit_usd[]" class="form-control table-input debit-field debit-usd mono-amount text-end" placeholder="0.00">
+    </td>
+    <td class="col-fx">
+      <input type="number" step="0.00001" min="0" name="debit_rmb[]" class="form-control table-input debit-field debit-rmb mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="number" step="0.01" min="0" name="credit_inr[]" class="form-control table-input credit-field credit-inr mono-amount text-end" placeholder="0.00">
+    </td>
+    <td class="col-fx">
+      <input type="number" step="0.00001" min="0" name="credit_usd[]" class="form-control table-input credit-field credit-usd mono-amount text-end" placeholder="0.00">
+    </td>
+    <td class="col-fx">
+      <input type="number" step="0.00001" min="0" name="credit_rmb[]" class="form-control table-input credit-field credit-rmb mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="text" name="remark[]" class="form-control table-input" placeholder="Enter remark...">
+    </td>
+    <td class="text-center">
+      <button type="button" class="btn-remove-row btn-remove-row-tosuppliers" title="Delete / Clear Row">
+        <i class="feather icon-trash-2"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+
+<!-- Template for dynamic clean rows in Ledger Tab -->
+<template id="ledgerRowTemplate">
+  <tr class="adj-row">
+    <td class="text-center row-index fw-semibold text-muted fs-12"></td>
+    <td>
+      <select name="ledger_supplier_id[]" class="form-select select2-dynamic supplier-select">
+        <option value="">-- Select Supplier --</option>
+        <?php if (!empty($suppliers)): ?>
+          <?php foreach ($suppliers as $s): ?>
+            <option value="<?= $s['id'] ?>" data-type="<?= html_escape($s['type'] ?? '') ?>"><?= html_escape($s['name']) ?><?= (($s['type'] ?? '') === 'local') ? ' (Local)' : '' ?></option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+      <div class="supplier-ledger-info d-none"></div>
+    </td>
+    <td>
+      <select name="ledger_amt_type_id[]" class="form-select table-input select2-dynamic amt-type-select">
+        <option value="">-- Select Amount Type --</option>
+        <?php if (!empty($other_charges)): ?>
+          <?php foreach ($other_charges as $oc): ?>
+            <option value="<?= $oc['id'] ?>"><?= html_escape($oc['name']) ?></option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+    </td>
+    <td>
+      <select name="ledger_amt_type[]" class="form-select table-input">
+        <option value="plus">Plus (+)</option>
+        <option value="minus">Minus (-)</option>
+      </select>
+    </td>
+    <td>
+      <input type="number" step="0.01" min="0" name="ledger_inr[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+    </td>
+    <td class="col-fx">
+      <input type="number" step="0.00001" min="0" name="ledger_usd[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+    </td>
+    <td class="col-fx">
+      <input type="number" step="0.00001" min="0" name="ledger_rmb[]" class="form-control table-input mono-amount text-end" placeholder="0.00">
+    </td>
+    <td>
+      <input type="text" name="ledger_remark[]" class="form-control table-input" placeholder="Enter remark...">
+    </td>
+    <td class="text-center">
+      <button type="button" class="btn-remove-row btn-remove-row-ledger" title="Delete / Clear Row">
+        <i class="feather icon-trash-2"></i>
+      </button>
+    </td>
+  </tr>
+</template>
 
 <script type="text/javascript">
 $(document).ready(function() {
 
-  handleTypeVisibility();
+  var currentAdjId = 0;
+  var supplierLedgerCache = {};
 
-  // Type change handler
+  initSelect2();
+
   $('#type').on('change', function() {
-    handleTypeVisibility();
-    loadAdjustmentSummary();
+    supplierLedgerCache = {};
+    $('.supplier-select').each(function() {
+      if ($(this).val()) {
+        fetchSupplierLedger($(this));
+      }
+    });
   });
 
-  function handleTypeVisibility() {
-    var type = $('#type').val();
-    if (type === 'official') {
-      $('#rmb_col').hide();
-      $('#rmb').val('0.00');
-      $('#usd_col').removeClass('col-md-4').addClass('col-md-6');
-      $('#inr_col').removeClass('col-md-4').addClass('col-md-6');
-      $('.rmb-col').hide();
-    } else {
-      $('#rmb_col').show();
-      $('#usd_col').removeClass('col-md-6').addClass('col-md-4');
-      $('#inr_col').removeClass('col-md-6').addClass('col-md-4');
-      $('.rmb-col').show();
-    }
+  function initSelect2($context) {
+    var $targets = $context ? $context.find('.select2-dynamic') : $('.select2-dynamic');
+    $targets.each(function() {
+      if (!$(this).hasClass("select2-hidden-accessible")) {
+        var placeholderText = $(this).hasClass('supplier-select') ? "-- Select Supplier --" : "-- Select Amount Type --";
+        $(this).select2({
+          placeholder: placeholderText,
+          width: '100%'
+        });
+      }
+    });
   }
 
-  // Supplier Change -> Fetch Batches and Load Summary
-  $('#supplier_id').on('change', function() {
-    var supplier_id = $(this).val();
-    $('#batch_no').html('<option value="">-- Loading Batches... --</option>').prop('disabled', true);
-
-    if (supplier_id) {
-      $.ajax({
-        url: '<?= base_url("inventory/get_batches_by_supplier_ajax") ?>',
-        type: 'POST',
-        data: { supplier_id: supplier_id },
-        dataType: 'json',
-        success: function(batches) {
-          var options = '<option value="">-- Select Batch Number (Optional) --</option>';
-          if (batches && batches.length > 0) {
-            $.each(batches, function(i, item) {
-              options += '<option value="' + item.voucher_no + '">' + item.voucher_no + '</option>';
-            });
-            $('#batch_no').html(options).prop('disabled', false);
-          } else {
-            $('#batch_no').html('<option value="">-- No batches found (Optional) --</option>').prop('disabled', false);
-          }
-          loadAdjustmentSummary();
-        },
-        error: function() {
-          loadAdjustmentSummary();
-        }
-      });
+  // Handle Tab Switching
+  $('button[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+    var target = $(e.target).attr("data-bs-target");
+    if (target === '#tab-ledger') {
+      $('#adjustment_mode').val('ledger');
+      initSelect2($('#tab-ledger'));
+      syncSupplierTypeConstraints();
     } else {
-      $('#batch_no').html('<option value="">-- Select Batch Number --</option>').prop('disabled', true);
-      loadAdjustmentSummary();
+      $('#adjustment_mode').val('to_suppliers');
+      initSelect2($('#tab-to-suppliers'));
+      syncSupplierTypeConstraints();
+      calculateTotals();
     }
   });
 
-  // Batch Change -> Fetch & Update Calculation Summary
-  $('#batch_no').on('change', function() {
-    loadAdjustmentSummary();
+  // Master Add Row button in Header Bar
+  $('#btnAddRowBtn').on('click', function() {
+    var mode = $('#adjustment_mode').val();
+    if (mode === 'ledger') {
+      var html = $('#ledgerRowTemplate').html();
+      var $newRow = $(html);
+      $('#ledgerTableBody').append($newRow);
+      initSelect2($newRow);
+      updateRowIndices('#ledgerTableBody');
+      syncSupplierTypeConstraints();
+    } else {
+      var html = $('#toSuppliersRowTemplate').html();
+      var $newRow = $(html);
+      $('#toSuppliersTableBody').append($newRow);
+      initSelect2($newRow);
+      updateRowIndices('#toSuppliersTableBody');
+      syncSupplierTypeConstraints();
+      calculateTotals();
+    }
   });
 
-  function loadAdjustmentSummary() {
-    var supplier_id = $('#supplier_id').val();
-    var batch_no    = $('#batch_no').val();
-    var type        = $('#type').val();
+  function updateRowIndices(tableBodyId) {
+    $(tableBodyId + ' tr').each(function(index) {
+      $(this).find('.row-index').text(index + 1);
+    });
+  }
 
-    if (!supplier_id) {
-      $('#batch_summary_wrapper').slideUp();
-      $('#supplier_summary_wrapper').slideUp();
+  // Fetch Vendor Ledger Summary on Select
+  function fetchSupplierLedger($selectElem) {
+    var supplierId = $selectElem.val();
+    var $infoBox = $selectElem.closest('td').find('.supplier-ledger-info');
+
+    if (!supplierId) {
+      $infoBox.empty().addClass('d-none');
       return;
     }
 
-    if (batch_no) {
-      // Batch selected -> show batch ledger
-      $('#supplier_summary_wrapper').slideUp();
-      $('#selected_type_badge').text(type.toUpperCase());
-      $('#lbl_batch_no').text(batch_no);
+    if (supplierLedgerCache[supplierId]) {
+      renderSupplierLedger($infoBox, supplierLedgerCache[supplierId]);
+      return;
+    }
 
-      $.ajax({
-        url: '<?= base_url("inventory/get_supplier_batch_adjustment_info") ?>',
-        type: 'POST',
-        data: {
-          supplier_id: supplier_id,
-          batch_no: batch_no,
-          type: type
-        },
-        dataType: 'json',
-        success: function(res) {
-          if (res.success && res.data) {
-            var d = res.data;
-            var rowsHtml = '';
-            var showRmb = (type !== 'official');
+    $infoBox.removeClass('d-none').html('<span class="text-muted fs-10"><i class="feather icon-loader fa-spin"></i> Loading...</span>');
 
-            // 1. Batch Amount Row
-            var b = d.batch_info;
-            var bDate = b && b.po_date ? formatDate(b.po_date) : '—';
-            rowsHtml += '<tr class="ledger-row ledger-row-purchase">' +
-              '<td class="px-3 py-2 text-secondary fs-11 text-nowrap">' + bDate + '</td>' +
-              '<td class="px-2 py-2"><span class="type-badge type-badge-po">Batch Amount</span></td>' +
-              '<td class="px-2 py-2"><div class="fw-semibold supplier-soft-text fs-11">Batch #' + escapeHtml(batch_no) + '</div></td>' +
-              (showRmb ? '<td class="px-2 py-2 text-end amount-positive rmb-col">+ ' + formatMoney(d.batch_amount.rmb) + '</td>' : '') +
-              '<td class="px-2 py-2 text-end amount-positive">+ ' + formatMoney(d.batch_amount.usd) + '</td>' +
-              '<td class="px-2 py-2 text-end amount-positive">+ ' + formatMoney(d.batch_amount.inr) + '</td>' +
-              '<td class="px-3 py-2 text-muted fs-10 text-nowrap">—</td>' +
-            '</tr>';
+    $.ajax({
+      url: '<?= base_url('inventory/get_supplier_ledger_summary_ajax') ?>',
+      type: 'POST',
+      dataType: 'json',
+      data: {
+        supplier_id: supplierId,
+        type: $('#type').val() || 'unofficial',
+        current_adj_id: currentAdjId
+      },
+      success: function(res) {
+        if (res.success && res.data) {
+          supplierLedgerCache[supplierId] = res.data;
+          renderSupplierLedger($infoBox, res.data);
+        } else {
+          $infoBox.html('<span class="text-muted fs-10">No ledger data</span>');
+        }
+      },
+      error: function() {
+        $infoBox.html('<span class="text-danger fs-10">Failed to load</span>');
+      }
+    });
+  }
 
-            // 2. Payment Entries Rows (payments reduce balance: minus)
-            if (d.payments && d.payments.length > 0) {
-              $.each(d.payments, function(i, p) {
-                var pDate = p.payment_date ? formatDate(p.payment_date) : '—';
-                var pDetail = (p.invoice_no ? 'Inv: ' + p.invoice_no + ' ' : '') + (p.bank_account_name ? '(' + p.bank_account_name + ')' : '');
-                rowsHtml += '<tr class="ledger-row ledger-row-payment">' +
-                  '<td class="px-3 py-2 text-secondary fs-11 text-nowrap">' + pDate + '</td>' +
-                  '<td class="px-2 py-2"><span class="type-badge type-badge-payment">Payment (' + escapeHtml(p.payment_type) + ')</span></td>' +
-                  '<td class="px-2 py-2"><div class="supplier-soft-text fs-11">' + escapeHtml(pDetail) + '</div></td>' +
-                  (showRmb ? '<td class="px-2 py-2 text-end amount-negative rmb-col">− ' + formatMoney(p.amount_rmb) + '</td>' : '') +
-                  '<td class="px-2 py-2 text-end amount-negative">− ' + formatMoney(p.amount_dollar) + '</td>' +
-                  '<td class="px-2 py-2 text-end amount-negative">− ' + formatMoney(p.amount_rs) + '</td>' +
-                  '<td class="px-3 py-2 text-muted fs-10 text-nowrap">' + escapeHtml(p.added_by_name ? p.added_by_name : '—') + '</td>' +
-                '</tr>';
-              });
-            }
+  function renderSupplierLedger($infoBox, data) {
+    var balINR = parseFloat(data.balance.inr) || 0;
+    var balUSD = parseFloat(data.balance.usd) || 0;
+    var balRMB = parseFloat(data.balance.rmb) || 0;
+    var $select = $infoBox.closest('td').find('.supplier-select');
+    var isLocal = getSupplierType($select) === 'local';
 
-            // 3. Adjustment Entries Rows
-            if (d.adjustments && d.adjustments.length > 0) {
-              $.each(d.adjustments, function(i, a) {
-                var aDate = a.date ? formatDate(a.date) : '—';
-                var isPlus = (a.amt_type === 'plus');
-                var rowCls = isPlus ? 'ledger-row-adj-plus' : 'ledger-row-adj-minus';
-                var badgeCls = isPlus ? 'type-badge-adj-plus' : 'type-badge-adj-minus';
-                var amtCls = isPlus ? 'amount-positive' : 'amount-negative';
-                var sign = isPlus ? '+' : '−';
+    var badges = [];
+    if (Math.abs(balINR) > 0.005) {
+      badges.push(balINR > 0 ? '₹ ' + formatMoney(balINR, 2) + ' Due' : '₹ ' + formatMoney(Math.abs(balINR), 2) + ' Adv');
+    }
+    if (!isLocal && Math.abs(balUSD) > 0.0001) {
+      badges.push(balUSD > 0 ? '$ ' + formatMoney(balUSD, 2) + ' Due' : '$ ' + formatMoney(Math.abs(balUSD), 2) + ' Adv');
+    }
+    if (!isLocal && Math.abs(balRMB) > 0.0001) {
+      badges.push(balRMB > 0 ? '¥ ' + formatMoney(balRMB, 2) + ' Due' : '¥ ' + formatMoney(Math.abs(balRMB), 2) + ' Adv');
+    }
 
-                rowsHtml += '<tr class="ledger-row ' + rowCls + '">' +
-                  '<td class="px-3 py-2 text-secondary fs-11 text-nowrap">' + aDate + '</td>' +
-                  '<td class="px-2 py-2"><span class="type-badge ' + badgeCls + '">Adjustment (' + a.amt_type.toUpperCase() + ')</span></td>' +
-                  '<td class="px-2 py-2"><div class="supplier-soft-text fs-11">' + escapeHtml(a.remark ? a.remark : '—') + '</div></td>' +
-                  (showRmb ? '<td class="px-2 py-2 text-end ' + amtCls + ' rmb-col">' + sign + ' ' + formatMoney(a.rmb) + '</td>' : '') +
-                  '<td class="px-2 py-2 text-end ' + amtCls + '">' + sign + ' ' + formatMoney(a.usd) + '</td>' +
-                  '<td class="px-2 py-2 text-end ' + amtCls + '">' + sign + ' ' + formatMoney(a.inr) + '</td>' +
-                  '<td class="px-3 py-2 text-muted fs-10 text-nowrap">' + escapeHtml(a.added_by_name ? a.added_by_name : '—') + '</td>' +
-                '</tr>';
-              });
-            }
+    if (badges.length === 0) {
+      $infoBox.removeClass('d-none').html('<span class="ledger-badge-zero">Balance: 0.00</span>');
+    } else {
+      var isDue = isLocal ? (balINR > 0) : (balINR > 0 || balUSD > 0 || balRMB > 0);
+      var badgeClass = isDue ? 'ledger-badge-due' : 'ledger-badge-advance';
+      var iconClass = isDue ? 'feather icon-alert-circle' : 'feather icon-check-circle';
+      $infoBox.removeClass('d-none').html('<span class="' + badgeClass + '"><i class="' + iconClass + ' me-1"></i>' + badges.join(' | ') + '</span>');
+    }
+  }
 
-            $('#tbl_ledger_body').html(rowsHtml);
+  $(document).on('change', '.supplier-select', function() {
+    var $row = $(this).closest('tr');
+    applyRowCurrencyVisibility($row);
+    syncSupplierTypeConstraints();
+    fetchSupplierLedger($(this));
+  });
 
-            // Top Header Pills
-            var netAdjInr = d.adj_totals.plus.inr - d.adj_totals.minus.inr;
-            $('#hdr_batch_inr').text('₹ ' + formatMoney(d.batch_amount.inr));
-            $('#hdr_pay_inr').text('₹ ' + formatMoney(d.payment_totals.inr));
-            $('#hdr_adj_inr').text('₹ ' + formatMoney(netAdjInr));
+  function getSupplierType($select) {
+    return String($select.find('option:selected').data('type') || '');
+  }
 
-            var isDue = (d.net_difference.inr > 0);
-            $('#hdr_bal_pill')
-              .removeClass('balance-pill-due balance-pill-credit')
-              .addClass(isDue ? 'balance-pill-due' : 'balance-pill-credit')
-              .text('Bal: ₹ ' + formatMoney(d.net_difference.inr));
+  function applyRowCurrencyVisibility($row) {
+    var isLocal = getSupplierType($row.find('.supplier-select')) === 'local';
+    $row.find('.col-fx').toggle(!isLocal);
+    if (isLocal) {
+      $row.find('.debit-usd, .debit-rmb, .credit-usd, .credit-rmb').val('');
+      $row.find('input[name="ledger_usd[]"], input[name="ledger_rmb[]"]').val('');
+    }
+  }
 
-            // Footer Net Difference
-            $('#tfoot_balance_row')
-              .removeClass('balance-row-due balance-row-credit')
-              .addClass(isDue ? 'balance-row-due' : 'balance-row-credit');
+  function getLockedSupplierType(tbodySelector) {
+    var locked = '';
+    $(tbodySelector + ' .supplier-select').each(function() {
+      if ($(this).val()) {
+        locked = getSupplierType($(this));
+        return false;
+      }
+    });
+    return locked;
+  }
 
-            var amtCls = isDue ? 'balance-text-due' : 'balance-text-credit';
-            $('#ftr_bal_rmb').attr('class', 'px-2 py-2 text-end mono-amount rmb-col ' + amtCls).text('¥ ' + formatMoney(d.net_difference.rmb));
-            $('#ftr_bal_usd').attr('class', 'px-2 py-2 text-end mono-amount ' + amtCls).text('$ ' + formatMoney(d.net_difference.usd));
-            $('#ftr_bal_inr').attr('class', 'px-2 py-2 text-end mono-amount ' + amtCls).text('₹ ' + formatMoney(d.net_difference.inr));
-
-            $('.rmb-col').toggle(showRmb);
-
-            $('#batch_summary_wrapper').slideDown();
-          }
+  function filterSupplierOptions($scope, lockedType) {
+    $scope.find('.supplier-select').each(function() {
+      var $sel = $(this);
+      var currentVal = $sel.val();
+      var changed = false;
+      $sel.find('option').each(function() {
+        var val = $(this).attr('value');
+        if (!val) {
+          $(this).prop('disabled', false);
+          return;
+        }
+        var optType = String($(this).data('type') || '');
+        var allow = !lockedType || optType === lockedType;
+        $(this).prop('disabled', !allow);
+        if (!allow && currentVal === val) {
+          changed = true;
         }
       });
+      if (changed) {
+        $sel.val('').trigger('change.select2');
+        $sel.closest('td').find('.supplier-ledger-info').empty().addClass('d-none');
+        applyRowCurrencyVisibility($sel.closest('tr'));
+      }
+      if ($sel.hasClass('select2-hidden-accessible')) {
+        $sel.trigger('change.select2');
+      }
+    });
+  }
+
+  function syncSupplierTypeConstraints() {
+    var mode = $('#adjustment_mode').val();
+    if (mode === 'to_suppliers') {
+      var locked = getLockedSupplierType('#toSuppliersTableBody');
+      filterSupplierOptions($('#toSuppliersTableBody'), locked);
+      var isLocalMode = locked === 'local';
+      $('#toSuppliersTable thead .col-fx, #toSuppliersTable tfoot .col-fx').toggle(!isLocalMode);
+      $('#toSuppliersTable thead th.group-header').attr('colspan', isLocalMode ? 1 : 3);
+      $('#toSuppliersTableBody tr').each(function() {
+        applyRowCurrencyVisibility($(this));
+      });
     } else {
-      // No Batch Selected -> Show Supplier Overall Ledger Total Outstanding / Balance
-      $('#batch_summary_wrapper').slideUp();
-      
-      $.ajax({
-        url: '<?= base_url("inventory/get_supplier_ledger_summary_ajax") ?>',
-        type: 'POST',
-        data: {
-          supplier_id: supplier_id,
-          type: type
-        },
-        dataType: 'json',
-        success: function(res) {
-          if (res.success && res.data) {
-            var d = res.data;
-            var showRmb = (type !== 'official');
-
-            $('#lbl_supplier_name').text(d.supplier_name);
-            $('#selected_supplier_type_badge').text(type === 'official' ? 'OFFICIAL' : 'ACTUAL');
-
-            if (type === 'official') {
-              $('#sup_opening_pill').hide();
-              $('#sup_bal_box_inr').removeClass('col-md-4').addClass('col-md-6');
-              $('#sup_bal_box_usd').removeClass('col-md-4').addClass('col-md-6');
-            } else {
-              $('#sup_opening_pill').show();
-              $('#sup_hdr_open_inr').text('₹ ' + formatMoney(d.opening.inr));
-              $('#sup_bal_box_inr').removeClass('col-md-6').addClass('col-md-4');
-              $('#sup_bal_box_usd').removeClass('col-md-6').addClass('col-md-4');
-            }
-
-            $('#sup_hdr_po_inr').text('₹ ' + formatMoney(d.totals.purchase.inr));
-            $('#sup_hdr_pay_inr').text('₹ ' + formatMoney(d.totals.payment.inr));
-            $('#sup_hdr_adj_inr').text('₹ ' + formatMoney(d.net_adj_inr));
-
-            var isDueInr = (d.balance.inr > 0);
-            var isDueUsd = (d.balance.usd > 0);
-            var isDueRmb = (d.balance.rmb > 0);
-
-            $('#sup_bal_inr')
-              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueInr ? 'text-danger' : 'text-success'))
-              .text('₹ ' + formatMoney(d.balance.inr));
-
-            $('#sup_bal_usd')
-              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueUsd ? 'text-danger' : 'text-success'))
-              .text('$ ' + formatMoney(d.balance.usd));
-
-            $('#sup_bal_rmb')
-              .attr('class', 'fs-16 fw-bold mono-amount ' + (isDueRmb ? 'text-danger' : 'text-success'))
-              .text('¥ ' + formatMoney(d.balance.rmb));
-
-            var isOverallDue = (d.balance.inr > 0);
-            $('#sup_hdr_bal_pill')
-              .removeClass('balance-pill-due balance-pill-credit')
-              .addClass(isOverallDue ? 'balance-pill-due' : 'balance-pill-credit')
-              .text('Outstanding: ₹ ' + formatMoney(d.balance.inr));
-
-            $('.sup-rmb-col').toggle(showRmb);
-            $('#supplier_summary_wrapper').slideDown();
-          }
+      var hasImport = false;
+      var hasAny = false;
+      $('#ledgerTableBody .supplier-select').each(function() {
+        if ($(this).val()) {
+          hasAny = true;
+          if (getSupplierType($(this)) !== 'local') hasImport = true;
         }
+      });
+      var hideLedgerFxHeader = hasAny && !hasImport;
+      $('#ledgerTable thead .col-fx').toggle(!hideLedgerFxHeader);
+      $('#ledgerTableBody tr').each(function() {
+        applyRowCurrencyVisibility($(this));
       });
     }
   }
 
-  function formatMoney(num) {
+  // Mutual exclusion: Debit vs Credit in To Suppliers Tab
+  $(document).on('input', '.debit-field', function() {
+    var $row = $(this).closest('tr');
+    var hasVal = false;
+    $row.find('.debit-field').each(function() {
+      if (parseFloat($(this).val()) > 0) hasVal = true;
+    });
+
+    var $creditFields = $row.find('.credit-field');
+    if (hasVal) {
+      $creditFields.val('').prop('disabled', true).addClass('table-input-disabled');
+    } else {
+      $creditFields.prop('disabled', false).removeClass('table-input-disabled');
+    }
+    calculateTotals();
+  });
+
+  $(document).on('input', '.credit-field', function() {
+    var $row = $(this).closest('tr');
+    var hasVal = false;
+    $row.find('.credit-field').each(function() {
+      if (parseFloat($(this).val()) > 0) hasVal = true;
+    });
+
+    var $debitFields = $row.find('.debit-field');
+    if (hasVal) {
+      $debitFields.val('').prop('disabled', true).addClass('table-input-disabled');
+    } else {
+      $debitFields.prop('disabled', false).removeClass('table-input-disabled');
+    }
+    calculateTotals();
+  });
+
+  // Universal Responsive Remove / Clear Row Handler
+  $(document).on('click', '.btn-remove-row, .btn-remove-row-tosuppliers, .btn-remove-row-ledger', function(e) {
+    e.preventDefault();
+    var $row = $(this).closest('tr');
+    var $tbody = $row.closest('tbody');
+    var isLedger = $tbody.attr('id') === 'ledgerTableBody';
+
+    if ($tbody.find('tr').length > 1) {
+      $row.remove();
+      if (isLedger) {
+        updateRowIndices('#ledgerTableBody');
+        syncSupplierTypeConstraints();
+      } else {
+        updateRowIndices('#toSuppliersTableBody');
+        syncSupplierTypeConstraints();
+        calculateTotals();
+      }
+    } else {
+      $row.find('.supplier-select').val('').trigger('change');
+      $row.find('.supplier-ledger-info').empty().addClass('d-none');
+      if (isLedger) {
+        $row.find('.amt-type-select').val('').trigger('change');
+        $row.find('select[name="ledger_amt_type[]"]').val('plus');
+        $row.find('input[name="ledger_inr[]"]').val('');
+        $row.find('input[name="ledger_usd[]"]').val('');
+        $row.find('input[name="ledger_rmb[]"]').val('');
+        $row.find('input[name="ledger_remark[]"]').val('');
+      } else {
+        $row.find('.debit-field, .credit-field').val('').prop('disabled', false).removeClass('table-input-disabled');
+        $row.find('input[name="remark[]"]').val('');
+        syncSupplierTypeConstraints();
+        calculateTotals();
+      }
+    }
+  });
+
+  // Calculate Totals for To Suppliers Tab
+  function calculateTotals() {
+    var dINR = 0, dUSD = 0, dRMB = 0;
+    var cINR = 0, cUSD = 0, cRMB = 0;
+
+    $('#toSuppliersTableBody tr').each(function() {
+      dINR += parseFloat($(this).find('.debit-inr').val()) || 0;
+      dUSD += parseFloat($(this).find('.debit-usd').val()) || 0;
+      dRMB += parseFloat($(this).find('.debit-rmb').val()) || 0;
+      cINR += parseFloat($(this).find('.credit-inr').val()) || 0;
+      cUSD += parseFloat($(this).find('.credit-usd').val()) || 0;
+      cRMB += parseFloat($(this).find('.credit-rmb').val()) || 0;
+    });
+
+    $('#totalDebitINR').text('₹ ' + formatMoney(dINR));
+    $('#totalDebitUSD').text('$ ' + formatMoney(dUSD));
+    $('#totalDebitRMB').text('¥ ' + formatMoney(dRMB));
+    $('#totalCreditINR').text('₹ ' + formatMoney(cINR));
+    $('#totalCreditUSD').text('$ ' + formatMoney(cUSD));
+    $('#totalCreditRMB').text('¥ ' + formatMoney(cRMB));
+
+    var totalRows = $('#toSuppliersTableBody tr').length;
+    var diffINR = Math.abs(dINR - cINR);
+    var diffUSD = Math.abs(dUSD - cUSD);
+    var diffRMB = Math.abs(dRMB - cRMB);
+
+    if (totalRows > 1 && (diffINR >= 0.005 || diffUSD >= 0.0001 || diffRMB >= 0.0001)) {
+      $('#totalDebitINR, #totalCreditINR, #totalDebitUSD, #totalCreditUSD, #totalDebitRMB, #totalCreditRMB').addClass('text-danger');
+    } else {
+      $('#totalDebitINR, #totalCreditINR, #totalDebitUSD, #totalCreditUSD, #totalDebitRMB, #totalCreditRMB').removeClass('text-danger');
+    }
+  }
+
+  function formatMoney(num, decimals) {
     var val = parseFloat(num);
     if (isNaN(val)) return '0.00';
-    return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var dec = (decimals !== undefined) ? decimals : 2;
+    return val.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
 
-  function formatDate(dStr) {
-    if (!dStr) return '—';
-    var dt = new Date(dStr);
-    if (isNaN(dt.getTime())) return dStr;
-    return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
-  }
+  // Form Submit Validation
+  $('#adjustmentForm').on('submit', function(e) {
+    var dateVal = $('#date').val();
+    if (!dateVal) {
+      e.preventDefault();
+      alert("Please select a date.");
+      $('#date').focus();
+      return false;
+    }
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+    var mode = $('#adjustment_mode').val();
+
+    if (mode === 'ledger') {
+      $('#tab-to-suppliers').find('input, select').prop('disabled', true);
+      $('#tab-ledger').find('input, select').prop('disabled', false);
+
+      var validRows = 0;
+      var hasError = false;
+      var errorMessage = "";
+
+      $('#ledgerTableBody tr').each(function(idx) {
+        var rowNum = idx + 1;
+        var vendor = $(this).find('.supplier-select').val();
+        var isLocal = getSupplierType($(this).find('.supplier-select')) === 'local';
+        var inr = parseFloat($(this).find('input[name="ledger_inr[]"]').val()) || 0;
+        var usd = isLocal ? 0 : (parseFloat($(this).find('input[name="ledger_usd[]"]').val()) || 0);
+        var rmb = isLocal ? 0 : (parseFloat($(this).find('input[name="ledger_rmb[]"]').val()) || 0);
+
+        if (!vendor) {
+          hasError = true;
+          errorMessage = "Please select a supplier for row #" + rowNum;
+          return false;
+        }
+
+        if (isLocal) {
+          $(this).find('input[name="ledger_usd[]"], input[name="ledger_rmb[]"]').val('');
+        }
+
+        if (inr <= 0 && usd <= 0 && rmb <= 0) {
+          hasError = true;
+          errorMessage = isLocal
+            ? ("Please enter an INR amount greater than 0 for row #" + rowNum)
+            : ("Please enter at least one amount (INR, USD, or RMB) greater than 0 for row #" + rowNum);
+          return false;
+        }
+
+        validRows++;
+      });
+
+      if (hasError) {
+        e.preventDefault();
+        $('#tab-to-suppliers').find('input, select').prop('disabled', false);
+        alert(errorMessage);
+        return false;
+      }
+
+      if (validRows < 1) {
+        e.preventDefault();
+        $('#tab-to-suppliers').find('input, select').prop('disabled', false);
+        alert("Please add at least one valid adjustment row.");
+        return false;
+      }
+
+      return true;
+
+    } else {
+      $('#tab-ledger').find('input, select').prop('disabled', true);
+      $('#tab-to-suppliers').find('input, select').prop('disabled', false);
+
+      var validRows = 0;
+      var dINR = 0, dUSD = 0, dRMB = 0;
+      var cINR = 0, cUSD = 0, cRMB = 0;
+      var hasError = false;
+      var errorMessage = "";
+      var lockedType = '';
+
+      $('#toSuppliersTableBody tr').each(function(idx) {
+        var rowNum = idx + 1;
+        var $sel = $(this).find('.supplier-select');
+        var vendor = $sel.val();
+        var rowType = getSupplierType($sel);
+        var isLocal = rowType === 'local';
+        var debINR = parseFloat($(this).find('.debit-inr').val()) || 0;
+        var debUSD = isLocal ? 0 : (parseFloat($(this).find('.debit-usd').val()) || 0);
+        var debRMB = isLocal ? 0 : (parseFloat($(this).find('.debit-rmb').val()) || 0);
+        var crdINR = parseFloat($(this).find('.credit-inr').val()) || 0;
+        var crdUSD = isLocal ? 0 : (parseFloat($(this).find('.credit-usd').val()) || 0);
+        var crdRMB = isLocal ? 0 : (parseFloat($(this).find('.credit-rmb').val()) || 0);
+
+        if (isLocal) {
+          $(this).find('.debit-usd, .debit-rmb, .credit-usd, .credit-rmb').val('');
+        }
+
+        var hasDeb = (debINR > 0 || debUSD > 0 || debRMB > 0);
+        var hasCrd = (crdINR > 0 || crdUSD > 0 || crdRMB > 0);
+
+        if (!vendor) {
+          hasError = true;
+          errorMessage = "Please select a supplier for row #" + rowNum;
+          return false;
+        }
+
+        if (!lockedType) {
+          lockedType = rowType;
+        } else if (rowType && rowType !== lockedType) {
+          hasError = true;
+          errorMessage = "Local and Import suppliers cannot be adjusted against each other. Use only one supplier type per adjustment.";
+          return false;
+        }
+
+        if (!hasDeb && !hasCrd) {
+          hasError = true;
+          errorMessage = "Please enter either Debit or Credit amount for row #" + rowNum;
+          return false;
+        }
+
+        if (hasDeb && hasCrd) {
+          hasError = true;
+          errorMessage = "Row #" + rowNum + " cannot contain both Debit and Credit amounts.";
+          return false;
+        }
+
+        validRows++;
+        dINR += debINR; dUSD += debUSD; dRMB += debRMB;
+        cINR += crdINR; cUSD += crdUSD; cRMB += crdRMB;
+      });
+
+      if (hasError) {
+        e.preventDefault();
+        $('#tab-ledger').find('input, select').prop('disabled', false);
+        alert(errorMessage);
+        return false;
+      }
+
+      if (validRows < 1) {
+        e.preventDefault();
+        $('#tab-ledger').find('input, select').prop('disabled', false);
+        alert("Please add at least one valid adjustment row.");
+        return false;
+      }
+
+      if (validRows > 1) {
+        if (Math.abs(dINR - cINR) >= 0.005 || Math.abs(dUSD - cUSD) >= 0.0001 || Math.abs(dRMB - cRMB) >= 0.0001) {
+          e.preventDefault();
+          $('#tab-ledger').find('input, select').prop('disabled', false);
+          alert("Total Debit amounts must match Total Credit amounts when there are multiple entries.");
+          return false;
+        }
+      }
+
+      $('.debit-field, .credit-field').prop('disabled', false);
+      return true;
+    }
+  });
 
 });
 </script>

@@ -66,11 +66,33 @@ class Local_supplier extends CI_Controller
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
         }
-        $data                    = $this->local_supplier_model->get_supplier_by_id($id)->row_array();
+
+        $this->load->model('inventory_model');
+
+        $data = $this->local_supplier_model->get_supplier_by_id($id)->row_array();
+        $fy   = $this->inventory_model->get_indian_fy_range();
+
+        $from = $fy['from'];
+        $to   = $fy['to'];
+        $date_range = trim((string) $this->input->get('date_range', true));
+        if ($date_range !== '' && strpos($date_range, ' - ') !== false) {
+            $parts = explode(' - ', $date_range);
+            $from_dt = DateTime::createFromFormat('d-m-Y', trim($parts[0]));
+            $to_dt   = DateTime::createFromFormat('d-m-Y', trim($parts[1]));
+            if ($from_dt && $to_dt) {
+                $from = $from_dt->format('Y-m-d');
+                $to   = $to_dt->format('Y-m-d');
+            }
+        }
+
+        $ledger = $this->inventory_model->build_local_supplier_ledger($id, $from, $to);
+
         $page_data['data']       = $data;
         $page_data['id']         = $id;
-        $page_data['outstanding'] = $this->local_supplier_model->get_supplier_outstanding($id);
-        $page_data['payments'] = $this->local_supplier_model->get_supplier_payments($id);
+        $page_data['ledger']     = $ledger;
+        $page_data['from_date']  = $from;
+        $page_data['to_date']    = $to;
+        $page_data['date_range'] = date('d-m-Y', strtotime($from)) . ' - ' . date('d-m-Y', strtotime($to));
         $page_data['page_name']  = 'local_supplier_ledger';
         $page_data['page_title'] = 'Local Supplier Ledger';
         $this->load->view('backend/index', $page_data);

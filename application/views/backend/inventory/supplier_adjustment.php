@@ -31,7 +31,6 @@
               <th>#</th>
               <th>Date</th>
               <th>Supplier Name</th>
-              <th>Batch No</th>
               <th>USD</th>
               <th>RMB</th>
               <th>INR</th>
@@ -82,7 +81,6 @@ $(document).ready(function($) {
       { "data": "sr_no" },
       { "data": "date" },
       { "data": "supplier_name" },
-      { "data": "batch_no" },
       { "data": "usd" },
       { "data": "rmb" },
       { "data": "inr" },
@@ -97,7 +95,7 @@ $(document).ready(function($) {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
         "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+          "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         }
       }
     ]

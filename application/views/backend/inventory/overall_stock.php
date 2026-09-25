@@ -986,7 +986,7 @@
 							<th class="text-end th-cost-wrap">Actual Cost<br>Net Amt</th>
 							<th class="text-end th-cost-wrap">Official Cost<br>with Exp</th>
 							<th class="text-end th-cost-wrap">Official Cost<br>Net Amt</th>
-							<th class="text-center" style="width: 75px;">Action</th>
+							<!-- Action column hidden on main overall stock table -->
 						</tr>
 					</thead>
 				</table>
@@ -1200,7 +1200,7 @@
                 html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(c.official_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + c.official_cost_net + '</td>';
                 html += '        <td class="text-center">';
                 html += '          <div class="d-inline-flex align-items-center">';
-                html += '            <a href="' + BASE_URL + 'inventory/my-stock-batch/' + rowData.product_id + '/' + c.warehouse_id + '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View Batches"><i class="feather icon-eye"></i></a>';
+                html += '            <a href="' + BASE_URL + 'inventory/stock-history/' + rowData.product_id + '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-clock"></i></a>';
                 html += '          </div>';
                 html += '        </td>';
                 html += '      </tr>';
@@ -1244,7 +1244,6 @@
                     html += '                <th class="text-end col-batch-off-exp" ' + styleOffExp + '>Official Cost with Exp</th>';
                     html += '                <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Per Pc Net</th>';
                     html += '                <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Net Amt</th>';
-                    html += '                <th class="text-center" style="width: 60px;">Action</th>';
                     html += '              </tr>';
                     html += '            </thead>';
                     html += '            <tbody>';
@@ -1284,7 +1283,6 @@
                         html += '                <td class="text-end stk-cost col-batch-off-exp ' + (parseFloat(b.official_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffExp + '>₹' + b.official_cost_with_exp + '</td>';
                         html += '                <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_per_pc_net + '</td>';
                         html += '                <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_net + '</td>';
-                        html += '                <td class="text-center">' + b.action + '</td>';
                         html += '              </tr>';
                     }
 
@@ -1379,8 +1377,7 @@
                 { "data": "actual_cost_with_exp", "className": "text-end text-nowrap align-middle" },
                 { "data": "actual_cost_net", "className": "text-end text-nowrap align-middle" },
                 { "data": "official_cost_with_exp", "className": "text-end text-nowrap align-middle" },
-                { "data": "official_cost_net", "className": "text-end text-nowrap align-middle" },
-                { "data": "action", "className": "text-center text-nowrap align-middle" }
+                { "data": "official_cost_net", "className": "text-end text-nowrap align-middle" }
             ],
             "buttons": [],
             "infoCallback": function (settings, start, end, max, total, pre) {
