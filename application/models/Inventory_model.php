@@ -9603,70 +9603,145 @@ class Inventory_model extends CI_Model
 	public function get_my_stock_batch()
 	{
 		$params['draw'] = $_REQUEST['draw'];
-		$start = $_REQUEST['start'];
-		$length = $_REQUEST['length'];
+		$start = intval($_REQUEST['start'] ?? 0);
+		$length = intval($_REQUEST['length'] ?? 25);
 
-		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
 		$data = array();
 		$keyword_filter = "";
 
+		$company_id = $this->session->userdata('company_id');
+		$keyword_filter .= " AND (company_id='" . $company_id . "')";
+
+		$warehouse_id = '';
 		if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != ""):
-			$warehouse_id        = $_REQUEST['warehouse_id'];
+			$warehouse_id = $_REQUEST['warehouse_id'];
 			if ($warehouse_id != 'All') {
 				$keyword_filter .= " AND (warehouse_id='" . $warehouse_id . "')";
 			}
 		endif;
 
+		$product_id = '';
 		if (isset($_REQUEST['product_id']) && $_REQUEST['product_id'] != ""):
 			if ($_REQUEST['product_id'] != 'All') {
-				$product_id        = $_REQUEST['product_id'];
-				// $product_id = base64_decode($product_id);
+				$product_id = $_REQUEST['product_id'];
 				$result = $this->common_model->get_batch_product_1($product_id, $warehouse_id);
-				// echo $this->db->last_query(); exit();
 				$product_id = $result['product_id'];
 				$keyword_filter .= " AND (product_id='" . $product_id . "')";
 			}
 		endif;
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (item_code like '%" . $keyword . "%' OR product_name like '%" . $keyword . "%')";
+			$keyword = $filter_data['keywords'];
+			$keyword_filter .= " AND (item_code like '%" . $keyword . "%' OR product_name like '%" . $keyword . "%' OR batch_no like '%" . $keyword . "%')";
 		endif;
 
 		$total_count = $this->db->query("SELECT id FROM inventory WHERE (id!='') $keyword_filter ORDER BY id ASC")->num_rows();
-		//echo $this->db->last_query();
-		$query = $this->db->query("SELECT id,warehouse_name,item_code,categories,black_qty,official_qty,product_name,product_id,quantity,batch_no,official_total_rs,total_amt FROM inventory WHERE (id!='') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		$query = $this->db->query("
+			SELECT
+				id,
+				warehouse_name,
+				item_code,
+				categories,
+				black_qty,
+				official_qty,
+				pending_qty,
+				product_name,
+				product_id,
+				quantity,
+				batch_no,
+				actual_cost_with_exp,
+				actual_inr,
+				official_exp_per_pc,
+				official_rate_rs
+			FROM inventory
+			WHERE (id!='') $keyword_filter
+			ORDER BY id DESC
+			LIMIT $start, $length
+		");
+
+		$batch_count = $total_count;
+		$zero_badge = '<span class="stk-badge-zero">-</span>';
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
-				$product_id = $item['product_id'];
+				$b_batch_no = $item['batch_no'] ?? '';
+				$b_qty = intval($item['quantity']);
+				$b_black = intval($item['black_qty']);
+				$b_white = intval($item['official_qty']);
+				$b_pending = intval($item['pending_qty']);
+				$b_total_white = $b_white + $b_pending;
 
-				$size_label = '';
-				$category = $this->common_model->getRowById('categories', 'name', ['id' => $item['categories']]);
-				$size_label = $category['name'] ?? '-';
+				$b_actual_cost_exp_pc = floatval($item['actual_cost_with_exp']);
+				$b_actual_inr_pc = floatval($item['actual_inr']);
+				$b_official_cost_exp_pc = floatval($item['official_exp_per_pc']);
+				$b_official_rate_pc = floatval($item['official_rate_rs']);
+
+				$b_booked = 0;
+				if (!empty($b_batch_no) && $b_batch_no != '-') {
+					$b_booked_res = $this->db->query("
+						SELECT COALESCE(SUM(sob.batch_qty), 0) as batch_booked
+						FROM sales_order_product_batch sob
+						JOIN sales_order so ON so.id = sob.order_id
+						WHERE sob.batch_no = ?
+						  AND so.company_id = ?
+						  AND so.is_approved = 0
+						  AND so.is_deleted = 0
+						  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+					", array($b_batch_no, $company_id))->row_array();
+					$b_booked = intval($b_booked_res['batch_booked'] ?? 0);
+				}
+				if ($b_booked == 0 && $batch_count == 1 && !empty($product_id)) {
+					$booked_query = $this->db->query("
+						SELECT COALESCE(SUM(sop.qty), 0) AS booked_qty
+						FROM sales_order_product sop
+						JOIN sales_order so ON so.id = sop.order_id
+						WHERE sop.product_id = ?
+						  AND so.company_id = ?
+						  AND so.is_approved = 0
+						  AND so.is_deleted = 0
+						  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+					", array($product_id, $company_id))->row_array();
+					$b_booked = intval($booked_query['booked_qty'] ?? 0);
+				}
 
 				$edit_url = base_url() . 'inventory/my-stock-history/' . $id;
 				$action = '';
 				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
-				if ($item['batch_no'] != '' && $item['batch_no'] != '-') {
-					$action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($item['batch_no']) . '\', \'Generate Barcode\')" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-barcode" aria-hidden="true"></i></button></a>';
+				if ($b_batch_no != '' && $b_batch_no != '-') {
+					$action .= '<a href="javascript:void(0);" onclick="showLargeModal(\'' . base_url() . 'modal/popup_inventory/modal_batch_barcode/' . urlencode($b_batch_no) . '\', \'Generate Barcode\')" data-toggle="tooltip" data-bs-placement="top" title="Generate Barcode"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-barcode" aria-hidden="true"></i></button></a>';
 				}
 
+				$fmt_cost = function ($val, $accent = false) {
+					$num = floatval($val);
+					$cls = 'stk-cost' . ($num > 0 ? ($accent ? ' stk-cost-accent' : '') : ' stk-zero');
+					return '<span class="' . $cls . '">₹' . number_format($num, 2) . '</span>';
+				};
+
 				$data[] = array(
-					"sr_no"       		=> ++$start,
-					"id"          		=> $item['id'],
-					"warehouse_name"	=> $item['warehouse_name'],
-					"category"				=> $size_label,
-					"item_code"				=> $item['item_code'],
-					"product_name"		=> $item['product_name'],
-					"without_exp"			=> $item['official_total_rs'],
-					"with_exp"				=> $item['total_amt'],
-					"quantity"        => $item['quantity'],
-					"black_qty"				=> $item['black_qty'],
-					"official_qty"		=> $item['official_qty'],
-					"batch_no"        => ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
-					"action"        	=> $action,
+					"sr_no"                         => ++$start,
+					"id"                            => $id,
+					"batch_no"                      => '<span class="batch-no-tag">' . (($b_batch_no != '' && $b_batch_no != null) ? $b_batch_no : '-') . '</span>',
+					"quantity"                      => '<span class="stk-qty-main">' . number_format($b_qty) . '</span>',
+					"black_qty"                     => $b_black > 0 ? '<span class="stk-badge stk-badge-black">' . number_format($b_black) . '</span>' : $zero_badge,
+					"white_qty"                     => $b_white > 0 ? '<span class="stk-badge stk-badge-white">' . number_format($b_white) . '</span>' : $zero_badge,
+					"pending_qty"                   => $b_pending > 0 ? '<span class="stk-badge stk-badge-pending">' . number_format($b_pending) . '</span>' : $zero_badge,
+					"total_white_qty"               => $b_total_white > 0 ? '<span class="stk-badge stk-badge-total-white">' . number_format($b_total_white) . '</span>' : $zero_badge,
+					"booked_qty"                    => $b_booked > 0 ? '<span class="stk-badge stk-badge-booked">' . number_format($b_booked) . '</span>' : $zero_badge,
+					"po_qty"                        => $zero_badge,
+					"priority_qty"                  => $zero_badge,
+					"loading_qty"                   => $zero_badge,
+					"actual_cost_per_pc_with_exp"   => $fmt_cost($b_actual_cost_exp_pc),
+					"actual_cost_with_exp"          => $fmt_cost($b_actual_cost_exp_pc * $b_qty, true),
+					"actual_cost_per_pc_net"        => $fmt_cost($b_actual_inr_pc),
+					"actual_cost_net"               => $fmt_cost($b_actual_inr_pc * $b_qty, true),
+					"official_cost_per_pc_with_exp" => $fmt_cost($b_official_cost_exp_pc),
+					"official_cost_with_exp"        => $fmt_cost($b_official_cost_exp_pc * $b_white, true),
+					"official_cost_per_pc_net"      => $fmt_cost($b_official_rate_pc),
+					"official_cost_net"             => $fmt_cost($b_official_rate_pc * $b_white, true),
+					"action"                        => $action,
 				);
 			}
 		}
@@ -28802,12 +28877,11 @@ public function get_sales_return_reports()
 			return null;
 		}
 
-		$fy = $this->get_indian_fy_range();
 		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
-			$from_date = $fy['from'];
+			$from_date = date('Y-m-d', strtotime('-3 months'));
 		}
 		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
-			$to_date = $fy['to'];
+			$to_date = date('Y-m-d');
 		}
 
 		$seed_outstanding = (float) ($customer['outstanding'] ?? 0);
@@ -29359,12 +29433,11 @@ public function get_sales_return_reports()
 			return null;
 		}
 
-		$fy = $this->get_indian_fy_range();
 		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
-			$from_date = $fy['from'];
+			$from_date = date('Y-m-d', strtotime('-3 months'));
 		}
 		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
-			$to_date = $fy['to'];
+			$to_date = date('Y-m-d');
 		}
 
 		$seed_outstanding = (float) ($supplier['outstanding_inr'] ?? 0);

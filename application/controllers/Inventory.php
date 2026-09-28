@@ -3701,10 +3701,9 @@ class Inventory extends CI_Controller
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'customer_ledger') {
             $data = $this->inventory_model->get_customer_by_id($param2)->row_array();
-            $fy   = $this->inventory_model->get_indian_fy_range();
 
-            $from = $fy['from'];
-            $to   = $fy['to'];
+            $from = date('Y-m-d', strtotime('-3 months'));
+            $to   = date('Y-m-d');
             $date_range = trim((string) $this->input->get('date_range', true));
             if ($date_range !== '' && strpos($date_range, ' - ') !== false) {
                 $parts = explode(' - ', $date_range);

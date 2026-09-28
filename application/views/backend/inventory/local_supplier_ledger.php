@@ -1,8 +1,8 @@
 <?php
 $supplier = $data ?? [];
 $ledger   = $ledger ?? [];
-$from_date = $from_date ?? ($ledger['from_date'] ?? date('Y-04-01'));
-$to_date   = $to_date ?? ($ledger['to_date'] ?? date('Y-03-31'));
+$from_date = $from_date ?? ($ledger['from_date'] ?? date('Y-m-d', strtotime('-3 months')));
+$to_date   = $to_date ?? ($ledger['to_date'] ?? date('Y-m-d'));
 $date_range = $date_range ?? (date('d-m-Y', strtotime($from_date)) . ' - ' . date('d-m-Y', strtotime($to_date)));
 
 $order_rows   = $ledger['order_rows'] ?? [];
@@ -256,25 +256,47 @@ $fmt_bal = function ($n) {
 
 <div class="filter-bar-shell mb-2">
   <form method="get" action="<?= html_escape($base_ledger_url) ?>" class="d-flex flex-wrap align-items-end gap-2" id="ledgerFilterForm">
-    <div style="min-width: 260px;">
+    <div style="min-width: 280px;">
       <label class="fs-10 text-uppercase text-secondary fw-semibold d-block mb-1">Date</label>
       <input type="text" autocomplete="off" class="form-control form-control-sm bg-white datepicker_report"
-             name="date_range" value="<?= html_escape($date_range) ?>" placeholder="Select date range">
+             name="date_range" value="<?= html_escape($date_range) ?>" placeholder="Select date range" readonly>
     </div>
     <button type="submit" class="btn btn-sm btn-primary">Apply</button>
   </form>
 </div>
 <script>
-  $('.datepicker_report').daterangepicker({
-    autoUpdateInput: false,
+(function () {
+  var $input = $('.datepicker_report');
+  var $form = $('#ledgerFilterForm');
+
+  $input.daterangepicker({
+    autoUpdateInput: true,
     autoApply: false,
+    alwaysShowCalendars: false,
+    showCustomRangeLabel: true,
+    linkedCalendars: false,
+    opens: 'left',
     startDate: moment('<?= html_escape($from_date) ?>', 'YYYY-MM-DD'),
     endDate: moment('<?= html_escape($to_date) ?>', 'YYYY-MM-DD'),
-    locale: { format: 'DD-MM-YYYY' }
+    ranges: {
+      '3 months': [moment().subtract(3, 'months'), moment()],
+      '6 months': [moment().subtract(6, 'months'), moment()],
+      '12 months': [moment().subtract(12, 'months'), moment()]
+    },
+    locale: {
+      format: 'DD-MM-YYYY',
+      customRangeLabel: 'Custom Range',
+      applyLabel: 'Apply',
+      cancelLabel: 'Cancel'
+    }
   });
-  $('.datepicker_report').on('apply.daterangepicker', function(ev, picker) {
+
+  // Preset ranges apply immediately; custom range waits for Apply in the calendar
+  $input.on('apply.daterangepicker', function (ev, picker) {
     $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+    $form.trigger('submit');
   });
+})();
 </script>
 
 <!-- Summary cards -->

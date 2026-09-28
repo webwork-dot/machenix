@@ -904,6 +904,11 @@
 						</div>
 						<div class="filter-menu-body" id="column-filters-container">
 							<div class="filter-menu-label">Data Options</div>
+							<label class="filter-chip" for="toggle-stock-company" title="Expand or collapse all products with company stock (without batches)">
+								<input type="checkbox" id="toggle-stock-company">
+								<span class="chip-box"><i class="feather icon-check"></i></span>
+								<span class="chip-text">Stock with Company</span>
+							</label>
 							<label class="filter-chip" for="toggle-stock-batch" title="Expand or collapse all products with companies and batches">
 								<input type="checkbox" id="toggle-stock-batch">
 								<span class="chip-box"><i class="feather icon-check"></i></span>
@@ -1342,9 +1347,11 @@
                     }
                 }
 
-                // Auto-expand all layers if Stock with Batch filter is active
+                // Auto-expand layers if Stock with Company / Batch filters are active
                 if ($('#toggle-stock-batch').is(':checked')) {
                     expandAllBatches();
+                } else if ($('#toggle-stock-company').is(':checked')) {
+                    expandAllCompanies();
                 }
             },
             "ajax": {
@@ -1487,6 +1494,34 @@
         });
 
         // Expand/collapse all layers functions
+        function expandAllCompanies() {
+            var showZeroQty = $('#toggle-zero-qty').is(':checked');
+            dataTable.rows({ page: 'current' }).every(function () {
+                var row = this;
+                var rowData = row.data();
+                if (rowData && rowData.companies) {
+                    var activeCompanies = showZeroQty ? rowData.companies : rowData.companies.filter(function (c) {
+                        return Number(c.quantity) > 0;
+                    });
+                    if (activeCompanies.length > 0) {
+                        if (!row.child.isShown()) {
+                            var tr = $(row.node());
+                            openChildRow(row, tr, rowData);
+                            tr.find('.btn-expand-row i').removeClass('icon-plus').addClass('icon-minus');
+                        }
+                        // Keep company table open, but do not expand batches
+                        var childNode = $(row.child());
+                        childNode.find('.company-batches-row').hide();
+                        childNode.find('.company-row').removeClass('company-shown');
+                        childNode.find('.btn-expand-company-row i').removeClass('icon-minus').addClass('icon-plus');
+                    }
+                }
+            });
+            $('[data-toggle="tooltip"]').tooltip();
+            applyColumnFilters();
+            fitChildScrollPanels();
+        }
+
         function expandAllBatches() {
             var showZeroQty = $('#toggle-zero-qty').is(':checked');
             dataTable.rows({ page: 'current' }).every(function () {
@@ -1537,6 +1572,7 @@
         function updateFilterCount() {
             // Count only deviations from default so the badge stays hidden until filters change
             var defaults = {
+                'toggle-stock-company': false,
                 'toggle-stock-batch': false,
                 'toggle-zero-qty': false,
                 'toggle-product-col': true,
@@ -1597,16 +1633,30 @@
             updateFilterCount();
         }
 
+        // Stock with Company Toggle Handler (company layer only, no batches)
+        $('#toggle-stock-company').on('change', function () {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            if (isChecked) {
+                $('#toggle-stock-batch').prop('checked', false).closest('.filter-chip').removeClass('active');
+                expandAllCompanies();
+            } else {
+                collapseAllBatches();
+            }
+            updateFilterCount();
+        });
+
         // Stock with Batch Toggle Handler
         $('#toggle-stock-batch').on('change', function () {
             var isChecked = $(this).is(':checked');
             $(this).closest('.filter-chip').toggleClass('active', isChecked);
-            updateFilterCount();
             if (isChecked) {
+                $('#toggle-stock-company').prop('checked', false).closest('.filter-chip').removeClass('active');
                 expandAllBatches();
             } else {
                 collapseAllBatches();
             }
+            updateFilterCount();
         });
 
         // Show Item with Zero Qty Toggle Handler
@@ -1628,6 +1678,7 @@
         $('#btn-reset-col-filters').on('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
+            $('#toggle-stock-company').prop('checked', false).closest('.filter-chip').removeClass('active');
             $('#toggle-stock-batch').prop('checked', false).closest('.filter-chip').removeClass('active');
             collapseAllBatches();
 

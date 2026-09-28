@@ -70,10 +70,9 @@ class Local_supplier extends CI_Controller
         $this->load->model('inventory_model');
 
         $data = $this->local_supplier_model->get_supplier_by_id($id)->row_array();
-        $fy   = $this->inventory_model->get_indian_fy_range();
 
-        $from = $fy['from'];
-        $to   = $fy['to'];
+        $from = date('Y-m-d', strtotime('-3 months'));
+        $to   = date('Y-m-d');
         $date_range = trim((string) $this->input->get('date_range', true));
         if ($date_range !== '' && strpos($date_range, ' - ') !== false) {
             $parts = explode(' - ', $date_range);

@@ -17,12 +17,88 @@
 		display: flex;
 		align-items: center;
 	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+	.new-form .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
 		color: #1e652e;
 		border: 1px solid #1e652e !important;
 		background: white;
 		box-shadow: initial;
 		font-weight: 600;
+	}
+	#report-datatable thead th {
+		white-space: nowrap;
+	}
+	.batch-no-tag {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-size: 11px;
+		font-weight: 600;
+		color: #0284c7;
+		background: #f0f9ff;
+		border: 1px solid #e0f2fe;
+		padding: 1px 6px;
+		border-radius: 3px;
+		display: inline-block;
+	}
+	.stk-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 26px;
+		padding: 2px 6px;
+		font-size: 11.5px;
+		font-weight: 600;
+		line-height: 1.3;
+		border-radius: 4px;
+		text-decoration: none !important;
+		font-variant-numeric: tabular-nums;
+	}
+	.stk-badge-zero {
+		color: #94a3b8;
+		font-weight: 400;
+		font-size: 11.5px;
+	}
+	.stk-qty-main {
+		font-weight: 700;
+		color: #0f172a;
+		font-size: 12.5px;
+		font-variant-numeric: tabular-nums;
+	}
+	.stk-badge-black {
+		background-color: #f1f5f9;
+		color: #334155;
+		border: 1px solid #e2e8f0;
+	}
+	.stk-badge-white {
+		background-color: #eff6ff;
+		color: #1d4ed8;
+		border: 1px solid #dbeafe;
+	}
+	.stk-badge-pending {
+		background-color: #fffbeb;
+		color: #b45309;
+		border: 1px solid #fef3c7;
+	}
+	.stk-badge-total-white {
+		background-color: #e0e7ff;
+		color: #4338ca;
+		border: 1px solid #c7d2fe;
+		font-weight: 700;
+	}
+	.stk-badge-booked {
+		background-color: #fff1f2;
+		color: #e11d48;
+		border: 1px solid #ffe4e6;
+	}
+	.stk-cost {
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+	.stk-cost.stk-zero {
+		color: #94a3b8;
+	}
+	.stk-cost-accent {
+		font-weight: 600;
+		color: #0f172a;
 	}
 </style>
 <div class="row" id="table-bordered">
@@ -39,16 +115,26 @@
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-					<th>#</th>
-					<th>Category</th>
-					<th>Product Name</th>
+					<th class="text-center" style="width: 35px;">#</th>
 					<th>Batch No</th>
-					<th>Quantity</th>
-					<th>Black Qty</th>
-					<th>White Qty</th>
-                    <th>Cost Without Expense</th>
-                    <th>Cost With Expense</th>
-					<th>Actions</th>
+					<th class="text-end">Quantity</th>
+					<th class="text-end">Black Qty</th>
+					<th class="text-end">White Qty</th>
+					<th class="text-end">Pending Qty</th>
+					<th class="text-end">Total White Qty</th>
+					<th class="text-end">Booked Qty</th>
+					<th class="text-end">PO Qty</th>
+					<th class="text-end">Priority Qty</th>
+					<th class="text-end">Loading Qty</th>
+					<th class="text-end">Actual Cost Per Pc with Exp</th>
+					<th class="text-end">Actual Cost with Exp</th>
+					<th class="text-end">Actual Cost Per Pc Net Amt</th>
+					<th class="text-end">Actual Cost Net Amt</th>
+					<th class="text-end">Official Cost Per Pc with Exp</th>
+					<th class="text-end">Official Cost with Exp</th>
+					<th class="text-end">Official Cost Per Pc Net Amt</th>
+					<th class="text-end">Official Cost Net Amt</th>
+					<th class="text-center">Actions</th>
                   </tr>
                </thead>
             </table>
@@ -93,16 +179,26 @@
             },   
                      
             "columns": [
-                { "data": "sr_no" },
-                { "data": "category" },
-                { "data": "product_name" },
+                { "data": "sr_no", "className": "text-center" },
                 { "data": "batch_no" },
-                { "data": "quantity" },
-                { "data": "black_qty" },
-                { "data": "official_qty" },
-                { "data": "without_exp" },
-                { "data": "with_exp" },
-                { "data": "action" },
+                { "data": "quantity", "className": "text-end" },
+                { "data": "black_qty", "className": "text-end" },
+                { "data": "white_qty", "className": "text-end" },
+                { "data": "pending_qty", "className": "text-end" },
+                { "data": "total_white_qty", "className": "text-end" },
+                { "data": "booked_qty", "className": "text-end" },
+                { "data": "po_qty", "className": "text-end" },
+                { "data": "priority_qty", "className": "text-end" },
+                { "data": "loading_qty", "className": "text-end" },
+                { "data": "actual_cost_per_pc_with_exp", "className": "text-end" },
+                { "data": "actual_cost_with_exp", "className": "text-end" },
+                { "data": "actual_cost_per_pc_net", "className": "text-end" },
+                { "data": "actual_cost_net", "className": "text-end" },
+                { "data": "official_cost_per_pc_with_exp", "className": "text-end" },
+                { "data": "official_cost_with_exp", "className": "text-end" },
+                { "data": "official_cost_per_pc_net", "className": "text-end" },
+                { "data": "official_cost_net", "className": "text-end" },
+                { "data": "action", "className": "text-center" },
             ], 
            
             "buttons": [
@@ -110,7 +206,7 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7]
+                       "columns": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
                     }
                 },
                 {
@@ -118,7 +214,7 @@
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7]
+                       "columns": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
                     }
                 }
             ], 
@@ -131,7 +227,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ]
