@@ -195,7 +195,7 @@
 
         <?php echo form_open('inventory/sales_order/edit_salesman_post/' . $data['id'], ['class' => 'add-ajax-redirect-form','onsubmit' => 'return validateForm() && checkForm(this);']);?>
         <div class="row">
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Order No <span class="required">*</span></label>
               <input type="text" class="form-control" placeholder="Order No" name="order_no"
@@ -203,18 +203,26 @@
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Refrence Order No </label>
               <input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no" value="<?php echo htmlspecialchars($data['refrence_no'] ?? ''); ?>" readonly>
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
                 value="<?php echo $data['date'];?>" id="date_picker" readonly>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Expected Delivery Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expected_date" id="expected_date" required
+                value="<?php echo (!empty($data['expected_date']) && $data['expected_date'] != '0000-00-00') ? $data['expected_date'] : date('Y-m-d'); ?>">
             </div>
           </div>
 

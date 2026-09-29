@@ -6056,6 +6056,11 @@ class Inventory extends CI_Controller
 					}
 				}
 
+				$company_id = intval($this->session->userdata('company_id'));
+				$company = $this->db->get_where('company', ['id' => $company_id])->row_array();
+				$customer_state = intval($customer['state_id'] ?? 0);
+				$company_state = $company ? intval($company['state_id'] ?? 0) : 0;
+
 				echo json_encode([
 					"status" => 200,
 					"data" => [
@@ -6066,7 +6071,9 @@ class Inventory extends CI_Controller
 						"gst_name" => $customer['gst_name'],
 						"gst_no"   => $customer['gst_no']
 					],
-					"city_html" => $city_html
+					"city_html" => $city_html,
+					"company_state_id" => $company_state,
+					"gst_match" => ($customer_state > 0 && $company_state > 0 && $customer_state === $company_state)
 				]);
 			} else {
 				echo json_encode(["status" => 404]);

@@ -51,11 +51,16 @@
               <span class="coe-label">Date</span>
               <span class="coe-value"><?php echo !empty($data['date']) ? date('d M Y', strtotime($data['date'])) : '-'; ?></span>
             </div>
-            <div class="col-md-3 mb-1">
+            <div class="col-md-2 mb-1">
+              <span class="coe-label">Expected Delivery Date</span>
+              <input type="date" class="form-control form-control-sm" name="expected_date" id="expected_date" required
+                value="<?php echo (!empty($data['expected_date']) && $data['expected_date'] != '0000-00-00') ? $data['expected_date'] : date('Y-m-d'); ?>">
+            </div>
+            <div class="col-md-2 mb-1">
               <span class="coe-label">Customer</span>
               <span class="coe-value"><?php echo htmlspecialchars($data['customer_name']); ?></span>
             </div>
-            <div class="col-md-3 mb-1">
+            <div class="col-md-2 mb-1">
               <span class="coe-label">Warehouse</span>
               <span class="coe-value"><?php echo htmlspecialchars($data['warehouse_name']); ?></span>
             </div>

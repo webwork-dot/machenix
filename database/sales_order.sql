@@ -10,6 +10,7 @@ CREATE TABLE `sales_order` (
   `order_no` varchar(250) NOT NULL,
   `refrence_no` varchar(250) DEFAULT NULL,
   `date` date NOT NULL,
+  `expected_date` date NOT NULL,
   `customer_id` int(11) NOT NULL,
   `customer_name` varchar(250) NOT NULL,
   `shipping_state_id` int(11) DEFAULT NULL,

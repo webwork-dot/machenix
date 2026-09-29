@@ -49,24 +49,22 @@
               </div>
           </div>
         </div>
-<?php 
-  $staff_access = (int)$this->session->userdata('super_type_id'); 
-?>
         <div class="card-datatable d-report mb-2">
           <table class="table customer-calls-table" id="customer-calls-datatable">
             <thead>
               <tr>
-                <?php if ($staff_access != 7) { ?>
-                  <th>Staff</th>
-                <?php } ?>
+                <th>#</th>
+                <th>Staff</th>
+                <th>Distributor</th>
                 <th>Company Name</th>
                 <th>Customer Name</th>
-                <th>Phone Number</th>
+                <th>Mobile/Whatsapp No</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th>Remark</th>
                 <th>Follow Up Date</th>
                 <th>Added Date</th>
+                <th>Added By</th>
               </tr>
             </thead>
           </table>
@@ -110,17 +108,18 @@
             },   
                      
             "columns": [
-                <?php if ($staff_access != 7) { ?>
-                { "data": "added_by_name" },
-                <?php } ?>
-                { "data": "company_name" },
-                { "data": "customer_name" },
-                { "data": "phone_number" },
+                { "data": "sr_no" },
+                { "data": "staff" },
+                { "data": "distributor" },
+                { "data": "name" },
+                { "data": "owner_name" },
+                { "data": "mobile_whatsapp" },
                 { "data": "type" },
                 { "data": "status" },
                 { "data": "remark" },
-                { "data": "date" },
-                { "data": "created_at" }
+                { "data": "follow_up_date" },
+                { "data": "created_at" },
+                { "data": "added_by_name" }
             ], 
            
             "buttons": [
@@ -128,15 +127,15 @@
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
                     "exportOptions": {
-                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5,6,7,8]' : '[0,1,2,3,4,5,6,7]'; ?>
+                       "columns": ":visible"
                     }
                 },
                 {
                     "extend": 'pdfHtml5',
-                    "orientation": 'portrait',
+                    "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
                     "exportOptions": {
-                       "columns": <?php echo ($staff_access != 7) ? '[0,1,2,3,4,5,6,7,8]' : '[0,1,2,3,4,5,6,7]'; ?>
+                       "columns": ":visible"
                     }
                 }
             ], 
@@ -145,7 +144,14 @@
                 $(".loader").fadeOut("slow"); 
                 $('#total_count').html('('+total+')');
                 return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
-            }
+            },
+
+            'columnDefs': [
+                {
+                    "targets": 0,
+                    "className": "text-center",
+                },
+            ]
             
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 

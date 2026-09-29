@@ -19,7 +19,7 @@
 										<?php
 										// Preserve existing GET parameters like status, tab, type, customer_id, etc.
 										foreach ($_GET as $key => $val) {
-											if (!in_array($key, ['date_range', 'search', 'keywords', 'supplier_id', 'company_id'])) {
+											if (!in_array($key, ['date_range', 'delivery_date_range', 'search', 'keywords', 'supplier_id', 'company_id'])) {
 												if (is_array($val)) {
 													foreach ($val as $subVal) {
 														echo '<input type="hidden" name="' . htmlspecialchars($key) . '[]" value="' . htmlspecialchars($subVal) . '">';
@@ -29,6 +29,7 @@
 												}
 											}
 										}
+										$filter_status = (isset($_GET['status']) && $_GET['status'] != '') ? $_GET['status'] : (($page_name == 'sales_order') ? 'pending' : '');
 										?>
 										<div class="col-md-3 col-12">
 												<div class="form-group mb-0">   
@@ -36,6 +37,15 @@
 														<input type="text" autocomplete="off" class="form-control bg-white datepicker_report" name="date_range" value="<?php if(isset($_GET['date_range'])) { echo $_GET['date_range']; }?>" placeholder="Search Order Date">
 												</div>
 										</div>
+
+										<?php if ($page_name == 'sales_order' && $filter_status == 'pending') { ?>
+										<div class="col-md-3 col-12">
+												<div class="form-group mb-0">   
+														<label>Delivery Date</label>
+														<input type="text" autocomplete="off" class="form-control bg-white datepicker_delivery_report" name="delivery_date_range" value="<?php if(isset($_GET['delivery_date_range'])) { echo htmlspecialchars($_GET['delivery_date_range']); }?>" placeholder="Search Delivery Date">
+												</div>
+										</div>
+										<?php } ?>
 
 										<?php if ($page_name == 'po_expense' || $page_name == 'purchase_order_local') {?>
 											<div class="col-md-3 col-12">
@@ -90,7 +100,7 @@
 														<button type="submit" name="search" value="true" id="btn_verify" class="btn btn-primary btn_verify mr-1 mb-0 waves-effect waves-float waves-light">Search</button>
 														<?php if(isset($_GET['search'])): 
 															$reset_params = $_GET;
-															unset($reset_params['search'], $reset_params['date_range'], $reset_params['keywords'], $reset_params['supplier_id'], $reset_params['company_id']);
+															unset($reset_params['search'], $reset_params['date_range'], $reset_params['delivery_date_range'], $reset_params['keywords'], $reset_params['supplier_id'], $reset_params['company_id']);
 															$reset_query = http_build_query($reset_params);
 															$reset_url = currentUrl(true) . ($reset_query ? '?' . $reset_query : '');
 														?>
@@ -131,4 +141,17 @@
     $('.datepicker_report').on('apply.daterangepicker', function(ev, picker) {
           $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
     });
+
+    if ($('.datepicker_delivery_report').length) {
+        $('.datepicker_delivery_report').daterangepicker({
+            autoUpdateInput: false,
+            autoApply: false,
+            locale: {
+                format: 'DD-MM-YYYY'
+            }
+        });
+        $('.datepicker_delivery_report').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+        });
+    }
 </script>

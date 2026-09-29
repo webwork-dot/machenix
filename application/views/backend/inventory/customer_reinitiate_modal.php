@@ -1,6 +1,16 @@
 <?php
   $customer_id = $param2;
-  $customer_data = $this->inventory_model->get_customer_by_id($customer_id)->row_array();
+  $lead_ids_raw = $this->input->get('lead_ids');
+  $is_bulk = !empty($lead_ids_raw);
+  $bulk_ids = array();
+
+  if ($is_bulk) {
+    $bulk_ids = array_values(array_unique(array_filter(array_map('intval', explode(',', $lead_ids_raw)))));
+    $customer_data = array('type' => 'leads', 'company_id' => '');
+  } else {
+    $customer_data = $this->inventory_model->get_customer_by_id($customer_id)->row_array();
+  }
+
   $current_company_id = $this->session->userdata('company_id');
   $companies = $this->common_model->getResultById('company', '*', array('is_deleted' => 0));
 ?>
@@ -9,7 +19,14 @@
   <div class="col-12">
       <?php echo form_open('inventory/customer/reassign', ['id' => 'customer_reassign_form', 'onsubmit' => 'return submitReassignForm(event);']); ?>
       
-      <input type="hidden" name="customer_id" value="<?php echo $customer_id; ?>">
+      <?php if ($is_bulk) { ?>
+        <input type="hidden" name="customer_ids" value="<?php echo htmlspecialchars(implode(',', $bulk_ids), ENT_QUOTES, 'UTF-8'); ?>">
+        <div class="alert alert-primary mb-2" role="alert">
+          Assigning <strong><?php echo count($bulk_ids); ?></strong> selected lead<?php echo count($bulk_ids) == 1 ? '' : 's'; ?>
+        </div>
+      <?php } else { ?>
+        <input type="hidden" name="customer_id" value="<?php echo $customer_id; ?>">
+      <?php } ?>
       <div class="row">
         
         <div class="col-6 mb-2">
@@ -20,7 +37,7 @@
               <?php 
                 if (!empty($companies)) {
                   foreach ($companies as $company) {
-                    if(in_array($company['id'], explode(',', $customer_data['company_id'])) && $customer_data['type'] == 'customer') {
+                    if(!$is_bulk && in_array($company['id'], explode(',', $customer_data['company_id'])) && $customer_data['type'] == 'customer') {
                       echo '<option value="' . $company['id'] . '">' . $company['name'] . '</option>';
                     } elseif($customer_data['type'] == 'leads') {
                       echo '<option value="' . $company['id'] . '">' . $company['name'] . '</option>';
@@ -196,4 +213,3 @@ function getStaffByCompanyId(companyId) {
 
 
 </script>
-

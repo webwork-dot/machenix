@@ -262,6 +262,13 @@
 
           <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
+              <label>Expected Delivery Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expected_date" value="<?php echo date('Y-m-d');?>" id="expected_date" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-2 mb-1">
+            <div class="form-group">
               <label for="invoice_no">Invoice No <span class="required">*</span></label>
               <div class="input-group input-group-sm">
                 <input type="text" name="invoice_no" id="invoice_no" class="form-control form-control-sm font-monospace" value="<?= htmlspecialchars($this->inventory_model->get_invoice_no()); ?>" required>

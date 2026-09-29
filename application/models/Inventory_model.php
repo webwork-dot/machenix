@@ -12906,62 +12906,97 @@ class Inventory_model extends CI_Model
 			"url" => $this->session->userdata('previous_url'),
 		);
 
-		$customer_id = clean_and_escape($this->input->post('customer_id'));
+		$customer_ids_raw = $this->input->post('customer_ids');
+		if (!empty($customer_ids_raw)) {
+			$customer_ids = is_array($customer_ids_raw)
+				? $customer_ids_raw
+				: explode(',', $customer_ids_raw);
+		} else {
+			$customer_ids = array(clean_and_escape($this->input->post('customer_id')));
+		}
+
+		$customer_ids = array_values(array_unique(array_filter(array_map('intval', $customer_ids))));
+		if (empty($customer_ids)) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('please_select_at_least_one_lead'),
+			);
+			return simple_json_output($resultpost);
+		}
+
 		$target_company_id = clean_and_escape($this->input->post('target_company_id'));
 		$target_staff_id = clean_and_escape($this->input->post('target_staff_id'));
-
-		$original_customer = $this->get_customer_by_id($customer_id)->row_array();
 		$staff_name = $this->common_model->selectByidParam($target_staff_id, 'sys_users', 'first_name');
-		
-		// Update customer company and staff
-		$data = array(
-			'added_by_id' => $target_staff_id,
-			'added_by_name' => $staff_name,
-		);
 
-		if($original_customer['type'] == 'leads') {
-			$data['status'] = 'fresh';
-			$data['company_id'] = $target_company_id;
-			$data['status_label'] = 'Fresh Lead';
-			$action = "assign";
-			$message = "Staff assign by {$user_name}";
-			$json_data = [
-				"status" 					=> 'fresh',
-				"company_id" 					=>  $target_company_id,
-				"status_label" 					=> 'Fresh Lead',
-				"added_by_id" 		=> $target_staff_id,
-				"added_by_name" => $staff_name,
-			];
-		} else {
-			$action = "reassign";
-			$message = "Customer Staff reassign by {$user_name}";
-			$json_data = [
-				"old_added_by_name" => $original_customer['added_by_name'],
-				"added_by_name" => $staff_name,
-				"old_added_by_id" => $original_customer['added_by_id'],
-				"added_by_id" 		=> $target_staff_id,
-			];
+		$assigned_count = 0;
+		foreach ($customer_ids as $customer_id) {
+			$original_customer = $this->get_customer_by_id($customer_id)->row_array();
+			if (empty($original_customer)) {
+				continue;
+			}
+
+			$data = array(
+				'added_by_id' => $target_staff_id,
+				'added_by_name' => $staff_name,
+			);
+
+			if ($original_customer['type'] == 'leads') {
+				$data['status'] = 'fresh';
+				$data['company_id'] = $target_company_id;
+				$data['status_label'] = 'Fresh Lead';
+				$action = "assign";
+				$message = "Staff assign by {$user_name}";
+				$json_data = [
+					"status" => 'fresh',
+					"company_id" => $target_company_id,
+					"status_label" => 'Fresh Lead',
+					"added_by_id" => $target_staff_id,
+					"added_by_name" => $staff_name,
+				];
+			} else {
+				$action = "reassign";
+				$message = "Customer Staff reassign by {$user_name}";
+				$json_data = [
+					"old_added_by_name" => $original_customer['added_by_name'],
+					"added_by_name" => $staff_name,
+					"old_added_by_id" => $original_customer['added_by_id'],
+					"added_by_id" => $target_staff_id,
+				];
+			}
+
+			$this->db->where('id', $customer_id);
+			$updated = $this->db->update('customer', $data);
+
+			if ($updated) {
+				$logs = [
+					"customer_id"     => $customer_id,
+					"action"          => $action,
+					"label"          => json_encode(["badge" => "warning", "message" => ($action == "reassign") ? "Staff Reassign" : "Staff Assign"]),
+					"message"         => $message,
+					"json"            => json_encode($json_data),
+					"added_by"        => $user_id,
+					"added_by_name"   => get_phrase($user_name),
+					"added_date"      => date("Y-m-d H:i:s"),
+				];
+
+				$this->db->insert('customer_log', $logs);
+				$assigned_count++;
+			}
 		}
 
-		$this->db->where('id', $customer_id);
-		$updated = $this->db->update('customer', $data);
-
-		if ($updated) {
-			$logs = [
-				"customer_id"     => $customer_id,
-				"action"          => $action,
-				"label"          => json_encode(["badge" => "warning", "message" => ($action == "reassign") ? "Staff Reassign" : "Staff Assign"]),
-				"message"         => $message,
-				"json"            => json_encode($json_data),
-				"added_by"        => $user_id,
-				"added_by_name"   => get_phrase($user_name),
-				"added_date"      => date("Y-m-d H:i:s"),
-			];
-
-			$this->db->insert('customer_log', $logs);
+		if ($assigned_count === 0) {
+			$resultpost = array(
+				"status" => 400,
+				"message" => get_phrase('unable_to_assign_staff'),
+			);
+			return simple_json_output($resultpost);
 		}
 
-		$this->session->set_flashdata('flash_message', get_phrase('staff_assigned_successfully'));
+		if (count($customer_ids) > 1) {
+			$resultpost['message'] = $assigned_count . ' leads assigned successfully';
+		}
+
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
 		return simple_json_output($resultpost);
 	}
 
@@ -13145,7 +13180,8 @@ class Inventory_model extends CI_Model
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
-		$data_type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
+		$request_type = isset($_REQUEST['type']) ? clean_and_escape($_REQUEST['type']) : '';
+		$data_type = $request_type;
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword = $filter_data['keywords'];
@@ -13162,10 +13198,12 @@ class Inventory_model extends CI_Model
 				)";
 			} else {
 				$keyword_filter = " AND (company_name LIKE '%" . $keyword . "%'
+					OR city_name LIKE '%" . $keyword . "%'
+					OR state_name LIKE '%" . $keyword . "%'
 					OR owner_name LIKE '%" . $keyword . "%'
 					OR owner_mobile LIKE '%" . $keyword . "%'
-					OR gst_name LIKE '%" . $keyword . "%'
-					OR gst_no LIKE '%" . $keyword . "%')";
+					OR owner_whatsapp LIKE '%" . $keyword . "%'
+					OR owner_email LIKE '%" . $keyword . "%')";
 			}
 		endif;
 
@@ -13208,7 +13246,7 @@ class Inventory_model extends CI_Model
 		endif;
 
 		$total_count = $this->db->query("SELECT id FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_id, added_by_name, added_by_user_id, is_distributor, owner_name, owner_mobile, status, status_date, status_label, move_date, is_move, type,
+		$query = $this->db->query("SELECT id, company_name, gst_name, gst_no, city_name, state_name, pincode, added_by_id, added_by_name, added_by_user_id, is_distributor, owner_name, owner_mobile, owner_whatsapp, owner_email, status, status_date, status_label, move_date, is_move, type,
 			(SELECT first_name FROM sys_users WHERE id = customer.added_by_id LIMIT 1) AS salesperson_name,
 			(SELECT first_name FROM sys_users WHERE id = customer.added_by_user_id LIMIT 1) AS added_by_user_name
 			FROM customer WHERE (is_deleted='0') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
@@ -13250,31 +13288,38 @@ class Inventory_model extends CI_Model
 				$add_call_url = "smallAjaxModal('" . base_url() . "modal/popup_inventory/customer_add_call_modal/" . $id . "','" . "Add Call')";
 				$timeline_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_customer_timeline/" . $id . "','History')";
 				$share_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/customer_share_modal/" . $id . "','Share Customer')";
+				$view_title = ($data_type == 'leads') ? 'Lead View' : 'Customer View';
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/customer_view_modal/" . $id . "','" . $view_title . "')";
 
 				$action = '';
 				if($data_type == 'customer') {
 					if($status == 'moved') {
-						$action .= '
-							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
-						';
+						$action = '<div class="btn-group">
+							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+							<div class="dropdown-menu">
+								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
+								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
+							</div>
+						</div>';
 					} else {
 						if(in_array($status, ['today', 'upcoming', 'missed'])) {
-							$action .= '
-								<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Add Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
-							';
-
-							$action .= '
-								<a href="javascript:void(0);" onclick="' . $add_call_url . '" data-toggle="tooltip" data-bs-placement="top" title="Add Call"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-phone" aria-hidden="true"></i></button></a>
-							';
-
-							$action .= '
-								<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
-							';
+							$action = '<div class="btn-group">
+								<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+								<i class="mdi mdi-dots-vertical"></i></button>
+								<div class="dropdown-menu">
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $followup_url . '"><i class="fa fa-list-alt" aria-hidden="true"></i> Add Follow-Up</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $add_call_url . '"><i class="fa fa-phone" aria-hidden="true"></i> Add Call</a>
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
+								</div>
+							</div>';
 						} else {
 							$action ='<div class="btn-group">
 								<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 								<i class="mdi mdi-dots-vertical"></i></button>
 								<div class="dropdown-menu">
+									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
 									<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
 									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>
 									<a class="dropdown-item d-none" href="javascript:void(0)" onclick="' . $replicate_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Replicate</a>
@@ -13287,37 +13332,43 @@ class Inventory_model extends CI_Model
 						}
 					}
 				} else {
-					if($_REQUEST['status'] == 'all') {
-						$action .= '
-							<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-			
-							<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-			
-							<a href="javascript:void(0);" onclick="' . $reassign_url . '" data-toggle="tooltip" data-bs-placement="top" title="' . (($data_type == 'leads') ? "Assign" : "Reassign") . ' Staff"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
-						';
-					} else{
+					$lead_menu_items = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
 
-						if($_REQUEST['status'] != 'lost') {
-							$action .= '
-								<a href="javascript:void(0);" onclick="' . $followup_url . '" data-toggle="tooltip" data-bs-placement="top" title="Add Follow-Up"><button type="button" class="btn mr-1 mb-1 icon-btn-approved"><i class="fa fa-list-alt" aria-hidden="true"></i></button></a>
+					if ($status == 'all') {
+						$lead_menu_items .= '
+							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Assign</a>
+						';
+					} else {
+						if ($status != 'lost') {
+							$lead_menu_items .= '
+								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $followup_url . '"><i class="fa fa-list-alt" aria-hidden="true"></i> Add Follow-Up</a>
 							';
-	
-							if($_REQUEST['status'] != 'moved') {
-								$action .= '
-								<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+
+							if ($status != 'moved') {
+								$lead_menu_items .= '
+									<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
 								';
 							}
-								
-							$action .= '
-								<a href="' . $move_url . '" data-toggle="tooltip" data-bs-placement="top" title="Move To Customer"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-chevron-right" aria-hidden="true"></i></button></a>
+
+							$lead_menu_items .= '
+								<a class="dropdown-item" href="' . $move_url . '"><i class="fa fa-chevron-right" aria-hidden="true"></i> Move To Customer</a>
 							';
 						}
 
-						
-						$action .= '
-							<a href="javascript:void(0);" onclick="' . $timeline_url . '" class=""  data-toggle="tooltip" data-bs-placement="top" title="Timeline"><button type="button" class="btn mr-1 mb-1 icon-btn-pass" ><i class="fa fa-file" aria-hidden="true"></i></button></a>
+						$lead_menu_items .= '
+							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
 						';
-					} 
+					}
+
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							' . $lead_menu_items . '
+						</div>
+					</div>';
 				}
 
 				$salesperson = !empty($item['salesperson_name']) ? $item['salesperson_name'] : (!empty($item['added_by_name']) ? $item['added_by_name'] : '-');
@@ -13335,8 +13386,25 @@ class Inventory_model extends CI_Model
 					? '<span class="badge bg-light-warning text-warning" style="background: #ff9f4330 !important;">Leads</span>' 
 					: '<span class="badge bg-light-primary text-primary">Customer</span>';
 
+				$owner_mobile = !empty($item['owner_mobile']) ? $item['owner_mobile'] : '';
+				$owner_whatsapp = !empty($item['owner_whatsapp']) ? $item['owner_whatsapp'] : '';
+				if ($owner_mobile && $owner_whatsapp && $owner_mobile !== $owner_whatsapp) {
+					$mobile_whatsapp = $owner_mobile . ' / ' . $owner_whatsapp;
+				} elseif ($owner_mobile) {
+					$mobile_whatsapp = $owner_mobile;
+				} elseif ($owner_whatsapp) {
+					$mobile_whatsapp = $owner_whatsapp;
+				} else {
+					$mobile_whatsapp = '-';
+				}
+
+				$sr_no = ++$start;
+				if ($request_type == 'leads' && $status == 'all') {
+					$sr_no = '<div class="justify-content-center"><input type="checkbox" class="form-check-input lead-checkbox" value="' . $id . '"></div>';
+				}
+
 				$data[] = array(
-					"sr_no"       		=> ++$start,
+					"sr_no"       		=> $sr_no,
 					"id"          		=> $item['id'],
 					"name"        		=> $item['company_name'],
 					"distributor"			=> $distributor,
@@ -13344,6 +13412,8 @@ class Inventory_model extends CI_Model
 					"gst_no"					=> ($item['gst_no']) ? $item['gst_no'] : '-',
 					"owner_name"			=> ($item['owner_name']) ? $item['owner_name'] : '-',
 					"owner_no"				=> ($item['owner_mobile']) ? $item['owner_mobile'] : '-',
+					"owner_email"			=> !empty($item['owner_email']) ? $item['owner_email'] : '-',
+					"mobile_whatsapp"	=> $mobile_whatsapp,
 					"type"					=> $type_badge,
 					"city_name"				=> ($item['city_name']) ? $item['city_name'] : '-',
 					"state_name"			=> ($item['state_name']) ? $item['state_name'] : '-',
@@ -13352,6 +13422,7 @@ class Inventory_model extends CI_Model
 					"staff"						=> $salesperson,
 					"move_date"				=> date('d-m-Y', strtotime($item['move_date'])),
 					"status_date"				=> (!empty($item['status_date']) && $item['status_date'] != '0000-00-00 00:00:00') ? date('d-m-Y h:i A', strtotime($item['status_date'])) : '-',
+					"assigned_date"			=> (!empty($item['status_date']) && $item['status_date'] != '0000-00-00 00:00:00') ? date('d-m-Y h:i A', strtotime($item['status_date'])) : '-',
 					"status"					=> $badge,
 					"added_by_name"		=> $added_by_user,
 					"action"      		=> $action,
@@ -14033,6 +14104,7 @@ class Inventory_model extends CI_Model
 			$data['is_distributor']         = $is_distributor;
 			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 			$data['date']     		   	 		= ($this->input->post('date'));
+			$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 			$data['customer_id']       		= $customer_id;
 			$data['customer_name']     		= $customer_name;
 			$data['warehouse_id']      		= $warehouse_id;
@@ -14345,6 +14417,7 @@ class Inventory_model extends CI_Model
 			$data['is_distributor']         = $is_distributor;
 			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 			$data['date']     		   	 		= ($this->input->post('date'));
+			$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 			$data['customer_id']       		= $customer_id;
 			$data['customer_name']     		= $customer_name;
 			$data['warehouse_id']      		= $warehouse_id;
@@ -14738,6 +14811,7 @@ class Inventory_model extends CI_Model
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 				$data['date']     		   	 		= ($this->input->post('date'));
+				$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 				$data['customer_id']       		= $customer_id;
 				$data['customer_name']     		= $customer_name;
 				$data['warehouse_id']      		= $warehouse_id;
@@ -15046,6 +15120,7 @@ class Inventory_model extends CI_Model
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 				$data['date']     		   	 	= ($this->input->post('date'));
+				$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 				$data['customer_id']       		= $customer_id;
 				$data['customer_name']     		= $customer_name;
 				$data['warehouse_id']      		= $warehouse_id;
@@ -16816,7 +16891,16 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (so.company_name like '%" . $keyword . "%' 
             OR so.customer_name like '%" . $keyword . "%'
             OR so.refrence_no like '%" . $keyword . "%'
-            OR so.order_no like '%" . $keyword . "%')";
+            OR so.order_no like '%" . $keyword . "%'
+            OR EXISTS (
+                SELECT 1 FROM sys_users su_sp
+                WHERE su_sp.id = so.sale_person_id
+                AND (
+                    su_sp.first_name LIKE '%" . $keyword . "%'
+                    OR su_sp.last_name LIKE '%" . $keyword . "%'
+                    OR TRIM(CONCAT(IFNULL(su_sp.first_name, ''), ' ', IFNULL(su_sp.last_name, ''))) LIKE '%" . $keyword . "%'
+                )
+            ))";
 		endif;
 		
 		if (isset($_REQUEST['status']) && $_REQUEST['status'] != ""){
@@ -16848,6 +16932,17 @@ class Inventory_model extends CI_Model
 			}
 		}
 
+		if (isset($_REQUEST['delivery_date_range']) && $_REQUEST['delivery_date_range'] != "") {
+			$delivery_date = explode(' - ', $_REQUEST['delivery_date_range']);
+			$d_from = date('Y-m-d', strtotime($delivery_date[0]));
+			$d_to = date('Y-m-d', strtotime($delivery_date[1]));
+			if ($d_from == $d_to) {
+				$keyword_filter .= " AND (DATE(so.expected_date) = '$d_from')";
+			} else {
+				$keyword_filter .= " AND (DATE(so.expected_date) BETWEEN '$d_from' AND '$d_to')";
+			}
+		}
+
 		$company_id = $this->session->userdata('company_id');
 		if ($company_id) {
 			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
@@ -16869,8 +16964,10 @@ class Inventory_model extends CI_Model
 	
 			$query = $this->db->query("
 				SELECT 
-					so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name 
+					so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.date, so.expected_date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name, so.sale_person_id,
+					TRIM(CONCAT(IFNULL(su.first_name, ''), ' ', IFNULL(su.last_name, ''))) AS sales_person_name
 				FROM sales_order AS so
+				LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
 				WHERE (so.is_deleted='0') $keyword_filter  
 				ORDER BY so.date DESC LIMIT $start, $length
 			");
@@ -16898,6 +16995,7 @@ class Inventory_model extends CI_Model
 							so.is_generated,
 							so.is_approved,
 							so.date,
+							so.expected_date,
 							so.customer_id,
 							so.customer_name,
 							so.warehouse_name,
@@ -16906,8 +17004,11 @@ class Inventory_model extends CI_Model
 							so.remark,
 							so.invoice_no,
 							so.invoice_date,
-							so.added_by_name
+							so.added_by_name,
+							so.sale_person_id,
+							TRIM(CONCAT(IFNULL(su.first_name, ''), ' ', IFNULL(su.last_name, ''))) AS sales_person_name
 					FROM sales_order AS so
+					LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
 					WHERE EXISTS (
 							SELECT 1
 							FROM sales_order_product_batch sopb
@@ -17046,6 +17147,20 @@ class Inventory_model extends CI_Model
 				$total_pro = $this->db->query("SELECT id FROM sales_order_product WHERE (order_id='$id') ")->num_rows();
 				$customer_name = $item['customer_name'];
 
+				$booking_date = (!empty($item['date']) && $item['date'] != '0000-00-00') ? date('d M, Y', strtotime($item['date'])) : '-';
+				$delivery_date = (!empty($item['expected_date']) && $item['expected_date'] != '0000-00-00') ? date('d M, Y', strtotime($item['expected_date'])) : '-';
+				$booking_days = '-';
+				if (!empty($item['date']) && $item['date'] != '0000-00-00') {
+					$booking_days = (int) floor((strtotime(date('Y-m-d')) - strtotime($item['date'])) / 86400);
+					if ($booking_days < 0) {
+						$booking_days = 0;
+					}
+				}
+				$sales_person = trim($item['sales_person_name'] ?? '');
+				if ($sales_person === '') {
+					$sales_person = '-';
+				}
+
 				$data[] = array(
 					"sr_no"						=> ++$start,
 					"id"          		=> $item['id'],
@@ -17055,7 +17170,11 @@ class Inventory_model extends CI_Model
 					"warehouse_name"	=> ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
 					"company_name"		=> ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
 					"grand_total"   	=> $item['grand_total'],
-					"date"          	=> date('d M, Y', strtotime($item['date'])),
+					"date"          	=> $booking_date,
+					"booking_date"		=> $booking_date,
+					"delivery_date"		=> $delivery_date,
+					"booking_days"		=> $booking_days,
+					"sales_person"		=> $sales_person,
 					"total_pro"     	=> $total_pro,
 					"qty"           	=> $qty,
 					"remark"        	=> $item['remark'],
@@ -18774,6 +18893,7 @@ class Inventory_model extends CI_Model
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
 				$data['date']     		   	 		= ($this->input->post('date'));
+				$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 				$data['customer_id']       		= $customer_id;
 				$data['customer_name']     		= $customer_name;
 				$data['warehouse_id']      		= $warehouse_id;
@@ -19847,7 +19967,9 @@ class Inventory_model extends CI_Model
 				$state_gst = price_format_decimal($gst_total - $central_gst);
 			}
 
+			$expected_date = ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 			$header = array(
+				'expected_date' => $expected_date,
 				'basic_value' => $basic_value,
 				'net_sales_value_1' => $net_sales,
 				'total_black_amt' => 0,
@@ -20040,9 +20162,11 @@ class Inventory_model extends CI_Model
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (so.company_name like '%" . $keyword . "%' 
+			$keyword_filter .= " AND (so.customer_name like '%" . $keyword . "%' 
+            OR so.company_name like '%" . $keyword . "%' 
             OR so.refrence_no like '%" . $keyword . "%'
             OR so.order_no like '%" . $keyword . "%'
+            OR so.warehouse_name like '%" . $keyword . "%'
             OR sop.product_name like '%" . $keyword . "%'
             OR sop.item_code like '%" . $keyword . "%'
             OR sob.batch_no like '%" . $keyword . "%')";
@@ -20183,9 +20307,19 @@ class Inventory_model extends CI_Model
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
 			$keyword_filter .= " AND (io.customer_name like '%" . $keyword . "%' 
+            OR io.company_name like '%" . $keyword . "%'
             OR io.refrence_no like '%" . $keyword . "%'
             OR io.order_no like '%" . $keyword . "%'
-            OR io.invoice_no like '%" . $keyword . "%')";
+            OR io.invoice_no like '%" . $keyword . "%'
+            OR io.warehouse_name like '%" . $keyword . "%'
+            OR EXISTS (
+                SELECT 1 FROM invoice_order_products iop
+                WHERE iop.parent_id = io.id
+                AND (
+                    iop.product_name LIKE '%" . $keyword . "%'
+                    OR iop.item_code LIKE '%" . $keyword . "%'
+                )
+            ))";
 		endif;
 		
 		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
@@ -25996,12 +26130,19 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/manage_staff/delete/" . $id . "','Are you sure want to delete!')";
 				$pass_url = base_url() . 'inventory/staff_form/change_password/' . $id;
 				$view_url = "showAjaxModal('" . base_url() . "modal/popup/modal_view_staff/" . $id . "', 'Staff Details')";
-				$action = '';
-				$action .= '<a href="#" onclick="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
-				<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-				<a href="' . $pass_url . '" data-toggle="tooltip" data-bs-placement="top" title="Change Password"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
-				';
+				$history_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_staff_sales_history/" . $id . "', 'Staff Sales History')";
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i>
+					</button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>
+						<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>
+						<a class="dropdown-item" href="' . $pass_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Change Password</a>
+						<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+					</div>
+				</div>';
 
 				$staff_access_id = $item['staff_access'];
 				$staff_type_name = '-';
@@ -32570,7 +32711,19 @@ public function get_sales_return_reports()
 		}
 
 		if (!empty($search_value)) {
-			$where_sql .= " AND (cc.customer_name LIKE '%" . $search_value . "%' OR cc.remark LIKE '%" . $search_value . "%' OR cc.status LIKE '%" . $search_value . "%' OR cc.added_by_name LIKE '%" . $search_value . "%' OR c.company_name LIKE '%" . $search_value . "%' OR c.owner_mobile LIKE '%" . $search_value . "%')";
+			$where_sql .= " AND (
+				c.company_name LIKE '%" . $search_value . "%'
+				OR c.city_name LIKE '%" . $search_value . "%'
+				OR c.state_name LIKE '%" . $search_value . "%'
+				OR c.owner_name LIKE '%" . $search_value . "%'
+				OR c.owner_mobile LIKE '%" . $search_value . "%'
+				OR c.owner_whatsapp LIKE '%" . $search_value . "%'
+				OR c.owner_email LIKE '%" . $search_value . "%'
+				OR cc.customer_name LIKE '%" . $search_value . "%'
+				OR cc.remark LIKE '%" . $search_value . "%'
+				OR cc.status LIKE '%" . $search_value . "%'
+				OR cc.added_by_name LIKE '%" . $search_value . "%'
+			)";
 		}
 
 		$total_count = $this->db->query("SELECT cc.id FROM customer_calls AS cc LEFT JOIN customer c ON cc.customer_id = c.id $where_sql")->num_rows();
@@ -32580,26 +32733,61 @@ public function get_sales_return_reports()
 			$limit_sql = " LIMIT $start, $length";
 		}
 
-		$query = $this->db->query("SELECT cc.*, c.company_name, c.owner_mobile FROM customer_calls AS cc LEFT JOIN customer c ON cc.customer_id = c.id $where_sql ORDER BY cc.id DESC $limit_sql");
+		$query = $this->db->query("
+			SELECT cc.*,
+				c.company_name, c.owner_name, c.owner_mobile, c.owner_whatsapp, c.owner_email,
+				c.city_name, c.state_name, c.is_distributor, c.status AS customer_status, c.status_label, c.status_date,
+				c.type AS customer_type, c.added_by_id, c.added_by_name AS customer_staff_name, c.added_by_user_id,
+				(SELECT first_name FROM sys_users WHERE id = c.added_by_id LIMIT 1) AS salesperson_name,
+				(SELECT first_name FROM sys_users WHERE id = c.added_by_user_id LIMIT 1) AS added_by_user_name
+			FROM customer_calls AS cc
+			LEFT JOIN customer c ON cc.customer_id = c.id
+			$where_sql
+			ORDER BY cc.id DESC
+			$limit_sql
+		");
 		$result = $query->result_array();
 
 		$data = array();
+		$sr = $start;
 		foreach ($result as $row) {
-			$type_badge = ($row['is_lead'] == 1) 
-				? '<span class="badge bg-light-warning text-warning" style="background: #ff9f4330 !important;">Leads</span>' 
+			$is_lead = ($row['is_lead'] == 1) || (isset($row['customer_type']) && $row['customer_type'] === 'leads');
+			$type_badge = $is_lead
+				? '<span class="badge bg-light-warning text-warning" style="background: #ff9f4330 !important;">Lead</span>'
 				: '<span class="badge bg-light-primary text-primary">Customer</span>';
 
-			$nested_data = array();
-			$nested_data['added_by_name'] = !empty($row['added_by_name']) ? htmlspecialchars($row['added_by_name']) : '-';
-			$nested_data['company_name']  = !empty($row['company_name']) ? htmlspecialchars($row['company_name']) : '-';
-			$nested_data['customer_name'] = htmlspecialchars($row['customer_name']);
-			$nested_data['phone_number']  = !empty($row['owner_mobile']) ? htmlspecialchars($row['owner_mobile']) : '-';
-			$nested_data['type']          = $type_badge;
-			$nested_data['status']        = !empty($row['status']) ? htmlspecialchars($row['status']) : '-';
-			$nested_data['remark']        = !empty($row['remark']) ? nl2br(htmlspecialchars($row['remark'])) : '-';
-			$nested_data['date']          = !empty($row['date']) ? date('d M, Y h:i A', strtotime($row['date'])) : '-';
-			$nested_data['created_at']    = !empty($row['created_at']) ? date('d M, Y h:i A', strtotime($row['created_at'])) : '-';
-			$data[] = $nested_data;
+			$salesperson = !empty($row['salesperson_name']) ? $row['salesperson_name'] : (!empty($row['customer_staff_name']) ? $row['customer_staff_name'] : '-');
+
+			$distributor = ((int) ($row['is_distributor'] ?? 0) === 1)
+				? '<span class="badge bg-light-success text-success">Yes</span>'
+				: '<span class="badge bg-light-secondary text-secondary">No</span>';
+
+			$owner_mobile = !empty($row['owner_mobile']) ? $row['owner_mobile'] : '';
+			$owner_whatsapp = !empty($row['owner_whatsapp']) ? $row['owner_whatsapp'] : '';
+			if ($owner_mobile && $owner_whatsapp && $owner_mobile !== $owner_whatsapp) {
+				$mobile_whatsapp = $owner_mobile . ' / ' . $owner_whatsapp;
+			} elseif ($owner_mobile) {
+				$mobile_whatsapp = $owner_mobile;
+			} elseif ($owner_whatsapp) {
+				$mobile_whatsapp = $owner_whatsapp;
+			} else {
+				$mobile_whatsapp = '-';
+			}
+
+			$data[] = array(
+				'sr_no' => ++$sr,
+				'distributor' => $distributor,
+				'name' => !empty($row['company_name']) ? $row['company_name'] : '-',
+				'owner_name' => !empty($row['owner_name']) ? $row['owner_name'] : '-',
+				'mobile_whatsapp' => $mobile_whatsapp,
+				'type' => $type_badge,
+				'status' => !empty($row['status']) ? htmlspecialchars($row['status'], ENT_QUOTES, 'UTF-8') : '-',
+				'remark' => !empty($row['remark']) ? nl2br(htmlspecialchars($row['remark'], ENT_QUOTES, 'UTF-8')) : '-',
+				'follow_up_date' => !empty($row['date']) ? date('d M, Y', strtotime($row['date'])) : '-',
+				'created_at' => !empty($row['created_at']) ? date('d M, Y h:i A', strtotime($row['created_at'])) : '-',
+				'staff' => $salesperson,
+				'added_by_name' => !empty($row['added_by_name']) ? htmlspecialchars($row['added_by_name'], ENT_QUOTES, 'UTF-8') : '-',
+			);
 		}
 
 		$json_data = array(

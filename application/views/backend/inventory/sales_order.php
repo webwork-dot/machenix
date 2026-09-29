@@ -64,6 +64,36 @@
         color: #ffffff !important;
         box-shadow: 0 2px 6px rgba(115, 103, 240, 0.35);
     }
+    .so-table-title-row {
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+    .so-table-title-row .stock-filter-dropdown {
+        position: relative;
+        z-index: 5;
+    }
+    .card-datatable.d-report .dataTables_wrapper .dataTables_filter {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .card-datatable.d-report .dataTables_wrapper .dataTables_filter label {
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+    }
+    .card-datatable.d-report .so-add-btn {
+        float: none !important;
+        margin: 0 !important;
+        margin-top: 0 !important;
+        margin-right: 0 !important;
+        position: static;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+    }
 </style>
 
 <?php
@@ -78,6 +108,12 @@
     if (isset($_GET['date_range']) && $_GET['date_range'] != '') {
         $date_range_param .= '&date_range=' . urlencode($_GET['date_range']);
         if (isset($_GET['search'])) {
+            $date_range_param .= '&search=' . urlencode($_GET['search']);
+        }
+    }
+    if (isset($_GET['delivery_date_range']) && $_GET['delivery_date_range'] != '') {
+        $date_range_param .= '&delivery_date_range=' . urlencode($_GET['delivery_date_range']);
+        if (isset($_GET['search']) && strpos($date_range_param, 'search=') === false) {
             $date_range_param .= '&search=' . urlencode($_GET['search']);
         }
     }
@@ -148,9 +184,8 @@
 
    <div class="col-12">
       <div class="card">
-         <div class="card-body">
-             <div class="row">
-                <div class="col-md-12 mt-10">
+         <div class="card-body pb-0">
+             <div class="d-flex align-items-center flex-wrap gap-1 so-table-title-row">
                    <h5 class="mb-0">
                    <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                        <b>Total Product Batches <span id="total_count"> (0)</span></b>
@@ -163,15 +198,57 @@
                       &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
                    <?php } ?>
 				  </h5>
+
+            <?php if ($status == 'pending') { ?>
+                <div class="dropdown stock-filter-dropdown ms-50">
+                    <button class="btn-filter-dropdown dropdown-toggle" type="button" id="soFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="feather icon-filter"></i>
+                        <span>Filters</span>
+                        <span class="filter-count-badge" id="filter-active-count">0</span>
+                    </button>
+                    <div class="dropdown-menu stock-filter-menu" aria-labelledby="soFilterDropdown">
+                        <div class="filter-menu-header">
+                            <span class="title">Table Filters</span>
+                        </div>
+                        <div class="filter-menu-body" id="column-filters-container">
+                            <div class="filter-menu-label">Columns</div>
+                            <label class="filter-chip active" for="toggle-booking-date" title="Toggle Booking Date column">
+                                <input type="checkbox" id="toggle-booking-date" class="column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Booking Date</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-delivery-date" title="Toggle Delivery Date column">
+                                <input type="checkbox" id="toggle-delivery-date" class="column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Delivery Date</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-warehouse" title="Toggle Warehouse column">
+                                <input type="checkbox" id="toggle-warehouse" class="column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Warehouse</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-sales-person" title="Toggle Sales Person column">
+                                <input type="checkbox" id="toggle-sales-person" class="column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Sales Person</span>
+                            </label>
+                        </div>
+                        <div class="filter-menu-footer">
+                            <button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
+                                <i class="feather icon-rotate-ccw"></i> Reset Filters
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            <?php } ?>
              </div>
          </div>
         <div class="card-datatable d-report mb-2">
             <?php if($status == 'pending' && $this->session->userdata('super_type_id') == 7) { ?>
-                <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
+                <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary so-add-btn" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
             <?php } elseif ($status == 'pending' && $staff_access !== 7) { ?>
-                <a href="<?php echo site_url('inventory/sales-invoice/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
-            <?php } ?>       
+                <a href="<?php echo site_url('inventory/sales-invoice/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary so-add-btn" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
+            <?php } ?>
      
             <table class="table leads-table" id="report-datatable">
                <thead>
@@ -200,6 +277,19 @@
 					<th>Profit</th>
 					<th>Act Cst With Expense/Pc</th>
 					<th>Total Cst With Expense</th>
+                  <?php } elseif ($status == 'pending') { ?>
+					<th>#</th>
+					<th>Booking Date</th>
+					<th>Delivery Date</th>
+					<th>Booking Days</th>
+					<th>Customer Name</th>
+					<th>Order No</th>
+					<th>Warehouse</th>
+					<th>Tot Qty</th>
+					<th>Tot Product</th>
+					<th>Tot Amt</th>
+					<th>Sales Person</th>
+					<th>Actions</th>
                   <?php } elseif ($status == 'cancelled') { ?>
 					<th>#</th>
 					<th>Date</th>
@@ -246,6 +336,8 @@
 <?php
 if ($status == 'all' && $sub_tab == 'product') {
     $num_cols = 23;
+} elseif ($status == 'pending') {
+    $num_cols = 11; // exclude Actions from export
 } elseif ($status == 'cancelled') {
     $num_cols = 11;
     if ($staff_access !== 7) {
@@ -279,6 +371,13 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             "drawCallback": function (settings, json) {
                 $('[data-toggle="tooltip"]').tooltip('update');
             },
+            "initComplete": function () {
+                var $addBtn = $('.card-datatable.d-report .so-add-btn').first();
+                var $filter = $('#report-datatable_wrapper .dataTables_filter');
+                if ($addBtn.length && $filter.length) {
+                    $filter.append($addBtn);
+                }
+            },
       
             "ajax":{
                 <?php if ($status == 'all' && $sub_tab == 'product') { ?>
@@ -294,6 +393,7 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 "type": "POST",
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
+                    data.delivery_date_range = '<?php echo (isset($_GET['delivery_date_range'])) ? $_GET['delivery_date_range']:'' ?>';
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
                     data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']: 'pending'; ?>';	
                 },
@@ -330,6 +430,19 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 { "data": "profit" },
                 { "data": "act_cost_with_exp" },
                 { "data": "total_cost_with_exp" }
+                <?php } elseif ($status == 'pending') { ?>
+                { "data": "sr_no" },
+                { "data": "booking_date" },
+                { "data": "delivery_date" },
+                { "data": "booking_days" },
+                { "data": "customer_name" },
+                { "data": "order_no" },
+                { "data": "warehouse_name", "visible": false },
+                { "data": "qty" },
+                { "data": "total_pro" },
+                { "data": "grand_total" },
+                { "data": "sales_person" },
+                { "data": "action" }
                 <?php } elseif ($status == 'cancelled') { ?>
                 { "data": "sr_no" },
                 { "data": "date" },
@@ -407,6 +520,11 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                     "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
                     "className": "text-center",
                 }
+                <?php } elseif ($status == 'pending') { ?>
+                {
+                    "targets": [0, 1, 2, 3, 7, 8, 9],
+                    "className": "text-center",
+                }
                 <?php } elseif ($status == 'cancelled') { ?>
                 {
                     "targets": [0, 2],
@@ -423,6 +541,58 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 
         });
+
+        <?php if ($status == 'pending') { ?>
+        function updateFilterCount() {
+            var defaults = {
+                'toggle-booking-date': true,
+                'toggle-delivery-date': true,
+                'toggle-warehouse': false,
+                'toggle-sales-person': true
+            };
+            var count = 0;
+            $.each(defaults, function (id, defaultOn) {
+                if ($('#' + id).is(':checked') !== defaultOn) {
+                    count++;
+                }
+            });
+            var $badge = $('#filter-active-count');
+            $badge.text(count);
+            $badge.toggleClass('has-count', count > 0);
+        }
+
+        function applyColumnFilters() {
+            var showBooking = $('#toggle-booking-date').is(':checked');
+            var showDelivery = $('#toggle-delivery-date').is(':checked');
+            var showWarehouse = $('#toggle-warehouse').is(':checked');
+            var showSalesPerson = $('#toggle-sales-person').is(':checked');
+
+            dataTable.column(1).visible(showBooking, false);
+            dataTable.column(2).visible(showDelivery, false);
+            dataTable.column(6).visible(showWarehouse, false);
+            dataTable.column(10).visible(showSalesPerson, false);
+            dataTable.columns.adjust();
+            updateFilterCount();
+        }
+
+        $('.column-filter-checkbox').on('change', function() {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            applyColumnFilters();
+        });
+
+        $('#btn-reset-col-filters').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $('#toggle-booking-date').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-delivery-date').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-warehouse').prop('checked', false).closest('.filter-chip').removeClass('active');
+            $('#toggle-sales-person').prop('checked', true).closest('.filter-chip').addClass('active');
+            applyColumnFilters();
+        });
+
+        updateFilterCount();
+        <?php } ?>
     });
 
     function deleteSalesInvoice(id) {

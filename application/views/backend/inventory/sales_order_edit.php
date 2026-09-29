@@ -232,7 +232,7 @@
 
         <?php echo form_open('inventory/sales_order/edit_post/' . $data['id'], ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
         <div class="row">
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Order No <span class="required">*</span></label>
               <input type="text" class="form-control" placeholder="Order No" name="order_no"
@@ -240,17 +240,25 @@
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Refrence Order No </label>
               <input type="text" class="form-control" placeholder="Enter Order No" name="refrence_no" value="<?php echo $data['refrence_no']; ?>" >
             </div>
           </div>
 
-          <div class="col-12 col-sm-3 mb-1">
+          <div class="col-12 col-sm-2 mb-1">
             <div class="form-group">
               <label>Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>" value="<?php echo $data['date']; ?>"  id="date_picker">
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-3 mb-1">
+            <div class="form-group">
+              <label>Expected Delivery Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="expected_date" id="expected_date" required
+                value="<?php echo (!empty($data['expected_date']) && $data['expected_date'] != '0000-00-00') ? $data['expected_date'] : date('Y-m-d'); ?>">
             </div>
           </div>
 
@@ -429,24 +437,24 @@
                         <span class="badge" style="font-size: 10px; padding: 2px 4px; background-color: #82868b !important; color: #ffffff !important; font-weight: bold; margin-left: 5px;">Avail. Black: <span class="avail-black-val">0</span></span>
                       </div>
                     </td>
-                    <td><input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo $product['qty']; ?>" class="form-control" required=""></td>
+                    <td><input type="number" step="any" id="quantity_<?php echo $k; ?>" name="quantity[]" placeholder="Qty" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo clean_number($product['qty']); ?>" class="form-control" required=""></td>
                     <td>
                       <div class="input-group">
-                        <input type="number" step="any" id="master_amount_<?php echo $k; ?>" name="master_amount[]" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo $product['amount']; ?>" class="form-control">
+                        <input type="number" step="any" id="master_amount_<?php echo $k; ?>" name="master_amount[]" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo clean_number($product['amount']); ?>" class="form-control">
                         <span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="<?php echo $k; ?>" onclick="showPriceHistory('<?php echo $k; ?>')"><i class="fa fa-history px-1"></i></span>
                       </div>
                     </td>
-                    <td><input type="number" step="any" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo $product['total_amount']; ?>" class="form-control" tabindex="-1" readonly></td>
-                    <td><input type="number" step="any" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" onkeyup="markManual('<?php echo $k; ?>'); calculate_amt('<?php echo $k; ?>')" value="<?php echo $product['bill_amount']; ?>" class="form-control" data-manual="false"></td>
-                    <td><input type="number" step="any" id="bill_total_<?php echo $k; ?>" name="bill_total[]" value="<?php echo $product['bill_total']; ?>" class="form-control" onkeyup="calculate_amt_reverse('<?php echo $k; ?>')"></td>
-                    <td><input type="number" step="any" id="gst_<?php echo $k; ?>" name="gst[]" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo $product['gst']; ?>" class="form-control"></td>
-                    <td><input type="number" step="any" id="gst_amount_<?php echo $k; ?>" name="gst_amount[]" value="<?php echo $product['gst_amount']; ?>" class="form-control" tabindex="-1" readonly></td>
-                    <td><input type="number" step="any" id="total_bill_gst_amount_<?php echo $k; ?>" name="total_bill_gst_amount[]" value="<?php echo $product['total_bill_gst_amount']; ?>" class="form-control" tabindex="-1" readonly></td>
-                    <td><input type="number" step="any" id="black_amount_per_unit_<?php echo $k; ?>" name="black_amt[]" value="<?php echo ($product['amount'] - $product['bill_amount']); ?>" class="form-control" tabindex="-1" readonly></td>
-                    <td><input type="number" step="any" id="black_amount_<?php echo $k; ?>" name="black_total[]" value="<?php echo $product['black_total']; ?>" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo clean_number($product['total_amount']); ?>" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" onkeyup="markManual('<?php echo $k; ?>'); calculate_amt('<?php echo $k; ?>')" value="<?php echo clean_number($product['bill_amount']); ?>" class="form-control" data-manual="false"></td>
+                    <td><input type="number" step="any" id="bill_total_<?php echo $k; ?>" name="bill_total[]" value="<?php echo clean_number($product['bill_total']); ?>" class="form-control" onkeyup="calculate_amt_reverse('<?php echo $k; ?>')"></td>
+                    <td><input type="number" step="any" id="gst_<?php echo $k; ?>" name="gst[]" onkeyup="calculate_amt('<?php echo $k; ?>')" value="<?php echo clean_number($product['gst']); ?>" class="form-control"></td>
+                    <td><input type="number" step="any" id="gst_amount_<?php echo $k; ?>" name="gst_amount[]" value="<?php echo clean_number($product['gst_amount']); ?>" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="total_bill_gst_amount_<?php echo $k; ?>" name="total_bill_gst_amount[]" value="<?php echo clean_number($product['total_bill_gst_amount']); ?>" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="black_amount_per_unit_<?php echo $k; ?>" name="black_amt[]" value="<?php echo clean_number($product['amount'] - $product['bill_amount']); ?>" class="form-control" tabindex="-1" readonly></td>
+                    <td><input type="number" step="any" id="black_amount_<?php echo $k; ?>" name="black_total[]" value="<?php echo clean_number($product['black_total']); ?>" class="form-control" tabindex="-1" readonly></td>
                     <td>
-                      <input type="number" step="any" id="final_total_<?php echo $k; ?>" name="final_total[]" value="<?php echo $product['final_total']; ?>" class="form-control" tabindex="-1" readonly>
-                      <input type="hidden" id="available_<?php echo $k; ?>" name="available[]" value="<?php echo $product['available']; ?>">
+                      <input type="number" step="any" id="final_total_<?php echo $k; ?>" name="final_total[]" value="<?php echo clean_number($product['final_total']); ?>" class="form-control" tabindex="-1" readonly>
+                      <input type="hidden" id="available_<?php echo $k; ?>" name="available[]" value="<?php echo clean_number($product['available']); ?>">
                     </td>
                     <td class="text-center align-middle" style="white-space:nowrap;">
                       <button type="button" class="btn btn-primary btn-sm waves-effect waves-float waves-light btn-add-line" onclick="appendRequirement()"> <i class="fa fa-plus" aria-hidden="true"></i> </button>
@@ -715,10 +723,11 @@ function subtotal_cal() {
 
 
   function cleanNum(n, d) {
-    d = (typeof d === 'undefined') ? 2 : d;
+    d = (typeof d === 'undefined') ? 5 : d;
     var x = parseFloat(n);
-    if (isNaN(x)) return 0;
-    return parseFloat(x.toFixed(d));
+    if (isNaN(x)) return '0';
+    var formatted = x.toFixed(d).replace(/\.?0+$/, '');
+    return (formatted === '' || formatted === '-') ? '0' : formatted;
   }
 
   function recalculate() {
@@ -1253,6 +1262,16 @@ function appendRequirement() {
               $('#billing_address').val(data.address);
               $('#billing_gst').val(data.gst_name);
               $('#billing_gst_no').val(data.gst_no);
+
+              // Auto-select CGST/SGST if customer & company state match, else IGST
+              if (res.gst_match) {
+                $('#gst_type').val('Central GST / State GST');
+                change_gst('Central GST / State GST');
+              } else {
+                $('#gst_type').val('IGST');
+                change_gst('IGST');
+              }
+              recalculate();
             }
           }
         });

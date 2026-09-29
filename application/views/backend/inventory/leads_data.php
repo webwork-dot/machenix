@@ -44,7 +44,12 @@
         <div class="card-body">
           <div class="row">
               <div class="col-md-12 mt-10">
-                <h5 class="mb-0"><b>Total Leads <span id="total_count"> (0)</span></b></h5>
+                <h5 class="mb-0">
+                  <b>Total Leads <span id="total_count"> (0)</span></b>
+                  <?php if ($status == 'all') { ?>
+                    <button type="button" id="btn_assign_leads" class="btn btn-primary float-end" style="margin-top: -5px;" disabled>Assign leads (0)</button>
+                  <?php } ?>
+                </h5>
               </div>
           </div>
         </div>
@@ -58,27 +63,53 @@
           <table class="table leads-table" id="report-datatable">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Company Name</th>
-                <th>Name</th>
-                <th>Number</th>
-                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
-                  <th>Type</th>
-                <?php } ?>
-                <?php if($status != 'all' && $status != 'moved'){ ?>
+                <?php if ($status == 'all') { ?>
+                  <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="select-all-leads"></th>
+                  <th>Distributor</th>
+                  <th>Company Name</th>
+                  <th>City</th>
+                  <th>State</th>
+                  <th>Owner Name</th>
+                  <th>Mobile/Whatsapp No</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                <?php } elseif (in_array($status, ['new', 'missed', 'lost', 'today', 'upcoming', 'moved'])) { ?>
+                  <th>#</th>
+                  <th>Distributor</th>
+                  <th>Company Name</th>
+                  <th>City</th>
+                  <th>State</th>
+                  <th>Owner Name</th>
+                  <th>Mobile/Whatsapp No</th>
+                  <th>Email</th>
                   <th>Status</th>
-                <?php } ?>
-                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
-                  <th>Followup Date</th>
-                <?php } ?>
-                <?php if($status == 'moved'){ ?>
-                  <th>Move Date</th>
-                <?php } ?>
-                <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
                   <th>Staff</th>
                   <th>Added By</th>
+                  <th>Assigned Date</th>
+                  <th>Actions</th>
+                <?php } else { ?>
+                  <th>#</th>
+                  <th>Company Name</th>
+                  <th>Name</th>
+                  <th>Number</th>
+                  <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                    <th>Type</th>
+                  <?php } ?>
+                  <?php if($status != 'moved'){ ?>
+                    <th>Status</th>
+                  <?php } ?>
+                  <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                    <th>Followup Date</th>
+                  <?php } ?>
+                  <?php if($status == 'moved'){ ?>
+                    <th>Move Date</th>
+                  <?php } ?>
+                  <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                    <th>Staff</th>
+                    <th>Added By</th>
+                  <?php } ?>
+                  <th>Actions</th>
                 <?php } ?>
-                <th>Actions</th>
               </tr>
             </thead>
           </table>
@@ -88,8 +119,43 @@
 </div>
 
 
-<script type="text/javascript">       
+<script type="text/javascript">
+    function updateAssignLeadsButton() {
+        var count = $('.lead-checkbox:checked').length;
+        var $btn = $('#btn_assign_leads');
+        if ($btn.length) {
+            $btn.prop('disabled', count === 0).text('Assign leads (' + count + ')');
+        }
+        var totalVisible = $('.lead-checkbox').length;
+        $('#select-all-leads').prop('checked', totalVisible > 0 && count === totalVisible);
+    }
+
     $(document).ready(function($) {
+        <?php if ($status == 'all') { ?>
+        $(document).on('change', '.lead-checkbox', function() {
+            updateAssignLeadsButton();
+        });
+
+        $(document).on('change', '#select-all-leads', function() {
+            $('.lead-checkbox').prop('checked', $(this).is(':checked'));
+            updateAssignLeadsButton();
+        });
+
+        $('#btn_assign_leads').on('click', function() {
+            var selectedIds = [];
+            $('.lead-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                return;
+            }
+
+            var url = "<?php echo base_url(); ?>modal/popup_inventory/customer_reinitiate_modal/0?lead_ids=" + selectedIds.join(',');
+            showAjaxModal(url, 'Assign Staff');
+        });
+        <?php } ?>
+
     	var dataTable = $('#report-datatable').DataTable({ 
     	"dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
@@ -105,6 +171,9 @@
             },	
             "drawCallback": function (settings, json) {
                 $('[data-toggle="tooltip"]').tooltip('update');
+                <?php if ($status == 'all') { ?>
+                updateAssignLeadsButton();
+                <?php } ?>
             },
       
             "ajax":{
@@ -125,27 +194,53 @@
             },
                      
             "columns": [
-                { "data": "sr_no" },
-                { "data": "name" },
-                { "data": "owner_name" },
-                { "data": "owner_no" },
-                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
-                  { "data": "type" },
-                <?php } ?>
-                <?php if($status != 'all' && $status != 'moved'){ ?>
-                  { "data": "status" },
-                <?php } ?>
-                <?php if(in_array($status, ['today', 'upcoming'])){ ?>
-                  { "data": "status_date" },
-                <?php } ?>
-                <?php if($status == 'moved'){ ?>
-                  { "data": "move_date" },
-                <?php } ?>
-                <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                <?php if ($status == 'all') { ?>
+                    { "data": "sr_no" },
+                    { "data": "distributor" },
+                    { "data": "name" },
+                    { "data": "city_name" },
+                    { "data": "state_name" },
+                    { "data": "owner_name" },
+                    { "data": "mobile_whatsapp" },
+                    { "data": "owner_email" },
+                    { "data": "action" },
+                <?php } elseif (in_array($status, ['new', 'missed', 'lost', 'today', 'upcoming', 'moved'])) { ?>
+                    { "data": "sr_no" },
+                    { "data": "distributor" },
+                    { "data": "name" },
+                    { "data": "city_name" },
+                    { "data": "state_name" },
+                    { "data": "owner_name" },
+                    { "data": "mobile_whatsapp" },
+                    { "data": "owner_email" },
+                    { "data": "status" },
                     { "data": "staff" },
                     { "data": "added_by_name" },
+                    { "data": "assigned_date" },
+                    { "data": "action" },
+                <?php } else { ?>
+                    { "data": "sr_no" },
+                    { "data": "name" },
+                    { "data": "owner_name" },
+                    { "data": "owner_no" },
+                    <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                      { "data": "type" },
+                    <?php } ?>
+                    <?php if($status != 'moved'){ ?>
+                      { "data": "status" },
+                    <?php } ?>
+                    <?php if(in_array($status, ['today', 'upcoming'])){ ?>
+                      { "data": "status_date" },
+                    <?php } ?>
+                    <?php if($status == 'moved'){ ?>
+                      { "data": "move_date" },
+                    <?php } ?>
+                    <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
+                        { "data": "staff" },
+                        { "data": "added_by_name" },
+                    <?php } ?>
+                    { "data": "action" },
                 <?php } ?>
-                { "data": "action" },
             ], 
            
             "buttons": [

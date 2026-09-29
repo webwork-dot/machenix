@@ -28,6 +28,7 @@
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/pickers/flatpickr/flatpickr.min.css');?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/pickers/pickadate/pickadate.css');?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/style.css')?>">
+      <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/custom.css')?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/jquery-ui.css')?>">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.css">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/pages/app-calendar.min.css')?>">
