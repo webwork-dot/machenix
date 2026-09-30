@@ -1115,7 +1115,7 @@ class Inventory extends CI_Controller
         }
 
         $company_id = $this->session->userdata('company_id');
-        $company_list = $this->common_model->getResultById('my_companies', 'id, name, state_id', ['is_deleted' => '0', 'company_id' => $company_id]);
+        $company_list = $this->common_model->getResultById('my_companies', 'id, name, state_id, is_usd, is_rmb, is_inr', ['is_deleted' => '0', 'company_id' => $company_id]);
         $page_data['company_list'] = ($company_list != '') ? $company_list : [];
 
         $company_info = $this->common_model->getRowById('company', 'state_id', ['id' => $company_id]);

@@ -43,7 +43,8 @@ foreach ($other_charges_list as $charge) {
               <select class="form-control select2" name="company_id" id="company_id" required>
                 <option value="">Select</option>
                 <?php foreach ($company_list as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>" data-state-id="<?php echo $value['state_id'];?>"><?php echo $value['name'];?></option>
+                  <option value="<?php echo $value['id'];?>" data-state-id="<?php echo $value['state_id'];?>"
+                    data-is-usd="<?php echo (int)($value['is_usd'] ?? 1);?>" data-is-rmb="<?php echo (int)($value['is_rmb'] ?? 1);?>" data-is-inr="<?php echo (int)($value['is_inr'] ?? 1);?>"><?php echo $value['name'];?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -115,9 +116,19 @@ foreach ($other_charges_list as $charge) {
 
           <!-- ===================== APPENDABLE EXPENSES SECTION ===================== -->
           <div class="col-12 mb-0">
-            <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="d-flex align-items-center justify-content-between flex-wrap mb-1" style="gap:8px;">
               <label class="mb-0"><b>Expenses</b> <span class="required">*</span></label>
-              <button type="button" class="btn btn-sm btn-outline-primary" id="addExpenseRow">+ Add Expense</button>
+              <div class="d-flex align-items-center flex-wrap" style="gap:8px;">
+                <select class="form-control form-control-sm" name="conv_type" id="conv_type" style="width:120px;">
+                  <option value="usd">USD to RMB</option>
+                  <option value="rmb">RMB to USD</option>
+                </select>
+                <label class="mb-0 small" id="con_rate_label">RMB Rate</label>
+                <input type="number" step="any" min="0" class="form-control form-control-sm text-right" name="con_rate" id="con_rate" placeholder="0" style="width:90px;">
+                <label class="mb-0 small">INR Rate</label>
+                <input type="number" step="any" min="0" class="form-control form-control-sm text-right" name="con_inr" id="con_inr" placeholder="0" style="width:90px;">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="addExpenseRow">+ Add Expense</button>
+              </div>
             </div>
 
             <div class="table-responsive">
@@ -126,12 +137,12 @@ foreach ($other_charges_list as $charge) {
                   <tr>
                     <th style="width:70px">Sr No</th>
                     <th>Name <span class="required">*</span></th>
-                    <th style="width:100px">USD</th>
-                    <th style="width:100px">RMB</th>
-                    <th style="width:100px">Amount </th>
+                    <th style="width:100px" class="usd-column">USD <span class="required">*</span></th>
+                    <th style="width:100px" class="rmb-column">RMB <span class="required">*</span></th>
+                    <th style="width:100px" class="inr-column">Amount </th>
                     <th style="width:100px" class="gst-column">GST (In %)</th>
                     <th style="width:100px" class="gst-column">GST Amount</th>
-                    <th style="width:100px">Total Amount<span class="required">*</span></th>
+                    <th style="width:100px" class="inr-column">Total Amount <span class="required">*</span></th>
                     <th style="width:100px">Action</th>
                   </tr>
                 </thead>
@@ -146,15 +157,15 @@ foreach ($other_charges_list as $charge) {
                       <input type="hidden" name="expense_name[]" class="expense_name">
                     </td>
 
-                    <td>
+                    <td class="usd-column">
                       <input type="number" name="usd_amt[]" class="form-control usd_amt" min="0" step="0.00001" placeholder="0.00">
                     </td>
 
-                    <td>
+                    <td class="rmb-column">
                       <input type="number" name="rmb_amt[]" class="form-control rmb_amt" min="0" step="0.00001" placeholder="0.00">
                     </td>
 
-                    <td>
+                    <td class="inr-column">
                       <input type="number" name="amount[]" class="form-control amount" min="0" step="0.01">
                     </td>
 
@@ -166,7 +177,7 @@ foreach ($other_charges_list as $charge) {
                       <input type="text" name="gst_amt[]" class="form-control gst_amt" readonly>
                     </td>
 
-                    <td>
+                    <td class="inr-column">
                       <input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required>
                     </td>
 
@@ -185,7 +196,7 @@ foreach ($other_charges_list as $charge) {
             <div class="table-responsive">
               <table class="table table-striped table-bordered">
                 <tbody>
-                  <tr>
+                  <tr class="inr-column">
                     <td style="width:80%" class="text-right">
                       <label>Sub Total</label>
                     </td>
@@ -203,7 +214,7 @@ foreach ($other_charges_list as $charge) {
                     </td>
                   </tr>
 
-                  <tr>
+                  <tr class="inr-column">
                     <td class="text-right">
                       <label>Grand Total</label>
                     </td>
@@ -213,7 +224,7 @@ foreach ($other_charges_list as $charge) {
                       <input type="hidden" name="final_amount" id="final_amount_hidden">
                     </td>
                   </tr>
-                  <tr>
+                  <tr class="usd-column">
                     <td class="text-right">
                       <label>Total USD</label>
                     </td>
@@ -221,7 +232,7 @@ foreach ($other_charges_list as $charge) {
                       <input type="text" name="usd" id="total_usd" class="form-control" readonly>
                     </td>
                   </tr>
-                  <tr>
+                  <tr class="rmb-column">
                     <td class="text-right">
                       <label>Total RMB</label>
                     </td>
@@ -259,7 +270,9 @@ $(function () {
     return Number.isFinite(n) ? n : 0;
   };
 
-  const money = (n) => (Number.isFinite(n) ? n.toFixed(2) : '0.00');
+  const trimNum = (n, dp) => (Number.isFinite(n) ? String(parseFloat(n.toFixed(dp))) : '');
+
+  const money = (n) => (Number.isFinite(n) ? trimNum(n, 2) : '0');
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
@@ -368,10 +381,87 @@ $(function () {
     updateTotals();
   });
 
+  // ---------- currency conversion ----------
+  function updateConRateLabel() {
+    $('#con_rate_label').text($('#conv_type').val() === 'rmb' ? 'USD Rate' : 'RMB Rate');
+  }
+
+  // USD to RMB: rate = RMB per 1 USD, INR rate = INR per 1 USD
+  // RMB to USD: rate = USD per 1 RMB, INR rate = INR per 1 RMB
+  function convertRow($row, src) {
+    const cur = getVendorCurrencies();
+    if (!cur[src]) return;
+
+    const type = $('#conv_type').val() || 'usd';
+    const conRate = toNum($('#con_rate').val());
+    const inrRate = toNum($('#con_inr').val());
+    const $usd = $row.find('.usd_amt');
+    const $rmb = $row.find('.rmb_amt');
+    const $src = src === 'rmb' ? $rmb : $usd;
+    const $other = src === 'rmb' ? $usd : $rmb;
+    const otherAllowed = cur[src === 'rmb' ? 'usd' : 'rmb'];
+
+    if (!hasValue($src.val())) {
+      if (otherAllowed) $other.val('');
+      if (inrRate > 0 && cur.inr) {
+        $row.find('.amount, .total_amt').val('');
+        setMode($row, 'amount');
+      }
+      return;
+    }
+
+    const val = toNum($src.val());
+    let usd = src === 'usd' ? val : null;
+    let rmb = src === 'rmb' ? val : null;
+
+    if (conRate > 0) {
+      if (src === 'usd') {
+        rmb = (type === 'usd') ? usd * conRate : usd / conRate;
+        if (otherAllowed) $other.val(trimNum(rmb, 5));
+      } else {
+        usd = (type === 'usd') ? rmb / conRate : rmb * conRate;
+        if (otherAllowed) $other.val(trimNum(usd, 5));
+      }
+    }
+
+    const base = (type === 'usd') ? usd : rmb;
+    if (inrRate > 0 && base !== null && cur.inr) {
+      $row.find('.amount').val(trimNum(base * inrRate, 2));
+      setMode($row, 'amount');
+    }
+  }
+
+  function applyConversionToAllRows() {
+    const baseCls = ($('#conv_type').val() === 'rmb') ? 'rmb' : 'usd';
+    const otherCls = baseCls === 'usd' ? 'rmb' : 'usd';
+
+    $tbody.find('tr.expense-row').each(function () {
+      const $row = $(this);
+      let src = $row.data('cur_src');
+      if (!src) {
+        if (hasValue($row.find('.' + baseCls + '_amt').val())) src = baseCls;
+        else if (hasValue($row.find('.' + otherCls + '_amt').val())) src = otherCls;
+      }
+      if (src) convertRow($row, src);
+    });
+    updateTotals();
+  }
+
   // when user edits usd or rmb
   $(document).on('input', '#expenseTable .usd_amt, #expenseTable .rmb_amt', function () {
+    const $row = $(this).closest('tr');
+    const src = $(this).hasClass('rmb_amt') ? 'rmb' : 'usd';
+    $row.data('cur_src', src);
+    convertRow($row, src);
     updateTotals();
   });
+
+  $('#conv_type').on('change', function () {
+    updateConRateLabel();
+    applyConversionToAllRows();
+  });
+
+  $('#con_rate, #con_inr').on('input', applyConversionToAllRows);
 
   // gst change should recalc based on the row mode
   $(document).on('input', '#expenseTable .gst', function () {
@@ -405,9 +495,40 @@ $(function () {
     }
   });
 
+  // ---------- vendor currency columns ----------
+  function getVendorCurrencies() {
+    const $opt = $('#company_id').find('option:selected');
+    const allowed = (attr) => !$opt.val() || String($opt.attr(attr) ?? '1') !== '0';
+    return { usd: allowed('data-is-usd'), rmb: allowed('data-is-rmb'), inr: allowed('data-is-inr') };
+  }
+
+  // Hidden currency columns are submitted as 0; visible ones are required
+  function toggleCurrencyColumns() {
+    const cur = getVendorCurrencies();
+    const setAllowed = ($inputs, allowed) => {
+      if (allowed) $inputs.filter(function () { return this.value === '0'; }).val('');
+      else $inputs.val(0);
+    };
+
+    $('.usd-column').toggle(cur.usd);
+    $tbody.find('.usd_amt').prop('required', cur.usd);
+    setAllowed($tbody.find('.usd_amt'), cur.usd);
+
+    $('.rmb-column').toggle(cur.rmb);
+    $tbody.find('.rmb_amt').prop('required', cur.rmb);
+    setAllowed($tbody.find('.rmb_amt'), cur.rmb);
+
+    $('.inr-column').toggle(cur.inr);
+    $tbody.find('.total_amt').prop('required', cur.inr);
+    setAllowed($tbody.find('.amount, .total_amt'), cur.inr);
+
+    toggleGstFields();
+    updateTotals();
+  }
+
   function toggleGstFields() {
     const type = $('#po_type').val();
-    const isOfficial = (type === 'official');
+    const isOfficial = (type === 'official') && getVendorCurrencies().inr;
 
     if (isOfficial) {
       $('.gst-type-container').show();
@@ -422,7 +543,7 @@ $(function () {
       
       // Reset GST values to 0 for unofficial
       $('.gst').val(0);
-      $('.gst_amt').val('0.00');
+      $('.gst_amt').val('0');
       updateTotals();
     }
   }
@@ -449,6 +570,7 @@ $(function () {
   });
 
   $('#company_id').on('change', function() {
+    toggleCurrencyColumns();
     handleGstTypeAutoSelect();
   });
 
@@ -480,8 +602,6 @@ $(function () {
 
   // add row
   $('#addExpenseRow').on('click', function () {
-    const isOfficial = ($('#po_type').val() === 'official');
-    const displayStyle = isOfficial ? '' : 'style="display:none"';
     const newRow = `
       <tr class="expense-row">
         <td class="sr-no text-center"></td>
@@ -491,12 +611,12 @@ $(function () {
           </select>
           <input type="hidden" name="expense_name[]" class="expense_name">
         </td>
-        <td><input type="number" name="usd_amt[]" class="form-control usd_amt" min="0" step="0.00001" placeholder="0.00"></td>
-        <td><input type="number" name="rmb_amt[]" class="form-control rmb_amt" min="0" step="0.00001" placeholder="0.00"></td>
-        <td><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
-        <td class="gst-column" ${displayStyle}><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="0"></td>
-        <td class="gst-column" ${displayStyle}><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
-        <td><input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required></td>
+        <td class="usd-column"><input type="number" name="usd_amt[]" class="form-control usd_amt" min="0" step="0.00001" placeholder="0.00"></td>
+        <td class="rmb-column"><input type="number" name="rmb_amt[]" class="form-control rmb_amt" min="0" step="0.00001" placeholder="0.00"></td>
+        <td class="inr-column"><input type="number" name="amount[]" class="form-control amount" min="0" step="0.01"></td>
+        <td class="gst-column"><input type="number" name="gst[]" class="form-control gst" min="0" max="100" step="0.01" placeholder="0" value="0"></td>
+        <td class="gst-column"><input type="text" name="gst_amt[]" class="form-control gst_amt" readonly></td>
+        <td class="inr-column"><input type="number" name="total_amt[]" class="form-control total_amt" min="0" step="0.01" required></td>
         <td class="text-center">
           <button type="button" class="btn btn-sm btn-outline-danger removeExpenseRow">Remove</button>
         </td>
@@ -504,7 +624,7 @@ $(function () {
     `;
     $tbody.append(newRow);
     renumberRows();
-    updateTotals();
+    toggleCurrencyColumns();
   });
 
   // remove row
@@ -515,9 +635,9 @@ $(function () {
   });
 
   // init
+  updateConRateLabel();
   renumberRows();
-  updateTotals();
-  toggleGstFields();
+  toggleCurrencyColumns();
 });
 
 </script>

@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-body py-1 my-0">
 
-          <?php echo form_open('inventory/my_company/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>  
+          <?php echo form_open('inventory/my_company/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return validateVendorCurrency(this);']);?>  
           <div class="row">
             <div class="col-12 col-sm-4 mb-1">
                 <div class="form-group">
@@ -113,6 +113,27 @@
                      <input type="number" step="0.01" class="form-control" placeholder="Enter Opening Amount" name="outstanding" value="0.00">
                </div>
             </div>
+
+            <div class="col-12 col-sm-4 mb-1">
+                <div class="form-group">
+                    <label>Currency <span class="required">*</span></label>
+                    <div class="d-flex align-items-center flex-wrap gap-2 mt-50">
+                        <div class="form-check me-1">
+                            <input type="checkbox" class="form-check-input currency-checkbox" name="is_inr" id="is_inr" value="1" checked>
+                            <label class="form-check-label" for="is_inr">INR</label>
+                        </div>
+                        <div class="form-check me-1">
+                            <input type="checkbox" class="form-check-input currency-checkbox" name="is_rmb" id="is_rmb" value="1" checked>
+                            <label class="form-check-label" for="is_rmb">RMB</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input currency-checkbox" name="is_usd" id="is_usd" value="1" checked>
+                            <label class="form-check-label" for="is_usd">USD</label>
+                        </div>
+                    </div>
+                    <small class="text-muted">Select at least one currency</small>
+                </div>
+            </div>
             
             <div class="col-12">
                 <button type="submit" class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify" name= "btn_verify"><?php echo get_phrase('submit'); ?></button>
@@ -125,6 +146,24 @@
 </div>
 
 <script>
+function validateVendorCurrency(form) {
+  if ($('.currency-checkbox:checked').length === 0) {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: "Required!",
+        text: "Please select at least one currency (INR, RMB or USD).",
+        icon: "warning",
+        customClass: { confirmButton: "btn btn-primary" },
+        buttonsStyling: !1
+      });
+    } else {
+      alert('Please select at least one currency (INR, RMB or USD).');
+    }
+    return false;
+  }
+  return checkForm(form);
+}
+
 function get_states_(country_id) {
   $.ajax({
     type: "POST",

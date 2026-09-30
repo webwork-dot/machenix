@@ -24251,6 +24251,18 @@ class Inventory_model extends CI_Model
 			$data['state_code']    = clean_and_escape($this->input->post('state_code'));
 			$outstanding           = trim($this->input->post('outstanding'));
 			$data['outstanding']   = ($outstanding != '') ? clean_and_escape($outstanding) : 0.00;
+			$data['is_inr']        = $this->input->post('is_inr') ? 1 : 0;
+			$data['is_rmb']        = $this->input->post('is_rmb') ? 1 : 0;
+			$data['is_usd']        = $this->input->post('is_usd') ? 1 : 0;
+
+			if ($data['is_inr'] == 0 && $data['is_rmb'] == 0 && $data['is_usd'] == 0) {
+					$this->session->set_flashdata('error_message', 'Please select at least one currency');
+					$resultpost = array(
+							"status"  => 400,
+							"message" => "Please select at least one currency (INR, RMB or USD)",
+					);
+					return simple_json_output($resultpost);
+			}
 
 			$user_id               = $this->session->userdata('super_user_id');
 			$user_name             = $this->session->userdata('super_name');
@@ -24343,6 +24355,19 @@ class Inventory_model extends CI_Model
 			$data['state_code']   = clean_and_escape($this->input->post('state_code'));
 			$outstanding          = trim($this->input->post('outstanding'));
 			$data['outstanding']  = ($outstanding != '') ? clean_and_escape($outstanding) : 0.00;
+			$data['is_inr']       = $this->input->post('is_inr') ? 1 : 0;
+			$data['is_rmb']       = $this->input->post('is_rmb') ? 1 : 0;
+			$data['is_usd']       = $this->input->post('is_usd') ? 1 : 0;
+
+			if ($data['is_inr'] == 0 && $data['is_rmb'] == 0 && $data['is_usd'] == 0) {
+					$this->session->set_flashdata('error_message', 'Please select at least one currency');
+					$resultpost = array(
+							"status"  => 400,
+							"message" => "Please select at least one currency (INR, RMB or USD)",
+					);
+					return simple_json_output($resultpost);
+			}
+
 			$data['country_id']   = $country_id;
 			$data['country_name'] = $country_name;
 			$data['state_id']     = $state_id;
@@ -25057,6 +25082,14 @@ class Inventory_model extends CI_Model
 			$data['usd']               = number_format((float) $this->input->post('usd'), 5, '.', '');
 			$data['rmb']               = number_format((float) $this->input->post('rmb'), 5, '.', '');
 
+			$conv_type                 = $this->input->post('conv_type');
+			$conv_type                 = in_array($conv_type, ['usd', 'rmb'], true) ? $conv_type : '';
+			$con_rate                  = (float) $this->input->post('con_rate');
+			$data['conv_type']         = $conv_type;
+			$data['con_usd']           = number_format($conv_type === 'rmb' ? $con_rate : 0, 5, '.', '');
+			$data['con_rmb']           = number_format($conv_type === 'usd' ? $con_rate : 0, 5, '.', '');
+			$data['con_inr']           = number_format((float) $this->input->post('con_inr'), 5, '.', '');
+
 			$data['narration']   = clean_and_escape($this->input->post('narration'));
 
 			$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;
@@ -25103,8 +25136,8 @@ class Inventory_model extends CI_Model
 					$name = isset($expense_names[$i]) ? trim($expense_names[$i]) : '';
 					$totalAmt = isset($total_amts[$i]) ? (float) $total_amts[$i] : 0;
 
-					// Minimum required per your form: name + total
-					if ($name === '' || $totalAmt <= 0) {
+					// Currency columns not allowed for the vendor are posted as 0, so only the name is mandatory
+					if ($name === '') {
 							continue;
 					}
 
@@ -25201,8 +25234,8 @@ class Inventory_model extends CI_Model
 				$name     = isset($expense_names[$i]) ? trim($expense_names[$i]) : '';
 				$totalAmt = isset($total_amts[$i]) ? (float) $total_amts[$i] : 0;
 
-				// minimum required: name + total
-				if ($name === '' || $totalAmt <= 0) continue;
+				// Currency columns not allowed for the vendor are posted as 0, so only the name is mandatory
+				if ($name === '') continue;
 
 				$usdVal = isset($usd_amts[$i]) ? (float) $usd_amts[$i] : 0;
 				$rmbVal = isset($rmb_amts[$i]) ? (float) $rmb_amts[$i] : 0;
@@ -25244,6 +25277,15 @@ class Inventory_model extends CI_Model
 		$data['purchase_date']     = $this->input->post('purchase_date') ? $this->input->post('purchase_date') : null;
 		$data['usd']               = number_format((float) $this->input->post('usd'), 5, '.', '');
 		$data['rmb']               = number_format((float) $this->input->post('rmb'), 5, '.', '');
+
+		$conv_type                 = $this->input->post('conv_type');
+		$conv_type                 = in_array($conv_type, ['usd', 'rmb'], true) ? $conv_type : '';
+		$con_rate                  = (float) $this->input->post('con_rate');
+		$data['conv_type']         = $conv_type;
+		$data['con_usd']           = number_format($conv_type === 'rmb' ? $con_rate : 0, 5, '.', '');
+		$data['con_rmb']           = number_format($conv_type === 'usd' ? $con_rate : 0, 5, '.', '');
+		$data['con_inr']           = number_format((float) $this->input->post('con_inr'), 5, '.', '');
+
 		$data['narration'] = clean_and_escape($this->input->post('narration'));
 
 		$data['expense_date'] = $this->input->post('expense_date') ? $this->input->post('expense_date') : null;
