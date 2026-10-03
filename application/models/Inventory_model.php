@@ -30043,6 +30043,1173 @@ public function get_sales_return_reports()
 		];
 	}
 
+	/**
+	 * Import supplier ledger (Bill Wise + Product Wise, with ALL, WHITE, BLACK modes).
+	 * Purchases from purchase_order / purchase_in_product; payments; adjustments.
+	 */
+	public function build_import_supplier_ledger($supplier_id, $from_date = null, $to_date = null, $batch_no = null)
+	{
+		$supplier_id = (int) $supplier_id;
+
+		$supplier = $this->db->get_where('supplier', ['id' => $supplier_id, 'is_deleted' => 0])->row_array();
+		if (!$supplier) {
+			return null;
+		}
+
+		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
+			$from_date = date('Y-m-d', strtotime('-3 months'));
+		}
+		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
+			$to_date = date('Y-m-d');
+		}
+
+		$seed_all = [
+			'rmb' => (float) ($supplier['outstanding_rmb'] ?? 0),
+			'usd' => (float) ($supplier['outstanding_usd'] ?? 0),
+			'inr' => (float) ($supplier['outstanding_inr'] ?? 0),
+		];
+		$seed_white = ['rmb' => 0.0, 'usd' => 0.0, 'inr' => 0.0];
+		$seed_black = [
+			'rmb' => (float) ($supplier['outstanding_rmb'] ?? 0),
+			'usd' => (float) ($supplier['outstanding_usd'] ?? 0),
+			'inr' => (float) ($supplier['outstanding_inr'] ?? 0),
+		];
+
+		$purchases = $this->db->query(
+			"SELECT po.id, po.voucher_no, po.refrence_no, po.date, po.gst_type, po.narration, po.notes,
+			        (SELECT COALESCE(CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')), h.added_by_name)
+			         FROM inventory_history h
+			         LEFT JOIN sys_users u ON h.added_by_id = u.id
+			         WHERE h.order_id = po.id AND h.status IN ('in', 'Purchase In Updated')
+			         LIMIT 1) as added_by_name
+			 FROM purchase_order po
+			 JOIN purchase_in_product pp ON po.id = pp.parent_id
+			 WHERE pp.supplier_id = {$supplier_id}
+			   AND po.delivery_status = 'purchase_in'
+			   AND po.is_deleted = 0
+			 GROUP BY po.id, po.voucher_no, po.refrence_no, po.date, po.gst_type
+			 ORDER BY po.date ASC, po.id ASC"
+		)->result_array();
+
+		$po_ids = array_column($purchases, 'id');
+		$products_by_po = [];
+		if (!empty($po_ids)) {
+			$id_list = implode(',', array_map('intval', $po_ids));
+			$prods = $this->db->query(
+				"SELECT * FROM purchase_in_product
+				 WHERE supplier_id = {$supplier_id} AND parent_id IN ({$id_list})
+				 ORDER BY id ASC"
+			)->result_array();
+			foreach ($prods as $p) {
+				$products_by_po[$p['parent_id']][] = $p;
+			}
+		}
+
+		$payments = $this->db->query(
+			"SELECT p.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name
+			 FROM payments p
+			 LEFT JOIN sys_users u ON p.added_by = u.id
+			 WHERE p.supplier_id = {$supplier_id}
+			   AND p.is_delete = 0
+			 ORDER BY p.payment_date ASC, p.id ASC"
+		)->result_array();
+
+		$adjustments = $this->db->query(
+			"SELECT sa.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name
+			 FROM supplier_adjustments sa
+			 LEFT JOIN sys_users u ON sa.added_by_id = u.id OR sa.added_by = u.id
+			 WHERE sa.supplier_id = {$supplier_id}
+			   AND sa.is_deleted = 0
+			 ORDER BY sa.date ASC, sa.id ASC"
+		)->result_array();
+
+		$entries = [];
+
+		foreach ($purchases as $po) {
+			$prods = $products_by_po[$po['id']] ?? [];
+			$is_igst = (stripos($po['gst_type'] ?? '', 'IGST') !== false);
+			$particulars = $is_igst ? 'IGST Purchase' : 'CGST/SGST Purchase';
+
+			$act_rmb = 0.0; $act_usd = 0.0; $act_inr = 0.0;
+			$off_rmb = 0.0; $off_usd = 0.0; $off_inr = 0.0;
+			$unoff_rmb = 0.0; $unoff_usd = 0.0; $unoff_inr = 0.0;
+
+			$prod_children = [];
+			foreach ($prods as $p) {
+				$qty = (float) ($p['actual_qty'] ?? $p['quantity'] ?? 0);
+				$off_qty = (float) ($p['official_ci_qty'] ?? 0);
+				$blk_qty = (float) ($p['black_qty'] ?? max(0, $qty - $off_qty));
+
+				$p_rmb_pc = (float) ($p['unit_price_rmb'] ?? 0);
+				$p_act_rmb = $qty * $p_rmb_pc;
+				$p_off_rmb = $off_qty * $p_rmb_pc;
+				$p_unoff_rmb = $blk_qty * $p_rmb_pc;
+
+				$p_usd_pc = (float) ($p['actual_usd'] ?? 0);
+				$p_off_usd = (float) ($p['total_amount_usd'] ?? 0);
+				if ($p_usd_pc <= 0 && $p_off_usd > 0 && $qty > 0) {
+					$p_usd_pc = (float) ($p['official_ci_unit_price_usd'] ?? ($p_off_usd / $qty));
+				}
+				$p_act_usd = $qty * $p_usd_pc;
+				$p_unoff_usd = max(0, $p_act_usd - $p_off_usd);
+
+				$p_inr_pc = (float) ($p['actual_inr'] ?? 0);
+				$p_off_inr = (float) ($p['official_total_rs'] ?? 0);
+				if ($p_inr_pc <= 0 && $p_off_inr > 0 && $qty > 0) {
+					$p_inr_pc = (float) ($p['official_rate_rs'] ?? ($p_off_inr / $qty));
+				}
+				$p_act_inr = $qty * $p_inr_pc;
+				$p_unoff_inr = max(0, $p_act_inr - $p_off_inr);
+
+				$act_rmb += $p_act_rmb; $act_usd += $p_act_usd; $act_inr += $p_act_inr;
+				$off_rmb += $p_off_rmb; $off_usd += $p_off_usd; $off_inr += $p_off_inr;
+				$unoff_rmb += $p_unoff_rmb; $unoff_usd += $p_unoff_usd; $unoff_inr += $p_unoff_inr;
+
+				$prod_children[] = [
+					'product_name' => $p['product_name'] ?? '',
+					'qty'          => $qty,
+					'off_qty'      => $off_qty,
+					'blk_qty'      => $blk_qty,
+					'rate_rmb'     => $p_rmb_pc,
+					'rate_usd'     => $p_usd_pc,
+					'rate_inr'     => $p_inr_pc,
+					'act_rmb'      => $p_act_rmb,
+					'act_usd'      => $p_act_usd,
+					'act_inr'      => $p_act_inr,
+					'off_rmb'      => $p_off_rmb,
+					'off_usd'      => $p_off_usd,
+					'off_inr'      => $p_off_inr,
+					'unoff_rmb'    => $p_unoff_rmb,
+					'unoff_usd'    => $p_unoff_usd,
+					'unoff_inr'    => $p_unoff_inr,
+				];
+			}
+
+			$b_no = trim($po['voucher_no'] ?? '');
+			$inv_no = trim($po['refrence_no'] ?? '');
+			$batch_vch = ($b_no && $inv_no) ? ($b_no . ' / ' . $inv_no) : ($b_no ?: $inv_no);
+
+			$entries[] = [
+				'entry_type'  => 'purchase',
+				'sort_date'   => $po['date'],
+				'sort_id'     => (int) $po['id'],
+				'date'        => $po['date'],
+				'particulars' => $particulars,
+				'vch_type'    => 'Purchase',
+				'batch_no'    => $b_no,
+				'vch_no'      => $inv_no,
+				'batch_vch'   => $batch_vch,
+				'remark'      => trim($po['narration'] ?: ($po['notes'] ?: '')),
+				'added_by'    => $po['added_by_name'] ?? '—',
+				'act_rmb'     => $act_rmb,
+				'act_usd'     => $act_usd,
+				'act_inr'     => $act_inr,
+				'off_rmb'     => $off_rmb,
+				'off_usd'     => $off_usd,
+				'off_inr'     => $off_inr,
+				'unoff_rmb'   => $unoff_rmb,
+				'unoff_usd'   => $unoff_usd,
+				'unoff_inr'   => $unoff_inr,
+				'products'    => $prod_children,
+			];
+		}
+
+		foreach ($payments as $pay) {
+			$ptype = $pay['payment_type'] ?? '';
+			$is_official = ($ptype === 'official');
+			$b_no = trim($pay['batch_no'] ?? '');
+			$inv_no = trim($pay['invoice_no'] ?? '');
+			$batch_vch = ($b_no && $inv_no) ? ($b_no . ' / ' . $inv_no) : ($b_no ?: $inv_no);
+
+			$rmb = (float) ($pay['amount_rmb'] ?? 0);
+			$usd = (float) ($pay['amount_dollar'] ?? 0);
+			$inr = (float) ($pay['amount_rs'] ?? 0);
+
+			$entries[] = [
+				'entry_type'      => 'payment',
+				'sort_date'       => $pay['payment_date'],
+				'sort_id'         => (int) $pay['id'],
+				'date'            => $pay['payment_date'],
+				'particulars'     => '-',
+				'sub_particulars' => !empty($pay['narration']) ? $pay['narration'] : 'On Account',
+				'vch_type'        => 'Payment',
+				'batch_no'        => $b_no,
+				'vch_no'          => $inv_no,
+				'batch_vch'       => $batch_vch,
+				'remark'          => trim($pay['narration'] ?? ''),
+				'added_by'        => $pay['added_by_name'] ?? '—',
+				'is_official'     => $is_official,
+				'act_rmb'         => $rmb,
+				'act_usd'         => $usd,
+				'act_inr'         => $inr,
+				'off_rmb'         => $is_official ? $rmb : 0,
+				'off_usd'         => $is_official ? $usd : 0,
+				'off_inr'         => $is_official ? $inr : 0,
+				'unoff_rmb'       => !$is_official ? $rmb : 0,
+				'unoff_usd'       => !$is_official ? $usd : 0,
+				'unoff_inr'       => !$is_official ? $inr : 0,
+				'products'        => [],
+			];
+		}
+
+		foreach ($adjustments as $adj) {
+			$is_official = (($adj['type'] ?? '') === 'official');
+			$is_plus = (($adj['amt_type'] ?? '') === 'plus');
+			$b_no = trim($adj['batch_no'] ?? '');
+			$rmb = (float) ($adj['rmb'] ?? 0);
+			$usd = (float) ($adj['usd'] ?? 0);
+			$inr = (float) ($adj['inr'] ?? 0);
+
+			$entries[] = [
+				'entry_type'      => 'adjustment',
+				'sort_date'       => $adj['date'],
+				'sort_id'         => (int) $adj['id'],
+				'date'            => $adj['date'],
+				'particulars'     => !empty($adj['amt_type_name']) ? $adj['amt_type_name'] : (!empty($adj['remark']) ? $adj['remark'] : '-'),
+				'sub_particulars' => !empty($adj['remark']) ? $adj['remark'] : 'Adjustment',
+				'vch_type'        => $is_plus ? 'Adjustment (+)' : 'Adjustment (−)',
+				'batch_no'        => $b_no,
+				'vch_no'          => '',
+				'batch_vch'       => $b_no ?: '-',
+				'remark'          => trim($adj['remark'] ?? ''),
+				'added_by'        => $adj['added_by_name'] ?? '—',
+				'is_official'     => $is_official,
+				'is_plus'         => $is_plus,
+				'act_rmb'         => $is_plus ? $rmb : -$rmb,
+				'act_usd'         => $is_plus ? $usd : -$usd,
+				'act_inr'         => $is_plus ? $inr : -$inr,
+				'off_rmb'         => $is_official ? ($is_plus ? $rmb : -$rmb) : 0,
+				'off_usd'         => $is_official ? ($is_plus ? $usd : -$usd) : 0,
+				'off_inr'         => $is_official ? ($is_plus ? $inr : -$inr) : 0,
+				'unoff_rmb'       => !$is_official ? ($is_plus ? $rmb : -$rmb) : 0,
+				'unoff_usd'       => !$is_official ? ($is_plus ? $usd : -$usd) : 0,
+				'unoff_inr'       => !$is_official ? ($is_plus ? $inr : -$inr) : 0,
+				'products'        => [],
+			];
+		}
+
+		usort($entries, function ($a, $b) {
+			$da = strtotime($a['sort_date'] ?? '1970-01-01');
+			$db = strtotime($b['sort_date'] ?? '1970-01-01');
+			if ($da === $db) {
+				return ($a['sort_id'] ?? 0) - ($b['sort_id'] ?? 0);
+			}
+			return $da - $db;
+		});
+
+		$apply_entry_delta = function (&$bal, $rmb, $usd, $inr, $type) {
+			if ($type === 'purchase') {
+				$bal['rmb'] += $rmb;
+				$bal['usd'] += $usd;
+				$bal['inr'] += $inr;
+			} elseif ($type === 'payment') {
+				$bal['rmb'] -= $rmb;
+				$bal['usd'] -= $usd;
+				$bal['inr'] -= $inr;
+			} elseif ($type === 'adjustment') {
+				$bal['rmb'] += $rmb;
+				$bal['usd'] += $usd;
+				$bal['inr'] += $inr;
+			}
+		};
+
+		$is_batch_filter = (!empty($batch_no) && $batch_no !== 'all');
+		$batch_first_date = null;
+		if ($is_batch_filter) {
+			foreach ($entries as $e) {
+				if ($e['batch_no'] === $batch_no) {
+					if ($batch_first_date === null || $e['sort_date'] < $batch_first_date) {
+						$batch_first_date = $e['sort_date'];
+					}
+				}
+			}
+		}
+
+		$open_all = $seed_all;
+		$open_white = $seed_white;
+		$open_black = $seed_black;
+
+		foreach ($entries as $e) {
+			$is_prior = false;
+			if ($is_batch_filter) {
+				if ($batch_first_date !== null && $e['sort_date'] < $batch_first_date) {
+					$is_prior = true;
+				} elseif ($e['batch_no'] !== $batch_no && $e['sort_date'] <= ($batch_first_date ?? '9999-99-99')) {
+					$is_prior = true;
+				}
+			} else {
+				$is_prior = ($e['sort_date'] < $from_date);
+			}
+
+			if ($is_prior) {
+				$apply_entry_delta($open_all, $e['act_rmb'], $e['act_usd'], $e['act_inr'], $e['entry_type']);
+				$apply_entry_delta($open_white, $e['off_rmb'], $e['off_usd'], $e['off_inr'], $e['entry_type']);
+				$apply_entry_delta($open_black, $e['unoff_rmb'], $e['unoff_usd'], $e['unoff_inr'], $e['entry_type']);
+			}
+		}
+
+		$modes = ['all', 'white', 'black'];
+		$ledger_data = [];
+		$summary = [
+			'opening' => [
+				'total' => $open_all,
+				'white' => $open_white,
+				'black' => $open_black,
+			],
+			'purchases' => [
+				'total' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'white' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'black' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+			'payments' => [
+				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'unofficial' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+			'adjustments' => [
+				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'unofficial' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+			'outstanding' => [
+				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'unofficial' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+		];
+
+		foreach ($modes as $mode) {
+			$cur_bal = ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black);
+			$bill_rows = [];
+			$prod_rows = [];
+
+			$open_row = [
+				'is_opening'  => true,
+				'date'        => '',
+				'particulars' => 'OPENING BALANCE',
+				'vch_type'    => '',
+				'batch_vch'   => '',
+				'rmb'         => null,
+				'usd'         => null,
+				'inr'         => null,
+				'bal_rmb'     => $cur_bal['rmb'],
+				'bal_usd'     => $cur_bal['usd'],
+				'bal_inr'     => $cur_bal['inr'],
+				'added_by'    => $supplier['added_by_name'] ?? '—',
+				'entry_type'  => 'opening',
+			];
+			$bill_rows[] = $open_row;
+			$prod_rows[] = $open_row;
+
+			$col_totals = ['rmb' => 0, 'usd' => 0, 'inr' => 0];
+
+			foreach ($entries as $e) {
+				if ($is_batch_filter) {
+					if ($e['batch_no'] !== $batch_no) continue;
+				} else {
+					if ($e['sort_date'] < $from_date || $e['sort_date'] > $to_date) continue;
+				}
+
+				if ($mode === 'all') {
+					$e_rmb = $e['act_rmb'];
+					$e_usd = $e['act_usd'];
+					$e_inr = $e['act_inr'];
+				} elseif ($mode === 'white') {
+					$e_rmb = $e['off_rmb'];
+					$e_usd = $e['off_usd'];
+					$e_inr = $e['off_inr'];
+				} else {
+					$e_rmb = $e['unoff_rmb'];
+					$e_usd = $e['unoff_usd'];
+					$e_inr = $e['unoff_inr'];
+				}
+
+				if ($mode === 'white') {
+					if ($e['entry_type'] === 'payment' && empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'adjustment' && empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'purchase' && $e_rmb == 0 && $e_usd == 0 && $e_inr == 0) continue;
+				} elseif ($mode === 'black') {
+					if ($e['entry_type'] === 'payment' && !empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'adjustment' && !empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'purchase' && $e_rmb == 0 && $e_usd == 0 && $e_inr == 0) continue;
+				}
+
+				$apply_entry_delta($cur_bal, $e_rmb, $e_usd, $e_inr, $e['entry_type']);
+
+				$sign = ($e['entry_type'] === 'payment') ? -1 : 1;
+				$disp_rmb = $sign * $e_rmb;
+				$disp_usd = $sign * $e_usd;
+				$disp_inr = $sign * $e_inr;
+
+				$col_totals['rmb'] += $disp_rmb;
+				$col_totals['usd'] += $disp_usd;
+				$col_totals['inr'] += $disp_inr;
+
+				$b_row = [
+					'is_opening'      => false,
+					'is_product'      => false,
+					'date'            => $e['date'],
+					'particulars'     => $e['particulars'],
+					'sub_particulars' => $e['sub_particulars'] ?? '',
+					'vch_type'        => $e['vch_type'],
+					'batch_vch'       => $e['batch_vch'],
+					'batch_no'        => $e['batch_no'],
+					'vch_no'          => $e['vch_no'],
+					'rmb'             => $disp_rmb,
+					'usd'             => $disp_usd,
+					'inr'             => $disp_inr,
+					'bal_rmb'         => $cur_bal['rmb'],
+					'bal_usd'         => $cur_bal['usd'],
+					'bal_inr'         => $cur_bal['inr'],
+					'remark'          => $e['remark'],
+					'added_by'        => $e['added_by'],
+					'entry_type'      => $e['entry_type'],
+				];
+				$bill_rows[] = $b_row;
+
+				$p_hdr = $b_row;
+				$p_hdr['is_header'] = true;
+				$p_hdr['qty'] = null;
+				$p_hdr['rate_rmb'] = null;
+				$p_hdr['rate_usd'] = null;
+				$p_hdr['rate_inr'] = null;
+				$prod_rows[] = $p_hdr;
+
+				if ($e['entry_type'] === 'purchase') {
+					$running_prod_rmb = $cur_bal['rmb'] - $e_rmb;
+					$running_prod_usd = $cur_bal['usd'] - $e_usd;
+					$running_prod_inr = $cur_bal['inr'] - $e_inr;
+
+					foreach ($e['products'] as $child) {
+						if ($mode === 'all') {
+							$c_qty = $child['qty'];
+							$c_rmb = $child['act_rmb'];
+							$c_usd = $child['act_usd'];
+							$c_inr = $child['act_inr'];
+						} elseif ($mode === 'white') {
+							$c_qty = $child['off_qty'];
+							$c_rmb = $child['off_rmb'];
+							$c_usd = $child['off_usd'];
+							$c_inr = $child['off_inr'];
+						} else {
+							$c_qty = $child['blk_qty'];
+							$c_rmb = $child['unoff_rmb'];
+							$c_usd = $child['unoff_usd'];
+							$c_inr = $child['unoff_inr'];
+						}
+
+						if ($c_qty <= 0 && $c_rmb == 0 && $c_usd == 0 && $c_inr == 0) {
+							continue;
+						}
+
+						$running_prod_rmb += $c_rmb;
+						$running_prod_usd += $c_usd;
+						$running_prod_inr += $c_inr;
+
+						$prod_rows[] = [
+							'is_opening'  => false,
+							'is_product'  => true,
+							'is_sub'      => false,
+							'date'        => '',
+							'particulars' => $child['product_name'],
+							'vch_type'    => '',
+							'batch_vch'   => '',
+							'qty'         => $c_qty,
+							'rate_rmb'    => $child['rate_rmb'],
+							'rmb'         => $c_rmb,
+							'rate_usd'    => $child['rate_usd'],
+							'usd'         => $c_usd,
+							'rate_inr'    => $child['rate_inr'],
+							'inr'         => $c_inr,
+							'bal_rmb'     => $running_prod_rmb,
+							'bal_usd'     => $running_prod_usd,
+							'bal_inr'     => $running_prod_inr,
+							'added_by'    => '',
+							'entry_type'  => 'product',
+						];
+					}
+				} elseif ($e['entry_type'] === 'payment') {
+					$prod_rows[] = [
+						'is_opening'  => false,
+						'is_product'  => false,
+						'is_sub'      => true,
+						'date'        => '',
+						'particulars' => $e['sub_particulars'] ?? 'On Account',
+						'vch_type'    => '',
+						'batch_vch'   => '',
+						'qty'         => null,
+						'rate_rmb'    => null,
+						'rmb'         => -$e_rmb,
+						'rate_usd'    => null,
+						'usd'         => -$e_usd,
+						'rate_inr'    => null,
+						'inr'         => -$e_inr,
+						'bal_rmb'     => null,
+						'bal_usd'     => null,
+						'bal_inr'     => null,
+						'added_by'    => '',
+						'entry_type'  => 'payment_sub',
+					];
+				} elseif ($e['entry_type'] === 'adjustment') {
+					$prod_rows[] = [
+						'is_opening'  => false,
+						'is_product'  => false,
+						'is_sub'      => true,
+						'date'        => '',
+						'particulars' => $e['sub_particulars'] ?? 'Adjustment',
+						'vch_type'    => '',
+						'batch_vch'   => '',
+						'qty'         => null,
+						'rate_rmb'    => null,
+						'rmb'         => $disp_rmb,
+						'rate_usd'    => null,
+						'usd'         => $disp_usd,
+						'rate_inr'    => null,
+						'inr'         => $disp_inr,
+						'bal_rmb'     => null,
+						'bal_usd'     => null,
+						'bal_inr'     => null,
+						'added_by'    => '',
+						'entry_type'  => 'adjustment_sub',
+					];
+				}
+
+				if ($mode === 'all') {
+					if ($e['entry_type'] === 'purchase') {
+						$summary['purchases']['total']['rmb'] += $e['act_rmb'];
+						$summary['purchases']['total']['usd'] += $e['act_usd'];
+						$summary['purchases']['total']['inr'] += $e['act_inr'];
+						$summary['purchases']['white']['rmb'] += $e['off_rmb'];
+						$summary['purchases']['white']['usd'] += $e['off_usd'];
+						$summary['purchases']['white']['inr'] += $e['off_inr'];
+						$summary['purchases']['black']['rmb'] += $e['unoff_rmb'];
+						$summary['purchases']['black']['usd'] += $e['unoff_usd'];
+						$summary['purchases']['black']['inr'] += $e['unoff_inr'];
+					} elseif ($e['entry_type'] === 'payment') {
+						$summary['payments']['total']['rmb'] += $e['act_rmb'];
+						$summary['payments']['total']['usd'] += $e['act_usd'];
+						$summary['payments']['total']['inr'] += $e['act_inr'];
+						if (!empty($e['is_official'])) {
+							$summary['payments']['official']['rmb'] += $e['off_rmb'];
+							$summary['payments']['official']['usd'] += $e['off_usd'];
+							$summary['payments']['official']['inr'] += $e['off_inr'];
+						} else {
+							$summary['payments']['unofficial']['rmb'] += $e['unoff_rmb'];
+							$summary['payments']['unofficial']['usd'] += $e['unoff_usd'];
+							$summary['payments']['unofficial']['inr'] += $e['unoff_inr'];
+						}
+					} elseif ($e['entry_type'] === 'adjustment') {
+						$summary['adjustments']['total']['rmb'] += $e['act_rmb'];
+						$summary['adjustments']['total']['usd'] += $e['act_usd'];
+						$summary['adjustments']['total']['inr'] += $e['act_inr'];
+						if (!empty($e['is_official'])) {
+							$summary['adjustments']['official']['rmb'] += $e['off_rmb'];
+							$summary['adjustments']['official']['usd'] += $e['off_usd'];
+							$summary['adjustments']['official']['inr'] += $e['off_inr'];
+						} else {
+							$summary['adjustments']['unofficial']['rmb'] += $e['unoff_rmb'];
+							$summary['adjustments']['unofficial']['usd'] += $e['unoff_usd'];
+							$summary['adjustments']['unofficial']['inr'] += $e['unoff_inr'];
+						}
+					}
+				}
+			}
+
+			$ledger_data[$mode] = [
+				'opening'     => ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black),
+				'bill_rows'   => $bill_rows,
+				'prod_rows'   => $prod_rows,
+				'col_totals'  => $col_totals,
+				'closing'     => $cur_bal,
+			];
+		}
+
+		$summary['outstanding']['total']      = $ledger_data['all']['closing'];
+		$summary['outstanding']['official']   = $ledger_data['white']['closing'];
+		$summary['outstanding']['unofficial'] = $ledger_data['black']['closing'];
+
+		return [
+			'supplier'    => $supplier,
+			'from_date'   => $from_date,
+			'to_date'     => $to_date,
+			'batch_no'    => $batch_no,
+			'ledger_data' => $ledger_data,
+			'summary'     => $summary,
+		];
+	}
+
+	/**
+	 * Vendor ledger (Bill Wise + Product/Expense Wise, with ALL, WHITE, BLACK modes).
+	 * Expenses from po_expense / po_expense_details; payments from vendor_payments; adjustments from vendor_adjustments.
+	 */
+	public function build_vendor_ledger($vendor_id, $from_date = null, $to_date = null, $batch_no = null)
+	{
+		$vendor_id = (int) $vendor_id;
+
+		$vendor = $this->db->get_where('my_companies', ['id' => $vendor_id, 'is_deleted' => 0])->row_array();
+		if (!$vendor) {
+			return null;
+		}
+
+		if (empty($from_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_date)) {
+			$from_date = date('Y-m-d', strtotime('-3 months'));
+		}
+		if (empty($to_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_date)) {
+			$to_date = date('Y-m-d');
+		}
+
+		$seed_all = [
+			'rmb' => (float) ($vendor['outstanding_rmb'] ?? 0),
+			'usd' => (float) ($vendor['outstanding_usd'] ?? 0),
+			'inr' => (float) ($vendor['outstanding'] ?? $vendor['outstanding_inr'] ?? 0),
+		];
+		$seed_white = ['rmb' => 0.0, 'usd' => 0.0, 'inr' => 0.0];
+		$seed_black = [
+			'rmb' => (float) ($vendor['outstanding_rmb'] ?? 0),
+			'usd' => (float) ($vendor['outstanding_usd'] ?? 0),
+			'inr' => (float) ($vendor['outstanding'] ?? $vendor['outstanding_inr'] ?? 0),
+		];
+
+		// Expenses
+		$expenses = $this->db->query(
+			"SELECT pe.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+			 FROM po_expense pe
+			 LEFT JOIN sys_users u ON pe.added_by_id = u.id
+			 WHERE pe.vendor_id = {$vendor_id} AND pe.is_delete = 0
+			 ORDER BY pe.expense_date ASC, pe.id ASC"
+		)->result_array();
+
+		$pe_ids = array_column($expenses, 'id');
+		$details_by_pe = [];
+		if (!empty($pe_ids)) {
+			$id_list = implode(',', array_map('intval', $pe_ids));
+			$dets = $this->db->query(
+				"SELECT * FROM po_expense_details
+				 WHERE parent_id IN ({$id_list})
+				 ORDER BY id ASC"
+			)->result_array();
+			foreach ($dets as $d) {
+				$details_by_pe[$d['parent_id']][] = $d;
+			}
+		}
+
+		// Payments
+		$payments = $this->db->query(
+			"SELECT vp.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+			 FROM vendor_payments vp
+			 LEFT JOIN sys_users u ON vp.added_by = u.id
+			 WHERE vp.vendor_id = {$vendor_id} AND vp.is_delete = 0
+			 ORDER BY vp.payment_date ASC, vp.id ASC"
+		)->result_array();
+
+		// Adjustments
+		$adjustments = $this->db->query(
+			"SELECT va.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
+			 FROM vendor_adjustments va
+			 LEFT JOIN sys_users u ON va.added_by_id = u.id OR va.added_by = u.id
+			 WHERE va.vendor_id = {$vendor_id} AND va.is_deleted = 0
+			 ORDER BY va.date ASC, va.id ASC"
+		)->result_array();
+
+		$entries = [];
+
+		foreach ($expenses as $pe) {
+			$is_official = ($pe['type'] === 'official');
+			$gst_type = strtolower($pe['gst_type'] ?? '');
+			$is_igst = (strpos($gst_type, 'igst') !== false);
+			$particulars = $is_igst ? 'IGST Expense' : (!empty($gst_type) ? 'CGST/SGST Expense' : 'Expense');
+
+			$b_no = trim($pe['batch_no'] ?? '');
+			$p_no = trim($pe['purchase_no'] ?? '');
+			$batch_vch = ($b_no && $p_no) ? ($b_no . ' / ' . $p_no) : ($b_no ?: $p_no);
+
+			$tot_rmb = (float) ($pe['rmb'] ?? 0);
+			$tot_usd = (float) ($pe['usd'] ?? 0);
+			$tot_inr = (float) ($pe['grand_total'] ?? 0);
+
+			$det_children = [];
+			$dets = $details_by_pe[$pe['id']] ?? [];
+
+			foreach ($dets as $d) {
+				$d_rmb = (float) ($d['rmb'] ?? 0);
+				$d_usd = (float) ($d['usd'] ?? 0);
+				$d_tot = (float) ($d['total_amt'] ?? 0);
+				$d_amt = (float) ($d['amount'] ?? 0);
+				$d_inr = ($d_tot > 0.00001) ? $d_tot : $d_amt;
+
+				$det_children[] = [
+					'expense_name' => $d['expense_name'] ?? 'Expense Item',
+					'qty'          => 1,
+					'rate_rmb'     => $d_rmb,
+					'rate_usd'     => $d_usd,
+					'rate_inr'     => $d_inr,
+					'rmb'          => $d_rmb,
+					'usd'          => $d_usd,
+					'inr'          => $d_inr,
+				];
+			}
+
+			if (empty($det_children)) {
+				$det_children[] = [
+					'expense_name' => !empty($pe['narration']) ? $pe['narration'] : 'Expense Item',
+					'qty'          => 1,
+					'rate_rmb'     => $tot_rmb,
+					'rate_usd'     => $tot_usd,
+					'rate_inr'     => $tot_inr,
+					'rmb'          => $tot_rmb,
+					'usd'          => $tot_usd,
+					'inr'          => $tot_inr,
+				];
+			}
+
+			$entries[] = [
+				'entry_type'  => 'expense',
+				'sort_date'   => $pe['expense_date'],
+				'sort_id'     => (int) $pe['id'],
+				'date'        => $pe['expense_date'],
+				'particulars' => $particulars,
+				'vch_type'    => 'Expense',
+				'batch_no'    => $b_no,
+				'vch_no'      => $p_no,
+				'batch_vch'   => $batch_vch ?: '-',
+				'remark'      => trim($pe['narration'] ?? ''),
+				'added_by'    => !empty(trim($pe['added_by_name'] ?? '')) ? trim($pe['added_by_name']) : '—',
+				'is_official' => $is_official,
+				'act_rmb'     => $tot_rmb,
+				'act_usd'     => $tot_usd,
+				'act_inr'     => $tot_inr,
+				'off_rmb'     => $is_official ? $tot_rmb : 0,
+				'off_usd'     => $is_official ? $tot_usd : 0,
+				'off_inr'     => $is_official ? $tot_inr : 0,
+				'unoff_rmb'   => !$is_official ? $tot_rmb : 0,
+				'unoff_usd'   => !$is_official ? $tot_usd : 0,
+				'unoff_inr'   => !$is_official ? $tot_inr : 0,
+				'products'    => $det_children,
+			];
+		}
+
+		foreach ($payments as $pay) {
+			$ptype = $pay['payment_type'] ?? '';
+			$is_official = ($ptype === 'official');
+			$inv_no = trim($pay['invoice_no'] ?? '');
+
+			$rmb = (float) ($pay['rmb'] ?? 0);
+			$usd = (float) ($pay['usd'] ?? 0);
+			$inr = (float) ($pay['inr'] ?? 0);
+
+			$pay_added_by = !empty(trim($pay['added_by_name'] ?? '')) ? trim($pay['added_by_name']) : (!empty(trim($pay['added_by'] ?? '')) ? trim($pay['added_by']) : '—');
+
+			$entries[] = [
+				'entry_type'      => 'payment',
+				'sort_date'       => $pay['payment_date'],
+				'sort_id'         => (int) $pay['id'],
+				'date'            => $pay['payment_date'],
+				'particulars'     => '-',
+				'sub_particulars' => !empty($pay['narration']) ? $pay['narration'] : 'On Account',
+				'vch_type'        => 'Payment',
+				'batch_no'        => '',
+				'vch_no'          => $inv_no,
+				'batch_vch'       => $inv_no ?: '-',
+				'remark'          => trim($pay['narration'] ?? ''),
+				'added_by'        => $pay_added_by,
+				'is_official'     => $is_official,
+				'act_rmb'         => $rmb,
+				'act_usd'         => $usd,
+				'act_inr'         => $inr,
+				'off_rmb'         => $is_official ? $rmb : 0,
+				'off_usd'         => $is_official ? $usd : 0,
+				'off_inr'         => $is_official ? $inr : 0,
+				'unoff_rmb'       => !$is_official ? $rmb : 0,
+				'unoff_usd'       => !$is_official ? $usd : 0,
+				'unoff_inr'       => !$is_official ? $inr : 0,
+				'products'        => [],
+			];
+		}
+
+		foreach ($adjustments as $adj) {
+			$is_official = (($adj['type'] ?? '') === 'official');
+			$is_plus = (($adj['amt_type'] ?? '') === 'plus');
+			$rmb = (float) ($adj['rmb'] ?? 0);
+			$usd = (float) ($adj['usd'] ?? 0);
+			$inr = (float) ($adj['inr'] ?? 0);
+
+			$adj_added_by = !empty(trim($adj['added_by_name'] ?? '')) ? trim($adj['added_by_name']) : (!empty(trim($adj['added_by'] ?? '')) ? trim($adj['added_by']) : '—');
+
+			$entries[] = [
+				'entry_type'      => 'adjustment',
+				'sort_date'       => $adj['date'],
+				'sort_id'         => (int) $adj['id'],
+				'date'            => $adj['date'],
+				'particulars'     => !empty($adj['amt_type_name']) ? $adj['amt_type_name'] : (!empty($adj['remark']) ? $adj['remark'] : '-'),
+				'sub_particulars' => !empty($adj['remark']) ? $adj['remark'] : 'Adjustment',
+				'vch_type'        => $is_plus ? 'Adjustment (+)' : 'Adjustment (−)',
+				'batch_no'        => '',
+				'vch_no'          => '',
+				'batch_vch'       => '-',
+				'remark'          => trim($adj['remark'] ?? ''),
+				'added_by'        => $adj_added_by,
+				'is_official'     => $is_official,
+				'is_plus'         => $is_plus,
+				'act_rmb'         => $is_plus ? $rmb : -$rmb,
+				'act_usd'         => $is_plus ? $usd : -$usd,
+				'act_inr'         => $is_plus ? $inr : -$inr,
+				'off_rmb'         => $is_official ? ($is_plus ? $rmb : -$rmb) : 0,
+				'off_usd'         => $is_official ? ($is_plus ? $usd : -$usd) : 0,
+				'off_inr'         => $is_official ? ($is_plus ? $inr : -$inr) : 0,
+				'unoff_rmb'       => !$is_official ? ($is_plus ? $rmb : -$rmb) : 0,
+				'unoff_usd'       => !$is_official ? ($is_plus ? $usd : -$usd) : 0,
+				'unoff_inr'       => !$is_official ? ($is_plus ? $inr : -$inr) : 0,
+				'products'        => [],
+			];
+		}
+
+		usort($entries, function ($a, $b) {
+			$da = strtotime($a['sort_date'] ?? '1970-01-01');
+			$db = strtotime($b['sort_date'] ?? '1970-01-01');
+			if ($da === $db) {
+				return ($a['sort_id'] ?? 0) - ($b['sort_id'] ?? 0);
+			}
+			return $da - $db;
+		});
+
+		$apply_entry_delta = function (&$bal, $rmb, $usd, $inr, $type) {
+			if ($type === 'expense') {
+				$bal['rmb'] += $rmb;
+				$bal['usd'] += $usd;
+				$bal['inr'] += $inr;
+			} elseif ($type === 'payment') {
+				$bal['rmb'] -= $rmb;
+				$bal['usd'] -= $usd;
+				$bal['inr'] -= $inr;
+			} elseif ($type === 'adjustment') {
+				$bal['rmb'] += $rmb;
+				$bal['usd'] += $usd;
+				$bal['inr'] += $inr;
+			}
+		};
+
+		$is_batch_filter = (!empty($batch_no) && $batch_no !== 'all');
+		$batch_first_date = null;
+		if ($is_batch_filter) {
+			foreach ($entries as $e) {
+				if ($e['batch_no'] === $batch_no) {
+					if ($batch_first_date === null || $e['sort_date'] < $batch_first_date) {
+						$batch_first_date = $e['sort_date'];
+					}
+				}
+			}
+		}
+
+		$open_all = $seed_all;
+		$open_white = $seed_white;
+		$open_black = $seed_black;
+
+		foreach ($entries as $e) {
+			$is_prior = false;
+			if ($is_batch_filter) {
+				if ($batch_first_date !== null && $e['sort_date'] < $batch_first_date) {
+					$is_prior = true;
+				} elseif ($e['batch_no'] !== $batch_no && $e['sort_date'] <= ($batch_first_date ?? '9999-99-99')) {
+					$is_prior = true;
+				}
+			} else {
+				$is_prior = ($e['sort_date'] < $from_date);
+			}
+
+			if ($is_prior) {
+				$apply_entry_delta($open_all, $e['act_rmb'], $e['act_usd'], $e['act_inr'], $e['entry_type']);
+				$apply_entry_delta($open_white, $e['off_rmb'], $e['off_usd'], $e['off_inr'], $e['entry_type']);
+				$apply_entry_delta($open_black, $e['unoff_rmb'], $e['unoff_usd'], $e['unoff_inr'], $e['entry_type']);
+			}
+		}
+
+		$modes = ['all', 'white', 'black'];
+		$ledger_data = [];
+		$summary = [
+			'opening' => [
+				'total' => $open_all,
+				'white' => $open_white,
+				'black' => $open_black,
+			],
+			'expenses' => [
+				'total' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'white' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'black' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+			'payments' => [
+				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'unofficial' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+			'adjustments' => [
+				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'unofficial' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+			'outstanding' => [
+				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'unofficial' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
+		];
+
+		foreach ($modes as $mode) {
+			$cur_bal = ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black);
+			$bill_rows = [];
+			$prod_rows = [];
+
+			$open_row = [
+				'is_opening'  => true,
+				'date'        => '',
+				'particulars' => 'OPENING BALANCE',
+				'vch_type'    => '',
+				'batch_vch'   => '',
+				'rmb'         => null,
+				'usd'         => null,
+				'inr'         => null,
+				'bal_rmb'     => $cur_bal['rmb'],
+				'bal_usd'     => $cur_bal['usd'],
+				'bal_inr'     => $cur_bal['inr'],
+				'added_by'    => $vendor['added_by_name'] ?? '—',
+				'entry_type'  => 'opening',
+			];
+			$bill_rows[] = $open_row;
+			$prod_rows[] = $open_row;
+
+			$col_totals = ['rmb' => 0, 'usd' => 0, 'inr' => 0];
+
+			foreach ($entries as $e) {
+				if ($is_batch_filter) {
+					if ($e['batch_no'] !== $batch_no) continue;
+				} else {
+					if ($e['sort_date'] < $from_date || $e['sort_date'] > $to_date) continue;
+				}
+
+				if ($mode === 'all') {
+					$e_rmb = $e['act_rmb'];
+					$e_usd = $e['act_usd'];
+					$e_inr = $e['act_inr'];
+				} elseif ($mode === 'white') {
+					$e_rmb = $e['off_rmb'];
+					$e_usd = $e['off_usd'];
+					$e_inr = $e['off_inr'];
+				} else {
+					$e_rmb = $e['unoff_rmb'];
+					$e_usd = $e['unoff_usd'];
+					$e_inr = $e['unoff_inr'];
+				}
+
+				if ($mode === 'white') {
+					if ($e['entry_type'] === 'payment' && empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'adjustment' && empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'expense' && empty($e['is_official'])) continue;
+				} elseif ($mode === 'black') {
+					if ($e['entry_type'] === 'payment' && !empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'adjustment' && !empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'expense' && !empty($e['is_official'])) continue;
+				}
+
+				$apply_entry_delta($cur_bal, $e_rmb, $e_usd, $e_inr, $e['entry_type']);
+
+				$sign = ($e['entry_type'] === 'payment') ? -1 : 1;
+				$disp_rmb = $sign * $e_rmb;
+				$disp_usd = $sign * $e_usd;
+				$disp_inr = $sign * $e_inr;
+
+				$col_totals['rmb'] += $disp_rmb;
+				$col_totals['usd'] += $disp_usd;
+				$col_totals['inr'] += $disp_inr;
+
+				$b_row = [
+					'is_opening'      => false,
+					'is_product'      => false,
+					'date'            => $e['date'],
+					'particulars'     => $e['particulars'],
+					'sub_particulars' => $e['sub_particulars'] ?? '',
+					'vch_type'        => $e['vch_type'],
+					'batch_vch'       => $e['batch_vch'],
+					'batch_no'        => $e['batch_no'],
+					'vch_no'          => $e['vch_no'],
+					'rmb'             => $disp_rmb,
+					'usd'             => $disp_usd,
+					'inr'             => $disp_inr,
+					'bal_rmb'         => $cur_bal['rmb'],
+					'bal_usd'         => $cur_bal['usd'],
+					'bal_inr'         => $cur_bal['inr'],
+					'remark'          => $e['remark'],
+					'added_by'        => $e['added_by'],
+					'entry_type'      => $e['entry_type'],
+				];
+				$bill_rows[] = $b_row;
+
+				$p_hdr = $b_row;
+				$p_hdr['is_header'] = true;
+				$p_hdr['qty'] = null;
+				$p_hdr['rate_rmb'] = null;
+				$p_hdr['rate_usd'] = null;
+				$p_hdr['rate_inr'] = null;
+				$prod_rows[] = $p_hdr;
+
+				if ($e['entry_type'] === 'expense') {
+					$running_prod_rmb = $cur_bal['rmb'] - $e_rmb;
+					$running_prod_usd = $cur_bal['usd'] - $e_usd;
+					$running_prod_inr = $cur_bal['inr'] - $e_inr;
+
+					foreach ($e['products'] as $child) {
+						$running_prod_rmb += $child['rmb'];
+						$running_prod_usd += $child['usd'];
+						$running_prod_inr += $child['inr'];
+
+						$prod_rows[] = [
+							'is_opening'  => false,
+							'is_product'  => true,
+							'is_sub'      => false,
+							'date'        => '',
+							'particulars' => $child['expense_name'],
+							'vch_type'    => '',
+							'batch_vch'   => '',
+							'qty'         => $child['qty'],
+							'rate_rmb'    => $child['rate_rmb'],
+							'rmb'         => $child['rmb'],
+							'rate_usd'    => $child['rate_usd'],
+							'usd'         => $child['usd'],
+							'rate_inr'    => $child['rate_inr'],
+							'inr'         => $child['inr'],
+							'bal_rmb'     => $running_prod_rmb,
+							'bal_usd'     => $running_prod_usd,
+							'bal_inr'     => $running_prod_inr,
+							'added_by'    => '',
+							'entry_type'  => 'product',
+						];
+					}
+				} elseif ($e['entry_type'] === 'payment') {
+					$prod_rows[] = [
+						'is_opening'  => false,
+						'is_product'  => false,
+						'is_sub'      => true,
+						'date'        => '',
+						'particulars' => $e['sub_particulars'] ?? 'On Account',
+						'vch_type'    => '',
+						'batch_vch'   => '',
+						'qty'         => null,
+						'rate_rmb'    => null,
+						'rmb'         => -$e_rmb,
+						'rate_usd'    => null,
+						'usd'         => -$e_usd,
+						'rate_inr'    => null,
+						'inr'         => -$e_inr,
+						'bal_rmb'     => null,
+						'bal_usd'     => null,
+						'bal_inr'     => null,
+						'added_by'    => '',
+						'entry_type'  => 'payment_sub',
+					];
+				} elseif ($e['entry_type'] === 'adjustment') {
+					$prod_rows[] = [
+						'is_opening'  => false,
+						'is_product'  => false,
+						'is_sub'      => true,
+						'date'        => '',
+						'particulars' => $e['sub_particulars'] ?? 'Adjustment',
+						'vch_type'    => '',
+						'batch_vch'   => '',
+						'qty'         => null,
+						'rate_rmb'    => null,
+						'rmb'         => $disp_rmb,
+						'rate_usd'    => null,
+						'usd'         => $disp_usd,
+						'rate_inr'    => null,
+						'inr'         => $disp_inr,
+						'bal_rmb'     => null,
+						'bal_usd'     => null,
+						'bal_inr'     => null,
+						'added_by'    => '',
+						'entry_type'  => 'adjustment_sub',
+					];
+				}
+
+				if ($mode === 'all') {
+					if ($e['entry_type'] === 'expense') {
+						$summary['expenses']['total']['rmb'] += $e['act_rmb'];
+						$summary['expenses']['total']['usd'] += $e['act_usd'];
+						$summary['expenses']['total']['inr'] += $e['act_inr'];
+						$summary['expenses']['white']['rmb'] += $e['off_rmb'];
+						$summary['expenses']['white']['usd'] += $e['off_usd'];
+						$summary['expenses']['white']['inr'] += $e['off_inr'];
+						$summary['expenses']['black']['rmb'] += $e['unoff_rmb'];
+						$summary['expenses']['black']['usd'] += $e['unoff_usd'];
+						$summary['expenses']['black']['inr'] += $e['unoff_inr'];
+					} elseif ($e['entry_type'] === 'payment') {
+						$summary['payments']['total']['rmb'] += $e['act_rmb'];
+						$summary['payments']['total']['usd'] += $e['act_usd'];
+						$summary['payments']['total']['inr'] += $e['act_inr'];
+						if (!empty($e['is_official'])) {
+							$summary['payments']['official']['rmb'] += $e['off_rmb'];
+							$summary['payments']['official']['usd'] += $e['off_usd'];
+							$summary['payments']['official']['inr'] += $e['off_inr'];
+						} else {
+							$summary['payments']['unofficial']['rmb'] += $e['unoff_rmb'];
+							$summary['payments']['unofficial']['usd'] += $e['unoff_usd'];
+							$summary['payments']['unofficial']['inr'] += $e['unoff_inr'];
+						}
+					} elseif ($e['entry_type'] === 'adjustment') {
+						$summary['adjustments']['total']['rmb'] += $e['act_rmb'];
+						$summary['adjustments']['total']['usd'] += $e['act_usd'];
+						$summary['adjustments']['total']['inr'] += $e['act_inr'];
+						if (!empty($e['is_official'])) {
+							$summary['adjustments']['official']['rmb'] += $e['off_rmb'];
+							$summary['adjustments']['official']['usd'] += $e['off_usd'];
+							$summary['adjustments']['official']['inr'] += $e['off_inr'];
+						} else {
+							$summary['adjustments']['unofficial']['rmb'] += $e['unoff_rmb'];
+							$summary['adjustments']['unofficial']['usd'] += $e['unoff_usd'];
+							$summary['adjustments']['unofficial']['inr'] += $e['unoff_inr'];
+						}
+					}
+				}
+			}
+
+			$ledger_data[$mode] = [
+				'opening'     => ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black),
+				'bill_rows'   => $bill_rows,
+				'prod_rows'   => $prod_rows,
+				'col_totals'  => $col_totals,
+				'closing'     => $cur_bal,
+			];
+		}
+
+		$summary['outstanding']['total']      = $ledger_data['all']['closing'];
+		$summary['outstanding']['official']   = $ledger_data['white']['closing'];
+		$summary['outstanding']['unofficial'] = $ledger_data['black']['closing'];
+		$summary['purchases']                 = $summary['expenses'];
+
+		return [
+			'vendor'      => $vendor,
+			'from_date'   => $from_date,
+			'to_date'     => $to_date,
+			'batch_no'    => $batch_no,
+			'ledger_data' => $ledger_data,
+			'summary'     => $summary,
+		];
+	}
+
+	public function get_batches_by_vendor($vendor_id)
+	{
+		$vendor_id = (int) $vendor_id;
+		$query = $this->db->query("SELECT DISTINCT batch_no as voucher_no
+									FROM po_expense
+									WHERE vendor_id = {$vendor_id}
+									  AND is_delete = 0
+									  AND batch_no IS NOT NULL AND batch_no != ''
+									ORDER BY batch_no ASC");
+		return $query ? $query->result_array() : [];
+	}
+
 	public function get_unpaid_sales_orders_by_customer($customer_id, $payment_type)
 	{
 		$company_id = $this->session->userdata('company_id');

@@ -358,16 +358,43 @@ class Inventory extends CI_Controller
             $page_data['page_title'] = 'Edit Supplier';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'supplier_ledger') {
-            $data                    = $this->inventory_model->get_supplier_by_id($param2)->row_array();
-            $page_data['data']       = $data;
+            $from = $this->input->get('from_date');
+            $to   = $this->input->get('to_date');
+            $range = $this->input->get('date_range');
+            $batch_no = $this->input->get('batch_no');
+
+            if (!empty($range) && strpos($range, ' - ') !== false) {
+                list($start_str, $end_str) = explode(' - ', $range, 2);
+                $sd = DateTime::createFromFormat('d-m-Y', trim($start_str));
+                $ed = DateTime::createFromFormat('d-m-Y', trim($end_str));
+                if ($sd && $ed) {
+                    $from = $sd->format('Y-m-d');
+                    $to   = $ed->format('Y-m-d');
+                }
+            }
+
+            $ledger = $this->inventory_model->build_import_supplier_ledger($param2, $from, $to, $batch_no);
+            $supplier_data = $ledger['supplier'] ?? $this->inventory_model->get_supplier_by_id($param2)->row_array();
+            $batches = $this->inventory_model->get_batches_by_supplier($param2);
+
+            $page_data['data']       = $supplier_data;
             $page_data['id']         = $param2;
-            $page_data['outstanding']          = $this->inventory_model->get_supplier_outstanding($param2);
-            $page_data['payments']             = $this->inventory_model->get_supplier_payments($param2);
-            $page_data['official_payments']    = $this->inventory_model->get_supplier_payments($param2, 'official');
-            $page_data['unofficial_payments']  = $this->inventory_model->get_supplier_payments($param2, 'unofficial');
-            $page_data['adjustments']          = $this->inventory_model->get_supplier_adjustments($param2);
-            $page_data['official_adjustments']  = $this->inventory_model->get_supplier_adjustments($param2, 'official');
+            $page_data['ledger']     = $ledger;
+            $page_data['batches']    = $batches;
+            $page_data['batch_no']   = $batch_no;
+            $page_data['from_date']  = $ledger['from_date'] ?? $from;
+            $page_data['to_date']    = $ledger['to_date'] ?? $to;
+            $page_data['date_range'] = $range ?: (date('d-m-Y', strtotime($page_data['from_date'])) . ' - ' . date('d-m-Y', strtotime($page_data['to_date'])));
+
+            // Backward compatibility
+            $page_data['outstanding']            = $this->inventory_model->get_supplier_outstanding($param2);
+            $page_data['payments']               = $this->inventory_model->get_supplier_payments($param2);
+            $page_data['official_payments']      = $this->inventory_model->get_supplier_payments($param2, 'official');
+            $page_data['unofficial_payments']    = $this->inventory_model->get_supplier_payments($param2, 'unofficial');
+            $page_data['adjustments']            = $this->inventory_model->get_supplier_adjustments($param2);
+            $page_data['official_adjustments']   = $this->inventory_model->get_supplier_adjustments($param2, 'official');
             $page_data['unofficial_adjustments'] = $this->inventory_model->get_supplier_adjustments($param2, 'unofficial');
+
             $page_data['page_name']  = 'supplier_ledger';
             $page_data['page_title'] = 'Supplier Ledger';
             $this->load->view('backend/index', $page_data);
@@ -1498,8 +1525,35 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['data']                   = $this->inventory_model->get_my_company_by_id($id)->row_array();
+        $from = $this->input->get('from_date');
+        $to   = $this->input->get('to_date');
+        $range = $this->input->get('date_range');
+        $batch_no = $this->input->get('batch_no');
+
+        if (!empty($range) && strpos($range, ' - ') !== false) {
+            list($start_str, $end_str) = explode(' - ', $range, 2);
+            $sd = DateTime::createFromFormat('d-m-Y', trim($start_str));
+            $ed = DateTime::createFromFormat('d-m-Y', trim($end_str));
+            if ($sd && $ed) {
+                $from = $sd->format('Y-m-d');
+                $to   = $ed->format('Y-m-d');
+            }
+        }
+
+        $ledger = $this->inventory_model->build_vendor_ledger($id, $from, $to, $batch_no);
+        $vendor_data = $ledger['vendor'] ?? $this->inventory_model->get_my_company_by_id($id)->row_array();
+        $batches = $this->inventory_model->get_batches_by_vendor($id);
+
+        $page_data['data']                   = $vendor_data;
         $page_data['id']                     = $id;
+        $page_data['ledger']                 = $ledger;
+        $page_data['batches']                = $batches;
+        $page_data['batch_no']               = $batch_no;
+        $page_data['from_date']              = $ledger['from_date'] ?? $from;
+        $page_data['to_date']                = $ledger['to_date'] ?? $to;
+        $page_data['date_range']             = $range ?: (date('d-m-Y', strtotime($page_data['from_date'])) . ' - ' . date('d-m-Y', strtotime($page_data['to_date'])));
+
+        // Backward compatibility
         $page_data['outstanding']            = $this->inventory_model->get_vendor_ledger($id);
         $page_data['official_expenses']      = $this->inventory_model->get_vendor_ledger($id, 'official');
         $page_data['unofficial_expenses']    = $this->inventory_model->get_vendor_ledger($id, 'unofficial');
@@ -1507,8 +1561,8 @@ class Inventory extends CI_Controller
         $page_data['official_payments']      = $this->inventory_model->get_vendor_payments_by_id($id, 'official');
         $page_data['unofficial_payments']    = $this->inventory_model->get_vendor_payments_by_id($id, 'unofficial');
         $page_data['adjustments']            = $this->inventory_model->get_vendor_adjustments($id);
-        $page_data['official_adjustments']    = $this->inventory_model->get_vendor_adjustments($id, 'official');
-        $page_data['unofficial_adjustments']  = $this->inventory_model->get_vendor_adjustments($id, 'unofficial');
+        $page_data['official_adjustments']   = $this->inventory_model->get_vendor_adjustments($id, 'official');
+        $page_data['unofficial_adjustments'] = $this->inventory_model->get_vendor_adjustments($id, 'unofficial');
         $page_data['page_name']              = 'vendor_ledger';
         $page_data['page_title']             = 'Vendor Ledger';
         $this->load->view('backend/index', $page_data);

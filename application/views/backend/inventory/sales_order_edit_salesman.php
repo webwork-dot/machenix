@@ -543,7 +543,11 @@
                         <input type="number" class="form-control batch_total_bill_gst_amount text-center" name="batch_total_bill_gst_amount[<?php echo $k; ?>][]" id="batch_total_bill_gst_amount_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo clean_number($batch['total_bill_gst_amount']); ?>">
                       </td>
                       <td>
-                        <input type="number" class="form-control batch_black_amt text-center" name="batch_black_amt[<?php echo $k; ?>][]" id="batch_black_amt_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo clean_number($batch['black_amount']); ?>">
+                        <?php 
+                          $batch_tot_qty = (float)($batch['white_qty'] ?? 0) + (float)($batch['black_qty'] ?? 0);
+                          $disp_black_amt = $batch_tot_qty > 0 ? ((float)($batch['black_total'] ?? 0) / $batch_tot_qty) : (float)($batch['black_amount'] ?? 0);
+                        ?>
+                        <input type="number" class="form-control batch_black_amt text-center" name="batch_black_amt[<?php echo $k; ?>][]" id="batch_black_amt_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo clean_number($disp_black_amt); ?>">
                       </td>
                       <td>
                         <input type="number" class="form-control batch_black_total_amt" name="batch_black_total_amt[<?php echo $k; ?>][]" id="batch_black_total_amt_<?php echo $k; ?>_<?php echo $batch_index; ?>" readonly tabindex="-1" value="<?php echo clean_number($batch['black_total']); ?>">
@@ -1156,9 +1160,9 @@ function calculate_batch_amt(element, index) {
   var gst_amt = (bill_total * gst_per) / 100;
   var total_bill_gst_amt = bill_total + gst_amt;
   var black_total_amt = ((rate * black_qty) + ((rate - bill_amt) * white_qty));
-  var black_amt_unit = black_qty > 0 ? (black_total_amt / black_qty) : 0;
-  var final_total = total_bill_gst_amt + black_total_amt;
   var total_batch_qty = white_qty + black_qty;
+  var black_amt_unit = total_batch_qty > 0 ? (black_total_amt / total_batch_qty) : 0;
+  var final_total = total_bill_gst_amt + black_total_amt;
   var total_batch_amount_val = total_batch_qty * rate;
 
   row.find('.batch_total_amount').val(cleanNum(total_batch_amount_val));
