@@ -1,0 +1,50 @@
+
+I wanna re-create Import Supplier Ledger module.. 
+I've provided you an excel file and a new format image.. It follows the similar logic as Local Supplier Ledger.. 
+It will have 2 tabs in total
+
+1. Bill Wise
+2. Product Wise
+
+Show the last 3 months of data by default and filter should be there to select the date range just like local supplier date range filter logic.. 
+- In bill wise show the Import Purchase In order Supplier wise, Payments Entry, Adjustment..
+- In Product wise show the bifercation of the orders product wise, Payment entry date, Adjustment entry date..
+
+
+Here is the following format for bill wise ledger:
+- Date
+- Particulars <--- (IGST or CSGT/SGST Purchase (Purchase), - (Payment), - (Adjustment))
+- Vch Type <--- (Purchase, Payment, Adjustment)
+- Batch No/Vch No <--- (Batch No, Invoice No)
+-	RMB
+- USD
+- INR
+- Bal RMB
+- Bal USD
+- Bal INR
+- Added By
+
+Here is the following format for product wise ledger:
+- Date 
+- Particulars <--- (IGST or CSGT/SGST Purchase (Purchase), - (Payment), - (Adjustment))
+- Vch Type <--- (Purchase, Payment, Adjustment)
+- Batch No/Vch No <--- (Batch No, Invoice No)
+- Qty <-- (Only Product wise purchase In)
+- Per Pc RMB
+- RMB	
+- Per Pc USD
+- USD
+- Per Pc INR
+- INR	
+- Bal RMB
+- Bal USD
+- Bal INR
+- Added By	
+
+The balance formula is provided in the excel file so I want you to refer that.. 
+There will also going to be 3 subtabs just like the current ledger:
+1). All
+2). White
+3). Black
+
+Follow the existing coding pattern and desgin it accordingly.. Make a plan

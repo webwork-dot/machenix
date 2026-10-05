@@ -344,7 +344,7 @@
 										$black_total = (float) ($product['black_total'] ?? ($product['black_amount'] ?? 0));
 										$final_total = (float) ($product['final_total'] ?? ($total_bill_gst_amount + $black_total));
 									?>
-									<tr class="element-1 sales-line-item" id="product_<?php echo $k; ?>" data-id="<?php echo $k; ?>">
+									<tr class="element-1 sales-line-item" id="product_<?php echo $k; ?>" data-id="<?php echo $k; ?>" data-parent-bill-amount="<?php echo clean_number($bill_amount); ?>">
 										<td class="text-center">
 											<?php
 												$chk_query = $this->db->get_where('replace_products', ['order_prod_id' => $product['id']]);
@@ -382,7 +382,8 @@
 											<input type="hidden" id="total_amount_<?php echo $k; ?>" name="total_amount[]" value="<?php echo clean_number($total_amount); ?>">
 										</td>
 										<td>
-											<input type="hidden" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" value="<?php echo clean_number($bill_amount); ?>" data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
+											<input type="number" step="any" id="bill_amount_<?php echo $k; ?>" name="bill_amount[]" value="<?php echo clean_number($bill_amount); ?>" class="form-control text-center" readonly data-manual="<?php echo $black_amt != 0 ? 'true' : 'false'; ?>">
+											<input type="hidden" id="parent_bill_amount_<?php echo $k; ?>" value="<?php echo clean_number($bill_amount); ?>">
 										</td>
 										<td></td>
 										<td>
@@ -767,8 +768,9 @@ function rollup_product_totals(index) {
 		$('#bill_amount_' + index).val(cleanNum((total_bill_amt / total_allocated)));
 		$('#black_amount_per_unit_' + index).val(cleanNum((total_black_amt / total_allocated)));
 	} else {
-		// Reset if no allocation
-		$('#bill_amount_' + index).val('0.00');
+		// Reset if no allocation - preserve parent original bill amount
+		var parent_orig = $('#parent_bill_amount_' + index).val() || $('#product_' + index).attr('data-parent-bill-amount') || '0.00';
+		$('#bill_amount_' + index).val(cleanNum(parent_orig));
 		$('#black_amount_per_unit_' + index).val('0.00');
 	}
 }
@@ -799,11 +801,21 @@ function calculate_batch_amt(element, index) {
 	var bill_amt_el = row.find('.batch_bill_amount');
 	var is_manual = bill_amt_el.attr('data-manual') === 'true';
 
+	var parent_bill_val = $('#parent_bill_amount_' + index).val() || $('#product_' + index).attr('data-parent-bill-amount');
+	var has_parent_bill = (parent_bill_val !== undefined && parent_bill_val !== '' && !isNaN(parseFloat(parent_bill_val)));
+	var parent_bill_amt = has_parent_bill ? parseFloat(parent_bill_val) : 0;
+
 	if (activeId === rate_el.attr('id')) {
-		bill_amt_el.val(cleanNum(rate));
-		bill_amt_el.attr('data-manual', 'false');
+		if (!has_parent_bill) {
+			bill_amt_el.val(cleanNum(rate));
+			bill_amt_el.attr('data-manual', 'false');
+		}
 	} else if (!is_manual && activeId !== bill_amt_el.attr('id')) {
-		bill_amt_el.val(cleanNum(rate));
+		if (has_parent_bill) {
+			bill_amt_el.val(cleanNum(parent_bill_amt));
+		} else if (bill_amt_el.val() === '' || parseFloat(bill_amt_el.val()) === 0) {
+			bill_amt_el.val(cleanNum(rate));
+		}
 	}
 
 	var bill_amt = parseFloat(bill_amt_el.val()) || 0;
@@ -894,8 +906,9 @@ function calculate_batch_amt_reverse(element, index) {
 
 	markBatchManual(row.find('.batch_bill_amount'));
 
-	if (total_qty > 0) {
-		var bill_amt = bill_total / total_qty;
+	var divisor_qty = white_qty > 0 ? white_qty : total_qty;
+	if (divisor_qty > 0) {
+		var bill_amt = bill_total / divisor_qty;
 		if (activeId !== row.find('.batch_bill_amount').attr('id')) {
 			row.find('.batch_bill_amount').val(cleanNum(bill_amt));
 		}
@@ -1028,6 +1041,10 @@ function addBatch(index) {
 		}
 	});
 
+	var parent_bill_amt = $('#parent_bill_amount_' + index).val() || $('#product_' + index).attr('data-parent-bill-amount') || $('#bill_amount_' + index).val() || '';
+	var parent_rate = $('#master_amount_' + index).val() || '';
+	var parent_gst = $('#gst_' + index).val() || '0';
+
 	var batch_row = `
 		<tr class="batch-row batch-row-${index}" data-min-price="0" data-min-billing-price="0">
 			<td></td>
@@ -1058,7 +1075,7 @@ function addBatch(index) {
 			</td>
 			<td>
 				<div class="input-group">
-					<input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
+					<input type="number" step="any" class="form-control batch_rate text-center" name="batch_rate[${index}][]" id="batch_rate_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="${parent_rate !== '' ? cleanNum(parent_rate) : ''}">
 					<span class="input-group-text p-0 price-history-btn" tabindex="0" style="cursor:pointer" data-row-index="${index}" data-batch-index="${batch_index}" onclick="showPriceHistory('${index}', '${batch_index}')"><i class="fa fa-history px-1"></i></span>
 				</div>
 			</td>
@@ -1075,7 +1092,7 @@ function addBatch(index) {
 				<input type="number" step="any" class="form-control batch_total_amount text-center" id="batch_total_amount_${index}_${batch_index}" readonly tabindex="-1">
 			</td>
 			<td>
-				<input type="number" step="any" class="form-control batch_bill_amount text-center" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" data-manual="false">
+				<input type="number" step="any" class="form-control batch_bill_amount text-center" name="batch_bill_amount[${index}][]" id="batch_bill_amount_${index}_${batch_index}" onkeyup="markBatchManual(this); calculate_batch_amt(this, '${index}')" value="${parent_bill_amt !== '' ? cleanNum(parent_bill_amt) : ''}" data-manual="false">
 			</td>
 			<td style="min-width: 170px;">
 				<div class="d-flex flex-column gap-25">
@@ -1090,7 +1107,7 @@ function addBatch(index) {
 				<input type="number" step="any" class="form-control batch_bill_total text-center" name="batch_bill_total[${index}][]" id="batch_bill_total_${index}_${batch_index}" onkeyup="calculate_batch_amt_reverse(this, '${index}')">
 			</td>
 			<td>
-				<input type="number" step="any" class="form-control batch_gst_per text-center" name="batch_gst_per[${index}][]" id="batch_gst_per_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')">
+				<input type="number" step="any" class="form-control batch_gst_per text-center" name="batch_gst_per[${index}][]" id="batch_gst_per_${index}_${batch_index}" onkeyup="calculate_batch_amt(this, '${index}')" value="${parent_gst !== '' ? cleanNum(parent_gst) : ''}">
 			</td>
 			<td>
 				<input type="number" class="form-control batch_gst_amt text-center" name="batch_gst_amt[${index}][]" id="batch_gst_amt_${index}_${batch_index}" readonly tabindex="-1">
@@ -1204,10 +1221,13 @@ function getBatchDetails(element, index) {
 		row.find('.batch_black_qty_input').val(0);
 		row.find('.batch_actual_price').val('');
 		row.find('.batch_official_price').val('');
-		row.find('.batch_rate').val(0);
-		row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
+		var parent_bill_amt_reset = $('#parent_bill_amount_' + index).val() || $('#product_' + index).attr('data-parent-bill-amount') || $('#bill_amount_' + index).val() || 0;
+		var main_rate_reset = $('#master_amount_' + index).val() || 0;
+		var main_gst_reset = $('#gst_' + index).val() || 0;
+		row.find('.batch_rate').val(cleanNum(main_rate_reset));
+		row.find('.batch_bill_amount').val(cleanNum(parent_bill_amt_reset)).attr('data-manual', 'false');
 		row.find('.batch_bill_total').val(0);
-		row.find('.batch_gst_per').val(0);
+		row.find('.batch_gst_per').val(cleanNum(main_gst_reset));
 		row.find('.batch_gst_amt').val(0);
 		row.find('.batch_total_bill_gst_amount').val(0);
 		row.find('.batch_black_amt').val(0);
@@ -1253,10 +1273,13 @@ function getBatchDetails(element, index) {
 		row.find('.batch_black_qty_input').val(0);
 		row.find('.batch_actual_price').val('');
 		row.find('.batch_official_price').val('');
-		row.find('.batch_rate').val(0);
-		row.find('.batch_bill_amount').val(0).attr('data-manual', 'false');
+		var parent_bill_amt_reset = $('#parent_bill_amount_' + index).val() || $('#product_' + index).attr('data-parent-bill-amount') || $('#bill_amount_' + index).val() || 0;
+		var main_rate_reset = $('#master_amount_' + index).val() || 0;
+		var main_gst_reset = $('#gst_' + index).val() || 0;
+		row.find('.batch_rate').val(cleanNum(main_rate_reset));
+		row.find('.batch_bill_amount').val(cleanNum(parent_bill_amt_reset)).attr('data-manual', 'false');
 		row.find('.batch_bill_total').val(0);
-		row.find('.batch_gst_per').val(0);
+		row.find('.batch_gst_per').val(cleanNum(main_gst_reset));
 		row.find('.batch_gst_amt').val(0);
 		row.find('.batch_total_bill_gst_amount').val(0);
 		row.find('.batch_black_amt').val(0);
@@ -1266,7 +1289,7 @@ function getBatchDetails(element, index) {
 		row.find('.batch_remark').val('');
 		row.find('.batch_bill_remark').val('');
 		checkBatchRemarkRequirement(element);
-		checkBatchBillRequirement(element);
+		checkBatchBillRemarkRequirement(element);
 		rollup_product_totals(index);
 		recalculate();
 		return;
@@ -1287,18 +1310,20 @@ function getBatchDetails(element, index) {
 			row.attr('data-min-price', res.min_selling_price || 0);
 			row.attr('data-min-billing-price', res.min_billing_price || 0);
 			
-			row.find('.batch_actual_price').val(parseFloatcleanNum((res.actual_cost_with_exp || 0)));
-			row.find('.batch_official_price').val(parseFloatcleanNum((res.off_sale_price || 0)));
+			row.find('.batch_actual_price').val(cleanNum(parseFloat(res.actual_cost_with_exp || 0)));
+			row.find('.batch_official_price').val(cleanNum(parseFloat(res.off_sale_price || 0)));
 
-			// Initialize Rate and GST from main row
+			// Initialize Rate, Bill Amount, and GST from main product row
 			var main_rate = $('#master_amount_' + index).val();
 			var main_gst = $('#gst_' + index).val();
-			var main_bill_amt = $('#bill_amount_' + index).val();
-			var is_main_manual = $('#bill_amount_' + index).attr('data-manual');
+			var parent_bill_amt = $('#parent_bill_amount_' + index).val() || $('#product_' + index).attr('data-parent-bill-amount') || $('#bill_amount_' + index).val();
+			var is_batch_manual = row.find('.batch_bill_amount').attr('data-manual') === 'true';
 
-			row.find('.batch_rate').val(main_rate);
-			row.find('.batch_bill_amount').val(main_bill_amt).attr('data-manual', is_main_manual);
-			row.find('.batch_gst_per').val(main_gst);
+			row.find('.batch_rate').val(cleanNum(main_rate));
+			if (!is_batch_manual) {
+				row.find('.batch_bill_amount').val(cleanNum(parent_bill_amt));
+			}
+			row.find('.batch_gst_per').val(cleanNum(main_gst));
 			
 			calculate_batch_amt(row.find('.batch_white_qty_input'), index);
 		}

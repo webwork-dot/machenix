@@ -182,7 +182,7 @@
 	.dataTables_scrollBody {
 		max-height: 475px !important;
 		height: 475px !important;
-		overflow-x: hidden !important;
+		overflow-x: auto !important;
 		overflow-y: auto !important;
 		width: 100% !important;
 	}
@@ -235,7 +235,8 @@
 		overflow-x: auto !important;
 		overflow-y: hidden !important;
 		-webkit-overflow-scrolling: touch;
-		padding: 4px 2px;
+		padding: 4px 0 !important;
+		margin: 0 !important;
 	}
 	.child-scroll-wrap .batch-breakdown-card,
 	.child-scroll-wrap .company-breakdown-card {
@@ -243,7 +244,10 @@
 		width: max-content;
 		min-width: 100%;
 		max-width: none !important;
-		margin: 0;
+		margin-left: 0 !important;
+		margin-right: 0 !important;
+		padding-left: 0 !important;
+		padding-right: 0 !important;
 		box-sizing: border-box;
 		overflow: visible !important;
 	}
@@ -276,8 +280,8 @@
 		font-size: 11px !important;
 		font-weight: 700 !important;
 		text-transform: uppercase !important;
-		letter-spacing: 0.4px !important;
-		padding: 0px 10px !important;
+		letter-spacing: 0.3px !important;
+		padding: 8px 6px !important;
 		border-bottom: 1px solid #cbd5e1 !important;
 		border-top: none !important;
 		white-space: nowrap !important;
@@ -288,15 +292,22 @@
 		white-space: normal !important;
 		overflow: visible !important;
 		text-overflow: clip !important;
-		line-height: 1.25;
+		line-height: 1.2;
 	}
 	#report-datatable tbody td {
-		padding: 6px 10px !important;
+		padding: 6px 6px !important;
 		font-size: 12.5px !important;
 		color: #334155;
 		border-bottom: 1px solid #f1f5f9 !important;
 		border-top: none !important;
 		vertical-align: middle !important;
+	}
+	#report-datatable thead th:first-child,
+	#report-datatable tbody td:first-child,
+	#report-datatable_wrapper .dataTables_scrollHead table th:first-child,
+	#report-datatable_wrapper .dataTables_scrollBody table td:first-child {
+		padding-left: 2px !important;
+		padding-right: 2px !important;
 	}
 	#report-datatable tbody tr:hover {
 		background-color: #f8fafc !important;
@@ -306,6 +317,50 @@
 	}
 	tr.shown td {
 		border-bottom: none !important;
+	}
+
+	/* Category Subheader Row */
+	.category-subheader-row {
+		background: #f1f5f9 !important;
+		width: 100% !important;
+	}
+	.category-subheader-row td,
+	#report-datatable_wrapper .dataTables_scrollBody > table > tbody > tr.category-subheader-row > td {
+		padding: 7px 12px !important;
+		background: linear-gradient(90deg, #eef2ff 0%, #f8fafc 100%) !important;
+		border-top: 1px solid #cbd5e1 !important;
+		border-bottom: 1px solid #cbd5e1 !important;
+		border-left: 4px solid #6366f1 !important;
+		color: #1e293b !important;
+		overflow: visible !important;
+		text-overflow: clip !important;
+		white-space: nowrap !important;
+	}
+	.category-subheader-row:hover td {
+		background: linear-gradient(90deg, #e0e7ff 0%, #f1f5f9 100%) !important;
+	}
+	.category-header-wrap {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.category-header-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		border-radius: 5px;
+		background: #6366f1;
+		color: #ffffff;
+		font-size: 11px;
+	}
+	.category-header-title {
+		font-weight: 700;
+		color: #1e1b4b;
+		font-size: 12.5px;
+		letter-spacing: 0.4px;
+		text-transform: uppercase;
 	}
 
 	/* Expand Button */
@@ -497,8 +552,9 @@
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
 		border-radius: 8px;
-		padding: 8px 12px;
-		margin: 0;
+		padding: 8px 0 !important;
+		margin-left: 0 !important;
+		margin-right: 0 !important;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 		box-sizing: border-box;
 	}
@@ -511,7 +567,7 @@
 		align-items: center;
 		justify-content: space-between;
 		margin-bottom: 6px;
-		padding-bottom: 6px;
+		padding: 0 8px 6px 8px;
 		border-bottom: 1px solid #e2e8f0;
 	}
 	.batch-tag-icon {
@@ -748,25 +804,25 @@
 								<span class="chip-box"><i class="feather icon-check"></i></span>
 								<span class="chip-text">PO/Priority/Loading Qty</span>
 							</label>
-							<label class="filter-chip active" for="toggle-act-cost-exp" title="Toggle Actual Cost with Expense column">
-								<input type="checkbox" id="toggle-act-cost-exp" class="column-filter-checkbox" checked>
+							<label class="filter-chip active" for="toggle-act-cost" title="Toggle Actual Cost columns (Act Cost Exp, Act Cost Amt)">
+								<input type="checkbox" id="toggle-act-cost" class="column-filter-checkbox" checked>
 								<span class="chip-box"><i class="feather icon-check"></i></span>
-								<span class="chip-text">Actual Cost Exp</span>
+								<span class="chip-text">Actual Cost</span>
 							</label>
-							<label class="filter-chip active" for="toggle-act-cost-amt" title="Toggle Actual Cost Net Amount column">
-								<input type="checkbox" id="toggle-act-cost-amt" class="column-filter-checkbox" checked>
+							<label class="filter-chip active" for="toggle-act-cost-pc" title="Toggle Actual Cost Per Pc columns (Act Cost / exp, Act Cost / Amt)">
+								<input type="checkbox" id="toggle-act-cost-pc" class="column-filter-checkbox" checked>
 								<span class="chip-box"><i class="feather icon-check"></i></span>
-								<span class="chip-text">Actual Cost Amt</span>
+								<span class="chip-text">Actual Cost Per Pc</span>
 							</label>
-							<label class="filter-chip active" for="toggle-off-cost-exp" title="Toggle Official Cost with Expense column">
-								<input type="checkbox" id="toggle-off-cost-exp" class="column-filter-checkbox" checked>
+							<label class="filter-chip active" for="toggle-off-cost" title="Toggle Official Cost columns (Off Cost Exp, Off Cost Amt)">
+								<input type="checkbox" id="toggle-off-cost" class="column-filter-checkbox" checked>
 								<span class="chip-box"><i class="feather icon-check"></i></span>
-								<span class="chip-text">Official Cost Exp</span>
+								<span class="chip-text">Official Cost</span>
 							</label>
-							<label class="filter-chip active" for="toggle-off-cost-amt" title="Toggle Official Cost Net Amount column">
-								<input type="checkbox" id="toggle-off-cost-amt" class="column-filter-checkbox" checked>
+							<label class="filter-chip active" for="toggle-off-cost-pc" title="Toggle Official Cost Per Pc columns (Off Cost / exp, Off Cost / Amt)">
+								<input type="checkbox" id="toggle-off-cost-pc" class="column-filter-checkbox" checked>
 								<span class="chip-box"><i class="feather icon-check"></i></span>
-								<span class="chip-text">Official Cost Amt</span>
+								<span class="chip-text">Official Cost Per Pc</span>
 							</label>
 						</div>
 						<div class="filter-menu-footer">
@@ -794,11 +850,11 @@
 							<th class="text-end">PO Qty</th>
 							<th class="text-end">Priority Qty</th>
 							<th class="text-end">Loading Qty</th>
-							<th class="text-end th-cost-wrap">Actual Cost<br>with Exp</th>
-							<th class="text-end th-cost-wrap">Actual Cost<br>Net Amt</th>
-							<th class="text-end th-cost-wrap">Official Cost<br>with Exp</th>
-							<th class="text-end th-cost-wrap">Official Cost<br>Net Amt</th>
-							<th class="text-center" style="width: 75px;">Action</th>
+							<th class="text-end th-cost-wrap">Act Cost Exp</th>
+							<th class="text-end th-cost-wrap">Act Cost Amt</th>
+							<th class="text-end th-cost-wrap">Off Cost Exp</th>
+							<th class="text-end th-cost-wrap">Off Cost Amt</th>
+							<th class="text-center" style="width: 55px;">Action</th>
 						</tr>
 					</thead>
 				</table>
@@ -920,17 +976,17 @@
         } else {
             var showBooked = $('#toggle-booked-qty').is(':checked');
             var showPo = $('#toggle-po-qty').is(':checked');
-            var showActExp = $('#toggle-act-cost-exp').is(':checked');
-            var showActAmt = $('#toggle-act-cost-amt').is(':checked');
-            var showOffExp = $('#toggle-off-cost-exp').is(':checked');
-            var showOffAmt = $('#toggle-off-cost-amt').is(':checked');
+            var showActCost = $('#toggle-act-cost').is(':checked');
+            var showActPc = $('#toggle-act-cost-pc').is(':checked');
+            var showOffCost = $('#toggle-off-cost').is(':checked');
+            var showOffPc = $('#toggle-off-cost-pc').is(':checked');
 
             var styleBooked = showBooked ? '' : 'style="display:none;"';
             var stylePo = showPo ? '' : 'style="display:none;"';
-            var styleActExp = showActExp ? '' : 'style="display:none;"';
-            var styleActAmt = showActAmt ? '' : 'style="display:none;"';
-            var styleOffExp = showOffExp ? '' : 'style="display:none;"';
-            var styleOffAmt = showOffAmt ? '' : 'style="display:none;"';
+            var styleActCost = showActCost ? '' : 'style="display:none;"';
+            var styleActPc = showActPc ? '' : 'style="display:none;"';
+            var styleOffCost = showOffCost ? '' : 'style="display:none;"';
+            var styleOffPc = showOffPc ? '' : 'style="display:none;"';
 
             html += '<div class="table-responsive">';
             html += '  <table class="table sub-batch-table align-middle">';
@@ -947,14 +1003,14 @@
             html += '        <th class="text-end col-batch-po" ' + stylePo + '>PO Qty</th>';
             html += '        <th class="text-end col-batch-po" ' + stylePo + '>Priority Qty</th>';
             html += '        <th class="text-end col-batch-po" ' + stylePo + '>Loading Qty</th>';
-            html += '        <th class="text-end col-batch-act-exp" ' + styleActExp + '>Actual Cost Per Pc with Exp</th>';
-            html += '        <th class="text-end col-batch-act-exp" ' + styleActExp + '>Actual Cost with Exp</th>';
-            html += '        <th class="text-end col-batch-act-amt" ' + styleActAmt + '>Actual Cost Per Pc Net Amt</th>';
-            html += '        <th class="text-end col-batch-act-amt" ' + styleActAmt + '>Actual Cost Net Amt</th>';
-            html += '        <th class="text-end col-batch-off-exp" ' + styleOffExp + '>Official Cost Per Pc with Exp</th>';
-            html += '        <th class="text-end col-batch-off-exp" ' + styleOffExp + '>Official Cost with Exp</th>';
-            html += '        <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Per Pc Net Amt</th>';
-            html += '        <th class="text-end col-batch-off-amt" ' + styleOffAmt + '>Official Cost Net Amt</th>';
+            html += '        <th class="text-end col-batch-act-pc" ' + styleActPc + '>Act Cost / exp</th>';
+            html += '        <th class="text-end col-batch-act-cost" ' + styleActCost + '>Act Cost Exp</th>';
+            html += '        <th class="text-end col-batch-act-pc" ' + styleActPc + '>Act Cost / Amt</th>';
+            html += '        <th class="text-end col-batch-act-cost" ' + styleActCost + '>Act Cost Amt</th>';
+            html += '        <th class="text-end col-batch-off-pc" ' + styleOffPc + '>Off Cost / exp</th>';
+            html += '        <th class="text-end col-batch-off-cost" ' + styleOffCost + '>Off Cost Exp</th>';
+            html += '        <th class="text-end col-batch-off-pc" ' + styleOffPc + '>Off Cost / Amt</th>';
+            html += '        <th class="text-end col-batch-off-cost" ' + styleOffCost + '>Off Cost Amt</th>';
             html += '      </tr>';
             html += '    </thead>';
             html += '    <tbody>';
@@ -986,14 +1042,14 @@
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
-                html += '        <td class="text-end stk-cost col-batch-act-exp ' + (parseFloat(b.actual_cost_per_pc_with_exp) > 0 ? '' : 'stk-zero') + '" ' + styleActExp + '>₹' + b.actual_cost_per_pc_with_exp + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-act-exp ' + (parseFloat(b.actual_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleActExp + '>₹' + b.actual_cost_with_exp + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-act-amt ' + (parseFloat(b.actual_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleActAmt + '>₹' + b.actual_cost_per_pc_net + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-act-amt ' + (parseFloat(b.actual_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleActAmt + '>₹' + b.actual_cost_net + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-off-exp ' + (parseFloat(b.official_cost_per_pc_with_exp) > 0 ? '' : 'stk-zero') + '" ' + styleOffExp + '>₹' + b.official_cost_per_pc_with_exp + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-off-exp ' + (parseFloat(b.official_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffExp + '>₹' + b.official_cost_with_exp + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_per_pc_net + '</td>';
-                html += '        <td class="text-end stk-cost col-batch-off-amt ' + (parseFloat(b.official_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffAmt + '>₹' + b.official_cost_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-pc ' + (parseFloat(b.actual_cost_per_pc_with_exp) > 0 ? '' : 'stk-zero') + '" ' + styleActPc + '>₹' + b.actual_cost_per_pc_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-cost ' + (parseFloat(b.actual_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleActCost + '>₹' + b.actual_cost_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-pc ' + (parseFloat(b.actual_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleActPc + '>₹' + b.actual_cost_per_pc_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-act-cost ' + (parseFloat(b.actual_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleActCost + '>₹' + b.actual_cost_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-pc ' + (parseFloat(b.official_cost_per_pc_with_exp) > 0 ? '' : 'stk-zero') + '" ' + styleOffPc + '>₹' + b.official_cost_per_pc_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-cost ' + (parseFloat(b.official_cost_with_exp) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffCost + '>₹' + b.official_cost_with_exp + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-pc ' + (parseFloat(b.official_cost_per_pc_net) > 0 ? '' : 'stk-zero') + '" ' + styleOffPc + '>₹' + b.official_cost_per_pc_net + '</td>';
+                html += '        <td class="text-end stk-cost col-batch-off-cost ' + (parseFloat(b.official_cost_net) > 0 ? 'stk-cost-accent' : 'stk-zero') + '" ' + styleOffCost + '>₹' + b.official_cost_net + '</td>';
                 html += '      </tr>';
             }
 
@@ -1007,6 +1063,47 @@
     }
 
     $(document).ready(function($) {
+        function renderCategorySubheaders(api) {
+            var dt = api || dataTable;
+            if (!dt) {
+                try {
+                    dt = $('#report-datatable').DataTable();
+                } catch (e) {
+                    return;
+                }
+            }
+            var rows = dt.rows({ page: 'current' }).nodes();
+            if (!rows || !rows.length) return;
+            var lastCategory = null;
+            var visibleCols = 0;
+            dt.columns().every(function () {
+                if (this.visible()) visibleCols++;
+            });
+            if (visibleCols === 0) visibleCols = 17;
+
+            $('#report-datatable_wrapper .dataTables_scrollBody tbody tr.category-subheader-row, #report-datatable tbody tr.category-subheader-row, tr.category-subheader-row').remove();
+
+            dt.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+                var rowData = this.data();
+                if (!rowData) return;
+                var categoryName = rowData.category_name || 'Uncategorized';
+
+                if (lastCategory !== categoryName) {
+                    var safeCategoryName = $('<div>').text(categoryName).html();
+                    var subheaderHtml = '<tr class="category-subheader-row">' +
+                        '<td colspan="' + visibleCols + '" class="category-header-cell">' +
+                            '<div class="category-header-wrap">' +
+                                '<span class="category-header-icon"><i class="feather icon-folder"></i></span>' +
+                                '<span class="category-header-title">' + safeCategoryName + '</span>' +
+                            '</div>' +
+                        '</td>' +
+                    '</tr>';
+                    $(rows).eq(rowLoop).before(subheaderHtml);
+                    lastCategory = categoryName;
+                }
+            });
+        }
+
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"dt-toolbar"<"d-flex align-items-center"l><"dt-search"f>>t<"d-flex justify-content-between align-items-center p-1"ip>',
             "ordering": false,
@@ -1023,7 +1120,7 @@
             "language" :{
                 sLengthMenu: "Show _MENU_ entries",
                 search: "",
-                searchPlaceholder: "Search product name, code...",
+                searchPlaceholder: "Search product name, category, batch no...",
                 processing: '<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
             },	
             "drawCallback": function (settings) {
@@ -1041,6 +1138,9 @@
                         $('#total_qty').text(settings.json.total_qty);
                     }
                 }
+
+                // Render Category Subheaders
+                renderCategorySubheaders(this.api());
 
                 // Auto-expand batches if Stock with Batch filter is active
                 if ($('#toggle-stock-batch').is(':checked')) {
@@ -1066,23 +1166,23 @@
             },   
                      
             "columns": [
-                { "data": "sr_no", "className": "text-center text-nowrap align-middle" },
+                { "data": "sr_no", "className": "text-center text-nowrap align-middle", "width": "50px" },
                 { "data": "product_name", "className": "text-start align-middle" },
-                { "data": "model_no", "className": "text-start text-nowrap align-middle", "visible": false },
-                { "data": "quantity", "className": "text-end text-nowrap align-middle" },
-                { "data": "black_qty", "className": "text-end text-nowrap align-middle" },
-                { "data": "white_qty", "className": "text-end text-nowrap align-middle" },
-                { "data": "pending_qty", "className": "text-end text-nowrap align-middle" },
-                { "data": "total_white_qty", "className": "text-end text-nowrap align-middle" },
-                { "data": "booked_qty", "className": "text-end text-nowrap align-middle" },
-                { "data": "po_qty", "className": "text-end text-nowrap align-middle", "visible": false },
-                { "data": "priority_qty", "className": "text-end text-nowrap align-middle", "visible": false },
-                { "data": "loading_qty", "className": "text-end text-nowrap align-middle", "visible": false },
-                { "data": "actual_cost_with_exp", "className": "text-end text-nowrap align-middle" },
-                { "data": "actual_cost_net", "className": "text-end text-nowrap align-middle" },
-                { "data": "official_cost_with_exp", "className": "text-end text-nowrap align-middle" },
-                { "data": "official_cost_net", "className": "text-end text-nowrap align-middle" },
-                { "data": "action", "className": "text-center text-nowrap align-middle" }
+                { "data": "model_no", "className": "text-start text-nowrap align-middle", "visible": false, "width": "100px" },
+                { "data": "quantity", "className": "text-end text-nowrap align-middle", "width": "70px" },
+                { "data": "black_qty", "className": "text-end text-nowrap align-middle", "width": "75px" },
+                { "data": "white_qty", "className": "text-end text-nowrap align-middle", "width": "75px" },
+                { "data": "pending_qty", "className": "text-end text-nowrap align-middle", "width": "80px" },
+                { "data": "total_white_qty", "className": "text-end text-nowrap align-middle", "width": "100px" },
+                { "data": "booked_qty", "className": "text-end text-nowrap align-middle", "width": "80px" },
+                { "data": "po_qty", "className": "text-end text-nowrap align-middle", "visible": false, "width": "70px" },
+                { "data": "priority_qty", "className": "text-end text-nowrap align-middle", "visible": false, "width": "80px" },
+                { "data": "loading_qty", "className": "text-end text-nowrap align-middle", "visible": false, "width": "80px" },
+                { "data": "actual_cost_with_exp", "className": "text-end text-nowrap align-middle", "width": "100px" },
+                { "data": "actual_cost_net", "className": "text-end text-nowrap align-middle", "width": "100px" },
+                { "data": "official_cost_with_exp", "className": "text-end text-nowrap align-middle", "width": "100px" },
+                { "data": "official_cost_net", "className": "text-end text-nowrap align-middle", "width": "100px" },
+                { "data": "action", "className": "text-center text-nowrap align-middle", "width": "55px" }
             ], 
            
             "buttons": [], 
@@ -1101,14 +1201,62 @@
             });
         });
 
-        // Stretch parent table flush to the vertical scrollbar edge
+        $('#report-datatable_wrapper .dataTables_scrollBody').on('scroll', function () {
+            var head = document.querySelector('#report-datatable_wrapper .dataTables_scrollHead');
+            if (head) {
+                head.scrollLeft = this.scrollLeft;
+            }
+        });
+
+        var COLUMN_WIDTHS = {
+            0: 50,   // # (sr_no)
+            1: null, // Product Name (flex - takes all remaining space)
+            2: 100,  // Model No
+            3: 70,   // Quantity
+            4: 75,   // Black Qty
+            5: 75,   // White Qty
+            6: 80,   // Pending Qty
+            7: 100,  // Total White Qty
+            8: 80,   // Booked Qty
+            9: 70,   // PO Qty
+            10: 80,  // Priority Qty
+            11: 80,  // Loading Qty
+            12: 100, // Act Cost Exp
+            13: 100, // Act Cost Amt
+            14: 100, // Off Cost Exp
+            15: 100, // Off Cost Amt
+            16: 55   // Action
+        };
+
+        // Stretch parent table flush to the vertical scrollbar edge with compact columns
         function fitMainTableWidth() {
             var scrollBody = document.querySelector('#report-datatable_wrapper .dataTables_scrollBody');
             if (!scrollBody) return;
             var w = Math.floor(scrollBody.clientWidth);
             if (w < 200) return;
 
-            scrollBody.style.setProperty('overflow-x', 'hidden', 'important');
+            // Determine visible column indices
+            var visibleColIdxs = [];
+            dataTable.columns().every(function (idx) {
+                if (this.visible()) {
+                    visibleColIdxs.push(idx);
+                }
+            });
+
+            // Calculate total fixed width required by all visible non-product columns
+            var fixedTotal = 0;
+            visibleColIdxs.forEach(function (idx) {
+                if (COLUMN_WIDTHS[idx]) {
+                    fixedTotal += COLUMN_WIDTHS[idx];
+                }
+            });
+
+            var minProductWidth = 200;
+            var minTableWidth = fixedTotal + minProductWidth;
+            var tableWidth = Math.max(w, minTableWidth);
+
+            var needsHScroll = minTableWidth > w;
+            scrollBody.style.setProperty('overflow-x', needsHScroll ? 'auto' : 'hidden', 'important');
 
             var head = document.querySelector('#report-datatable_wrapper .dataTables_scrollHead');
             if (head) {
@@ -1124,17 +1272,25 @@
             ];
             nodes.forEach(function (node) {
                 if (!node) return;
-                node.style.setProperty('width', w + 'px', 'important');
-                node.style.setProperty('min-width', w + 'px', 'important');
-                node.style.setProperty('max-width', w + 'px', 'important');
+                node.style.setProperty('width', tableWidth + 'px', 'important');
+                node.style.setProperty('min-width', tableWidth + 'px', 'important');
+                node.style.setProperty('max-width', tableWidth + 'px', 'important');
                 node.style.setProperty('padding-right', '0px', 'important');
                 node.style.setProperty('box-sizing', 'border-box', 'important');
                 node.style.setProperty('margin', '0px', 'important');
             });
 
-            // Drop DT col widths so fixed layout can fill the full width
-            $('#report-datatable_wrapper colgroup col').each(function () {
-                this.style.setProperty('width', 'auto', 'important');
+            // Set explicit compact widths on each <col>, letting product_name fill the remainder
+            $('#report-datatable_wrapper colgroup').each(function () {
+                $(this).find('col').each(function (i) {
+                    var colIdx = visibleColIdxs[i];
+                    var pxWidth = (colIdx !== undefined && COLUMN_WIDTHS[colIdx]) ? COLUMN_WIDTHS[colIdx] : null;
+                    if (pxWidth) {
+                        this.style.setProperty('width', pxWidth + 'px', 'important');
+                    } else {
+                        this.style.setProperty('width', 'auto', 'important');
+                    }
+                });
             });
         }
 
@@ -1154,7 +1310,7 @@
             $td.attr('style', 'padding:0!important;border-top:none!important;background:transparent!important;');
             $wrap.attr('style',
                 'display:block;width:0;min-width:100%;max-width:100%;' +
-                'overflow-x:auto;overflow-y:hidden;box-sizing:border-box;padding:4px 2px;-webkit-overflow-scrolling:touch;'
+                'overflow-x:auto;overflow-y:hidden;box-sizing:border-box;padding:4px 0;-webkit-overflow-scrolling:touch;'
             );
             fitMainTableWidth();
         }
@@ -1235,10 +1391,10 @@
                 'toggle-model-col': false,
                 'toggle-booked-qty': true,
                 'toggle-po-qty': false,
-                'toggle-act-cost-exp': true,
-                'toggle-act-cost-amt': true,
-                'toggle-off-cost-exp': true,
-                'toggle-off-cost-amt': true
+                'toggle-act-cost': true,
+                'toggle-act-cost-pc': true,
+                'toggle-off-cost': true,
+                'toggle-off-cost-pc': true
             };
             var count = 0;
             $.each(defaults, function (id, defaultOn) {
@@ -1256,10 +1412,10 @@
             var showModel = $('#toggle-model-col').is(':checked');
             var showBooked = $('#toggle-booked-qty').is(':checked');
             var showPo = $('#toggle-po-qty').is(':checked');
-            var showActExp = $('#toggle-act-cost-exp').is(':checked');
-            var showActAmt = $('#toggle-act-cost-amt').is(':checked');
-            var showOffExp = $('#toggle-off-cost-exp').is(':checked');
-            var showOffAmt = $('#toggle-off-cost-amt').is(':checked');
+            var showActCost = $('#toggle-act-cost').is(':checked');
+            var showActPc = $('#toggle-act-cost-pc').is(':checked');
+            var showOffCost = $('#toggle-off-cost').is(':checked');
+            var showOffPc = $('#toggle-off-cost-pc').is(':checked');
 
             // Toggle main table columns without reload
             dataTable.column(1).visible(showProduct, false);
@@ -1268,11 +1424,12 @@
             dataTable.column(9).visible(showPo, false);
             dataTable.column(10).visible(showPo, false);
             dataTable.column(11).visible(showPo, false);
-            dataTable.column(12).visible(showActExp, false);
-            dataTable.column(13).visible(showActAmt, false);
-            dataTable.column(14).visible(showOffExp, false);
-            dataTable.column(15).visible(showOffAmt, false);
+            dataTable.column(12).visible(showActCost, false);
+            dataTable.column(13).visible(showActCost, false);
+            dataTable.column(14).visible(showOffCost, false);
+            dataTable.column(15).visible(showOffCost, false);
             dataTable.columns.adjust();
+            renderCategorySubheaders(dataTable);
             fitMainTableWidth();
             requestAnimationFrame(function () {
                 fitMainTableWidth();
@@ -1281,11 +1438,12 @@
             // Toggle columns in any currently expanded sub-batch tables
             $('.sub-batch-table .col-batch-booked').toggle(showBooked);
             $('.sub-batch-table .col-batch-po').toggle(showPo);
-            $('.sub-batch-table .col-batch-act-exp').toggle(showActExp);
-            $('.sub-batch-table .col-batch-act-amt').toggle(showActAmt);
-            $('.sub-batch-table .col-batch-off-exp').toggle(showOffExp);
-            $('.sub-batch-table .col-batch-off-amt').toggle(showOffAmt);
+            $('.sub-batch-table .col-batch-act-cost').toggle(showActCost);
+            $('.sub-batch-table .col-batch-act-pc').toggle(showActPc);
+            $('.sub-batch-table .col-batch-off-cost').toggle(showOffCost);
+            $('.sub-batch-table .col-batch-off-pc').toggle(showOffPc);
             fitChildScrollPanels();
+
             updateFilterCount();
         }
 
@@ -1330,10 +1488,10 @@
             $('#toggle-model-col').prop('checked', false).closest('.filter-chip').removeClass('active');
             $('#toggle-booked-qty').prop('checked', true).closest('.filter-chip').addClass('active');
             $('#toggle-po-qty').prop('checked', false).closest('.filter-chip').removeClass('active');
-            $('#toggle-act-cost-exp').prop('checked', true).closest('.filter-chip').addClass('active');
-            $('#toggle-act-cost-amt').prop('checked', true).closest('.filter-chip').addClass('active');
-            $('#toggle-off-cost-exp').prop('checked', true).closest('.filter-chip').addClass('active');
-            $('#toggle-off-cost-amt').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-act-cost').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-act-cost-pc').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-off-cost').prop('checked', true).closest('.filter-chip').addClass('active');
+            $('#toggle-off-cost-pc').prop('checked', true).closest('.filter-chip').addClass('active');
             applyColumnFilters();
 
             if (zeroWasChecked) {

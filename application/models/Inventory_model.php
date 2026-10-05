@@ -9199,41 +9199,37 @@ class Inventory_model extends CI_Model
 		$keyword_filter = "";
 		
 		$company_id        = $this->session->userdata('company_id');
-		$keyword_filter .= " AND (company_id='" . $company_id . "')";
 
 		$warehouse_id = '';
-		if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != ""):
-			$warehouse_id        = $_REQUEST['warehouse_id'];
-			if ($warehouse_id != 'All') {
-				$keyword_filter .= " AND (warehouse_id='" . $warehouse_id . "')";
-			}
-		endif;
+		$warehouse_join = "";
+		$warehouse_join_b = "";
+		if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != "" && $_REQUEST['warehouse_id'] != "All") {
+			$warehouse_id = $_REQUEST['warehouse_id'];
+			$warehouse_join = " AND i.warehouse_id = '$warehouse_id'";
+			$warehouse_join_b = " AND inv_b.warehouse_id = '$warehouse_id'";
+		}
 
-		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (item_code like '%" . $keyword . "%' OR product_name like '%" . $keyword . "%')";
-		endif;
+		$search_filter = "";
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $this->db->escape_str(trim($filter_data['keywords']));
+			$search_filter = " AND (
+				p.name LIKE '%" . $keyword . "%' 
+				OR p.item_code LIKE '%" . $keyword . "%' 
+				OR cat.name LIKE '%" . $keyword . "%' 
+				OR EXISTS (SELECT 1 FROM categories c WHERE c.name LIKE '%" . $keyword . "%' AND FIND_IN_SET(c.id, p.categories) > 0)
+				OR EXISTS (SELECT 1 FROM inventory inv_b WHERE inv_b.product_id = p.id AND inv_b.company_id = '$company_id' $warehouse_join_b AND inv_b.batch_no LIKE '%" . $keyword . "%')
+			)";
+		}
 
 		$show_zero_qty = intval($_REQUEST['show_zero_qty'] ?? 0);
 
 		if ($show_zero_qty == 1) {
 			// Show all products including zero qty using LEFT JOIN with raw_products
-			$warehouse_join = "";
-			if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != "" && $_REQUEST['warehouse_id'] != "All") {
-				$wid = $_REQUEST['warehouse_id'];
-				$warehouse_join = " AND i.warehouse_id = '$wid'";
-			}
-
-			$rp_keyword_filter = "";
-			if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
-				$kw = $filter_data['keywords'];
-				$rp_keyword_filter = " AND (p.item_code LIKE '%" . $kw . "%' OR p.name LIKE '%" . $kw . "%')";
-			}
-
 			$total_count_row = $this->db->query("
-				SELECT COUNT(p.id) as total 
+				SELECT COUNT(DISTINCT p.id) as total 
 				FROM raw_products p 
-				WHERE p.is_deleted = '0' $rp_keyword_filter
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+				WHERE p.is_deleted = '0' $search_filter
 			")->row_array();
 			$total_count = intval($total_count_row['total'] ?? 0);
 
@@ -9245,6 +9241,8 @@ class Inventory_model extends CI_Model
 					p.item_code, 
 					p.id as product_id, 
 					p.categories,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
 					COALESCE(SUM(i.quantity), 0) as quantity, 
 					COALESCE(SUM(i.official_qty), 0) as white_qty, 
 					COALESCE(SUM(i.black_qty), 0) as black_qty,
@@ -9256,64 +9254,51 @@ class Inventory_model extends CI_Model
 				FROM raw_products p
 				LEFT JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
 				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
-				WHERE p.is_deleted = '0' $rp_keyword_filter
+				WHERE p.is_deleted = '0' $search_filter
 				GROUP BY p.id 
-				ORDER BY COALESCE(MAX(cat.id), 999999999) ASC, p.id ASC
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		} else {
 			// Default: Show only products with stock quantity > 0
 			$total_count_row = $this->db->query("
 				SELECT COUNT(*) as total FROM (
-					SELECT product_id 
-					FROM inventory 
-					WHERE (id!='') $keyword_filter 
-					GROUP BY product_id 
-					HAVING SUM(quantity) > 0
+					SELECT p.id 
+					FROM raw_products p
+					JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+					WHERE p.is_deleted = '0' $search_filter 
+					GROUP BY p.id 
+					HAVING SUM(i.quantity) > 0
 				) as t
 			")->row_array();
 			$total_count = intval($total_count_row['total'] ?? 0);
 
 			$query = $this->db->query("
 				SELECT 
-					t.id,
-					t.warehouse_name,
-					t.product_name,
-					t.item_code,
-					t.product_id,
-					t.categories,
-					t.quantity,
-					t.white_qty,
-					t.black_qty,
-					t.pending_qty,
-					t.actual_cost_with_exp_total,
-					t.actual_cost_net_total,
-					t.official_cost_with_exp_total,
-					t.official_cost_net_total
-				FROM (
-					SELECT 
-						MAX(id) as id, 
-						MAX(warehouse_name) as warehouse_name, 
-						product_name, 
-						item_code, 
-						product_id, 
-						categories,
-						SUM(quantity) as quantity, 
-						SUM(official_qty) as white_qty, 
-						SUM(black_qty) as black_qty,
-						SUM(pending_qty) as pending_qty,
-						SUM(actual_cost_with_exp * quantity) as actual_cost_with_exp_total,
-						SUM(actual_inr * quantity) as actual_cost_net_total,
-						SUM(official_exp_per_pc * official_qty) as official_cost_with_exp_total,
-						SUM(official_rate_rs * official_qty) as official_cost_net_total
-					FROM inventory 
-					WHERE (id!='') $keyword_filter 
-					GROUP BY product_id 
-					HAVING SUM(quantity) > 0
-				) t
-				LEFT JOIN raw_products p ON p.id = t.product_id
-				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(COALESCE(p.categories, t.categories), ',', 1)
-				ORDER BY COALESCE(cat.id, 999999999) ASC, t.product_id ASC
+					COALESCE(MAX(i.id), 0) as id, 
+					MAX(i.warehouse_name) as warehouse_name, 
+					p.name as product_name, 
+					p.item_code, 
+					p.id as product_id, 
+					p.categories,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
+					SUM(i.quantity) as quantity, 
+					SUM(i.official_qty) as white_qty, 
+					SUM(i.black_qty) as black_qty,
+					SUM(i.pending_qty) as pending_qty,
+					SUM(i.actual_cost_with_exp * i.quantity) as actual_cost_with_exp_total,
+					SUM(i.actual_inr * i.quantity) as actual_cost_net_total,
+					SUM(i.official_exp_per_pc * i.official_qty) as official_cost_with_exp_total,
+					SUM(i.official_rate_rs * i.official_qty) as official_cost_net_total
+				FROM raw_products p
+				JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+				WHERE p.is_deleted = '0' $search_filter 
+				GROUP BY p.id 
+				HAVING SUM(i.quantity) > 0
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		}
@@ -9471,7 +9456,7 @@ class Inventory_model extends CI_Model
 				$sr_num = ++$start;
 				$has_batches = !empty($batches_data);
 				$expand_btn = '<div class="d-inline-flex align-items-center justify-content-center">
-					<button type="button" class="btn-expand-row me-1' . (!$has_batches ? ' disabled' : '') . '" title="' . ($has_batches ? 'Expand Batches' : 'No Batches') . '">
+					<button type="button" class="btn-expand-row' . (!$has_batches ? ' disabled' : '') . '" title="' . ($has_batches ? 'Expand Batches' : 'No Batches') . '">
 						<i class="feather icon-plus font-small-1"></i>
 					</button>
 					<span class="stk-sr-num">' . $sr_num . '</span>
@@ -9517,7 +9502,9 @@ class Inventory_model extends CI_Model
 					"official_cost_net"      => ($off_cost_net_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($off_cost_net_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
 					"action"            => $action,
 					"batches"           => $batches_data,
-					"raw_product_name"  => $item['product_name']
+					"raw_product_name"  => $item['product_name'],
+					"category_name"     => !empty($item['category_name']) ? $item['category_name'] : 'Uncategorized',
+					"category_id"       => !empty($item['category_id']) ? intval($item['category_id']) : 0
 				);
 			}
 		}
@@ -18461,6 +18448,447 @@ class Inventory_model extends CI_Model
 			"recordsTotal"    => $total_count,
 			"recordsFiltered" => $total_count,
 			"data"            => $data
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_sales_order_all_order_wise()
+	{
+		$params['draw'] = isset($_REQUEST['draw']) ? $_REQUEST['draw'] : 1;
+		$start = isset($_REQUEST['start']) ? intval($_REQUEST['start']) : 0;
+		$length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword = $filter_data['keywords'];
+			$keyword_filter .= " AND (
+				so.order_no LIKE '%" . $keyword . "%'
+				OR so.invoice_no LIKE '%" . $keyword . "%'
+				OR so.customer_name LIKE '%" . $keyword . "%'
+				OR so.warehouse_name LIKE '%" . $keyword . "%'
+				OR sopb.batch_no LIKE '%" . $keyword . "%'
+				OR sop.product_name LIKE '%" . $keyword . "%'
+				OR rp.name LIKE '%" . $keyword . "%'
+				OR sop.item_code LIKE '%" . $keyword . "%'
+				OR rp.item_code LIKE '%" . $keyword . "%'
+				OR su.first_name LIKE '%" . $keyword . "%'
+				OR su.last_name LIKE '%" . $keyword . "%'
+				OR so.added_by_name LIKE '%" . $keyword . "%'
+			)";
+		endif;
+
+		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
+			$keyword = clean_and_escape($_REQUEST['customer_id']);
+			$keyword_filter .= " AND (so.customer_id = '" . $keyword . "')";
+		endif;
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			if (count($added_date) == 2) {
+				$from = date('Y-m-d', strtotime($added_date[0]));
+				$to = date('Y-m-d', strtotime($added_date[1]));
+				if ($from == $to) {
+					$keyword_filter .= " AND (DATE(so.date) = '$from')";
+				} else {
+					$keyword_filter .= " AND (DATE(so.date) BETWEEN '$from' AND '$to')";
+				}
+			}
+		}
+
+		if (isset($_REQUEST['delivery_date_range']) && $_REQUEST['delivery_date_range'] != "") {
+			$del_date = explode(' - ', $_REQUEST['delivery_date_range']);
+			if (count($del_date) == 2) {
+				$d_from = date('Y-m-d', strtotime($del_date[0]));
+				$d_to = date('Y-m-d', strtotime($del_date[1]));
+				if ($d_from == $d_to) {
+					$keyword_filter .= " AND (DATE(so.expected_date) = '$d_from')";
+				} else {
+					$keyword_filter .= " AND (DATE(so.expected_date) BETWEEN '$d_from' AND '$d_to')";
+				}
+			}
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		if ($company_id) {
+			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
+			if ($this->session->userdata('super_type_id') == 7) {
+				$keyword_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			}
+		}
+		$keyword_filter .= " AND (so.type != 'company')";
+		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
+
+		$total_count = $this->db->query("
+			SELECT sopb.id
+			FROM sales_order_product_batch AS sopb
+			INNER JOIN sales_order AS so ON so.id = sopb.order_id
+			INNER JOIN sales_order_product AS sop ON sop.id = sopb.order_product_id
+			LEFT JOIN raw_products AS rp ON rp.id = sop.product_id
+			LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
+			WHERE (so.is_deleted = '0') $keyword_filter
+		")->num_rows();
+
+		$query = $this->db->query("
+			SELECT 
+				sopb.id AS batch_id,
+				sopb.order_id,
+				sopb.order_product_id,
+				sopb.batch_no,
+				sopb.qty,
+				sopb.white_qty,
+				sopb.black_qty,
+				sopb.return_qty,
+				sopb.return_black_qty,
+				sopb.amount,
+				sopb.bill_amount,
+				sopb.bill_total,
+				sopb.gst,
+				sopb.gst_amount,
+				sopb.total_bill_gst_amount,
+				sopb.black_amount,
+				sopb.black_total,
+				sopb.final_total,
+				sopb.recieved_qty,
+				sopb.recieved_black_qty,
+				(SELECT COALESCE(SUM(b_sub.recieved_qty + b_sub.recieved_black_qty), 0) FROM sales_order_product_batch AS b_sub WHERE b_sub.order_id = so.id) AS order_invoiced_qty,
+				so.id AS sales_order_id,
+				so.order_no,
+				so.date AS order_date,
+				so.expected_date AS delivery_date,
+				so.invoice_no,
+				so.invoice_date,
+				so.customer_name,
+				so.warehouse_name,
+				so.gst_type,
+				so.added_by_name,
+				so.is_approved,
+				so.is_generated,
+				COALESCE(sop.product_name, rp.name) AS product_name,
+				COALESCE(sop.item_code, rp.item_code) AS item_code,
+				TRIM(CONCAT(IFNULL(su.first_name, ''), ' ', IFNULL(su.last_name, ''))) AS sales_person_name,
+				inv.actual_cost_with_exp,
+				sc.commission_amount,
+				sc.customer_range,
+				sc.product_comm,
+				sc.customer_comm,
+				sc.distributer_comm,
+				sc.shared_commission,
+				sc.my_commission,
+				pcs.name AS slab_name
+			FROM sales_order_product_batch AS sopb
+			INNER JOIN sales_order AS so ON so.id = sopb.order_id
+			INNER JOIN sales_order_product AS sop ON sop.id = sopb.order_product_id
+			LEFT JOIN raw_products AS rp ON rp.id = sop.product_id
+			LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
+			LEFT JOIN (
+				SELECT product_id, batch_no, MAX(actual_cost_with_exp) AS actual_cost_with_exp
+				FROM inventory
+				GROUP BY product_id, batch_no
+			) AS inv ON (inv.product_id = sop.product_id AND inv.batch_no = sopb.batch_no)
+			LEFT JOIN sales_commission AS sc ON sc.id = (
+				SELECT id FROM sales_commission 
+				WHERE order_product_batch_id = sopb.id AND is_deleted = 0 
+				ORDER BY id DESC LIMIT 1
+			)
+			LEFT JOIN product_commission_slab AS pcs ON pcs.id = rp.commission_id
+			WHERE (so.is_deleted = '0') $keyword_filter
+			ORDER BY so.date DESC, so.id DESC, sopb.id ASC
+			LIMIT $start, $length
+		");
+
+		$profit_slabs = $this->db->where('is_deleted', '0')->get('profit_commission_slab')->result_array();
+
+		$total_amount_formatted = '0.00';
+		$sum_query = $this->db->query("
+			SELECT SUM(sopb.final_total) as total_amount
+			FROM sales_order_product_batch AS sopb
+			INNER JOIN sales_order AS so ON so.id = sopb.order_id
+			INNER JOIN sales_order_product AS sop ON sop.id = sopb.order_product_id
+			LEFT JOIN raw_products AS rp ON rp.id = sop.product_id
+			LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
+			WHERE (so.is_deleted = '0') $keyword_filter
+		");
+		if ($sum_query && $sum_query->num_rows() > 0) {
+			$sum_row = $sum_query->row_array();
+			$total_amount_formatted = number_format((float)($sum_row['total_amount'] ?? 0), 2, '.', ',');
+		}
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$order_id = $item['order_id'];
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $order_id . "','Sales Order View')";
+				$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_sales_order_history/" . $order_id . "', 'Sales Order History')";
+
+				// 1. SrNo
+				$sr_no = ++$start;
+
+				// 2. Bill Date
+				$bill_date_val = (!empty($item['invoice_date']) && $item['invoice_date'] != '0000-00-00')
+					? date('d M, Y', strtotime($item['invoice_date']))
+					: ((!empty($item['order_date']) && $item['order_date'] != '0000-00-00') ? date('d M, Y', strtotime($item['order_date'])) : '-');
+
+				// 3. Delivery Date
+				$delivery_date_val = (!empty($item['delivery_date']) && $item['delivery_date'] != '0000-00-00')
+					? date('d M, Y', strtotime($item['delivery_date']))
+					: '-';
+
+				// 4. Inv No
+				$inv_no_val = !empty($item['invoice_no']) ? htmlspecialchars($item['invoice_no']) : '-';
+
+				// 5. Customer Name
+				$customer_name_html = '<span class="fw-bold text-dark">' . htmlspecialchars($item['customer_name'] ?? '-') . '</span>';
+
+				// 6. Order No
+				$order_no_html = '<a href="javascript:void(0)" onclick="' . $view_url . '" class="fw-bold text-primary">' . htmlspecialchars($item['order_no'] ?? '-') . '</a>';
+
+				// 7. Warehouse
+				$warehouse_val = htmlspecialchars($item['warehouse_name'] ?? '-');
+
+				// 8. Batch No
+				$batch_no_val = !empty($item['batch_no']) ? htmlspecialchars($item['batch_no']) : '-';
+				$batch_html = '<span class="badge bg-light-primary text-primary fw-bold">' . $batch_no_val . '</span>';
+
+				// 9. Product Name
+				$product_html = '<span class="fw-semibold text-dark">' . htmlspecialchars($item['product_name'] ?? '-') . '</span>';
+
+				// 10. Model No.
+				$model_no_val = !empty($item['item_code']) ? htmlspecialchars($item['item_code']) : '-';
+				$model_no_html = '<span>' . $model_no_val . '</span>';
+
+				// 11. Qty
+				$batch_qty = (float)($item['qty'] ?? 0);
+				$return_qty = (float)($item['return_qty'] ?? 0);
+				$return_black_qty = (float)($item['return_black_qty'] ?? 0);
+				$net_qty = max(0, $batch_qty - $return_qty - $return_black_qty);
+				$qty_html = (string)(int)round($net_qty);
+
+				// 12. Rate
+				$unit_rate = (float)($item['amount'] ?? 0);
+				$rate_html = '₹' . number_format($unit_rate, 2);
+
+				// 13. Tot Rate
+				$tot_rate = $net_qty * $unit_rate;
+				$tot_rate_html = '₹' . number_format($tot_rate, 2);
+
+				// 14. Bill Amt (unit billing price)
+				$bill_amt_unit = (float)($item['bill_amount'] ?? 0);
+				$bill_amt_html = '₹' . number_format($bill_amt_unit, 2);
+
+				// 15. Taxable Amt
+				$bill_total = (float)($item['bill_total'] ?? 0);
+				if ($bill_total == 0 && $bill_amt_unit > 0) {
+					$bill_total = $bill_amt_unit * $net_qty;
+				}
+				$taxable_amt_html = '₹' . number_format($bill_total, 2);
+
+				// 16. CGST, 17. SGST, 18. IGST
+				$gst_type = strtolower($item['gst_type'] ?? '');
+				$gst_pct = (float)($item['gst'] ?? 0);
+				$gst_amount = (float)($item['gst_amount'] ?? 0);
+
+				if (strpos($gst_type, 'igst') !== false) {
+					$cgst_html = '<span class="text-secondary">-</span>';
+					$sgst_html = '<span class="text-secondary">-</span>';
+					$igst_html = '₹' . number_format($gst_amount, 2) . '<br><small class="text-muted">' . number_format($gst_pct, 1) . '%</small>';
+				} else {
+					$cgst_amt = $gst_amount / 2;
+					$sgst_amt = $gst_amount / 2;
+					$half_pct = $gst_pct / 2;
+					$cgst_html = '₹' . number_format($cgst_amt, 2) . '<br><small class="text-muted">' . number_format($half_pct, 1) . '%</small>';
+					$sgst_html = '₹' . number_format($sgst_amt, 2) . '<br><small class="text-muted">' . number_format($half_pct, 1) . '%</small>';
+					$igst_html = '<span class="text-secondary">-</span>';
+				}
+
+				// 19. Inv Amt (Total Bill Amt + GST)
+				$total_bill_gst = (float)($item['total_bill_gst_amount'] ?? 0);
+				if ($total_bill_gst == 0) {
+					$total_bill_gst = $bill_total + $gst_amount;
+				}
+				$inv_amt_html = '₹' . number_format($total_bill_gst, 2);
+
+				// 20. Cash (unit cash price)
+				$black_amt_unit = (float)($item['black_amount'] ?? 0);
+				$cash_html = '₹' . number_format($black_amt_unit, 2);
+
+				// 21. Tot Cash Amt
+				$black_total = (float)($item['black_total'] ?? 0);
+				if ($black_total == 0 && $black_amt_unit > 0) {
+					$black_total = $black_amt_unit * $net_qty;
+				}
+				$tot_cash_amt_html = '₹' . number_format($black_total, 2);
+
+				// 22. Final Amt
+				$final_total = (float)($item['final_total'] ?? 0);
+				if ($final_total == 0) {
+					$final_total = $total_bill_gst + $black_total;
+				}
+				$final_amt_html = '<strong class="text-success">₹' . number_format($final_total, 2) . '</strong>';
+
+				// 23. Comm Amt (unit commission per pc)
+				$comm_amt = (float)($item['commission_amount'] ?? 0);
+				$comm_per_pc = ($net_qty > 0) ? ($comm_amt / $net_qty) : 0;
+				$comm_amt_html = ($comm_per_pc > 0) ? ('₹' . number_format($comm_per_pc, 2)) : '<span class="text-secondary">₹0.00</span>';
+
+				// 24. Tot Comm Amt
+				if ($comm_amt > 0) {
+					$tot_comm_amt_html = '<strong class="text-dark">₹' . number_format($comm_amt, 2) . '</strong>';
+					if ((float)($item['shared_commission'] ?? 0) > 0) {
+						$my_comm_amt = $comm_amt * ((float)($item['my_commission'] ?? 100) / 100);
+						$tot_comm_amt_html .= '<br><small class="text-success">Mine: ₹' . number_format($my_comm_amt, 2) . '</small>';
+					}
+				} else {
+					$tot_comm_amt_html = '<span class="text-secondary">₹0.00</span>';
+				}
+
+				// 25. Comm %
+				$comm_pct = (float)($item['customer_comm'] ?? ($item['distributer_comm'] ?? ($item['product_comm'] ?? 0)));
+				if ($comm_pct > 0) {
+					$comm_pct_html = '<strong>' . number_format($comm_pct, 1) . '%</strong>';
+					if (!empty($item['customer_range'])) {
+						$comm_pct_html .= '<br><small class="text-muted">' . htmlspecialchars($item['customer_range']) . '</small>';
+					}
+				} else {
+					$comm_pct_html = '<span class="text-secondary">-</span>';
+				}
+
+				// 26. Sales Person
+				$sales_person_html = !empty($item['sales_person_name']) ? htmlspecialchars($item['sales_person_name']) : '-';
+
+				// 27. Act Cst Per Pc With Expense
+				$actual_cost = (float)($item['actual_cost_with_exp'] ?? 0);
+				$act_cst_per_pc_html = ($actual_cost > 0) ? ('₹' . number_format($actual_cost, 2)) : '<span class="text-secondary">-</span>';
+
+				// 28. Tot Act Cst With Expense (Of Current Line)
+				$total_cost_with_exp = $actual_cost * $net_qty;
+				$tot_act_cst_html = ($total_cost_with_exp > 0) ? ('₹' . number_format($total_cost_with_exp, 2)) : '<span class="text-secondary">-</span>';
+
+				// 29. Profit Amt Per Pc
+				if ($actual_cost > 0) {
+					$profit_per_pc = $unit_rate - $actual_cost;
+					if ($profit_per_pc >= 0) {
+						$profit_amt_per_pc_html = '<span class="text-success fw-bold">₹' . number_format($profit_per_pc, 2) . '</span>';
+					} else {
+						$profit_amt_per_pc_html = '<span class="text-danger fw-bold">-₹' . number_format(abs($profit_per_pc), 2) . '</span>';
+					}
+				} else {
+					$profit_amt_per_pc_html = '<span class="text-secondary">-</span>';
+				}
+
+				// 30. Total Profit (Of Current Line)
+				if ($actual_cost > 0) {
+					$tot_profit = ($unit_rate - $actual_cost) * $net_qty;
+					if ($tot_profit >= 0) {
+						$tot_profit_html = '<strong class="text-success">₹' . number_format($tot_profit, 2) . '</strong>';
+					} else {
+						$tot_profit_html = '<strong class="text-danger">-₹' . number_format(abs($tot_profit), 2) . '</strong>';
+					}
+				} else {
+					$tot_profit_html = '<span class="text-secondary">-</span>';
+				}
+
+				// 31. Tot Profit % (Of Current Line)
+				if ($actual_cost > 0) {
+					$profit_pct = (($unit_rate - $actual_cost) / $actual_cost) * 100;
+					$profit_slab_pct = ($unit_rate / $actual_cost) * 100;
+					$tot_profit_pct_html = ($profit_pct >= 0 ? '<strong class="text-success">' : '<strong class="text-danger">') . number_format($profit_pct, 1) . '%</strong>';
+					$range_badge = !empty($item['customer_range']) ? $item['customer_range'] : '';
+					if (empty($range_badge)) {
+						foreach ($profit_slabs as $ps) {
+							if ($profit_slab_pct >= (float)$ps['comm_from'] && $profit_slab_pct <= (float)$ps['comm_to']) {
+								$range_badge = $ps['name'];
+								break;
+							}
+						}
+					}
+					if (!empty($range_badge)) {
+						$tot_profit_pct_html .= '<br><span class="badge bg-light-info text-info" style="font-size: 0.68rem; padding: 2px 5px;">' . htmlspecialchars($range_badge) . '</span>';
+					}
+				} else {
+					$tot_profit_pct_html = '<span class="text-secondary">-</span>';
+				}
+
+				// 32. Added By
+				$added_by_html = !empty($item['added_by_name']) ? htmlspecialchars($item['added_by_name']) : '-';
+
+				// 33. ACTIONS
+				$history_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+				$inv_links = '';
+				if (!empty($item['invoice_no'])) {
+					$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $order_id;
+					$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $order_id;
+					$inv_links = '<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> White Invoice</a>
+					<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice</a>';
+				}
+				$mgmt_html = '';
+				$batch_invoiced_qty = (float)($item['recieved_qty'] ?? 0) + (float)($item['recieved_black_qty'] ?? 0);
+				$order_invoiced_qty = (float)($item['order_invoiced_qty'] ?? 0);
+				$has_invoice = ($batch_invoiced_qty > 0 || $order_invoiced_qty > 0 || (int)($item['is_generated'] ?? 0) === 1);
+
+				if (!$has_invoice && $this->session->userdata('super_type_id') != 7) {
+					$edit_order_url = base_url() . 'inventory/sales-order/edit-order/' . $order_id;
+					$mgmt_html = '<a class="dropdown-item" href="' . $edit_order_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+					<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $order_id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>
+					<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $order_id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+				}
+
+				$action_html = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+						' . $history_html . '
+						' . $inv_links . '
+						' . $mgmt_html . '
+					</div>
+				</div>';
+
+				$data[] = array(
+					"sr_no"              => $sr_no,
+					"bill_date"          => $bill_date_val,
+					"delivery_date"      => $delivery_date_val,
+					"inv_no"             => $inv_no_val,
+					"customer_name"      => $customer_name_html,
+					"order_no"           => $order_no_html,
+					"warehouse_name"     => $warehouse_val,
+					"batch_no"           => $batch_html,
+					"product_name"       => $product_html,
+					"model_no"           => $model_no_html,
+					"qty"                => $qty_html,
+					"rate"               => $rate_html,
+					"tot_rate"           => $tot_rate_html,
+					"bill_amt"           => $bill_amt_html,
+					"taxable_amt"        => $taxable_amt_html,
+					"cgst"               => $cgst_html,
+					"sgst"               => $sgst_html,
+					"igst"               => $igst_html,
+					"inv_amt"            => $inv_amt_html,
+					"cash"               => $cash_html,
+					"tot_cash_amt"       => $tot_cash_amt_html,
+					"final_amt"          => $final_amt_html,
+					"comm_amt"           => $comm_amt_html,
+					"tot_comm_amt"       => $tot_comm_amt_html,
+					"comm_per"           => $comm_pct_html,
+					"sales_person"       => $sales_person_html,
+					"act_cost_per_pc"    => $act_cst_per_pc_html,
+					"tot_act_cost"       => $tot_act_cst_html,
+					"profit_amt_per_pc"  => $profit_amt_per_pc_html,
+					"total_profit"       => $tot_profit_html,
+					"tot_profit_per"     => $tot_profit_pct_html,
+					"added_by"           => $added_by_html,
+					"action"             => $action_html,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"            => intval($params['draw']),
+			"recordsTotal"    => $total_count,
+			"recordsFiltered" => $total_count,
+			"data"            => $data,
+			"total_amount"    => $total_amount_formatted
 		);
 		echo json_encode($json_data);
 	}
@@ -27796,16 +28224,23 @@ public function get_sales_return_reports()
 		$keyword_filter = "";
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (p.name like '%" . $keyword . "%' OR p.item_code like '%" . $keyword . "%')";
+			$keyword        = $this->db->escape_str(trim($filter_data['keywords']));
+			$keyword_filter .= " AND (
+				p.name LIKE '%" . $keyword . "%' 
+				OR p.item_code LIKE '%" . $keyword . "%' 
+				OR cat.name LIKE '%" . $keyword . "%' 
+				OR EXISTS (SELECT 1 FROM categories c WHERE c.name LIKE '%" . $keyword . "%' AND FIND_IN_SET(c.id, p.categories) > 0)
+				OR EXISTS (SELECT 1 FROM inventory inv_b WHERE inv_b.product_id = p.id AND inv_b.batch_no LIKE '%" . $keyword . "%')
+			)";
 		endif;
 
 		$show_zero_qty = intval($_REQUEST['show_zero_qty'] ?? 0);
 
 		if ($show_zero_qty == 1) {
 			$total_count_row = $this->db->query("
-				SELECT COUNT(p.id) as total 
+				SELECT COUNT(DISTINCT p.id) as total 
 				FROM raw_products p 
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $keyword_filter
 			")->row_array();
 			$total_count = intval($total_count_row['total'] ?? 0);
@@ -27817,6 +28252,8 @@ public function get_sales_return_reports()
 					p.item_code, 
 					p.id as product_id, 
 					p.categories,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
 					COALESCE(SUM(i.quantity), 0) as quantity, 
 					COALESCE(SUM(i.official_qty), 0) as white_qty, 
 					COALESCE(SUM(i.black_qty), 0) as black_qty,
@@ -27830,7 +28267,7 @@ public function get_sales_return_reports()
 				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $keyword_filter
 				GROUP BY p.id 
-				ORDER BY COALESCE(MAX(cat.id), 999999999) ASC, p.id ASC
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		} else {
@@ -27853,6 +28290,8 @@ public function get_sales_return_reports()
 					p.item_code, 
 					p.id as product_id, 
 					p.categories,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
 					SUM(i.quantity) as quantity, 
 					SUM(i.official_qty) as white_qty, 
 					SUM(i.black_qty) as black_qty,
@@ -27867,7 +28306,7 @@ public function get_sales_return_reports()
 				WHERE p.is_deleted = '0' $keyword_filter 
 				GROUP BY p.id 
 				HAVING SUM(i.quantity) > 0
-				ORDER BY COALESCE(MAX(cat.id), 999999999) ASC, p.id ASC
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
 				LIMIT $start, $length
 			");
 		}
@@ -28100,7 +28539,7 @@ public function get_sales_return_reports()
 
 				$has_companies = count($companies_data) > 0;
 				$expand_btn = '<button type="button" class="btn-expand-row ' . (!$has_companies ? 'disabled' : '') . '" data-id="' . $product_id . '" title="' . ($has_companies ? 'Click to expand companies' : 'No companies') . '"><i class="feather icon-plus"></i></button>';
-				$sr_no_html = '<div class="d-flex align-items-center justify-content-center">' . $expand_btn . '<span class="stk-sr-num ms-1">' . (++$row_num) . '</span></div>';
+				$sr_no_html = '<div class="d-flex align-items-center justify-content-center">' . $expand_btn . '<span class="stk-sr-num">' . (++$row_num) . '</span></div>';
 
 				$show_item_code = (!empty($item['item_code']) && strtolower(trim($item['item_code'])) != strtolower(trim($item['product_name'])));
 				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name'] ?? 'Product #' . $product_id) . '</div>';
@@ -28131,7 +28570,9 @@ public function get_sales_return_reports()
 					"official_cost_net"      => ($off_cost_net_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($off_cost_net_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
 					"action"            => $action,
 					"companies"         => $companies_data,
-					"raw_product_name"  => $item['product_name']
+					"raw_product_name"  => $item['product_name'],
+					"category_name"     => !empty($item['category_name']) ? $item['category_name'] : 'Uncategorized',
+					"category_id"       => !empty($item['category_id']) ? intval($item['category_id']) : 0
 				);
 			}
 		}

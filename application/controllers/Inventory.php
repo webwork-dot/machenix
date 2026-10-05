@@ -4591,6 +4591,16 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_sales_order_all_order_wise()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_sales_order_all_order_wise();
+        }
+    }
+
     public function sales_commission($param1 = "", $param2 = "", $param3 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {

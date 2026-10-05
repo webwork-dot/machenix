@@ -72,6 +72,10 @@
         position: relative;
         z-index: 5;
     }
+    .so-table-title-row .stock-filter-menu {
+        min-width: 320px;
+        max-width: 360px;
+    }
     .card-datatable.d-report .dataTables_wrapper .dataTables_filter {
         display: flex;
         align-items: center;
@@ -189,12 +193,14 @@
                    <h5 class="mb-0">
                    <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                        <b>Total Product Batches <span id="total_count"> (0)</span></b>
+                   <?php } elseif ($status == 'all') { ?>
+                       <b>Total Sales Order Items <span id="total_count"> (0)</span></b>
                    <?php } elseif ($status == 'cancelled') { ?>
                        <b>Total Cancelled <span id="total_count"> (0)</span></b>
                    <?php } else { ?>
                        <b>Total Sales Order <span id="total_count"> (0)</span></b>
                    <?php } ?>
-                   <?php if (($status == 'complete' || $status == 'cancelled') && $staff_access !== 7) { ?>
+                   <?php if (($status == 'complete' || $status == 'cancelled' || ($status == 'all' && $sub_tab != 'product')) && $staff_access !== 7) { ?>
                       &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
                    <?php } ?>
 				  </h5>
@@ -240,6 +246,180 @@
                         </div>
                     </div>
                 </div>
+            <?php } elseif ($status == 'all' && $sub_tab != 'product') { ?>
+                <div class="dropdown stock-filter-dropdown ms-50">
+                    <button class="btn-filter-dropdown dropdown-toggle" type="button" id="soOrderWiseFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="feather icon-filter"></i>
+                        <span>Filters</span>
+                        <span class="filter-count-badge" id="orderwise-filter-active-count">0</span>
+                    </button>
+                    <div class="dropdown-menu stock-filter-menu" aria-labelledby="soOrderWiseFilterDropdown">
+                        <div class="filter-menu-header">
+                            <span class="title">Table Filters</span>
+                        </div>
+                        <div class="filter-menu-body" id="orderwise-column-filters-container">
+                            <div class="filter-menu-label">Dates & Reference</div>
+                            <label class="filter-chip" for="toggle-ow-bill-date" title="Toggle Bill Date column">
+                                <input type="checkbox" id="toggle-ow-bill-date" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Bill Date</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-delivery-date" title="Toggle Delivery Date column">
+                                <input type="checkbox" id="toggle-ow-delivery-date" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Delivery Date</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-inv-no" title="Toggle Inv No column">
+                                <input type="checkbox" id="toggle-ow-inv-no" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Inv No</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-warehouse" title="Toggle Warehouse column">
+                                <input type="checkbox" id="toggle-ow-warehouse" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Warehouse</span>
+                            </label>
+
+                            <div class="filter-menu-label">Product & Item Details</div>
+                            <label class="filter-chip active" for="toggle-ow-batch-no" title="Toggle Batch No column">
+                                <input type="checkbox" id="toggle-ow-batch-no" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Batch No</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-product" title="Toggle Product column">
+                                <input type="checkbox" id="toggle-ow-product" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Product</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-model-no" title="Toggle Model No column">
+                                <input type="checkbox" id="toggle-ow-model-no" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Model No</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-qty" title="Toggle Qty column">
+                                <input type="checkbox" id="toggle-ow-qty" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Qty</span>
+                            </label>
+
+                            <div class="filter-menu-label">Rates & Billing</div>
+                            <label class="filter-chip active" for="toggle-ow-rate" title="Toggle Rate column">
+                                <input type="checkbox" id="toggle-ow-rate" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Rate</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-tot-rate" title="Toggle Tot Rate column">
+                                <input type="checkbox" id="toggle-ow-tot-rate" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Tot Rate</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-bill-amt" title="Toggle Bill Amt column">
+                                <input type="checkbox" id="toggle-ow-bill-amt" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Bill Amt</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-taxable-amt" title="Toggle Tot Taxable Amt column">
+                                <input type="checkbox" id="toggle-ow-taxable-amt" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Tot Taxable Amt</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-cgst" title="Toggle CGST column">
+                                <input type="checkbox" id="toggle-ow-cgst" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">CGST</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-sgst" title="Toggle SGST column">
+                                <input type="checkbox" id="toggle-ow-sgst" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">SGST</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-igst" title="Toggle IGST column">
+                                <input type="checkbox" id="toggle-ow-igst" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">IGST</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-inv-amt" title="Toggle Inv Amt column">
+                                <input type="checkbox" id="toggle-ow-inv-amt" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Inv Amt</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-cash" title="Toggle Cash column">
+                                <input type="checkbox" id="toggle-ow-cash" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Cash</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-tot-cash" title="Toggle Tot Cash column">
+                                <input type="checkbox" id="toggle-ow-tot-cash" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Tot Cash</span>
+                            </label>
+                            <label class="filter-chip active" for="toggle-ow-final-amt" title="Toggle Final Amt column">
+                                <input type="checkbox" id="toggle-ow-final-amt" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Final Amt</span>
+                            </label>
+
+                            <div class="filter-menu-label">Sales Person & Commission</div>
+                            <label class="filter-chip active" for="toggle-ow-sales-person" title="Toggle Sales Person column">
+                                <input type="checkbox" id="toggle-ow-sales-person" class="ow-column-filter-checkbox" checked>
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Sales Person</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-comm-amt" title="Toggle Comm Amt column">
+                                <input type="checkbox" id="toggle-ow-comm-amt" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Comm Amt</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-tot-comm-amt" title="Toggle Tot Comm Amt column">
+                                <input type="checkbox" id="toggle-ow-tot-comm-amt" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Tot Comm Amt</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-comm-per" title="Toggle Comm % column">
+                                <input type="checkbox" id="toggle-ow-comm-per" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Comm %</span>
+                            </label>
+
+                            <div class="filter-menu-label">Cost & Profit</div>
+                            <label class="filter-chip" for="toggle-ow-act-cost-per-pc" title="Toggle Act Cst Per Pc With Expense column">
+                                <input type="checkbox" id="toggle-ow-act-cost-per-pc" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Act Cst Per Pc With Expense</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-tot-act-cost" title="Toggle Tot Act Cst With Expense column">
+                                <input type="checkbox" id="toggle-ow-tot-act-cost" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Tot Act Cst With Expense</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-profit-amt-per-pc" title="Toggle Profit Amt Per Pc column">
+                                <input type="checkbox" id="toggle-ow-profit-amt-per-pc" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Profit Amt Per Pc</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-total-profit" title="Toggle Total Profit column">
+                                <input type="checkbox" id="toggle-ow-total-profit" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Total Profit</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-tot-profit-per" title="Toggle Tot Profit % column">
+                                <input type="checkbox" id="toggle-ow-tot-profit-per" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Tot Profit %</span>
+                            </label>
+                            <label class="filter-chip" for="toggle-ow-added-by" title="Toggle Added By column">
+                                <input type="checkbox" id="toggle-ow-added-by" class="ow-column-filter-checkbox">
+                                <span class="chip-box"><i class="feather icon-check"></i></span>
+                                <span class="chip-text">Added By</span>
+                            </label>
+                        </div>
+                        <div class="filter-menu-footer">
+                            <button type="button" class="btn-reset-filters" id="btn-reset-ow-col-filters" title="Reset column filters to default">
+                                <i class="feather icon-rotate-ccw"></i> Reset Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
             <?php } ?>
              </div>
          </div>
@@ -277,6 +457,40 @@
 					<th>Profit</th>
 					<th>Act Cst With Expense/Pc</th>
 					<th>Total Cst With Expense</th>
+                  <?php } elseif ($status == 'all') { ?>
+					<th>#</th>
+					<th>Bill Date</th>
+					<th>Delivery Date</th>
+					<th>Inv No</th>
+					<th>Customer Name</th>
+					<th>Order No</th>
+					<th>Warehouse</th>
+					<th>Batch No</th>
+					<th>Product Name</th>
+					<th>Model No.</th>
+					<th>Qty</th>
+					<th>Rate</th>
+					<th>Tot Rate</th>
+					<th>Bill Amt</th>
+					<th>Taxable Amt</th>
+					<th>CGST</th>
+					<th>SGST</th>
+					<th>IGST</th>
+					<th>Inv Amt</th>
+					<th>Cash</th>
+					<th>Tot Cash Amt</th>
+					<th>Final Amt</th>
+					<th>Comm Amt</th>
+					<th>Tot Comm Amt</th>
+					<th>Comm %</th>
+					<th>Sales Person</th>
+					<th>Act Cst Per Pc With Expense</th>
+					<th>Tot Act Cst With Expense</th>
+					<th>Profit Amt Per Pc</th>
+					<th>Total Profit</th>
+					<th>Tot Profit %</th>
+					<th>Added By</th>
+					<th>ACTIONS</th>
                   <?php } elseif ($status == 'pending') { ?>
 					<th>#</th>
 					<th>Booking Date</th>
@@ -336,6 +550,8 @@
 <?php
 if ($status == 'all' && $sub_tab == 'product') {
     $num_cols = 23;
+} elseif ($status == 'all') {
+    $num_cols = 32; // exclude Actions from export
 } elseif ($status == 'pending') {
     $num_cols = 11; // exclude Actions from export
 } elseif ($status == 'cancelled') {
@@ -352,7 +568,11 @@ if ($status == 'all' && $sub_tab == 'product') {
         $num_cols += 1;
     }
 }
-$export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
+if ($status == 'all' && $sub_tab != 'product') {
+    $export_cols = "':visible:not(:last-child)'";
+} else {
+    $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
+}
 ?>
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
@@ -382,6 +602,8 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
             "ajax":{
                 <?php if ($status == 'all' && $sub_tab == 'product') { ?>
                 "url": "<?php echo base_url('inventory/get_sales_order_product_wise'); ?>",
+                <?php } elseif ($status == 'all') { ?>
+                "url": "<?php echo base_url('inventory/get_sales_order_all_order_wise'); ?>",
                 <?php } elseif ($status == 'cancelled') { ?>
                 "url": "<?php echo base_url('inventory/get_cancelled_sales_order'); ?>",
                 <?php } elseif ($status != 'complete') { ?>
@@ -430,6 +652,40 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                 { "data": "profit" },
                 { "data": "act_cost_with_exp" },
                 { "data": "total_cost_with_exp" }
+                <?php } elseif ($status == 'all') { ?>
+                { "data": "sr_no" },
+                { "data": "bill_date", "visible": false },
+                { "data": "delivery_date", "visible": false },
+                { "data": "inv_no", "visible": false },
+                { "data": "customer_name" },
+                { "data": "order_no" },
+                { "data": "warehouse_name", "visible": false },
+                { "data": "batch_no" },
+                { "data": "product_name" },
+                { "data": "model_no" },
+                { "data": "qty" },
+                { "data": "rate" },
+                { "data": "tot_rate" },
+                { "data": "bill_amt" },
+                { "data": "taxable_amt" },
+                { "data": "cgst" },
+                { "data": "sgst" },
+                { "data": "igst" },
+                { "data": "inv_amt" },
+                { "data": "cash" },
+                { "data": "tot_cash_amt" },
+                { "data": "final_amt" },
+                { "data": "comm_amt", "visible": false },
+                { "data": "tot_comm_amt", "visible": false },
+                { "data": "comm_per", "visible": false },
+                { "data": "sales_person" },
+                { "data": "act_cost_per_pc", "visible": false },
+                { "data": "tot_act_cost", "visible": false },
+                { "data": "profit_amt_per_pc", "visible": false },
+                { "data": "total_profit", "visible": false },
+                { "data": "tot_profit_per", "visible": false },
+                { "data": "added_by", "visible": false },
+                { "data": "action" }
                 <?php } elseif ($status == 'pending') { ?>
                 { "data": "sr_no" },
                 { "data": "booking_date" },
@@ -520,6 +776,15 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                     "targets": [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
                     "className": "text-center",
                 }
+                <?php } elseif ($status == 'all') { ?>
+                {
+                    "targets": [0, 1, 2, 3, 5, 7, 9, 10, 15, 16, 17, 24, 28, 29, 30, 32],
+                    "className": "text-center",
+                },
+                {
+                    "targets": [11, 12, 13, 14, 18, 19, 20, 21, 22, 23, 26, 27],
+                    "className": "text-end",
+                }
                 <?php } elseif ($status == 'pending') { ?>
                 {
                     "targets": [0, 1, 2, 3, 7, 8, 9],
@@ -592,6 +857,132 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
         });
 
         updateFilterCount();
+        <?php } elseif ($status == 'all' && $sub_tab != 'product') { ?>
+        var orderWiseDefaults = {
+            'toggle-ow-bill-date': false,
+            'toggle-ow-delivery-date': false,
+            'toggle-ow-inv-no': false,
+            'toggle-ow-warehouse': false,
+            'toggle-ow-batch-no': true,
+            'toggle-ow-product': true,
+            'toggle-ow-model-no': true,
+            'toggle-ow-qty': true,
+            'toggle-ow-rate': true,
+            'toggle-ow-tot-rate': true,
+            'toggle-ow-bill-amt': true,
+            'toggle-ow-taxable-amt': true,
+            'toggle-ow-cgst': true,
+            'toggle-ow-sgst': true,
+            'toggle-ow-igst': true,
+            'toggle-ow-inv-amt': true,
+            'toggle-ow-cash': true,
+            'toggle-ow-tot-cash': true,
+            'toggle-ow-final-amt': true,
+            'toggle-ow-sales-person': true,
+            'toggle-ow-comm-amt': false,
+            'toggle-ow-tot-comm-amt': false,
+            'toggle-ow-comm-per': false,
+            'toggle-ow-act-cost-per-pc': false,
+            'toggle-ow-tot-act-cost': false,
+            'toggle-ow-profit-amt-per-pc': false,
+            'toggle-ow-total-profit': false,
+            'toggle-ow-tot-profit-per': false,
+            'toggle-ow-added-by': false
+        };
+
+        function updateOrderWiseFilterCount() {
+            var count = 0;
+            $.each(orderWiseDefaults, function (id, defaultOn) {
+                if ($('#' + id).is(':checked') !== defaultOn) {
+                    count++;
+                }
+            });
+            var $badge = $('#orderwise-filter-active-count');
+            $badge.text(count);
+            $badge.toggleClass('has-count', count > 0);
+        }
+
+        function applyOrderWiseColumnFilters() {
+            var showBillDate = $('#toggle-ow-bill-date').is(':checked');
+            var showDeliveryDate = $('#toggle-ow-delivery-date').is(':checked');
+            var showInvNo = $('#toggle-ow-inv-no').is(':checked');
+            var showWarehouse = $('#toggle-ow-warehouse').is(':checked');
+            var showBatchNo = $('#toggle-ow-batch-no').is(':checked');
+            var showProduct = $('#toggle-ow-product').is(':checked');
+            var showModelNo = $('#toggle-ow-model-no').is(':checked');
+            var showQty = $('#toggle-ow-qty').is(':checked');
+            var showRate = $('#toggle-ow-rate').is(':checked');
+            var showTotRate = $('#toggle-ow-tot-rate').is(':checked');
+            var showBillAmt = $('#toggle-ow-bill-amt').is(':checked');
+            var showTaxableAmt = $('#toggle-ow-taxable-amt').is(':checked');
+            var showCgst = $('#toggle-ow-cgst').is(':checked');
+            var showSgst = $('#toggle-ow-sgst').is(':checked');
+            var showIgst = $('#toggle-ow-igst').is(':checked');
+            var showInvAmt = $('#toggle-ow-inv-amt').is(':checked');
+            var showCash = $('#toggle-ow-cash').is(':checked');
+            var showTotCash = $('#toggle-ow-tot-cash').is(':checked');
+            var showFinalAmt = $('#toggle-ow-final-amt').is(':checked');
+            var showCommAmt = $('#toggle-ow-comm-amt').is(':checked');
+            var showTotCommAmt = $('#toggle-ow-tot-comm-amt').is(':checked');
+            var showCommPer = $('#toggle-ow-comm-per').is(':checked');
+            var showSalesPerson = $('#toggle-ow-sales-person').is(':checked');
+            var showActCostPerPc = $('#toggle-ow-act-cost-per-pc').is(':checked');
+            var showTotActCost = $('#toggle-ow-tot-act-cost').is(':checked');
+            var showProfitAmtPerPc = $('#toggle-ow-profit-amt-per-pc').is(':checked');
+            var showTotalProfit = $('#toggle-ow-total-profit').is(':checked');
+            var showTotProfitPer = $('#toggle-ow-tot-profit-per').is(':checked');
+            var showAddedBy = $('#toggle-ow-added-by').is(':checked');
+
+            dataTable.column(1).visible(showBillDate, false);
+            dataTable.column(2).visible(showDeliveryDate, false);
+            dataTable.column(3).visible(showInvNo, false);
+            dataTable.column(6).visible(showWarehouse, false);
+            dataTable.column(7).visible(showBatchNo, false);
+            dataTable.column(8).visible(showProduct, false);
+            dataTable.column(9).visible(showModelNo, false);
+            dataTable.column(10).visible(showQty, false);
+            dataTable.column(11).visible(showRate, false);
+            dataTable.column(12).visible(showTotRate, false);
+            dataTable.column(13).visible(showBillAmt, false);
+            dataTable.column(14).visible(showTaxableAmt, false);
+            dataTable.column(15).visible(showCgst, false);
+            dataTable.column(16).visible(showSgst, false);
+            dataTable.column(17).visible(showIgst, false);
+            dataTable.column(18).visible(showInvAmt, false);
+            dataTable.column(19).visible(showCash, false);
+            dataTable.column(20).visible(showTotCash, false);
+            dataTable.column(21).visible(showFinalAmt, false);
+            dataTable.column(22).visible(showCommAmt, false);
+            dataTable.column(23).visible(showTotCommAmt, false);
+            dataTable.column(24).visible(showCommPer, false);
+            dataTable.column(25).visible(showSalesPerson, false);
+            dataTable.column(26).visible(showActCostPerPc, false);
+            dataTable.column(27).visible(showTotActCost, false);
+            dataTable.column(28).visible(showProfitAmtPerPc, false);
+            dataTable.column(29).visible(showTotalProfit, false);
+            dataTable.column(30).visible(showTotProfitPer, false);
+            dataTable.column(31).visible(showAddedBy, false);
+
+            dataTable.columns.adjust();
+            updateOrderWiseFilterCount();
+        }
+
+        $('.ow-column-filter-checkbox').on('change', function() {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('.filter-chip').toggleClass('active', isChecked);
+            applyOrderWiseColumnFilters();
+        });
+
+        $('#btn-reset-ow-col-filters').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $.each(orderWiseDefaults, function (id, defaultOn) {
+                $('#' + id).prop('checked', defaultOn).closest('.filter-chip').toggleClass('active', defaultOn);
+            });
+            applyOrderWiseColumnFilters();
+        });
+
+        updateOrderWiseFilterCount();
         <?php } ?>
     });
 
