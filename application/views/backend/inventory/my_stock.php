@@ -217,9 +217,13 @@
 		background: transparent !important;
 	}
 	/* Keep child td as a real table-cell so parent row layout stays intact */
-	table.dataTable tbody tr.child > td {
+	table.dataTable tbody tr.child > td,
+	#report-datatable tbody tr.child > td,
+	#report-datatable_wrapper .dataTables_scrollBody table > tbody > tr.child > td {
 		padding: 0 !important;
 		border-top: none !important;
+		border-left: none !important;
+		border-right: none !important;
 		background: transparent !important;
 	}
 	/*
@@ -235,7 +239,7 @@
 		overflow-x: auto !important;
 		overflow-y: hidden !important;
 		-webkit-overflow-scrolling: touch;
-		padding: 4px 0 !important;
+		padding: 0 !important;
 		margin: 0 !important;
 	}
 	.child-scroll-wrap .batch-breakdown-card,
@@ -250,6 +254,9 @@
 		padding-right: 0 !important;
 		box-sizing: border-box;
 		overflow: visible !important;
+		border-left: none !important;
+		border-right: none !important;
+		border-radius: 0 !important;
 	}
 	.child-scroll-wrap .table-responsive,
 	.child-scroll-wrap .batch-breakdown-card > .table-responsive,
@@ -259,12 +266,17 @@
 		min-width: 100% !important;
 		max-width: none !important;
 		overflow: visible !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: none !important;
 	}
 	.child-scroll-wrap .sub-batch-table,
 	.child-scroll-wrap .sub-company-table {
-		width: max-content !important;
 		min-width: 100%;
 		margin-bottom: 0;
+		border-left: none !important;
+		border-right: none !important;
+		border-radius: 0 !important;
 	}
 
 	/* Main Table Head & Body */
@@ -303,9 +315,9 @@
 		vertical-align: middle !important;
 	}
 	#report-datatable thead th:first-child,
-	#report-datatable tbody td:first-child,
+	#report-datatable tbody tr:not(.child) > td:first-child,
 	#report-datatable_wrapper .dataTables_scrollHead table th:first-child,
-	#report-datatable_wrapper .dataTables_scrollBody table td:first-child {
+	#report-datatable_wrapper .dataTables_scrollBody table tbody tr:not(.child) > td:first-child {
 		padding-left: 2px !important;
 		padding-right: 2px !important;
 	}
@@ -552,15 +564,17 @@
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
 		border-radius: 8px;
-		padding: 8px 0 !important;
-		margin-left: 0 !important;
-		margin-right: 0 !important;
+		padding: 8px 0 0 0 !important;
+		margin: 0 !important;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 		box-sizing: border-box;
 	}
 	.batch-breakdown-card > .table-responsive {
 		overflow: visible;
 		max-width: none;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: none !important;
 	}
 	.batch-card-header {
 		display: flex;
@@ -606,8 +620,8 @@
 		border-radius: 6px;
 		overflow: hidden;
 		margin-bottom: 0;
-		width: max-content !important;
-		min-width: 100%;
+		table-layout: fixed !important;
+		box-sizing: border-box !important;
 	}
 	.sub-batch-table thead th {
 		background: #f1f5f9 !important;
@@ -620,6 +634,9 @@
 		border-bottom: 1px solid #cbd5e1 !important;
 		border-top: none !important;
 		white-space: nowrap !important;
+		overflow: hidden !important;
+		text-overflow: ellipsis !important;
+		box-sizing: border-box !important;
 	}
 	.sub-batch-table tbody td {
 		padding: 5px 8px !important;
@@ -627,12 +644,26 @@
 		border-bottom: 1px solid #f1f5f9 !important;
 		vertical-align: middle !important;
 		white-space: nowrap !important;
+		overflow: hidden !important;
+		text-overflow: ellipsis !important;
+		box-sizing: border-box !important;
 	}
 	.sub-batch-table tbody tr:last-child td {
 		border-bottom: none !important;
 	}
 	.sub-batch-table tbody tr:hover {
 		background-color: #f8fafc !important;
+	}
+	.sub-batch-table thead th.col-sub-sr,
+	.sub-batch-table tbody td.col-sub-sr {
+		padding-left: 2px !important;
+		padding-right: 2px !important;
+	}
+	.sub-batch-table .col-sub-name {
+		box-sizing: border-box !important;
+		overflow: hidden !important;
+		text-overflow: ellipsis !important;
+		white-space: nowrap !important;
 	}
 	.batch-no-tag {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -953,6 +984,56 @@
         });
     }
 
+    function getMainProductColWidth() {
+        var $firstDataRow = $('#report-datatable_wrapper .dataTables_scrollBody table > tbody > tr:not(.child):not(.category-subheader-row)').first();
+        if ($firstDataRow.length) {
+            var $prodTd = $firstDataRow.children('td').eq(1);
+            if ($prodTd.length && $prodTd.outerWidth() > 50) {
+                return Math.floor($prodTd.outerWidth());
+            }
+        }
+        var $prodTh = $('#report-datatable_wrapper .dataTables_scrollHead thead th').filter(function() {
+            return $(this).text().trim().toLowerCase().indexOf('product') !== -1;
+        });
+        if ($prodTh.length && $prodTh.outerWidth() > 50) {
+            return Math.floor($prodTh.outerWidth());
+        }
+        var scrollBody = document.querySelector('#report-datatable_wrapper .dataTables_scrollBody');
+        var w = scrollBody ? Math.floor(scrollBody.clientWidth) : 1000;
+        var fixedTotal = 0;
+        var colWidthsMap = {
+            0: 50, 2: 100, 3: 70, 4: 75, 5: 75, 6: 80, 7: 100, 8: 80,
+            9: 70, 10: 80, 11: 80, 12: 100, 13: 100, 14: 100, 15: 100, 16: 55
+        };
+        try {
+            if (typeof dataTable !== 'undefined' && dataTable) {
+                dataTable.columns().every(function (idx) {
+                    if (this.visible() && idx !== 1 && colWidthsMap[idx]) {
+                        fixedTotal += colWidthsMap[idx];
+                    }
+                });
+            } else {
+                fixedTotal = 50 + 70 + 75 + 75 + 80 + 100 + 80 + 100 + 100 + 100 + 100 + 55;
+            }
+        } catch (e) {
+            fixedTotal = 50 + 70 + 75 + 75 + 80 + 100 + 80 + 100 + 100 + 100 + 100 + 55;
+        }
+        var minProductWidth = 200;
+        var tableWidth = Math.max(w, fixedTotal + minProductWidth);
+        return Math.max(minProductWidth, tableWidth - fixedTotal);
+    }
+
+    function getChildNameColWidth() {
+        var w = getMainProductColWidth();
+        try {
+            if (typeof dataTable !== 'undefined' && dataTable && dataTable.column(2).visible()) {
+                var modelW = dataTable.column(2).header() ? $(dataTable.column(2).header()).outerWidth() : 100;
+                w += (modelW || 100);
+            }
+        } catch (e) {}
+        return w;
+    }
+
     function formatChildRow(rowData) {
         var showZeroQty = $('#toggle-zero-qty').is(':checked');
         var allBatches = rowData.batches || [];
@@ -988,29 +1069,53 @@
             var styleOffCost = showOffCost ? '' : 'style="display:none;"';
             var styleOffPc = showOffPc ? '' : 'style="display:none;"';
 
+            var nameWidth = getChildNameColWidth();
+            var totalTableWidth = 50 + nameWidth + 70 + 75 + 75 + 80 + 100 + (showBooked ? 80 : 0) + (showPo ? 230 : 0) + (showActPc ? 200 : 0) + (showActCost ? 200 : 0) + (showOffPc ? 200 : 0) + (showOffCost ? 200 : 0);
+
             html += '<div class="table-responsive">';
-            html += '  <table class="table sub-batch-table align-middle">';
+            html += '  <table class="table sub-batch-table align-middle" style="width: ' + totalTableWidth + 'px; min-width: 100%; table-layout: fixed;">';
+            html += '    <colgroup>';
+            html += '      <col class="col-sub-sr" style="width: 50px;">';
+            html += '      <col class="col-sub-name" style="width: ' + nameWidth + 'px;">';
+            html += '      <col class="col-sub-qty" style="width: 70px;">';
+            html += '      <col class="col-sub-black" style="width: 75px;">';
+            html += '      <col class="col-sub-white" style="width: 75px;">';
+            html += '      <col class="col-sub-pending" style="width: 80px;">';
+            html += '      <col class="col-sub-totwhite" style="width: 100px;">';
+            html += '      <col class="col-batch-booked col-sub-booked" style="width: 80px;' + (showBooked ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-po" style="width: 70px;' + (showPo ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-act-pc" style="width: 100px;' + (showActPc ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-act-cost" style="width: 100px;' + (showActCost ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-act-pc" style="width: 100px;' + (showActPc ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-act-cost" style="width: 100px;' + (showActCost ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-off-pc" style="width: 100px;' + (showOffPc ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-off-cost" style="width: 100px;' + (showOffCost ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-off-pc" style="width: 100px;' + (showOffPc ? '' : 'display:none;') + '">';
+            html += '      <col class="col-batch-off-cost" style="width: 100px;' + (showOffCost ? '' : 'display:none;') + '">';
+            html += '    </colgroup>';
             html += '    <thead>';
             html += '      <tr>';
-            html += '        <th class="text-center" style="width: 35px;">#</th>';
-            html += '        <th>Batch No</th>';
-            html += '        <th class="text-end">Quantity</th>';
-            html += '        <th class="text-end">Black Qty</th>';
-            html += '        <th class="text-end">White Qty</th>';
-            html += '        <th class="text-end">Pending Qty</th>';
-            html += '        <th class="text-end">Total White Qty</th>';
-            html += '        <th class="text-end col-batch-booked" ' + styleBooked + '>Booked Qty</th>';
-            html += '        <th class="text-end col-batch-po" ' + stylePo + '>PO Qty</th>';
-            html += '        <th class="text-end col-batch-po" ' + stylePo + '>Priority Qty</th>';
-            html += '        <th class="text-end col-batch-po" ' + stylePo + '>Loading Qty</th>';
-            html += '        <th class="text-end col-batch-act-pc" ' + styleActPc + '>Act Cost / exp</th>';
-            html += '        <th class="text-end col-batch-act-cost" ' + styleActCost + '>Act Cost Exp</th>';
-            html += '        <th class="text-end col-batch-act-pc" ' + styleActPc + '>Act Cost / Amt</th>';
-            html += '        <th class="text-end col-batch-act-cost" ' + styleActCost + '>Act Cost Amt</th>';
-            html += '        <th class="text-end col-batch-off-pc" ' + styleOffPc + '>Off Cost / exp</th>';
-            html += '        <th class="text-end col-batch-off-cost" ' + styleOffCost + '>Off Cost Exp</th>';
-            html += '        <th class="text-end col-batch-off-pc" ' + styleOffPc + '>Off Cost / Amt</th>';
-            html += '        <th class="text-end col-batch-off-cost" ' + styleOffCost + '>Off Cost Amt</th>';
+            html += '        <th class="text-center col-sub-sr" style="width: 50px;">#</th>';
+            html += '        <th class="col-sub-name" style="width: ' + nameWidth + 'px;">Batch No</th>';
+            html += '        <th class="text-end col-sub-qty" style="width: 70px;">Quantity</th>';
+            html += '        <th class="text-end col-sub-black" style="width: 75px;">Black Qty</th>';
+            html += '        <th class="text-end col-sub-white" style="width: 75px;">White Qty</th>';
+            html += '        <th class="text-end col-sub-pending" style="width: 80px;">Pending Qty</th>';
+            html += '        <th class="text-end col-sub-totwhite" style="width: 100px;">Total White Qty</th>';
+            html += '        <th class="text-end col-batch-booked col-sub-booked" style="width: 80px;' + (showBooked ? '' : 'display:none;') + '" ' + styleBooked + '>Booked Qty</th>';
+            html += '        <th class="text-end col-batch-po" style="width: 70px;" ' + stylePo + '>PO Qty</th>';
+            html += '        <th class="text-end col-batch-po" style="width: 80px;" ' + stylePo + '>Priority Qty</th>';
+            html += '        <th class="text-end col-batch-po" style="width: 80px;" ' + stylePo + '>Loading Qty</th>';
+            html += '        <th class="text-end col-batch-act-pc" style="width: 100px;" ' + styleActPc + '>Act Cost / exp</th>';
+            html += '        <th class="text-end col-batch-act-cost" style="width: 100px;" ' + styleActCost + '>Act Cost Exp</th>';
+            html += '        <th class="text-end col-batch-act-pc" style="width: 100px;" ' + styleActPc + '>Act Cost / Amt</th>';
+            html += '        <th class="text-end col-batch-act-cost" style="width: 100px;" ' + styleActCost + '>Act Cost Amt</th>';
+            html += '        <th class="text-end col-batch-off-pc" style="width: 100px;" ' + styleOffPc + '>Off Cost / exp</th>';
+            html += '        <th class="text-end col-batch-off-cost" style="width: 100px;" ' + styleOffCost + '>Off Cost Exp</th>';
+            html += '        <th class="text-end col-batch-off-pc" style="width: 100px;" ' + styleOffPc + '>Off Cost / Amt</th>';
+            html += '        <th class="text-end col-batch-off-cost" style="width: 100px;" ' + styleOffCost + '>Off Cost Amt</th>';
             html += '      </tr>';
             html += '    </thead>';
             html += '    <tbody>';
@@ -1031,14 +1136,14 @@
                 var badgeBooked = bBooked > 0 ? '<span class="stk-badge stk-badge-booked">' + bBooked.toLocaleString() + '</span>' : '<span class="stk-badge-zero">-</span>';
 
                 html += '      <tr>';
-                html += '        <td class="text-center fw-bold text-muted">' + b.sr_no + '</td>';
-                html += '        <td><span class="batch-no-tag">' + b.batch_no + '</span></td>';
-                html += '        <td class="text-end stk-qty-main">' + bQty.toLocaleString() + '</td>';
-                html += '        <td class="text-end">' + badgeBlack + '</td>';
-                html += '        <td class="text-end">' + badgeWhite + '</td>';
-                html += '        <td class="text-end">' + badgePending + '</td>';
-                html += '        <td class="text-end">' + badgeTotWhite + '</td>';
-                html += '        <td class="text-end col-batch-booked" ' + styleBooked + '>' + badgeBooked + '</td>';
+                html += '        <td class="text-center fw-bold text-muted col-sub-sr">' + b.sr_no + '</td>';
+                html += '        <td class="col-sub-name"><span class="batch-no-tag">' + b.batch_no + '</span></td>';
+                html += '        <td class="text-end stk-qty-main col-sub-qty">' + bQty.toLocaleString() + '</td>';
+                html += '        <td class="text-end col-sub-black">' + badgeBlack + '</td>';
+                html += '        <td class="text-end col-sub-white">' + badgeWhite + '</td>';
+                html += '        <td class="text-end col-sub-pending">' + badgePending + '</td>';
+                html += '        <td class="text-end col-sub-totwhite">' + badgeTotWhite + '</td>';
+                html += '        <td class="text-end col-batch-booked col-sub-booked" ' + styleBooked + '>' + badgeBooked + '</td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
@@ -1292,6 +1397,27 @@
                     }
                 });
             });
+
+            syncChildColumnWidths();
+        }
+
+        function syncChildColumnWidths() {
+            var nameWidth = getChildNameColWidth();
+            $('.sub-batch-table, .sub-company-table').each(function () {
+                var $tbl = $(this);
+                $tbl.find('col.col-sub-name').css('width', nameWidth + 'px');
+                $tbl.find('thead tr').first().children('.col-sub-name').css('width', nameWidth + 'px');
+                var tot = 0;
+                $tbl.find('thead tr').first().children('th').each(function () {
+                    if ($(this).is(':visible') && $(this).css('display') !== 'none') {
+                        var w = parseFloat($(this).css('width')) || parseFloat(this.style.width) || $(this).outerWidth();
+                        if (w > 0) tot += w;
+                    }
+                });
+                if (tot > 0) {
+                    $tbl.css('width', tot + 'px');
+                }
+            });
         }
 
         // Keep appendable scroll inside child without breaking parent table layout
@@ -1307,11 +1433,12 @@
 
             // Restore normal table-cell behavior (undo any prior display:block breakage)
             $childTr.css('height', '');
-            $td.attr('style', 'padding:0!important;border-top:none!important;background:transparent!important;');
+            $td.attr('style', 'padding:0!important;border:none!important;background:transparent!important;');
             $wrap.attr('style',
                 'display:block;width:0;min-width:100%;max-width:100%;' +
-                'overflow-x:auto;overflow-y:hidden;box-sizing:border-box;padding:4px 0;-webkit-overflow-scrolling:touch;'
+                'overflow-x:auto;overflow-y:hidden;box-sizing:border-box;padding:0;margin:0;-webkit-overflow-scrolling:touch;'
             );
+            syncChildColumnWidths();
             fitMainTableWidth();
         }
 
@@ -1436,12 +1563,13 @@
             });
 
             // Toggle columns in any currently expanded sub-batch tables
-            $('.sub-batch-table .col-batch-booked').toggle(showBooked);
-            $('.sub-batch-table .col-batch-po').toggle(showPo);
-            $('.sub-batch-table .col-batch-act-cost').toggle(showActCost);
-            $('.sub-batch-table .col-batch-act-pc').toggle(showActPc);
-            $('.sub-batch-table .col-batch-off-cost').toggle(showOffCost);
-            $('.sub-batch-table .col-batch-off-pc').toggle(showOffPc);
+            $('.sub-batch-table .col-batch-booked, .sub-batch-table col.col-batch-booked').toggle(showBooked);
+            $('.sub-batch-table .col-batch-po, .sub-batch-table col.col-batch-po').toggle(showPo);
+            $('.sub-batch-table .col-batch-act-cost, .sub-batch-table col.col-batch-act-cost').toggle(showActCost);
+            $('.sub-batch-table .col-batch-act-pc, .sub-batch-table col.col-batch-act-pc').toggle(showActPc);
+            $('.sub-batch-table .col-batch-off-cost, .sub-batch-table col.col-batch-off-cost').toggle(showOffCost);
+            $('.sub-batch-table .col-batch-off-pc, .sub-batch-table col.col-batch-off-pc').toggle(showOffPc);
+            syncChildColumnWidths();
             fitChildScrollPanels();
 
             updateFilterCount();
