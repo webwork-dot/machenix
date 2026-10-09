@@ -5,51 +5,26 @@
     <div class="card">
       <div class="card-body py-2 my-0">
 
-        <?php echo form_open('inventory/payment_receipt/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
+        <?php echo form_open('inventory/manual_payment/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
         <input type="hidden" name="company_id" value="<?php echo $this->session->userdata('company_id'); ?>">
 
-        <!-- Row 1: Customer & Invoice/Receipt No -->
+        <!-- Row 1: Invoice/Receipt No, Payment Date, Payment Type -->
         <div class="row mb-1">
-          <div class="col-12 col-md-6">
-            <div class="form-group">
-              <label>Customer <span class="required">*</span></label>
-              <select class="form-control select2" name="customer_id" id="customer_id" required>
-                <option value="">Select</option>
-                <?php foreach ($customer_list as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>"><?php echo $value['company_name'];?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-          </div>
-
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md-4">
             <div class="form-group">
               <label><?php echo get_phrase('invoice_no'); ?><span class="required">*</span></label>
               <input type="text" name="invoice_no" class="form-control" placeholder="Receipt / Invoice No" required>
             </div>
           </div>
-        </div>
 
-        <!-- Row 2: Payment Date, Payment Mode, Payment Type, Payment Method -->
-        <div class="row mb-1">
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-4">
             <div class="form-group">
               <label class="control-label">Payment Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="payment_date" value="<?php echo date('Y-m-d');?>" id="date_picker" required>
             </div>
           </div>
 
-          <div class="col-12 col-md-3">
-            <div class="form-group">
-              <label>Payment Mode <span class="required">*</span></label>
-              <select class="form-control select2" name="payment_mode" id="payment_mode" required>
-                <option value="payment" selected>Payment</option>
-                <option value="return">Return</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-4">
             <div class="form-group">
               <label>Payment Type <span class="required">*</span></label>
               <select class="form-control select2" name="payment_type" id="payment_type" required>
@@ -58,8 +33,11 @@
               </select>
             </div>
           </div>
+        </div>
 
-          <div class="col-12 col-md-3">
+        <!-- Row 2: Payment Method, Bank Account, Amount -->
+        <div class="row mb-1">
+          <div class="col-12 col-md-4">
             <div class="form-group">
               <label>Payment Method <span class="required">*</span></label>
               <select class="form-control select2" name="payment_method" id="payment_method" required>
@@ -69,11 +47,8 @@
               </select>
             </div>
           </div>
-        </div>
 
-        <!-- Row 3: Bank Account & Amount -->
-        <div class="row mb-1">
-          <div class="col-12 col-md-6" id="bank_account_wrap" style="display:none;">
+          <div class="col-12 col-md-4" id="bank_account_wrap" style="display:none;">
             <div class="form-group">
               <label>Bank Account <span class="bank_required" style="display:none;">*</span></label>
               <select class="form-control select2" name="company_bank" id="company_bank">
@@ -88,7 +63,7 @@
             </div>
           </div>
 
-          <div class="col-12 col-md-6" id="amount_wrap">
+          <div class="col-12 col-md-8" id="amount_wrap">
             <div class="form-group">
               <label>Amount (in INR) <span class="required">*</span></label>
               <input type="number" name="amount_rs" id="amount_rs" class="form-control" placeholder="0.00" min="0.01" step="0.01" required>
@@ -96,7 +71,7 @@
           </div>
         </div>
 
-        <!-- Row 4: Narration -->
+        <!-- Row 3: Narration -->
         <div class="row mb-2">
           <div class="col-12">
             <div class="form-group">
@@ -133,12 +108,12 @@
       $('.bank_required').toggle(showBank);
 
       if (showBank) {
-        $('#amount_wrap').removeClass('col-md-12').addClass('col-md-6');
+        $('#amount_wrap').removeClass('col-md-8').addClass('col-md-4');
         updateAccountNo();
       } else {
         $('#company_bank').val('').trigger('change');
         $('#company_bank_account').val('');
-        $('#amount_wrap').removeClass('col-md-6').addClass('col-md-12');
+        $('#amount_wrap').removeClass('col-md-4').addClass('col-md-8');
       }
     }
 

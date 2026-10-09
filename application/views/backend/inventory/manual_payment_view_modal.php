@@ -1,19 +1,13 @@
 <?php
-  // Get Customer Payment ID from param2
+  // Get Manual Payment ID from param2
   $payment_id = $param2;
 
   // Get Payment details
   $payment = $this->db->query("SELECT * FROM customer_payment WHERE id = '$payment_id'")->row_array();
 
   if (empty($payment)) {
-    echo '<div class="alert alert-danger p-2">Payment record not found.</div>';
+    echo '<div class="alert alert-danger p-2">Manual payment record not found.</div>';
     return;
-  }
-
-  // Get Customer details
-  $customer = [];
-  if (!empty($payment['customer_id'])) {
-    $customer = $this->db->query("SELECT * FROM customer WHERE id = '{$payment['customer_id']}'")->row_array();
   }
 
   // Get Bank Account details if applicable
@@ -177,30 +171,19 @@
   <!-- Amount Hero Card -->
   <div class="amount-hero-card">
     <div>
-      <div class="amount-hero-title"><i class="feather icon-credit-card me-1"></i> <?= (($payment['payment_mode'] ?? 'payment') == 'return') ? 'Payment Returned Amount' : 'Payment Received Amount'; ?></div>
-      <div class="amount-hero-val <?= (($payment['payment_mode'] ?? 'payment') == 'return') ? 'text-danger' : 'text-primary'; ?>">
-        <?= (($payment['payment_mode'] ?? 'payment') == 'return') ? '-' : ''; ?>₹<?= number_format((float)$payment['amount'], 2); ?>
+      <div class="amount-hero-title"><i class="feather icon-credit-card me-1"></i> Manual Payment Amount</div>
+      <div class="amount-hero-val text-primary">
+        ₹<?= number_format((float)$payment['amount'], 2); ?>
       </div>
-    </div>
-    <div>
-      <?php if ($is_approved): ?>
-        <span class="badge-status badge-approved">
-          <i class="feather icon-check-circle"></i> Approved
-        </span>
-      <?php else: ?>
-        <span class="badge-status badge-pending">
-          <i class="feather icon-clock"></i> Pending Approval
-        </span>
-      <?php endif; ?>
     </div>
   </div>
 
   <!-- Meta Dashboard: Receipt & Transaction Info -->
   <div class="meta-dashboard">
     <div class="meta-dashboard-title">
-      <span><i class="feather icon-file-text me-1 text-primary"></i> Receipt Information</span>
+      <span><i class="feather icon-file-text me-1 text-primary"></i> Payment Information</span>
       <span class="badge-type <?= ($payment['payment_type'] == 'official') ? 'badge-official' : 'badge-unofficial'; ?>">
-        <?= ucfirst($payment['payment_type']); ?> <?= ucfirst($payment['payment_mode'] ?? 'payment'); ?>
+        <?= ucfirst($payment['payment_type']); ?>
       </span>
     </div>
 
@@ -215,28 +198,6 @@
         <span class="meta-value"><?= $payment['date'] ? date('d M, Y', strtotime($payment['date'])) : '-'; ?></span>
       </div>
 
-      <div class="meta-item">
-        <span class="meta-label">Payment Mode</span>
-        <span class="meta-value">
-          <?php if (($payment['payment_mode'] ?? 'payment') == 'return'): ?>
-            <span class="badge-type" style="background:#fee2e2; color:#ef4444;"><i class="fa fa-undo me-1"></i>Return</span>
-          <?php else: ?>
-            <span class="badge-type" style="background:#dcfce7; color:#16a34a;"><i class="fa fa-arrow-down me-1"></i>Payment</span>
-          <?php endif; ?>
-        </span>
-      </div>
-
-      <div class="meta-item">
-        <span class="meta-label">Customer Name</span>
-        <span class="meta-value fw-bold"><?= htmlspecialchars($payment['customer_name'] ?: ($customer['company_name'] ?? '-')); ?></span>
-      </div>
-
-      <?php if (!empty($customer['owner_mobile'])): ?>
-        <div class="meta-item">
-          <span class="meta-label">Customer Contact</span>
-          <span class="meta-value"><?= htmlspecialchars($customer['owner_mobile']); ?></span>
-        </div>
-      <?php endif; ?>
 
       <div class="meta-item">
         <span class="meta-label">Payment Method</span>
@@ -249,46 +210,46 @@
         </span>
       </div>
 
-      <?php if (($payment['payment_method'] == 'cheque' || $payment['payment_method'] == 'bank') && (!empty($bank_info) || !empty($payment['company_bank_account']))): ?>
+      <?php if ($payment['payment_method'] == 'cheque' || $payment['payment_method'] == 'bank'): ?>
         <div class="meta-item">
-          <span class="meta-label">Company Bank Account</span>
+          <span class="meta-label">Company Bank</span>
           <span class="meta-value">
-            <?= htmlspecialchars($bank_info['bank_name'] ?? 'Bank'); ?> (A/C: <?= htmlspecialchars($payment['company_bank_account'] ?: ($bank_info['account_no'] ?? '-')); ?>)
+            <?= htmlspecialchars($bank_info['bank_name'] ?? 'Bank Account'); ?>
+            <?php if (!empty($payment['company_bank_account'])): ?>
+              <span class="text-muted small">(<?= htmlspecialchars($payment['company_bank_account']); ?>)</span>
+            <?php endif; ?>
           </span>
         </div>
       <?php endif; ?>
 
       <div class="meta-item">
         <span class="meta-label">Added By</span>
-        <span class="meta-value"><?= htmlspecialchars($payment['added_by_name'] ?: '-'); ?></span>
+        <span class="meta-value"><?= htmlspecialchars($payment['added_by_name'] ?: '—'); ?></span>
       </div>
 
       <div class="meta-item">
-        <span class="meta-label">Added Date</span>
-        <span class="meta-value"><?= ($payment['added_date'] && $payment['added_date'] != '0000-00-00 00:00:00') ? date('d M, Y h:i A', strtotime($payment['added_date'])) : '-'; ?></span>
+        <span class="meta-label">Added On</span>
+        <span class="meta-value"><?= !empty($payment['added_date']) ? date('d M, Y h:i A', strtotime($payment['added_date'])) : '-'; ?></span>
       </div>
 
-      <?php if ($is_approved): ?>
-        <div class="meta-item">
-          <span class="meta-label">Approval Date</span>
-          <span class="meta-value text-success">
-            <i class="fa fa-calendar-check-o me-1"></i><?= ($payment['approval_date'] && $payment['approval_date'] != '0000-00-00 00:00:00') ? date('d M, Y h:i A', strtotime($payment['approval_date'])) : '-'; ?>
-          </span>
-        </div>
-      <?php endif; ?>
+
     </div>
   </div>
 
-  <!-- Narration if any -->
+  <!-- Narration Section -->
   <?php if (!empty($payment['narration'])): ?>
-    <div class="narration-box">
-      <strong><i class="feather icon-message-square me-1"></i> Narration:</strong>
-      <span class="ms-1"><?= nl2br(htmlspecialchars($payment['narration'])); ?></span>
+    <div class="meta-dashboard">
+      <div class="meta-dashboard-title">
+        <span><i class="feather icon-align-left me-1 text-primary"></i> Narration / Remarks</span>
+      </div>
+      <div class="narration-box mb-0">
+        <?= nl2br(htmlspecialchars($payment['narration'])); ?>
+      </div>
     </div>
   <?php endif; ?>
 
-  <div class="d-flex justify-content-end mt-2 pt-1 border-top">
-    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+  <div class="text-end mt-2">
+    <button type="button" class="btn btn-secondary waves-effect" data-bs-dismiss="modal">Close</button>
   </div>
 
 </div>

@@ -78,11 +78,17 @@
 
   $total_overall_amount = 0;
   if ($this->db->table_exists('customer_payment')) {
-    $rec_sql = "SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amt 
+    $rec_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt 
                 FROM customer_payment 
                 WHERE (LOWER(payment_method) != 'cash' OR payment_method IS NULL)";
     if (!empty($company_id)) {
       $rec_sql .= " AND company_id = '$company_id'";
+    }
+    if ($this->db->field_exists('payment_mode', 'customer_payment')) {
+      $rec_sql .= " AND (payment_mode != 'return' OR payment_mode IS NULL)";
+    }
+    if ($this->db->field_exists('type', 'customer_payment')) {
+      $rec_sql .= " AND (type = 'customer' OR type IS NULL OR type = '')";
     }
     if ($this->db->field_exists('is_deleted', 'customer_payment')) {
       $rec_sql .= " AND is_deleted = 0";
@@ -126,10 +132,7 @@
               <th>Date</th>
               <th>Inv No</th>
               <th>Customer Name</th>
-              <th>Total Tender</th>
-              <th>Allocated (Inv)</th>
-              <th>On Account</th>
-              <th>Adjustments</th>
+              <th>Amount</th>
               <th>Type</th>
               <th>Method</th>
               <th>Added By</th>
@@ -192,10 +195,7 @@ $(document).ready(function($) {
       { "data": "date" },
       { "data": "inv_no" },
       { "data": "customer_name" },
-      { "data": "total_tender" },
-      { "data": "allocated_inv" },
-      { "data": "on_account" },
-      { "data": "adjustments" },
+      { "data": "amount" },
       { "data": "payment_type" },
       { "data": "payment_method" },
       { "data": "added_by_name" },
@@ -205,13 +205,13 @@ $(document).ready(function($) {
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       }
     ],
 

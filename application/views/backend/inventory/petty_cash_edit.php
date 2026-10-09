@@ -2,7 +2,7 @@
   <div class="col-12">
     <div class="card">
       <div class="card-header border-bottom">
-        <h4 class="card-title">Edit Petty Cash</h4>
+        <h4 class="card-title">Edit Cash Book Expense</h4>
       </div>
       <div class="card-body py-2">
         <?php echo form_open('inventory/petty_cash/edit_post/' . $id, ['class' => 'add-ajax-redirect-form', 'id' => 'petty_cash_edit_form', 'onsubmit' => 'return validatePettyCash(this);']);?>
@@ -41,7 +41,7 @@
             <button type="submit"
               class="dt-button add-new btn btn-primary waves-effect waves-float waves-light mt-1 me-1 btnf btn_verify"
               name="btn_verify"><?php echo get_phrase('submit'); ?></button>
-            <a href="<?php echo base_url('inventory/petty-cash'); ?>" class="btn btn-outline-secondary mt-1">Cancel</a>
+            <a href="<?php echo base_url('inventory/cash-book'); ?>" class="btn btn-outline-secondary mt-1">Cancel</a>
           </div>
 
         </div>

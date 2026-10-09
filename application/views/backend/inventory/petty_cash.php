@@ -69,13 +69,73 @@
     height: 50px;
     max-width: 60px;
   }
+
+  .cash-stat-card {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .cash-stat-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+  .cash-stat-card.card-official {
+    border-top: 4px solid #7367f0;
+  }
+  .cash-stat-card.card-unofficial {
+    border-top: 4px solid #82868b;
+  }
+  .cash-stat-card.card-total {
+    border-top: 4px solid #28c76f;
+  }
+  .cash-stat-card .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .cash-stat-card .stat-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #6e6b7b;
+    margin: 0;
+  }
+  .cash-stat-card .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #2b2b2b;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .cash-stat-card .stat-detail {
+    font-size: 11.5px;
+    color: #5e5873;
+    padding-top: 8px;
+    border-top: 1px dashed #ebe9f1;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cash-stat-card .stat-detail span b {
+    color: #1e1e1e;
+  }
 </style>
 
 <?php
   $tab = (isset($_GET['tab']) && $_GET['tab'] == 'transferred') ? 'transferred' : 'cash';
   $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
-  $cash_in_hand = $this->inventory_model->get_cash_in_hand($company_id);
+  $cash_summary = $this->inventory_model->get_cash_in_hand_summary($company_id);
+  $cash_in_hand = $cash_summary['cash_in_hand'];
 
   $total_overall_amount = 0;
   if ($tab == 'transferred') {
@@ -108,9 +168,65 @@
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
+  <!-- Cash in Hand Summary Cards (Official & Unofficial) -->
+  <div class="col-12 mb-2">
+    <div class="row g-2">
+      <!-- Official Cash in Hand -->
+      <div class="col-12 col-md-4 mb-1 mb-md-0">
+        <div class="cash-stat-card card-official">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-shield text-primary me-50"></i> Official Cash in Hand</span>
+            <span class="badge bg-light-primary text-primary font-weight-bold">Official</span>
+          </div>
+          <div class="stat-value text-primary">
+            ₹ <?= number_format($cash_summary['official']['total'], 2); ?>
+          </div>
+          <div class="stat-detail">
+            <span>Payment: <b>₹ <?= number_format($cash_summary['official']['customer_net'], 2); ?></b></span>
+            <span>Manual: <b>₹ <?= number_format($cash_summary['official']['manual_payments'], 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unofficial Cash in Hand -->
+      <div class="col-12 col-md-4 mb-1 mb-md-0">
+        <div class="cash-stat-card card-unofficial">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-briefcase text-secondary me-50"></i> Unofficial Cash in Hand</span>
+            <span class="badge bg-light-secondary text-secondary font-weight-bold">Unofficial</span>
+          </div>
+          <div class="stat-value text-secondary">
+            ₹ <?= number_format($cash_summary['unofficial']['total'], 2); ?>
+          </div>
+          <div class="stat-detail">
+            <span>Payment: <b>₹ <?= number_format($cash_summary['unofficial']['customer_net'], 2); ?></b></span>
+            <span>Manual: <b>₹ <?= number_format($cash_summary['unofficial']['manual_payments'], 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Cash in Hand -->
+      <div class="col-12 col-md-4">
+        <div class="cash-stat-card card-total">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-pocket text-success me-50"></i> Total Cash in Hand</span>
+            <span class="badge bg-light-success text-success font-weight-bold">Net Available</span>
+          </div>
+          <div class="stat-value text-success">
+            ₹ <?= number_format($cash_summary['cash_in_hand'], 2); ?>
+          </div>
+          <div class="stat-detail">
+            <span>Total Recv: <b>₹ <?= number_format($cash_summary['total_received'], 2); ?></b></span>
+            <span>Expense: <b>₹ <?= number_format($cash_summary['total_expense'] + $cash_summary['total_transferred'], 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="col-12 d-flex">
-    <a href="<?php echo base_url('inventory/petty-cash?tab=cash' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'cash') ? 'active' : ''; ?>">Cash</a>
-    <a href="<?php echo base_url('inventory/petty-cash?tab=transferred' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'transferred') ? 'active' : ''; ?>">Transferred</a>
+    <a href="<?php echo base_url('inventory/cash-book?tab=cash' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'cash') ? 'active' : ''; ?>">Cash</a>
+    <a href="<?php echo base_url('inventory/cash-book?tab=transferred' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'transferred') ? 'active' : ''; ?>">Transferred</a>
   </div>
 
   <div class="col-12">
@@ -118,17 +234,17 @@
       <div class="card-body">
         <div class="row align-items-center">
           <div class="col-lg-4 col-md-12 mt-10">
-            <h5 class="mb-0"><b>Total <?= ($tab == 'transferred') ? 'Transferred' : 'Expense'; ?> Expense<span id="total_count"> (0)</span></b>
+            <h5 class="mb-0"><b>Total <?= ($tab == 'transferred') ? 'Transferred' : 'Expense'; ?><span id="total_count"> (0)</span></b>
             </h5>
           </div>
           <div class="col-lg-8 col-md-12 mt-10 text-lg-end d-flex justify-content-lg-end justify-content-between align-items-center flex-wrap">
-            <h5 class="mb-0 me-2"><b>Petty Cash: <span class="text-success">₹ <?= number_format($cash_in_hand ?? 0, 2); ?></span></b></h5>
+            <h5 class="mb-0 me-2"><b>Cash in Hand: <span class="text-success">₹ <?= number_format($cash_in_hand ?? 0, 2); ?></span></b></h5>
             <h5 class="mb-0"><b><?= ($tab == 'transferred') ? 'Total Amount Transferred' : 'Total Expense'; ?>: <span id="total_petty_amount" class="text-primary">₹ <?= number_format($total_overall_amount, 2); ?></span></b></h5>
           </div>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/petty-cash/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Expense</span></a>     
+        <a href="<?php echo site_url('inventory/cash-book/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Expense</span></a>     
         <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_transfer_cash'); ?>', 'Transfer Cash');" class="dt-button add-new desktop-tab add-btn btn btn-success" style="margin-right: 8px;" tabindex="0"><span><i class="feather icon-arrow-right-circle"></i> Transfer</span></a>     
         <table class="table leads-table" id="report-datatable">
           <thead>

@@ -459,10 +459,16 @@
                 <span class="menu-title text-truncate">Payment Receipt</span>
             </a>
         </li>
-        <li class="nav-item <?php if($page_name == 'petty_cash' || $page_name == 'petty_cash_add' || $page_name == 'petty_cash_edit') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/petty-cash">
-                <i class="feather icon-dollar-sign"></i>
-                <span class="menu-title text-truncate">Petty Cash</span>
+        <li class="nav-item <?php if($page_name == 'manual_payment' || $page_name == 'manual_payment_add' || $page_name == 'manual_payment_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/manual-payment">
+                <i class="feather icon-credit-card"></i>
+                <span class="menu-title text-truncate">Manual Payment</span>
+            </a>
+        </li>
+        <li class="nav-item <?php if($page_name == 'petty_cash' || $page_name == 'petty_cash_add' || $page_name == 'petty_cash_edit' || $page_name == 'cash_book') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/cash-book">
+                <i class="feather icon-book"></i>
+                <span class="menu-title text-truncate">Cash Book</span>
             </a>
         </li>
         <?php } ?>

@@ -215,11 +215,21 @@ $route[$r_inventory . '/payment-receipt']                  = 'inventory/payment_
 $route[$r_inventory . '/payment-receipt/add']              = 'inventory/payment_receipt_form/add';
 $route[$r_inventory . '/payment-receipt/edit/(:num)']     = 'inventory/payment_receipt_form/edit/$1';
 
+$route[$r_inventory . '/manual-payment']                  = 'inventory/manual_payment';
+$route[$r_inventory . '/manual-payment/add']              = 'inventory/manual_payment_form/add';
+$route[$r_inventory . '/manual-payment/edit/(:num)']     = 'inventory/manual_payment_form/edit/$1';
+$route[$r_inventory . '/manual-payment/delete/(:num)']   = 'inventory/manual_payment/delete/$1';
+
+
 $route[$r_inventory . '/payment-reconciliation']                  = 'inventory/payment_reconciliation';
 $route[$r_inventory . '/payment-reconciliation/approve/(:num)']  = 'inventory/payment_reconciliation/approve/$1';
 
 $route[$r_inventory . '/cash-collection']                         = 'inventory/cash_collection';
 $route[$r_inventory . '/cash-collection/approve/(:num)']         = 'inventory/cash_collection/approve/$1';
+
+$route[$r_inventory . '/cash-book']                   = 'inventory/petty_cash';
+$route[$r_inventory . '/cash-book/add']               = 'inventory/petty_cash_form/add';
+$route[$r_inventory . '/cash-book/edit/(:num)']      = 'inventory/petty_cash_form/edit/$1';
 
 $route[$r_inventory . '/petty-cash']                  = 'inventory/petty_cash';
 $route[$r_inventory . '/petty-cash/add']              = 'inventory/petty_cash_form/add';

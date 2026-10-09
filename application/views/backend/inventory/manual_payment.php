@@ -8,7 +8,6 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/vfs_fonts.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.html5.min.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
-<script src="//cdn.ckeditor.com/4.13.0/standard/ckeditor.js"></script>
 
 <style>
   .table-error td {
@@ -45,53 +44,20 @@
     background: #5a79c0 !important;
     color: white !important;
   }
-
-  .nav-pills.nav-justified .nav-item {
-    display: flex;
-    align-items: center;
-  }
-
-  .new-fix .nav-pills .nav-link.active,
-  .nav-pills .show>.nav-link {
-    color: #1e652e;
-    border: 1px solid #1e652e !important;
-    background: white;
-    box-shadow: initial;
-    font-weight: 600;
-  }
-
-  .small-img {
-    max-height: 50px;
-    min-height: 50px;
-    object-fit: cover;
-    border-radius: 10px;
-    border: 1px solid #e7e6e6;
-    height: 50px;
-    max-width: 60px;
-  }
 </style>
 
 <?php
   $company_id = $this->session->userdata('company_id');
   $overall_payment_amount = 0;
-  $overall_return_amount = 0;
   if ($this->db->table_exists('customer_payment')) {
     $where_company = !empty($company_id) ? " WHERE company_id = '$company_id'" : " WHERE 1=1";
     if ($this->db->field_exists('is_deleted', 'customer_payment')) {
       $where_company .= " AND is_deleted = 0";
     }
-    if ($this->db->field_exists('type', 'customer_payment')) {
-      $where_company .= " AND (type = 'customer' OR type IS NULL OR type = '')";
-    }
+    $where_company .= " AND type = 'manual'";
 
-    $pay_clause = $this->db->field_exists('payment_mode', 'customer_payment') ? " AND (payment_mode = 'payment' OR payment_mode IS NULL)" : "";
-    $ret_clause = $this->db->field_exists('payment_mode', 'customer_payment') ? " AND payment_mode = 'return'" : " AND 1=0";
-
-    $pay_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment $where_company $pay_clause")->row_array();
+    $pay_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment $where_company")->row_array();
     $overall_payment_amount = (float)($pay_res['total_amt'] ?? 0);
-
-    $ret_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment $where_company $ret_clause")->row_array();
-    $overall_return_amount = (float)($ret_res['total_amt'] ?? 0);
   }
 ?>
 
@@ -102,31 +68,28 @@
     <div class="card">
       <div class="card-body">
         <div class="row align-items-center">
-          <div class="col-md-5 col-12 mt-10">
-            <h5 class="mb-0"><b>Total Payments<span id="total_count"> (0)</span></b>
-            </h5>
+          <div class="col-md-6 col-12 mt-10">
+            <h5 class="mb-0"><b>Total Manual Payments<span id="total_count"> (0)</span></b></h5>
           </div>
-          <div class="col-md-7 col-12 mt-10 text-md-end">
-            <h5 class="mb-0 d-inline-block me-3"><b>Payment Amount: <span id="total_payment_amount" class="text-success">₹ <?= number_format($overall_payment_amount, 2); ?></span></b></h5>
-            <h5 class="mb-0 d-inline-block"><b>Return Amount: <span id="total_return_amount" class="text-danger">₹ <?= number_format($overall_return_amount, 2); ?></span></b></h5>
+          <div class="col-md-6 col-12 mt-10 text-md-end">
+            <h5 class="mb-0 d-inline-block"><b>Total Amount: <span id="total_payment_amount" class="text-success">₹ <?= number_format($overall_payment_amount, 2); ?></span></b></h5>
           </div>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/payment-receipt/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_payment_receipt');?></span></a>     
+        <a href="<?php echo site_url('inventory/manual-payment/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0">
+          <span><i class="feather icon-plus"></i> Add Manual Payment</span>
+        </a>     
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
               <th>Date</th>
               <th>Inv No</th>
-              <th>Customer Name</th>
               <th>Amount</th>
-              <th>Mode</th>
               <th>Type</th>
               <th>Method</th>
               <th>Added By</th>
-              <th class="text-center">Status</th>
               <th style="width: 80px;" class="text-center">Action</th>
             </tr>
           </thead>
@@ -156,7 +119,7 @@ $(document).ready(function($) {
     },
 
     "ajax": {
-      "url": "<?php echo base_url('inventory/get_customer_payments_ajax'); ?>",
+      "url": "<?php echo base_url('inventory/get_manual_payments_ajax'); ?>",
       "dataType": "json",
       "type": "POST",
       "data": function(data) {
@@ -165,9 +128,6 @@ $(document).ready(function($) {
       "dataSrc": function(json) {
         if (json.total_payment_amount !== undefined) {
           $('#total_payment_amount').html(json.total_payment_amount);
-        }
-        if (json.total_return_amount !== undefined) {
-          $('#total_return_amount').html(json.total_return_amount);
         }
         return json.data;
       },
@@ -183,26 +143,23 @@ $(document).ready(function($) {
       { "data": "sr_no" },
       { "data": "date" },
       { "data": "inv_no" },
-      { "data": "customer_name" },
       { "data": "amount" },
-      { "data": "payment_mode" },
       { "data": "payment_type" },
       { "data": "payment_method" },
       { "data": "added_by_name" },
-      { "data": "status", "className": "text-center" },
       { "data": "actions", "className": "text-center" },
     ],
 
     "buttons": [{
         "extend": 'excel',
-        "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }
+        "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }
+        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6] }
       }
     ],
 
@@ -221,5 +178,4 @@ $(document).ready(function($) {
     $(".loader").fadeOut("slow");
   });
 });
-
 </script>

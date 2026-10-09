@@ -9221,6 +9221,22 @@ class Inventory_model extends CI_Model
 			)";
 		}
 
+		$stock_view_mode = strtolower(trim($_REQUEST['stock_view_mode'] ?? 'all'));
+		if (!in_array($stock_view_mode, ['all', 'white', 'black'])) {
+			$stock_view_mode = 'all';
+		}
+
+		if ($stock_view_mode === 'white') {
+			$cost_act_mult = 'i.official_qty';
+			$cost_off_mult = 'i.official_qty';
+		} elseif ($stock_view_mode === 'black') {
+			$cost_act_mult = 'i.black_qty';
+			$cost_off_mult = 'i.black_qty';
+		} else {
+			$cost_act_mult = 'i.quantity';
+			$cost_off_mult = 'i.official_qty';
+		}
+
 		$show_zero_qty = intval($_REQUEST['show_zero_qty'] ?? 0);
 
 		if ($show_zero_qty == 1) {
@@ -9247,10 +9263,10 @@ class Inventory_model extends CI_Model
 					COALESCE(SUM(i.official_qty), 0) as white_qty, 
 					COALESCE(SUM(i.black_qty), 0) as black_qty,
 					COALESCE(SUM(i.pending_qty), 0) as pending_qty,
-					COALESCE(SUM(i.actual_cost_with_exp * i.quantity), 0) as actual_cost_with_exp_total,
-					COALESCE(SUM(i.actual_inr * i.quantity), 0) as actual_cost_net_total,
-					COALESCE(SUM(i.official_exp_per_pc * i.official_qty), 0) as official_cost_with_exp_total,
-					COALESCE(SUM(i.official_rate_rs * i.official_qty), 0) as official_cost_net_total
+					COALESCE(SUM(i.actual_cost_with_exp * $cost_act_mult), 0) as actual_cost_with_exp_total,
+					COALESCE(SUM(i.actual_inr * $cost_act_mult), 0) as actual_cost_net_total,
+					COALESCE(SUM(i.official_exp_per_pc * $cost_off_mult), 0) as official_cost_with_exp_total,
+					COALESCE(SUM(i.official_rate_rs * $cost_off_mult), 0) as official_cost_net_total
 				FROM raw_products p
 				LEFT JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
 				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
@@ -9260,6 +9276,13 @@ class Inventory_model extends CI_Model
 				LIMIT $start, $length
 			");
 		} else {
+			$having_clause = "HAVING SUM(i.quantity) > 0";
+			if ($stock_view_mode === 'white') {
+				$having_clause = "HAVING (SUM(i.official_qty) > 0 OR SUM(i.pending_qty) > 0)";
+			} elseif ($stock_view_mode === 'black') {
+				$having_clause = "HAVING SUM(i.black_qty) > 0";
+			}
+
 			// Default: Show only products with stock quantity > 0
 			$total_count_row = $this->db->query("
 				SELECT COUNT(*) as total FROM (
@@ -9269,7 +9292,7 @@ class Inventory_model extends CI_Model
 					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 					WHERE p.is_deleted = '0' $search_filter 
 					GROUP BY p.id 
-					HAVING SUM(i.quantity) > 0
+					$having_clause
 				) as t
 			")->row_array();
 			$total_count = intval($total_count_row['total'] ?? 0);
@@ -9288,16 +9311,16 @@ class Inventory_model extends CI_Model
 					SUM(i.official_qty) as white_qty, 
 					SUM(i.black_qty) as black_qty,
 					SUM(i.pending_qty) as pending_qty,
-					SUM(i.actual_cost_with_exp * i.quantity) as actual_cost_with_exp_total,
-					SUM(i.actual_inr * i.quantity) as actual_cost_net_total,
-					SUM(i.official_exp_per_pc * i.official_qty) as official_cost_with_exp_total,
-					SUM(i.official_rate_rs * i.official_qty) as official_cost_net_total
+					SUM(i.actual_cost_with_exp * $cost_act_mult) as actual_cost_with_exp_total,
+					SUM(i.actual_inr * $cost_act_mult) as actual_cost_net_total,
+					SUM(i.official_exp_per_pc * $cost_off_mult) as official_cost_with_exp_total,
+					SUM(i.official_rate_rs * $cost_off_mult) as official_cost_net_total
 				FROM raw_products p
 				JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
 				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $search_filter 
 				GROUP BY p.id 
-				HAVING SUM(i.quantity) > 0
+				$having_clause
 				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
 				LIMIT $start, $length
 			");
@@ -9341,7 +9364,13 @@ class Inventory_model extends CI_Model
 					$batch_where .= " AND warehouse_id = '$wid_for_po'";
 				}
 				if ($show_zero_qty == 0) {
-					$batch_where .= " AND quantity > 0";
+					if ($stock_view_mode === 'white') {
+						$batch_where .= " AND (official_qty > 0 OR pending_qty > 0)";
+					} elseif ($stock_view_mode === 'black') {
+						$batch_where .= " AND black_qty > 0";
+					} else {
+						$batch_where .= " AND quantity > 0";
+					}
 				}
 				$batches_query = $this->db->query("
 					SELECT 
@@ -9402,30 +9431,42 @@ class Inventory_model extends CI_Model
 						
 						$b_qty = intval($b['quantity']);
 						$b_white = intval($b['official_qty']);
+						$b_black = intval($b['black_qty']);
 						$b_pending = intval($b['pending_qty']);
 						$b_actual_cost_exp_pc = floatval($b['actual_cost_with_exp']);
 						$b_actual_inr_pc = floatval($b['actual_inr']);
 						$b_official_cost_exp_pc = floatval($b['official_exp_per_pc']);
 						$b_official_rate_pc = floatval($b['official_rate_rs']);
+
+						if ($stock_view_mode === 'white') {
+							$batch_act_mult = $b_white;
+							$batch_off_mult = $b_white;
+						} elseif ($stock_view_mode === 'black') {
+							$batch_act_mult = $b_black;
+							$batch_off_mult = $b_black;
+						} else {
+							$batch_act_mult = $b_qty;
+							$batch_off_mult = $b_white;
+						}
 						
 						$batches_data[] = array(
 							'sr_no' => ++$b_start,
 							'id' => $b['id'],
 							'batch_no' => ($b_batch_no != '' && $b_batch_no != null) ? $b_batch_no : '-',
 							'quantity' => $b_qty,
-							'black_qty' => intval($b['black_qty']),
+							'black_qty' => $b_black,
 							'white_qty' => $b_white,
 							'pending_qty' => $b_pending,
 							'total_white_qty' => $b_white + $b_pending,
 							'booked_qty' => $b_booked,
 							'actual_cost_per_pc_with_exp' => number_format($b_actual_cost_exp_pc, 2),
-							'actual_cost_with_exp' => number_format($b_actual_cost_exp_pc * $b_qty, 2),
+							'actual_cost_with_exp' => number_format($b_actual_cost_exp_pc * $batch_act_mult, 2),
 							'actual_cost_per_pc_net' => number_format($b_actual_inr_pc, 2),
-							'actual_cost_net' => number_format($b_actual_inr_pc * $b_qty, 2),
+							'actual_cost_net' => number_format($b_actual_inr_pc * $batch_act_mult, 2),
 							'official_cost_per_pc_with_exp' => number_format($b_official_cost_exp_pc, 2),
-							'official_cost_with_exp' => number_format($b_official_cost_exp_pc * $b_white, 2),
+							'official_cost_with_exp' => number_format($b_official_cost_exp_pc * $batch_off_mult, 2),
 							'official_cost_per_pc_net' => number_format($b_official_rate_pc, 2),
-							'official_cost_net' => number_format($b_official_rate_pc * $b_white, 2),
+							'official_cost_net' => number_format($b_official_rate_pc * $batch_off_mult, 2),
 							'action' => $b_action
 						);
 					}
@@ -28234,6 +28275,22 @@ public function get_sales_return_reports()
 			)";
 		endif;
 
+		$stock_view_mode = strtolower(trim($_REQUEST['stock_view_mode'] ?? 'all'));
+		if (!in_array($stock_view_mode, ['all', 'white', 'black'])) {
+			$stock_view_mode = 'all';
+		}
+
+		if ($stock_view_mode === 'white') {
+			$cost_act_mult = 'i.official_qty';
+			$cost_off_mult = 'i.official_qty';
+		} elseif ($stock_view_mode === 'black') {
+			$cost_act_mult = 'i.black_qty';
+			$cost_off_mult = 'i.black_qty';
+		} else {
+			$cost_act_mult = 'i.quantity';
+			$cost_off_mult = 'i.official_qty';
+		}
+
 		$show_zero_qty = intval($_REQUEST['show_zero_qty'] ?? 0);
 
 		if ($show_zero_qty == 1) {
@@ -28258,10 +28315,10 @@ public function get_sales_return_reports()
 					COALESCE(SUM(i.official_qty), 0) as white_qty, 
 					COALESCE(SUM(i.black_qty), 0) as black_qty,
 					COALESCE(SUM(i.pending_qty), 0) as pending_qty,
-					COALESCE(SUM(i.actual_cost_with_exp * i.quantity), 0) as actual_cost_with_exp_total,
-					COALESCE(SUM(i.actual_inr * i.quantity), 0) as actual_cost_net_total,
-					COALESCE(SUM(i.official_exp_per_pc * i.official_qty), 0) as official_cost_with_exp_total,
-					COALESCE(SUM(i.official_rate_rs * i.official_qty), 0) as official_cost_net_total
+					COALESCE(SUM(i.actual_cost_with_exp * $cost_act_mult), 0) as actual_cost_with_exp_total,
+					COALESCE(SUM(i.actual_inr * $cost_act_mult), 0) as actual_cost_net_total,
+					COALESCE(SUM(i.official_exp_per_pc * $cost_off_mult), 0) as official_cost_with_exp_total,
+					COALESCE(SUM(i.official_rate_rs * $cost_off_mult), 0) as official_cost_net_total
 				FROM raw_products p
 				LEFT JOIN inventory i ON p.id = i.product_id
 				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
@@ -28271,6 +28328,13 @@ public function get_sales_return_reports()
 				LIMIT $start, $length
 			");
 		} else {
+			$having_clause = "HAVING SUM(i.quantity) > 0";
+			if ($stock_view_mode === 'white') {
+				$having_clause = "HAVING (SUM(i.official_qty) > 0 OR SUM(i.pending_qty) > 0)";
+			} elseif ($stock_view_mode === 'black') {
+				$having_clause = "HAVING SUM(i.black_qty) > 0";
+			}
+
 			$total_count_row = $this->db->query("
 				SELECT COUNT(*) as total FROM (
 					SELECT p.id 
@@ -28278,7 +28342,7 @@ public function get_sales_return_reports()
 					JOIN inventory i ON p.id = i.product_id
 					WHERE p.is_deleted = '0' $keyword_filter 
 					GROUP BY p.id 
-					HAVING SUM(i.quantity) > 0
+					$having_clause
 				) as t
 			")->row_array();
 			$total_count = intval($total_count_row['total'] ?? 0);
@@ -28296,16 +28360,16 @@ public function get_sales_return_reports()
 					SUM(i.official_qty) as white_qty, 
 					SUM(i.black_qty) as black_qty,
 					SUM(i.pending_qty) as pending_qty,
-					SUM(i.actual_cost_with_exp * i.quantity) as actual_cost_with_exp_total,
-					SUM(i.actual_inr * i.quantity) as actual_cost_net_total,
-					SUM(i.official_exp_per_pc * i.official_qty) as official_cost_with_exp_total,
-					SUM(i.official_rate_rs * i.official_qty) as official_cost_net_total
+					SUM(i.actual_cost_with_exp * $cost_act_mult) as actual_cost_with_exp_total,
+					SUM(i.actual_inr * $cost_act_mult) as actual_cost_net_total,
+					SUM(i.official_exp_per_pc * $cost_off_mult) as official_cost_with_exp_total,
+					SUM(i.official_rate_rs * $cost_off_mult) as official_cost_net_total
 				FROM raw_products p
 				JOIN inventory i ON p.id = i.product_id
 				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 				WHERE p.is_deleted = '0' $keyword_filter 
 				GROUP BY p.id 
-				HAVING SUM(i.quantity) > 0
+				$having_clause
 				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
 				LIMIT $start, $length
 			");
@@ -28341,7 +28405,13 @@ public function get_sales_return_reports()
 				// Query Layer 2: Company-wise breakdown for this product
 				$comp_where = "i.product_id = '$product_id'";
 				if ($show_zero_qty == 0) {
-					$comp_where .= " AND i.quantity > 0";
+					if ($stock_view_mode === 'white') {
+						$comp_where .= " AND (i.official_qty > 0 OR i.pending_qty > 0)";
+					} elseif ($stock_view_mode === 'black') {
+						$comp_where .= " AND i.black_qty > 0";
+					} else {
+						$comp_where .= " AND i.quantity > 0";
+					}
 				}
 				$companies_query = $this->db->query("
 					SELECT 
@@ -28353,10 +28423,10 @@ public function get_sales_return_reports()
 						COALESCE(SUM(i.black_qty), 0) as black_qty,
 						COALESCE(SUM(i.official_qty), 0) as white_qty,
 						COALESCE(SUM(i.pending_qty), 0) as pending_qty,
-						COALESCE(SUM(i.actual_cost_with_exp * i.quantity), 0) as actual_cost_with_exp_total,
-						COALESCE(SUM(i.actual_inr * i.quantity), 0) as actual_cost_net_total,
-						COALESCE(SUM(i.official_exp_per_pc * i.official_qty), 0) as official_cost_with_exp_total,
-						COALESCE(SUM(i.official_rate_rs * i.official_qty), 0) as official_cost_net_total
+						COALESCE(SUM(i.actual_cost_with_exp * $cost_act_mult), 0) as actual_cost_with_exp_total,
+						COALESCE(SUM(i.actual_inr * $cost_act_mult), 0) as actual_cost_net_total,
+						COALESCE(SUM(i.official_exp_per_pc * $cost_off_mult), 0) as official_cost_with_exp_total,
+						COALESCE(SUM(i.official_rate_rs * $cost_off_mult), 0) as official_cost_net_total
 					FROM inventory i
 					LEFT JOIN company c ON c.id = i.company_id
 					LEFT JOIN warehouse w ON w.id = i.warehouse_id
@@ -28398,7 +28468,13 @@ public function get_sales_return_reports()
 						// Query Layer 3: Batches under this company and warehouse
 						$b_where = "product_id = '$product_id' AND company_id = '$cid' AND warehouse_id = '$wid'";
 						if ($show_zero_qty == 0) {
-							$b_where .= " AND quantity > 0";
+							if ($stock_view_mode === 'white') {
+								$b_where .= " AND (official_qty > 0 OR pending_qty > 0)";
+							} elseif ($stock_view_mode === 'black') {
+								$b_where .= " AND black_qty > 0";
+							} else {
+								$b_where .= " AND quantity > 0";
+							}
 						}
 						$batches_query = $this->db->query("
 							SELECT 
@@ -28447,11 +28523,23 @@ public function get_sales_return_reports()
 
 								$b_qty = intval($b['quantity']);
 								$b_white = intval($b['official_qty']);
+								$b_black = intval($b['black_qty']);
 								$b_pending = intval($b['pending_qty']);
 								$b_actual_cost_exp_pc = floatval($b['actual_cost_with_exp']);
 								$b_actual_inr_pc = floatval($b['actual_inr']);
 								$b_official_cost_exp_pc = floatval($b['official_exp_per_pc']);
 								$b_official_rate_pc = floatval($b['official_rate_rs']);
+
+								if ($stock_view_mode === 'white') {
+									$batch_act_mult = $b_white;
+									$batch_off_mult = $b_white;
+								} elseif ($stock_view_mode === 'black') {
+									$batch_act_mult = $b_black;
+									$batch_off_mult = $b_black;
+								} else {
+									$batch_act_mult = $b_qty;
+									$batch_off_mult = $b_white;
+								}
 
 								$batches_data[] = array(
 									'sr_no' => ++$b_start,
@@ -28459,19 +28547,19 @@ public function get_sales_return_reports()
 									'batch_no' => ($b_batch_no != '' && $b_batch_no != null) ? $b_batch_no : '-',
 									'warehouse_name' => $b['warehouse_name'] ?? $c_item['warehouse_name'],
 									'quantity' => $b_qty,
-									'black_qty' => intval($b['black_qty']),
+									'black_qty' => $b_black,
 									'white_qty' => $b_white,
 									'pending_qty' => $b_pending,
 									'total_white_qty' => $b_white + $b_pending,
 									'booked_qty' => $b_booked,
 									'actual_cost_per_pc_with_exp' => number_format($b_actual_cost_exp_pc, 2),
-									'actual_cost_with_exp' => number_format($b_actual_cost_exp_pc * $b_qty, 2),
+									'actual_cost_with_exp' => number_format($b_actual_cost_exp_pc * $batch_act_mult, 2),
 									'actual_cost_per_pc_net' => number_format($b_actual_inr_pc, 2),
-									'actual_cost_net' => number_format($b_actual_inr_pc * $b_qty, 2),
+									'actual_cost_net' => number_format($b_actual_inr_pc * $batch_act_mult, 2),
 									'official_cost_per_pc_with_exp' => number_format($b_official_cost_exp_pc, 2),
-									'official_cost_with_exp' => number_format($b_official_cost_exp_pc * $b_white, 2),
+									'official_cost_with_exp' => number_format($b_official_cost_exp_pc * $batch_off_mult, 2),
 									'official_cost_per_pc_net' => number_format($b_official_rate_pc, 2),
-									'official_cost_net' => number_format($b_official_rate_pc * $b_white, 2),
+									'official_cost_net' => number_format($b_official_rate_pc * $batch_off_mult, 2),
 									'action' => $b_action
 								);
 							}
@@ -28479,15 +28567,27 @@ public function get_sales_return_reports()
 
 						$c_qty = intval($c_item['quantity']);
 						$c_white = intval($c_item['white_qty']);
+						$c_black = intval($c_item['black_qty']);
 						$c_act_exp_total = floatval($c_item['actual_cost_with_exp_total']);
 						$c_act_net_total = floatval($c_item['actual_cost_net_total']);
 						$c_off_exp_total = floatval($c_item['official_cost_with_exp_total']);
 						$c_off_net_total = floatval($c_item['official_cost_net_total']);
 
-						$c_act_exp_pc = ($c_qty > 0) ? ($c_act_exp_total / $c_qty) : 0;
-						$c_act_net_pc = ($c_qty > 0) ? ($c_act_net_total / $c_qty) : 0;
-						$c_off_exp_pc = ($c_white > 0) ? ($c_off_exp_total / $c_white) : 0;
-						$c_off_net_pc = ($c_white > 0) ? ($c_off_net_total / $c_white) : 0;
+						if ($stock_view_mode === 'white') {
+							$c_act_div = $c_white;
+							$c_off_div = $c_white;
+						} elseif ($stock_view_mode === 'black') {
+							$c_act_div = $c_black;
+							$c_off_div = $c_black;
+						} else {
+							$c_act_div = $c_qty;
+							$c_off_div = $c_white;
+						}
+
+						$c_act_exp_pc = ($c_act_div > 0) ? ($c_act_exp_total / $c_act_div) : 0;
+						$c_act_net_pc = ($c_act_div > 0) ? ($c_act_net_total / $c_act_div) : 0;
+						$c_off_exp_pc = ($c_off_div > 0) ? ($c_off_exp_total / $c_off_div) : 0;
+						$c_off_net_pc = ($c_off_div > 0) ? ($c_off_net_total / $c_off_div) : 0;
 
 						$companies_data[] = array(
 							'sr_no' => ++$c_start,
@@ -29558,14 +29658,15 @@ public function get_sales_return_reports()
 			$bill_order_nos[trim($bi['order_no'] ?? '')] = $bi;
 		}
 
+		$pay_del_filter = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (p.is_deleted = 0 OR p.is_deleted IS NULL)" : "";
 		$payments = $this->db->query(
 			"SELECT p.*,
 			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name,
 			        ba.bank_name, ba.name AS bank_account_name
 			 FROM customer_payment p
 			 LEFT JOIN sys_users u ON p.added_by = u.id
-			 LEFT JOIN bank_accounts ba ON ba.id = p.company_bank_account
-			 WHERE p.customer_id = {$customer_id}
+			 LEFT JOIN bank_accounts ba ON (ba.id = p.company_bank OR ba.id = p.company_bank_account)
+			 WHERE p.customer_id = {$customer_id} {$pay_del_filter}
 			 ORDER BY p.date ASC, p.id ASC"
 		)->result_array();
 
@@ -29679,22 +29780,30 @@ public function get_sales_return_reports()
 		}
 
 		foreach ($payments as $pay) {
-			$is_official = (($pay['payment_type'] ?? '') === 'official');
 			$amt = (float) ($pay['amount'] ?? 0);
-			if ($is_official) {
+			if (($pay['payment_method'] ?? '') === 'cheque') {
+				$bank_label = trim($pay['bank_name'] ?? '') ?: trim($pay['bank_account_name'] ?? '') ?: 'Cheque';
+			} elseif (($pay['payment_method'] ?? '') === 'cash') {
+				$bank_label = 'Cash';
+			} elseif (($pay['payment_type'] ?? '') === 'official') {
 				$bank_label = trim($pay['bank_name'] ?? '') ?: trim($pay['bank_account_name'] ?? '') ?: 'Bank';
 			} else {
 				$bank_label = 'Cash';
 			}
 
+			$is_return = (($pay['payment_mode'] ?? 'payment') === 'return');
+			if ($is_return) {
+				$bank_label .= ' (Return)';
+			}
+
 			$entries[] = [
 				'entry_type'     => 'payment',
-				'balance_mode'   => 'receipt',
+				'balance_mode'   => $is_return ? 'payment_return' : 'receipt',
 				'sort_date'      => $pay['date'],
 				'sort_id'        => (int) $pay['id'],
 				'date'           => $pay['date'],
 				'particulars'    => $bank_label,
-				'vch_type'       => 'Receipt',
+				'vch_type'       => $is_return ? 'Payment Return' : 'Receipt',
 				'vch_no'         => $pay['inv_no'] ?? '',
 				'qty'            => null,
 				'rate_pc'        => null,
@@ -29823,6 +29932,11 @@ public function get_sales_return_reports()
 					$final -= ((float) ($entry['bank_amt'] ?? 0) + (float) ($entry['cash_amt'] ?? 0));
 					$bank  -= (float) ($entry['bank_amt'] ?? 0);
 					$cash  -= (float) ($entry['cash_amt'] ?? 0);
+					break;
+				case 'payment_return':
+					$final += ((float) ($entry['bank_amt'] ?? 0) + (float) ($entry['cash_amt'] ?? 0));
+					$bank  += (float) ($entry['bank_amt'] ?? 0);
+					$cash  += (float) ($entry['cash_amt'] ?? 0);
 					break;
 				case 'adjustment':
 					$final += (float) ($entry['adj_final'] ?? 0);
@@ -31690,112 +31804,324 @@ public function get_sales_return_reports()
 		if (!$this->db->field_exists('company_id', 'customer_payment')) {
 			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_id int(11) NOT NULL DEFAULT 0 AFTER id");
 		}
+		if (!$this->db->field_exists('type', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN type enum('customer','manual') NOT NULL DEFAULT 'customer' AFTER company_id");
+		}
+		if (!$this->db->field_exists('company_bank', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank int(11) DEFAULT NULL AFTER payment_method");
+		}
+		if (!$this->db->field_exists('company_bank_account', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank_account varchar(255) DEFAULT NULL AFTER company_bank");
+		} else {
+			$acc_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'company_bank_account'")->row_array();
+			if (!empty($acc_col['Type']) && strpos(strtolower($acc_col['Type']), 'int') !== false) {
+				$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN company_bank_account varchar(255) DEFAULT NULL");
+			}
+		}
+		$method_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'payment_method'")->row_array();
+		if (!empty($method_col['Type']) && strpos($method_col['Type'], 'cheque') === false) {
+			$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN payment_method enum('cash','cheque') NOT NULL DEFAULT 'cash'");
+		}
+		if (!$this->db->field_exists('payment_mode', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN payment_mode enum('payment','return') NOT NULL DEFAULT 'payment' AFTER payment_method");
+		}
+		if (!$this->db->field_exists('is_deleted', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_deleted tinyint(1) NOT NULL DEFAULT 0 AFTER narration");
+		}
 
-		$data['company_id'] = $this->session->userdata('company_id') ?: 0;
-		$data['customer_id'] = $this->input->post('customer_id');
-		$data['date'] = $this->input->post('payment_date');
-		$data['inv_no'] = $this->input->post('invoice_no');
-		$data['amount'] = $this->input->post('amount_rs');
-		$data['payment_type'] = $this->input->post('payment_type');
-		$data['payment_method'] = $this->input->post('payment_method');
-		$data['company_bank_account'] = $this->input->post('bank_account');
-		$data['narration'] = $this->input->post('narration');
-		
-		$data['invoices_selected_count'] = $this->input->post('invoices_selected_count');
-		$data['balance_after'] = $this->input->post('balance_after');
-		$data['total_outstanding'] = $this->input->post('total_outstanding');
-		$data['allocated_inv'] = $this->input->post('allocated_inv');
-		$data['total_tender'] = $this->input->post('total_tender');
-		$data['on_account'] = $this->input->post('on_account');
-		$data['adjustments'] = $this->input->post('adjustments');
-		
-		$data['added_by'] = $this->session->userdata('super_user_id');
-		$data['added_by_name'] = $this->session->userdata('super_name');
-		
-		// Get customer name
-		$customer = $this->db->get_where('customer', ['id' => $data['customer_id']])->row_array();
-		$data['customer_name'] = $customer['owner_name'];
+		$customer_id = $this->input->post('customer_id');
+		$customer = $this->db->get_where('customer', ['id' => $customer_id])->row_array();
+
+		$payment_method = $this->input->post('payment_method');
+		$payment_mode = $this->input->post('payment_mode');
+		if (!in_array($payment_mode, ['payment', 'return'])) {
+			$payment_mode = 'payment';
+		}
+		$company_bank = NULL;
+		$company_bank_account = NULL;
+
+		if ($payment_method == 'cheque') {
+			$company_bank = $this->input->post('company_bank') ?: NULL;
+			$company_bank_account = $this->input->post('company_bank_account');
+			if (empty($company_bank_account) && !empty($company_bank)) {
+				$bank_row = $this->db->get_where('bank_accounts', ['id' => $company_bank])->row_array();
+				if (!empty($bank_row)) {
+					$company_bank_account = $bank_row['account_no'];
+				}
+			}
+		}
+
+		$data = [
+			'company_id'           => $this->session->userdata('company_id') ?: 0,
+			'type'                 => 'customer',
+			'customer_id'          => $customer_id,
+			'customer_name'        => $customer['company_name'] ?? $customer['owner_name'] ?? '',
+			'date'                 => $this->input->post('payment_date'),
+			'inv_no'               => $this->input->post('invoice_no'),
+			'amount'               => $this->input->post('amount_rs'),
+			'payment_type'         => $this->input->post('payment_type'),
+			'payment_method'       => $payment_method,
+			'payment_mode'         => $payment_mode,
+			'company_bank'         => $company_bank,
+			'company_bank_account' => $company_bank_account,
+			'narration'            => $this->input->post('narration'),
+			'is_approved'          => 0,
+			'is_deleted'           => 0,
+			'added_by'             => $this->session->userdata('super_user_id'),
+			'added_by_name'        => $this->session->userdata('super_name'),
+			'added_date'           => date('Y-m-d H:i:s'),
+		];
 
 		$this->db->insert('customer_payment', $data);
-		$payment_id = $this->db->insert_id();
-
-		// Insert Records (Allocations)
-		$order_ids = $this->input->post('order_ids');
-		if (!empty($order_ids)) {
-			$apply_amounts = $this->input->post('apply_amount');
-			$order_dates = $this->input->post('order_date');
-			$ref_nos = $this->input->post('refrence_no');
-			$order_totals = $this->input->post('order_total');
-			$order_pendings = $this->input->post('order_pending'); // This now stores the remaining amount after payment
-
-			foreach ($order_ids as $id) {
-				$paid_now = $apply_amounts[$id];
-				if ($paid_now <= 0) continue;
-
-				$record_data = [
-					'payment_id' => $payment_id,
-					'order_id' => $id,
-					'order_date' => $order_dates[$id],
-					'refrence_no' => $ref_nos[$id],
-					'order_total' => $order_totals[$id],
-					'order_paid' => $paid_now, // Amount paid in this transaction
-					'order_pending' => $order_pendings[$id] // Remaining balance
-				];
-				$this->db->insert('customer_payment_record', $record_data);
-
-				// Update Sales Order
-				$order = $this->db->get_where('sales_order', ['id' => $id])->row_array();
-				if ($data['payment_type'] == 'official') {
-					$new_paid = $order['total_white_paid'] + $paid_now;
-					$this->db->where('id', $id)->update('sales_order', ['total_white_paid' => $new_paid]);
-				} else {
-					$new_paid = $order['total_black_paid'] + $paid_now;
-					$this->db->where('id', $id)->update('sales_order', ['total_black_paid' => $new_paid]);
-				}
-
-				// Check if fully paid
-				$updated_order = $this->db->get_where('sales_order', ['id' => $id])->row_array();
-				if ($updated_order['net_sales_value_1'] <= $updated_order['total_white_paid'] && 
-					$updated_order['total_black_amt'] <= $updated_order['total_black_paid']) {
-					$this->db->where('id', $id)->update('sales_order', ['is_paid' => 1]);
-				}
-			}
-		}
-
-		// Update Credits Used (Debit existing credits)
-		$credit_ids = $this->input->post('credit_ids');
-		if (!empty($credit_ids)) {
-			$apply_credit_amounts = $this->input->post('apply_credit_amount');
-			foreach ($credit_ids as $cid) {
-				$credit_used = $apply_credit_amounts[$cid];
-				if ($credit_used <= 0) continue;
-
-				$this->db->set('debit_balance', 'debit_balance + ' . (float)$credit_used, FALSE);
-				$this->db->where('id', $cid);
-				$this->db->update('customer_credit');
-			}
-		}
-
-		// Handle On Account (Create new credit for future use)
-		if ($data['on_account'] > 0) {
-			$credit_data = [
-				'customer_id' => $data['customer_id'],
-				'payment_id' => $payment_id,
-				'item_no' => $data['inv_no'],
-				'date' => $data['date'],
-				'credit_balance' => $data['on_account'],
-				'debit_balance' => 0
-			];
-			$this->db->insert('customer_credit', $credit_data);
-		}
 
 		$resultpost = array(
 			"status"  => 200,
 			"message" => "Payment receipt added successfully",
-			"url"     => base_url() . 'inventory/payment_receipt',
+			"url"     => base_url('inventory/payment_receipt'),
 		);
 		echo json_encode($resultpost);
 		exit();
+	}
+
+	public function delete_customer_payment($id)
+	{
+		$this->db->where('id', $id);
+		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
+			$this->db->update('customer_payment', ['is_deleted' => 1]);
+		} else {
+			$this->db->delete('customer_payment');
+		}
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Payment receipt deleted successfully",
+			"url"     => base_url('inventory/payment_receipt'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function add_manual_payment()
+	{
+		if (!$this->db->field_exists('company_id', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_id int(11) NOT NULL DEFAULT 0 AFTER id");
+		}
+		if (!$this->db->field_exists('type', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN type enum('customer','manual') NOT NULL DEFAULT 'customer' AFTER company_id");
+		}
+		if (!$this->db->field_exists('company_bank', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank int(11) DEFAULT NULL AFTER payment_method");
+		}
+		if (!$this->db->field_exists('company_bank_account', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank_account varchar(255) DEFAULT NULL AFTER company_bank");
+		} else {
+			$acc_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'company_bank_account'")->row_array();
+			if (!empty($acc_col['Type']) && strpos(strtolower($acc_col['Type']), 'int') !== false) {
+				$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN company_bank_account varchar(255) DEFAULT NULL");
+			}
+		}
+		$method_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'payment_method'")->row_array();
+		if (!empty($method_col['Type']) && strpos($method_col['Type'], 'cheque') === false) {
+			$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN payment_method enum('cash','cheque') NOT NULL DEFAULT 'cash'");
+		}
+		if (!$this->db->field_exists('payment_mode', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN payment_mode enum('payment','return') NOT NULL DEFAULT 'payment' AFTER payment_method");
+		}
+		if (!$this->db->field_exists('is_deleted', 'customer_payment')) {
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_deleted tinyint(1) NOT NULL DEFAULT 0 AFTER narration");
+		}
+
+		$payment_method = $this->input->post('payment_method');
+		$company_bank = NULL;
+		$company_bank_account = NULL;
+
+		if ($payment_method == 'cheque') {
+			$company_bank = $this->input->post('company_bank') ?: NULL;
+			$company_bank_account = $this->input->post('company_bank_account');
+			if (empty($company_bank_account) && !empty($company_bank)) {
+				$bank_row = $this->db->get_where('bank_accounts', ['id' => $company_bank])->row_array();
+				if (!empty($bank_row)) {
+					$company_bank_account = $bank_row['account_no'];
+				}
+			}
+		}
+
+		$data = [
+			'company_id'           => $this->session->userdata('company_id') ?: 0,
+			'type'                 => 'manual',
+			'customer_id'          => NULL,
+			'customer_name'        => NULL,
+			'date'                 => $this->input->post('payment_date'),
+			'inv_no'               => $this->input->post('invoice_no'),
+			'amount'               => (float) $this->input->post('amount_rs'),
+			'payment_type'         => $this->input->post('payment_type') ?: 'official',
+			'payment_method'       => $payment_method ?: 'cash',
+			'payment_mode'         => 'payment',
+			'company_bank'         => $company_bank,
+			'company_bank_account' => $company_bank_account,
+			'narration'            => $this->input->post('narration'),
+			'is_approved'          => 1,
+			'approval_date'        => date('Y-m-d H:i:s'),
+			'is_deleted'           => 0,
+			'added_by'             => $this->session->userdata('super_user_id'),
+			'added_by_name'        => $this->session->userdata('super_name'),
+			'added_date'           => date('Y-m-d H:i:s'),
+		];
+
+		$this->db->insert('customer_payment', $data);
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Manual payment added successfully",
+			"url"     => base_url('inventory/manual-payment'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function edit_manual_payment($id)
+	{
+		$payment_method = $this->input->post('payment_method');
+		$company_bank = NULL;
+		$company_bank_account = NULL;
+
+		if ($payment_method == 'cheque') {
+			$company_bank = $this->input->post('company_bank') ?: NULL;
+			$company_bank_account = $this->input->post('company_bank_account');
+			if (empty($company_bank_account) && !empty($company_bank)) {
+				$bank_row = $this->db->get_where('bank_accounts', ['id' => $company_bank])->row_array();
+				if (!empty($bank_row)) {
+					$company_bank_account = $bank_row['account_no'];
+				}
+			}
+		}
+
+		$data = [
+			'date'                 => $this->input->post('payment_date'),
+			'inv_no'               => $this->input->post('invoice_no'),
+			'amount'               => (float) $this->input->post('amount_rs'),
+			'payment_type'         => $this->input->post('payment_type') ?: 'official',
+			'payment_method'       => $payment_method ?: 'cash',
+			'company_bank'         => $company_bank,
+			'company_bank_account' => $company_bank_account,
+			'narration'            => $this->input->post('narration'),
+		];
+
+		$this->db->where('id', $id);
+		$this->db->where('type', 'manual');
+		$this->db->update('customer_payment', $data);
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Manual payment updated successfully",
+			"url"     => base_url('inventory/manual-payment'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function delete_manual_payment($id)
+	{
+		$this->db->where('id', $id);
+		$this->db->where('type', 'manual');
+		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
+			$this->db->update('customer_payment', ['is_deleted' => 1]);
+		} else {
+			$this->db->delete('customer_payment');
+		}
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Manual payment deleted successfully",
+			"url"     => base_url('inventory/manual-payment'),
+		);
+		echo json_encode($resultpost);
+		exit();
+	}
+
+	public function get_manual_payments()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = " AND type = 'manual'";
+
+		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
+			$keyword_filter .= " AND (is_deleted = 0 OR is_deleted IS NULL)";
+		}
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $filter_data['keywords'];
+			$keyword_filter .= " AND (inv_no LIKE '%" . $keyword . "%' OR narration LIKE '%" . $keyword . "%')";
+		}
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$date_range = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($date_range['0']));
+			$to = date('Y-m-d', strtotime($date_range['1']));
+
+			$keyword_filter .= " AND (DATE(date) >= '" . $from . "' AND DATE(date) <= '" . $to . "')";
+		}
+
+		$company_id = $this->session->userdata('company_id');
+		if (!empty($company_id)) {
+			$keyword_filter .= " AND company_id = '$company_id'";
+		}
+
+		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
+
+		$amount_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment WHERE 1=1" . $keyword_filter)->row_array();
+		$total_payment_amount = (float)($amount_query['total_amt'] ?? 0);
+
+		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			$sr_no = $start;
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/manual_payment_view_modal/" . $id . "','Manual Payment Details - " . htmlspecialchars($item['inv_no'], ENT_QUOTES) . "')";
+				$edit_url = base_url('inventory/manual-payment/edit/' . $id);
+				$delete_url = "confirm_modal('" . base_url() . "inventory/manual_payment/delete/" . $id . "','Are you sure want to delete this manual payment!')";
+
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>
+						<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>
+						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+					</div>
+				</div>';
+
+				$type_badge = ($item['payment_type'] == 'official')
+					? '<span class="badge bg-light-primary text-primary">Official</span>'
+					: '<span class="badge bg-light-secondary text-secondary">Unofficial</span>';
+
+				$data[] = array(
+					"sr_no"          => ++$sr_no,
+					"date"           => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
+					"inv_no"         => $item['inv_no'],
+					"amount"         => '₹' . number_format($item['amount'], 2),
+					"payment_type"   => $type_badge,
+					"payment_method" => ucfirst($item['payment_method']),
+					"added_by_name"  => $item['added_by_name'] ?: '—',
+					"actions"        => $action
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw"                 => intval($params['draw']),
+			"recordsTotal"         => $total_count,
+			"recordsFiltered"      => $total_count,
+			"total_payment_amount" => '₹ ' . number_format($total_payment_amount, 2),
+			"data"                 => $data
+		);
+
+		echo json_encode($json_data);
 	}
 
 	public function approve_customer_payment($id)
@@ -31807,7 +32133,7 @@ public function get_sales_return_reports()
 		);
 
 		if (!$this->db->field_exists('is_approved', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_approved tinyint(1) NOT NULL DEFAULT 0 AFTER adjustments");
+			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_approved tinyint(1) NOT NULL DEFAULT 0 AFTER narration");
 		}
 		if (!$this->db->field_exists('approval_date', 'customer_payment')) {
 			$this->db->query("ALTER TABLE customer_payment ADD COLUMN approval_date datetime DEFAULT NULL AFTER is_approved");
@@ -31835,6 +32161,14 @@ public function get_sales_return_reports()
 		$data = array();
 		$keyword_filter = "";
 
+		if ($this->db->field_exists('type', 'customer_payment')) {
+			$keyword_filter .= " AND (type = 'customer' OR type IS NULL OR type = '')";
+		}
+
+		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
+			$keyword_filter .= " AND (is_deleted = 0 OR is_deleted IS NULL)";
+		}
+
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
 			$keyword = $filter_data['keywords'];
 			$keyword_filter .= " AND (customer_name LIKE '%" . $keyword . "%' OR inv_no LIKE '%" . $keyword . "%')";
@@ -31854,8 +32188,15 @@ public function get_sales_return_reports()
 		}
 
 		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
-		$amount_query = $this->db->query("SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amount FROM customer_payment WHERE 1=1" . $keyword_filter)->row_array();
-		$total_payment_amount = (float)($amount_query['total_amount'] ?? 0);
+
+		$pay_clause = $this->db->field_exists('payment_mode', 'customer_payment') ? " AND (payment_mode = 'payment' OR payment_mode IS NULL)" : "";
+		$ret_clause = $this->db->field_exists('payment_mode', 'customer_payment') ? " AND payment_mode = 'return'" : " AND 1=0";
+
+		$pay_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment WHERE 1=1" . $keyword_filter . $pay_clause)->row_array();
+		$ret_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment WHERE 1=1" . $keyword_filter . $ret_clause)->row_array();
+
+		$total_payment_amount = (float)($pay_query['total_amt'] ?? 0);
+		$total_return_amount = (float)($ret_query['total_amt'] ?? 0);
 
 		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 		
@@ -31864,12 +32205,14 @@ public function get_sales_return_reports()
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/payment_receipt_view_modal/" . $id . "','Payment Details - " . htmlspecialchars($item['inv_no'], ENT_QUOTES) . "')";
+				$delete_url = "confirm_modal('" . base_url() . "inventory/payment_receipt/delete/" . $id . "','Are you sure want to delete this payment receipt!')";
 
 				$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">
 						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>
+						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
 					</div>
 				</div>';
 
@@ -31877,30 +32220,43 @@ public function get_sales_return_reports()
 					? '<span class="badge bg-light-success text-success">Approved</span>'
 					: '<span class="badge bg-light-warning text-warning">Pending</span>';
 
+				$mode = $item['payment_mode'] ?? 'payment';
+				$mode_badge = ($mode == 'return')
+					? '<span class="badge bg-light-danger text-danger">Return</span>'
+					: '<span class="badge bg-light-success text-success">Payment</span>';
+
+				$type_badge = ($item['payment_type'] == 'official')
+					? '<span class="badge bg-light-primary text-primary">Official</span>'
+					: '<span class="badge bg-light-secondary text-secondary">Unofficial</span>';
+
+				$amount_display = ($mode == 'return')
+					? '<span class="text-danger fw-bold">-₹' . number_format($item['amount'], 2) . '</span>'
+					: '<span class="text-dark fw-bold">₹' . number_format($item['amount'], 2) . '</span>';
+
 				$data[] = array(
-					"sr_no"         => ++$sr_no,
-					"date"          => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
-					"inv_no"        => $item['inv_no'],
-					"customer_name" => $item['customer_name'],
-					"total_tender"  => '₹' . number_format($item['total_tender'], 2),
-					"allocated_inv" => '₹' . number_format($item['allocated_inv'], 2),
-					"on_account"    => '₹' . number_format($item['on_account'], 2),
-					"adjustments"   => '₹' . number_format($item['adjustments'], 2),
-					"payment_type"  => ucfirst($item['payment_type']),
+					"sr_no"          => ++$sr_no,
+					"date"           => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
+					"inv_no"         => $item['inv_no'],
+					"customer_name"  => $item['customer_name'],
+					"amount"         => $amount_display,
+					"payment_mode"   => $mode_badge,
+					"payment_type"   => $type_badge,
 					"payment_method" => ucfirst($item['payment_method']),
-					"added_by_name" => $item['added_by_name'],
-					"status"        => $status_badge,
-					"actions"       => $action
+					"added_by_name"  => $item['added_by_name'],
+					"status"         => $status_badge,
+					"actions"        => $action
 				);
 			}
 		}
 
 		$json_data = array(
-			"draw"            => intval($params['draw']),
-			"recordsTotal"    => $total_count,
-			"recordsFiltered" => $total_count,
-			"total_amount"    => '₹ ' . number_format($total_payment_amount, 2),
-			"data"            => $data
+			"draw"                 => intval($params['draw']),
+			"recordsTotal"         => $total_count,
+			"recordsFiltered"      => $total_count,
+			"total_payment_amount" => '₹ ' . number_format($total_payment_amount, 2),
+			"total_return_amount"  => '₹ ' . number_format($total_return_amount, 2),
+			"total_amount"         => '₹ ' . number_format($total_payment_amount - $total_return_amount, 2),
+			"data"                 => $data
 		);
 
 		echo json_encode($json_data);
@@ -31915,6 +32271,19 @@ public function get_sales_return_reports()
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
 		$keyword_filter = "";
+
+		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
+			$keyword_filter .= " AND (is_deleted = 0 OR is_deleted IS NULL)";
+		}
+
+		if ($this->db->field_exists('type', 'customer_payment')) {
+			$keyword_filter .= " AND (type = 'customer' OR type IS NULL OR type = '')";
+		}
+
+		// Don't show return type payment in reconciliation
+		if ($this->db->field_exists('payment_mode', 'customer_payment')) {
+			$keyword_filter .= " AND (payment_mode != 'return' OR payment_mode IS NULL)";
+		}
 
 		$company_id = $this->session->userdata('company_id');
 		if (!empty($company_id)) {
@@ -31942,7 +32311,7 @@ public function get_sales_return_reports()
 		}
 
 		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
-		$amount_query = $this->db->query("SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_amount FROM customer_payment WHERE 1=1" . $keyword_filter)->row_array();
+		$amount_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amount FROM customer_payment WHERE 1=1" . $keyword_filter)->row_array();
 		$total_payment_amount = (float)($amount_query['total_amount'] ?? 0);
 		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
 		
@@ -31966,19 +32335,20 @@ public function get_sales_return_reports()
 				$action .= '</div>
 				</div>';
 
+				$type_badge = ($item['payment_type'] == 'official')
+					? '<span class="badge bg-light-primary text-primary">Official</span>'
+					: '<span class="badge bg-light-secondary text-secondary">Unofficial</span>';
+
 				$data[] = array(
-					"sr_no"         => ++$sr_no,
-					"date"          => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
-					"inv_no"        => $item['inv_no'],
-					"customer_name" => $item['customer_name'],
-					"total_tender"  => '₹' . number_format($item['total_tender'], 2),
-					"allocated_inv" => '₹' . number_format($item['allocated_inv'], 2),
-					"on_account"    => '₹' . number_format($item['on_account'], 2),
-					"adjustments"   => '₹' . number_format($item['adjustments'], 2),
-					"payment_type"  => ucfirst($item['payment_type']),
+					"sr_no"          => ++$sr_no,
+					"date"           => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
+					"inv_no"         => $item['inv_no'],
+					"customer_name"  => $item['customer_name'],
+					"amount"         => '₹' . number_format($item['amount'], 2),
+					"payment_type"   => $type_badge,
 					"payment_method" => ucfirst($item['payment_method']),
-					"added_by_name" => $item['added_by_name'],
-					"actions"       => $action
+					"added_by_name"  => $item['added_by_name'],
+					"actions"        => $action
 				);
 			}
 		}
@@ -32269,7 +32639,7 @@ public function get_sales_return_reports()
 				foreach ($query->result_array() as $item) {
 					$id = $item['id'];
 					$delete_url = "confirm_modal('" . base_url('inventory/petty_cash/delete/' . $id) . "', 'Are you sure want to delete!')";
-					$edit_url = base_url('inventory/petty-cash/edit/' . $id);
+					$edit_url = base_url('inventory/cash-book/edit/' . $id);
 
 					$action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
@@ -32303,7 +32673,7 @@ public function get_sales_return_reports()
 		echo json_encode($json_data);
 	}
 
-	public function get_cash_in_hand($company_id = null)
+	public function get_cash_in_hand_summary($company_id = null)
 	{
 		if (empty($company_id)) {
 			$company_id = $this->session->userdata('company_id') ?: 0;
@@ -32340,48 +32710,93 @@ public function get_sales_return_reports()
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
 		}
 
-		// 1. Total Current company Customer Payments (Cash)
-		$total_customer_cash = 0;
+		$summary = [
+			'official' => [
+				'customer_payments' => 0.0,
+				'customer_returns'  => 0.0,
+				'customer_net'      => 0.0,
+				'manual_payments'   => 0.0,
+				'total'             => 0.0,
+			],
+			'unofficial' => [
+				'customer_payments' => 0.0,
+				'customer_returns'  => 0.0,
+				'customer_net'      => 0.0,
+				'manual_payments'   => 0.0,
+				'total'             => 0.0,
+			],
+			'total_received'    => 0.0,
+			'total_expense'     => 0.0,
+			'total_transferred' => 0.0,
+			'cash_in_hand'      => 0.0,
+		];
+
 		if ($this->db->table_exists('customer_payment')) {
-			$cust_sql = "SELECT IFNULL(SUM(IF(total_tender > 0, total_tender, amount)), 0) as total_cash 
-			             FROM customer_payment 
-			             WHERE company_id = '$company_id' 
-			               AND LOWER(payment_method) = 'cash'";
-			if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-				$cust_sql .= " AND is_deleted = 0";
+			$del_filter = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
+			$comp_filter = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+
+			$sql = "SELECT 
+						payment_type,
+						type,
+						payment_mode,
+						IFNULL(SUM(amount), 0) as total_amt
+					FROM customer_payment
+					WHERE LOWER(payment_method) = 'cash' {$comp_filter} {$del_filter}
+					GROUP BY payment_type, type, payment_mode";
+			$q = $this->db->query($sql);
+			if (!empty($q)) {
+				foreach ($q->result_array() as $row) {
+					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+					$type  = $row['type'];
+					$mode  = $row['payment_mode'];
+					$amt   = (float)$row['total_amt'];
+
+					if ($type == 'manual') {
+						$summary[$ptype]['manual_payments'] += $amt;
+					} else {
+						if ($mode == 'return') {
+							$summary[$ptype]['customer_returns'] += $amt;
+						} else {
+							$summary[$ptype]['customer_payments'] += $amt;
+						}
+					}
+				}
 			}
-			$res = $this->db->query($cust_sql)->row_array();
-			$total_customer_cash = (float)($res['total_cash'] ?? 0);
 		}
 
-		// 2. Total Transferred Amount for current company
-		$total_transferred = 0;
-		if ($this->db->table_exists('transferred_cash')) {
-			$trans_sql = "SELECT IFNULL(SUM(amount), 0) as total_transferred 
-			              FROM transferred_cash 
-			              WHERE company_id = '$company_id'";
-			if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
-				$trans_sql .= " AND is_deleted = 0";
-			}
-			$res = $this->db->query($trans_sql)->row_array();
-			$total_transferred = (float)($res['total_transferred'] ?? 0);
-		}
+		$summary['official']['customer_net'] = $summary['official']['customer_payments'] - $summary['official']['customer_returns'];
+		$summary['official']['total']        = $summary['official']['customer_net'] + $summary['official']['manual_payments'];
 
-		// 3. Total Current company Petty Cash
-		$total_petty = 0;
+		$summary['unofficial']['customer_net'] = $summary['unofficial']['customer_payments'] - $summary['unofficial']['customer_returns'];
+		$summary['unofficial']['total']        = $summary['unofficial']['customer_net'] + $summary['unofficial']['manual_payments'];
+
+		$summary['total_received'] = $summary['official']['total'] + $summary['unofficial']['total'];
+
+		// Expenses
 		if ($this->db->table_exists('petty_cash')) {
-			$petty_sql = "SELECT IFNULL(SUM(amount), 0) as total_petty 
-			              FROM petty_cash 
-			              WHERE company_id = '$company_id'";
-			if ($this->db->field_exists('is_deleted', 'petty_cash')) {
-				$petty_sql .= " AND is_deleted = 0";
-			}
-			$res = $this->db->query($petty_sql)->row_array();
-			$total_petty = (float)($res['total_petty'] ?? 0);
+			$p_del = $this->db->field_exists('is_deleted', 'petty_cash') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
+			$p_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+			$p_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as amt FROM petty_cash WHERE 1=1 {$p_comp} {$p_del}")->row_array();
+			$summary['total_expense'] = (float)($p_res['amt'] ?? 0);
 		}
 
-		$cash_in_hand = $total_customer_cash - $total_transferred - $total_petty;
-		return max(0, (float)$cash_in_hand);
+		// Transferred
+		if ($this->db->table_exists('transferred_cash')) {
+			$t_del = $this->db->field_exists('is_deleted', 'transferred_cash') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
+			$t_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+			$t_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as amt FROM transferred_cash WHERE 1=1 {$t_comp} {$t_del}")->row_array();
+			$summary['total_transferred'] = (float)($t_res['amt'] ?? 0);
+		}
+
+		$summary['cash_in_hand'] = max(0, $summary['total_received'] - $summary['total_expense'] - $summary['total_transferred']);
+
+		return $summary;
+	}
+
+	public function get_cash_in_hand($company_id = null)
+	{
+		$summary = $this->get_cash_in_hand_summary($company_id);
+		return $summary['cash_in_hand'];
 	}
 
 	public function add_petty_cash()
@@ -32418,8 +32833,8 @@ public function get_sales_return_reports()
 
 		$resultpost = array(
 			"status"  => 200,
-			"message" => "Petty cash added successfully",
-			"url"     => base_url('inventory/petty-cash'),
+			"message" => "Cash book expense added successfully",
+			"url"     => base_url('inventory/cash-book'),
 		);
 		echo json_encode($resultpost);
 		exit();
@@ -32461,8 +32876,8 @@ public function get_sales_return_reports()
 
 		$resultpost = array(
 			"status"  => 200,
-			"message" => "Petty cash updated successfully",
-			"url"     => base_url('inventory/petty-cash'),
+			"message" => "Cash book expense updated successfully",
+			"url"     => base_url('inventory/cash-book'),
 		);
 		echo json_encode($resultpost);
 		exit();
@@ -32474,8 +32889,8 @@ public function get_sales_return_reports()
 
 		$resultpost = array(
 			"status"  => 200,
-			"message" => "Petty cash deleted successfully",
-			"url"     => base_url('inventory/petty-cash'),
+			"message" => "Cash book expense deleted successfully",
+			"url"     => base_url('inventory/cash-book'),
 		);
 		echo json_encode($resultpost);
 		exit();
@@ -32532,7 +32947,7 @@ public function get_sales_return_reports()
 		$resultpost = array(
 			"status"  => 200,
 			"message" => "Cash transferred successfully",
-			"url"     => base_url('inventory/petty-cash?tab=transferred'),
+			"url"     => base_url('inventory/cash-book?tab=transferred'),
 		);
 		echo json_encode($resultpost);
 		exit();
@@ -32549,7 +32964,7 @@ public function get_sales_return_reports()
 		$resultpost = array(
 			"status"  => 200,
 			"message" => "Transferred cash deleted successfully",
-			"url"     => base_url('inventory/petty-cash?tab=transferred'),
+			"url"     => base_url('inventory/cash-book?tab=transferred'),
 		);
 		echo json_encode($resultpost);
 		exit();
@@ -32557,12 +32972,13 @@ public function get_sales_return_reports()
 
 	public function get_customer_payments_by_id($customer_id)
 	{
+		$pay_del_filter = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (p.is_deleted = 0 OR p.is_deleted IS NULL)" : "";
 		$query = $this->db->query("SELECT 
 										p.*,
 										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
 									FROM customer_payment p
 									LEFT JOIN sys_users u ON p.added_by = u.id
-									WHERE p.customer_id = '$customer_id'
+									WHERE p.customer_id = '$customer_id' {$pay_del_filter}
 									ORDER BY p.date DESC, p.id DESC");
 		return $query->result_array();
 	}

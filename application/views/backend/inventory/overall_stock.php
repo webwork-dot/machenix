@@ -787,10 +787,21 @@
 
 	<!-- Main Data Table -->
     <div class="col-12">
-		<div class="stock-table-card">
-			<!-- Column Visibility & Data Filter Dropdown -->
+		<div class="stock-table-card stock-mode-all">
+			<!-- Column Visibility & Data Filter Toolbar -->
 			<div class="stock-filter-toolbar">
-				<div class="dropdown stock-filter-dropdown">
+				<div class="stock-pill-nav" role="tablist" aria-label="Stock Filter Modes">
+					<button type="button" class="stock-pill-btn active" data-stock-mode="all" title="Show all stock columns">
+						<span class="pill-dot dot-all"></span> All
+					</button>
+					<button type="button" class="stock-pill-btn" data-stock-mode="white" title="Show white stock only">
+						<span class="pill-dot dot-white"></span> White
+					</button>
+					<button type="button" class="stock-pill-btn" data-stock-mode="black" title="Show black stock only">
+						<span class="pill-dot dot-black"></span> Black
+					</button>
+				</div>
+				<div class="dropdown stock-filter-dropdown ms-auto">
 					<button class="btn-filter-dropdown dropdown-toggle" type="button" id="stockFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
 						<i class="feather icon-filter"></i>
 						<span>Filters</span>
@@ -1060,13 +1071,27 @@
         if (companies.length === 0) {
             html += '<div class="text-center py-2 text-muted font-small-2">' + (showZeroQty ? 'No company stock records for this product.' : 'No active companies with stock for this product.') + '</div>';
         } else {
-            var showBooked = $('#toggle-booked-qty').is(':checked');
-            var showPo = $('#toggle-po-qty').is(':checked');
+            var isWhiteMode = (currentStockMode === 'white');
+            var isBlackMode = (currentStockMode === 'black');
+
+            var showQuantity = (!isWhiteMode && !isBlackMode);
+            var showBlackQty = !isWhiteMode;
+            var showWhiteQty = !isBlackMode;
+            var showPendingQty = !isBlackMode;
+            var showTotalWhiteQty = !isBlackMode;
+
+            var showBooked = (!isWhiteMode && !isBlackMode) && $('#toggle-booked-qty').is(':checked');
+            var showPo = (!isWhiteMode && !isBlackMode) && $('#toggle-po-qty').is(':checked');
             var showActCost = $('#toggle-act-cost').is(':checked');
             var showActPc = $('#toggle-act-cost-pc').is(':checked');
             var showOffCost = $('#toggle-off-cost').is(':checked');
             var showOffPc = $('#toggle-off-cost-pc').is(':checked');
 
+            var styleQty = showQuantity ? '' : 'style="display:none;"';
+            var styleBlack = showBlackQty ? '' : 'style="display:none;"';
+            var styleWhite = showWhiteQty ? '' : 'style="display:none;"';
+            var stylePending = showPendingQty ? '' : 'style="display:none;"';
+            var styleTotWhite = showTotalWhiteQty ? '' : 'style="display:none;"';
             var styleBooked = showBooked ? '' : 'style="display:none;"';
             var stylePo = showPo ? '' : 'style="display:none;"';
             var styleActCost = showActCost ? '' : 'style="display:none;"';
@@ -1075,18 +1100,28 @@
             var styleOffPc = showOffPc ? '' : 'style="display:none;"';
 
             var nameWidth = getChildNameColWidth();
-            var companyTableWidth = 50 + nameWidth + 70 + 75 + 75 + 80 + 100 + (showBooked ? 80 : 0) + (showPo ? 230 : 0) + (showActCost ? 200 : 0) + (showOffCost ? 200 : 0) + 70;
+            var companyTableWidth = 50 + nameWidth
+                + (showQuantity ? 70 : 0)
+                + (showBlackQty ? 75 : 0)
+                + (showWhiteQty ? 75 : 0)
+                + (showPendingQty ? 80 : 0)
+                + (showTotalWhiteQty ? 100 : 0)
+                + (showBooked ? 80 : 0)
+                + (showPo ? 230 : 0)
+                + (showActCost ? 200 : 0)
+                + (showOffCost ? 200 : 0)
+                + 70;
 
             html += '<div class="table-responsive">';
             html += '  <table class="table sub-company-table align-middle" style="width: ' + companyTableWidth + 'px; min-width: 100%; table-layout: fixed;">';
             html += '    <colgroup>';
             html += '      <col class="col-sub-sr" style="width: 50px;">';
             html += '      <col class="col-sub-name" style="width: ' + nameWidth + 'px;">';
-            html += '      <col class="col-sub-qty" style="width: 70px;">';
-            html += '      <col class="col-sub-black" style="width: 75px;">';
-            html += '      <col class="col-sub-white" style="width: 75px;">';
-            html += '      <col class="col-sub-pending" style="width: 80px;">';
-            html += '      <col class="col-sub-totwhite" style="width: 100px;">';
+            html += '      <col class="col-sub-qty" style="width: 70px;' + (showQuantity ? '' : 'display:none;') + '">';
+            html += '      <col class="col-sub-black" style="width: 75px;' + (showBlackQty ? '' : 'display:none;') + '">';
+            html += '      <col class="col-sub-white" style="width: 75px;' + (showWhiteQty ? '' : 'display:none;') + '">';
+            html += '      <col class="col-sub-pending" style="width: 80px;' + (showPendingQty ? '' : 'display:none;') + '">';
+            html += '      <col class="col-sub-totwhite" style="width: 100px;' + (showTotalWhiteQty ? '' : 'display:none;') + '">';
             html += '      <col class="col-batch-booked col-sub-booked" style="width: 80px;' + (showBooked ? '' : 'display:none;') + '">';
             html += '      <col class="col-batch-po" style="width: 70px;' + (showPo ? '' : 'display:none;') + '">';
             html += '      <col class="col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '">';
@@ -1101,19 +1136,19 @@
             html += '      <tr>';
             html += '        <th class="text-center col-sub-sr" style="width: 50px;">#</th>';
             html += '        <th class="col-sub-name" style="width: ' + nameWidth + 'px;">Company / Warehouse</th>';
-            html += '        <th class="text-end col-sub-qty" style="width: 70px;">Quantity</th>';
-            html += '        <th class="text-end col-sub-black" style="width: 75px;">Black Qty</th>';
-            html += '        <th class="text-end col-sub-white" style="width: 75px;">White Qty</th>';
-            html += '        <th class="text-end col-sub-pending" style="width: 80px;">Pending Qty</th>';
-            html += '        <th class="text-end col-sub-totwhite" style="width: 100px;">Total White Qty</th>';
+            html += '        <th class="text-end col-sub-qty" style="width: 70px;' + (showQuantity ? '' : 'display:none;') + '" ' + styleQty + '>Quantity</th>';
+            html += '        <th class="text-end col-sub-black" style="width: 75px;' + (showBlackQty ? '' : 'display:none;') + '" ' + styleBlack + '>Black Qty</th>';
+            html += '        <th class="text-end col-sub-white" style="width: 75px;' + (showWhiteQty ? '' : 'display:none;') + '" ' + styleWhite + '>White Qty</th>';
+            html += '        <th class="text-end col-sub-pending" style="width: 80px;' + (showPendingQty ? '' : 'display:none;') + '" ' + stylePending + '>Pending Qty</th>';
+            html += '        <th class="text-end col-sub-totwhite" style="width: 100px;' + (showTotalWhiteQty ? '' : 'display:none;') + '" ' + styleTotWhite + '>Total White Qty</th>';
             html += '        <th class="text-end col-batch-booked col-sub-booked" style="width: 80px;' + (showBooked ? '' : 'display:none;') + '" ' + styleBooked + '>Booked Qty</th>';
-            html += '        <th class="text-end col-batch-po" style="width: 70px;" ' + stylePo + '>PO Qty</th>';
-            html += '        <th class="text-end col-batch-po" style="width: 80px;" ' + stylePo + '>Priority Qty</th>';
-            html += '        <th class="text-end col-batch-po" style="width: 80px;" ' + stylePo + '>Loading Qty</th>';
-            html += '        <th class="text-end col-batch-act-cost" style="width: 100px;" ' + styleActCost + '>Act Cost Exp</th>';
-            html += '        <th class="text-end col-batch-act-cost" style="width: 100px;" ' + styleActCost + '>Act Cost Amt</th>';
-            html += '        <th class="text-end col-batch-off-cost" style="width: 100px;" ' + styleOffCost + '>Off Cost Exp</th>';
-            html += '        <th class="text-end col-batch-off-cost" style="width: 100px;" ' + styleOffCost + '>Off Cost Amt</th>';
+            html += '        <th class="text-end col-batch-po" style="width: 70px;' + (showPo ? '' : 'display:none;') + '" ' + stylePo + '>PO Qty</th>';
+            html += '        <th class="text-end col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '" ' + stylePo + '>Priority Qty</th>';
+            html += '        <th class="text-end col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '" ' + stylePo + '>Loading Qty</th>';
+            html += '        <th class="text-end col-batch-act-cost" style="width: 100px;' + (showActCost ? '' : 'display:none;') + '" ' + styleActCost + '>Act Cost Exp</th>';
+            html += '        <th class="text-end col-batch-act-cost" style="width: 100px;' + (showActCost ? '' : 'display:none;') + '" ' + styleActCost + '>Act Cost Amt</th>';
+            html += '        <th class="text-end col-batch-off-cost" style="width: 100px;' + (showOffCost ? '' : 'display:none;') + '" ' + styleOffCost + '>Off Cost Exp</th>';
+            html += '        <th class="text-end col-batch-off-cost" style="width: 100px;' + (showOffCost ? '' : 'display:none;') + '" ' + styleOffCost + '>Off Cost Amt</th>';
             html += '        <th class="text-center col-sub-action" style="width: 70px;">Action</th>';
             html += '      </tr>';
             html += '    </thead>';
@@ -1141,6 +1176,11 @@
                 var badgeLoading = cLoading > 0 ? '<a href="javascript:void(0);" onclick="showProductPOList(' + rowData.product_id + ', ' + c.company_id + ', \'loading\', \'' + c.warehouse_id + '\')" class="stk-badge stk-badge-loading">' + cLoading.toLocaleString() + '</a>' : '<span class="stk-badge-zero">-</span>';
 
                 var batches = showZeroQty ? (c.batches || []) : (c.batches || []).filter(function (b) {
+                    if (currentStockMode === 'white') {
+                        return (Number(b.white_qty) > 0 || Number(b.pending_qty) > 0);
+                    } else if (currentStockMode === 'black') {
+                        return Number(b.black_qty) > 0;
+                    }
                     return Number(b.quantity) > 0;
                 });
                 var hasBatches = batches.length > 0;
@@ -1159,11 +1199,11 @@
                 html += '            <span class="warehouse-name-tag"><i class="feather icon-map-pin font-small-1 me-1"></i>' + (c.warehouse_name || 'Main Warehouse') + '</span>';
                 html += '          </div>';
                 html += '        </td>';
-                html += '        <td class="text-end stk-qty-main col-sub-qty">' + cQty.toLocaleString() + '</td>';
-                html += '        <td class="text-end col-sub-black">' + badgeBlack + '</td>';
-                html += '        <td class="text-end col-sub-white">' + badgeWhite + '</td>';
-                html += '        <td class="text-end col-sub-pending">' + badgePending + '</td>';
-                html += '        <td class="text-end col-sub-totwhite">' + badgeTotWhite + '</td>';
+                html += '        <td class="text-end stk-qty-main col-sub-qty" ' + styleQty + '>' + cQty.toLocaleString() + '</td>';
+                html += '        <td class="text-end col-sub-black" ' + styleBlack + '>' + badgeBlack + '</td>';
+                html += '        <td class="text-end col-sub-white" ' + styleWhite + '>' + badgeWhite + '</td>';
+                html += '        <td class="text-end col-sub-pending" ' + stylePending + '>' + badgePending + '</td>';
+                html += '        <td class="text-end col-sub-totwhite" ' + styleTotWhite + '>' + badgeTotWhite + '</td>';
                 html += '        <td class="text-end col-batch-booked col-sub-booked" ' + styleBooked + '>' + badgeBooked + '</td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '>' + badgePo + '</td>';
                 html += '        <td class="text-end col-batch-po" ' + stylePo + '>' + badgePriority + '</td>';
@@ -1195,18 +1235,29 @@
                 if (batches.length === 0) {
                     html += '        <div class="text-center py-2 text-muted font-small-2">No individual batches recorded for this company.</div>';
                 } else {
-                    var batchTableWidth = 50 + nameWidth + 70 + 75 + 75 + 80 + 100 + (showBooked ? 80 : 0) + (showPo ? 230 : 0) + (showActPc ? 200 : 0) + (showActCost ? 200 : 0) + (showOffPc ? 200 : 0) + (showOffCost ? 200 : 0);
+                    var batchTableWidth = 50 + nameWidth
+                        + (showQuantity ? 70 : 0)
+                        + (showBlackQty ? 75 : 0)
+                        + (showWhiteQty ? 75 : 0)
+                        + (showPendingQty ? 80 : 0)
+                        + (showTotalWhiteQty ? 100 : 0)
+                        + (showBooked ? 80 : 0)
+                        + (showPo ? 230 : 0)
+                        + (showActPc ? 200 : 0)
+                        + (showActCost ? 200 : 0)
+                        + (showOffPc ? 200 : 0)
+                        + (showOffCost ? 200 : 0);
 
                     html += '        <div class="table-responsive">';
                     html += '          <table class="table sub-batch-table align-middle" style="width: ' + batchTableWidth + 'px; min-width: 100%; table-layout: fixed;">';
                     html += '            <colgroup>';
                     html += '              <col class="col-sub-sr" style="width: 50px;">';
                     html += '              <col class="col-sub-name" style="width: ' + nameWidth + 'px;">';
-                    html += '              <col class="col-sub-qty" style="width: 70px;">';
-                    html += '              <col class="col-sub-black" style="width: 75px;">';
-                    html += '              <col class="col-sub-white" style="width: 75px;">';
-                    html += '              <col class="col-sub-pending" style="width: 80px;">';
-                    html += '              <col class="col-sub-totwhite" style="width: 100px;">';
+                    html += '              <col class="col-sub-qty" style="width: 70px;' + (showQuantity ? '' : 'display:none;') + '">';
+                    html += '              <col class="col-sub-black" style="width: 75px;' + (showBlackQty ? '' : 'display:none;') + '">';
+                    html += '              <col class="col-sub-white" style="width: 75px;' + (showWhiteQty ? '' : 'display:none;') + '">';
+                    html += '              <col class="col-sub-pending" style="width: 80px;' + (showPendingQty ? '' : 'display:none;') + '">';
+                    html += '              <col class="col-sub-totwhite" style="width: 100px;' + (showTotalWhiteQty ? '' : 'display:none;') + '">';
                     html += '              <col class="col-batch-booked col-sub-booked" style="width: 80px;' + (showBooked ? '' : 'display:none;') + '">';
                     html += '              <col class="col-batch-po" style="width: 70px;' + (showPo ? '' : 'display:none;') + '">';
                     html += '              <col class="col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '">';
@@ -1224,23 +1275,23 @@
                     html += '              <tr>';
                     html += '                <th class="text-center col-sub-sr" style="width: 50px;">#</th>';
                     html += '                <th class="col-sub-name" style="width: ' + nameWidth + 'px;">Batch No</th>';
-                    html += '                <th class="text-end col-sub-qty" style="width: 70px;">Quantity</th>';
-                    html += '                <th class="text-end col-sub-black" style="width: 75px;">Black Qty</th>';
-                    html += '                <th class="text-end col-sub-white" style="width: 75px;">White Qty</th>';
-                    html += '                <th class="text-end col-sub-pending" style="width: 80px;">Pending Qty</th>';
-                    html += '                <th class="text-end col-sub-totwhite" style="width: 100px;">Total White Qty</th>';
+                    html += '                <th class="text-end col-sub-qty" style="width: 70px;' + (showQuantity ? '' : 'display:none;') + '" ' + styleQty + '>Quantity</th>';
+                    html += '                <th class="text-end col-sub-black" style="width: 75px;' + (showBlackQty ? '' : 'display:none;') + '" ' + styleBlack + '>Black Qty</th>';
+                    html += '                <th class="text-end col-sub-white" style="width: 75px;' + (showWhiteQty ? '' : 'display:none;') + '" ' + styleWhite + '>White Qty</th>';
+                    html += '                <th class="text-end col-sub-pending" style="width: 80px;' + (showPendingQty ? '' : 'display:none;') + '" ' + stylePending + '>Pending Qty</th>';
+                    html += '                <th class="text-end col-sub-totwhite" style="width: 100px;' + (showTotalWhiteQty ? '' : 'display:none;') + '" ' + styleTotWhite + '>Total White Qty</th>';
                     html += '                <th class="text-end col-batch-booked col-sub-booked" style="width: 80px;' + (showBooked ? '' : 'display:none;') + '" ' + styleBooked + '>Booked Qty</th>';
-                    html += '                <th class="text-end col-batch-po" style="width: 70px;" ' + stylePo + '>PO Qty</th>';
-                    html += '                <th class="text-end col-batch-po" style="width: 80px;" ' + stylePo + '>Priority Qty</th>';
-                    html += '                <th class="text-end col-batch-po" style="width: 80px;" ' + stylePo + '>Loading Qty</th>';
-                    html += '                <th class="text-end col-batch-act-pc" style="width: 100px;" ' + styleActPc + '>Act Cost / exp</th>';
-                    html += '                <th class="text-end col-batch-act-cost" style="width: 100px;" ' + styleActCost + '>Act Cost Exp</th>';
-                    html += '                <th class="text-end col-batch-act-pc" style="width: 100px;" ' + styleActPc + '>Act Cost / Amt</th>';
-                    html += '                <th class="text-end col-batch-act-cost" style="width: 100px;" ' + styleActCost + '>Act Cost Amt</th>';
-                    html += '                <th class="text-end col-batch-off-pc" style="width: 100px;" ' + styleOffPc + '>Off Cost / exp</th>';
-                    html += '                <th class="text-end col-batch-off-cost" style="width: 100px;" ' + styleOffCost + '>Off Cost Exp</th>';
-                    html += '                <th class="text-end col-batch-off-pc" style="width: 100px;" ' + styleOffPc + '>Off Cost / Amt</th>';
-                    html += '                <th class="text-end col-batch-off-cost" style="width: 100px;" ' + styleOffCost + '>Off Cost Amt</th>';
+                    html += '                <th class="text-end col-batch-po" style="width: 70px;' + (showPo ? '' : 'display:none;') + '" ' + stylePo + '>PO Qty</th>';
+                    html += '                <th class="text-end col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '" ' + stylePo + '>Priority Qty</th>';
+                    html += '                <th class="text-end col-batch-po" style="width: 80px;' + (showPo ? '' : 'display:none;') + '" ' + stylePo + '>Loading Qty</th>';
+                    html += '                <th class="text-end col-batch-act-pc" style="width: 100px;' + (showActPc ? '' : 'display:none;') + '" ' + styleActPc + '>Act Cost / exp</th>';
+                    html += '                <th class="text-end col-batch-act-cost" style="width: 100px;' + (showActCost ? '' : 'display:none;') + '" ' + styleActCost + '>Act Cost Exp</th>';
+                    html += '                <th class="text-end col-batch-act-pc" style="width: 100px;' + (showActPc ? '' : 'display:none;') + '" ' + styleActPc + '>Act Cost / Amt</th>';
+                    html += '                <th class="text-end col-batch-act-cost" style="width: 100px;' + (showActCost ? '' : 'display:none;') + '" ' + styleActCost + '>Act Cost Amt</th>';
+                    html += '                <th class="text-end col-batch-off-pc" style="width: 100px;' + (showOffPc ? '' : 'display:none;') + '" ' + styleOffPc + '>Off Cost / exp</th>';
+                    html += '                <th class="text-end col-batch-off-cost" style="width: 100px;' + (showOffCost ? '' : 'display:none;') + '" ' + styleOffCost + '>Off Cost Exp</th>';
+                    html += '                <th class="text-end col-batch-off-pc" style="width: 100px;' + (showOffPc ? '' : 'display:none;') + '" ' + styleOffPc + '>Off Cost / Amt</th>';
+                    html += '                <th class="text-end col-batch-off-cost" style="width: 100px;' + (showOffCost ? '' : 'display:none;') + '" ' + styleOffCost + '>Off Cost Amt</th>';
                     html += '              </tr>';
                     html += '            </thead>';
                     html += '            <tbody>';
@@ -1263,11 +1314,11 @@
                         html += '              <tr>';
                         html += '                <td class="text-center fw-bold text-muted col-sub-sr">' + b.sr_no + '</td>';
                         html += '                <td class="col-sub-name"><span class="batch-no-tag">' + b.batch_no + '</span></td>';
-                        html += '                <td class="text-end stk-qty-main col-sub-qty">' + bQty.toLocaleString() + '</td>';
-                        html += '                <td class="text-end col-sub-black">' + bBadgeBlack + '</td>';
-                        html += '                <td class="text-end col-sub-white">' + bBadgeWhite + '</td>';
-                        html += '                <td class="text-end col-sub-pending">' + bBadgePending + '</td>';
-                        html += '                <td class="text-end col-sub-totwhite">' + bBadgeTotWhite + '</td>';
+                        html += '                <td class="text-end stk-qty-main col-sub-qty" ' + styleQty + '>' + bQty.toLocaleString() + '</td>';
+                        html += '                <td class="text-end col-sub-black" ' + styleBlack + '>' + bBadgeBlack + '</td>';
+                        html += '                <td class="text-end col-sub-white" ' + styleWhite + '>' + bBadgeWhite + '</td>';
+                        html += '                <td class="text-end col-sub-pending" ' + stylePending + '>' + bBadgePending + '</td>';
+                        html += '                <td class="text-end col-sub-totwhite" ' + styleTotWhite + '>' + bBadgeTotWhite + '</td>';
                         html += '                <td class="text-end col-batch-booked col-sub-booked" ' + styleBooked + '>' + bBadgeBooked + '</td>';
                         html += '                <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
                         html += '                <td class="text-end col-batch-po" ' + stylePo + '><span class="stk-badge-zero">-</span></td>';
@@ -1345,6 +1396,8 @@
             });
         }
 
+        var currentStockMode = 'all';
+
         var dataTable = $('#report-datatable').DataTable({
             "dom": '<"dt-toolbar"<"d-flex align-items-center"l><"dt-search"f>>t<"d-flex justify-content-between align-items-center p-1"ip>',
             "ordering": false,
@@ -1396,6 +1449,7 @@
                 "type": "POST",
                 "data": function (data) {
                     data.show_zero_qty = $('#toggle-zero-qty').is(':checked') ? 1 : 0;
+                    data.stock_view_mode = currentStockMode;
                 },
                 "beforeSend": function () {
                     $('.loader').show();
@@ -1710,18 +1764,38 @@
         }
 
         function applyColumnFilters() {
+            var isWhiteMode = (currentStockMode === 'white');
+            var isBlackMode = (currentStockMode === 'black');
+
             var showProduct = $('#toggle-product-col').is(':checked');
             var showModel = $('#toggle-model-col').is(':checked');
-            var showBooked = $('#toggle-booked-qty').is(':checked');
-            var showPo = $('#toggle-po-qty').is(':checked');
+
+            var showQuantity = (!isWhiteMode && !isBlackMode);
+            var showBlackQty = !isWhiteMode;
+            var showWhiteQty = !isBlackMode;
+            var showPendingQty = !isBlackMode;
+            var showTotalWhiteQty = !isBlackMode;
+
+            var showBooked = (!isWhiteMode && !isBlackMode) && $('#toggle-booked-qty').is(':checked');
+            var showPo = (!isWhiteMode && !isBlackMode) && $('#toggle-po-qty').is(':checked');
             var showActCost = $('#toggle-act-cost').is(':checked');
             var showActPc = $('#toggle-act-cost-pc').is(':checked');
             var showOffCost = $('#toggle-off-cost').is(':checked');
             var showOffPc = $('#toggle-off-cost-pc').is(':checked');
 
+            // Disable Booked & PO toggles in dropdown when on White or Black tab
+            var disableBookedPo = (isWhiteMode || isBlackMode);
+            $('#toggle-booked-qty').prop('disabled', disableBookedPo).closest('.filter-chip').toggleClass('disabled-chip', disableBookedPo);
+            $('#toggle-po-qty').prop('disabled', disableBookedPo).closest('.filter-chip').toggleClass('disabled-chip', disableBookedPo);
+
             // Toggle Layer 1 (Main table columns)
             dataTable.column(1).visible(showProduct, false);
             dataTable.column(2).visible(showModel, false);
+            dataTable.column(3).visible(showQuantity, false);
+            dataTable.column(4).visible(showBlackQty, false);
+            dataTable.column(5).visible(showWhiteQty, false);
+            dataTable.column(6).visible(showPendingQty, false);
+            dataTable.column(7).visible(showTotalWhiteQty, false);
             dataTable.column(8).visible(showBooked, false);
             dataTable.column(9).visible(showPo, false);
             dataTable.column(10).visible(showPo, false);
@@ -1738,6 +1812,12 @@
             });
 
             // Toggle Layer 2 (Company breakdown sub-tables) & Layer 3 (Batch sub-tables)
+            $('.sub-company-table .col-sub-qty, .sub-company-table col.col-sub-qty, .sub-batch-table .col-sub-qty, .sub-batch-table col.col-sub-qty').toggle(showQuantity);
+            $('.sub-company-table .col-sub-black, .sub-company-table col.col-sub-black, .sub-batch-table .col-sub-black, .sub-batch-table col.col-sub-black').toggle(showBlackQty);
+            $('.sub-company-table .col-sub-white, .sub-company-table col.col-sub-white, .sub-batch-table .col-sub-white, .sub-batch-table col.col-sub-white').toggle(showWhiteQty);
+            $('.sub-company-table .col-sub-pending, .sub-company-table col.col-sub-pending, .sub-batch-table .col-sub-pending, .sub-batch-table col.col-sub-pending').toggle(showPendingQty);
+            $('.sub-company-table .col-sub-totwhite, .sub-company-table col.col-sub-totwhite, .sub-batch-table .col-sub-totwhite, .sub-batch-table col.col-sub-totwhite').toggle(showTotalWhiteQty);
+
             $('.sub-company-table .col-batch-booked, .sub-company-table col.col-batch-booked, .sub-batch-table .col-batch-booked, .sub-batch-table col.col-batch-booked').toggle(showBooked);
             $('.sub-company-table .col-batch-po, .sub-company-table col.col-batch-po, .sub-batch-table .col-batch-po, .sub-batch-table col.col-batch-po').toggle(showPo);
             $('.sub-company-table .col-batch-act-cost, .sub-company-table col.col-batch-act-cost, .sub-batch-table .col-batch-act-cost, .sub-batch-table col.col-batch-act-cost').toggle(showActCost);
@@ -1749,6 +1829,21 @@
 
             updateFilterCount();
         }
+
+        // Pill Navigation Handler
+        $('.stock-pill-btn').on('click', function () {
+            var mode = $(this).attr('data-stock-mode');
+            if (mode === currentStockMode) return;
+
+            currentStockMode = mode;
+            $('.stock-pill-btn').removeClass('active');
+            $(this).addClass('active');
+
+            $('.stock-table-card').removeClass('stock-mode-all stock-mode-white stock-mode-black').addClass('stock-mode-' + mode);
+
+            applyColumnFilters();
+            dataTable.ajax.reload(null, false);
+        });
 
         // Stock with Company Toggle Handler (company layer only, no batches)
         $('#toggle-stock-company').on('change', function () {
@@ -1836,6 +1931,11 @@
                 var showZeroQty = $('#toggle-zero-qty').is(':checked');
                 var allCompanies = rowData ? (rowData.companies || []) : [];
                 var activeCompanies = showZeroQty ? allCompanies : allCompanies.filter(function (c) {
+                    if (currentStockMode === 'white') {
+                        return (Number(c.white_qty) > 0 || Number(c.pending_qty) > 0);
+                    } else if (currentStockMode === 'black') {
+                        return Number(c.black_qty) > 0;
+                    }
                     return Number(c.quantity) > 0;
                 });
                 if (activeCompanies.length > 0) {
