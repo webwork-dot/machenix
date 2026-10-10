@@ -71,17 +71,29 @@
             </div>
           </div>
 
+          <div class="col-md-4 mb-1">
+            <div class="form-group">
+              <label>Payment Method <span class="required">*</span></label>
+              <select class="form-control select2" name="payment_method" id="payment_method" required>
+                <option value="">Select</option>
+                <option value="cash">Cash</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
+          </div>
+
           <div class="col-md-4 mb-1" id="bank_account_wrap" style="display:none;">
             <div class="form-group">
               <label>Bank Account <span class="bank_required" style="display:none;">*</span></label>
-              <select class="form-control" name="bank_account" id="bank_account">
+              <select class="form-control select2" name="company_bank" id="company_bank">
                 <option value="">Select</option>
                 <?php foreach ($bank_accounts as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>">
+                  <option value="<?php echo $value['id'];?>" data-account-no="<?php echo htmlspecialchars($value['account_no']);?>">
                     <?php echo $value['bank_name'].' ('.$value['account_no'].')';?>
                   </option>
                 <?php endforeach; ?>
               </select>
+              <input type="hidden" name="company_bank_account" id="company_bank_account" value="">
             </div>
           </div>
 
@@ -116,16 +128,23 @@
 
 <script>
   $(function () {
+    function updateAccountNo() {
+      const accountNo = $('#company_bank').find(':selected').data('account-no') || '';
+      $('#company_bank_account').val(accountNo);
+    }
+
     function toggleBankAccount() {
-      const isOfficial = $('#payment_type').val() === 'official';
+      const isCheque = $('#payment_method').val() === 'cheque';
 
-      $('#bank_account_wrap').toggle(isOfficial);
-      $('#bank_account').prop('required', isOfficial);
+      $('#bank_account_wrap').toggle(isCheque);
+      $('#company_bank').prop('required', isCheque);
+      $('.bank_required').toggle(isCheque);
 
-      $('.bank_required').toggle(isOfficial);
-
-      if (!isOfficial) {
-        $('#bank_account').val(''); // reset when hidden
+      if (!isCheque) {
+        $('#company_bank').val('').trigger('change');
+        $('#company_bank_account').val('');
+      } else {
+        updateAccountNo();
       }
     }
 
@@ -142,7 +161,8 @@
       }
     }
 
-    $('#payment_type').on('change', toggleBankAccount);
+    $('#payment_method').on('change', toggleBankAccount);
+    $('#company_bank').on('change', updateAccountNo);
 
     // run once on page load (for edit pages too)
     toggleBankAccount();
@@ -202,6 +222,12 @@
     });
     $(document).on('focus', '#payment_type + .select2 .select2-selection', function () {
         $('#payment_type').select2('open');
+    });
+    $(document).on('focus', '#payment_method + .select2 .select2-selection', function () {
+        $('#payment_method').select2('open');
+    });
+    $(document).on('focus', '#company_bank + .select2 .select2-selection', function () {
+        $('#company_bank').select2('open');
     });
   });
 

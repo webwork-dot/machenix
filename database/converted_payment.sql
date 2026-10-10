@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 10, 2026 at 12:47 PM
+-- Generation Time: Oct 10, 2026 at 10:54 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 7.4.33
 
@@ -24,32 +24,26 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `transferred_cash`
+-- Table structure for table `converted_payment`
 --
 
-CREATE TABLE `transferred_cash` (
+CREATE TABLE `converted_payment` (
   `id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
-  `company_name` varchar(255) DEFAULT NULL,
-  `company_to_id` int(11) DEFAULT NULL,
-  `company_to` varchar(255) DEFAULT NULL,
+  `amount` decimal(16,2) NOT NULL DEFAULT 0.00,
   `converted_from` enum('official','unofficial','') NOT NULL DEFAULT '',
   `converted_to` enum('official','unofficial','') NOT NULL DEFAULT '',
-  `method_from` enum('cash','cheque','') NOT NULL DEFAULT '',
-  `method_to` enum('cash','cheque','') NOT NULL DEFAULT '',
+  `method_from` enum('cash','cheque') NOT NULL DEFAULT 'cash',
+  `method_to` enum('cash','cheque') NOT NULL DEFAULT 'cash',
   `company_bank_from` int(11) DEFAULT NULL,
   `company_bank_account_from` varchar(255) DEFAULT NULL,
   `company_bank_to` int(11) DEFAULT NULL,
   `company_bank_account_to` varchar(255) DEFAULT NULL,
-  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
-  `remark` text DEFAULT NULL,
-  `is_approved` tinyint(1) NOT NULL DEFAULT 0,
-  `approved_by` int(11) DEFAULT NULL,
-  `approved_by_name` varchar(255) DEFAULT NULL,
-  `approval_date` datetime DEFAULT NULL,
+  `narration` text DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `added_by` int(11) DEFAULT NULL,
-  `added_by_name` text DEFAULT NULL,
-  `added_date` datetime DEFAULT NULL
+  `added_by_name` varchar(255) DEFAULT NULL,
+  `added_date` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -57,9 +51,9 @@ CREATE TABLE `transferred_cash` (
 --
 
 --
--- Indexes for table `transferred_cash`
+-- Indexes for table `converted_payment`
 --
-ALTER TABLE `transferred_cash`
+ALTER TABLE `converted_payment`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -67,10 +61,10 @@ ALTER TABLE `transferred_cash`
 --
 
 --
--- AUTO_INCREMENT for table `transferred_cash`
+-- AUTO_INCREMENT for table `converted_payment`
 --
-ALTER TABLE `transferred_cash`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `converted_payment`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

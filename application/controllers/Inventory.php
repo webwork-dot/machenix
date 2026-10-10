@@ -1225,7 +1225,7 @@ class Inventory extends CI_Controller
         } elseif ($param1 == "add_post") {
             $this->inventory_model->add_customer_payment();
         } elseif ($param1 == "edit_post") {
-            $this->inventory_model->edit_payments($param2);
+            $this->inventory_model->edit_customer_payment($param2);
         } elseif ($param1 == "delete") {
             $this->inventory_model->delete_customer_payment($param2);
         } else {
@@ -1255,13 +1255,29 @@ class Inventory extends CI_Controller
             $page_data['page_name']  = 'payment_receipt_add';
             $page_data['page_title'] = 'Add Payment Receipt';
             $this->load->view('backend/index', $page_data);
-        } elseif($param1 == 'edit') {
-            $data = $this->common_model->getRowById('payments', '*', ['is_delete' => '0', 'id' => $param2]);
-            $page_data['data'] = ($data != '') ? $data : [];
-            $page_data['id'] = $param2;
-            $page_data['navigation']  = 'payments';
-            $page_data['page_name']  = 'payments_edit';
-            $page_data['page_title'] = 'Edit Payment';
+        } elseif ($param1 == 'edit') {
+            $data = $this->db->get_where('customer_payment', [
+                'id'         => $param2,
+                'company_id' => $company_id,
+            ])->row_array();
+
+            if (empty($data) || (($data['type'] ?? 'customer') === 'manual')) {
+                $this->session->set_flashdata('error_message', 'Payment receipt not found.');
+                redirect(base_url('inventory/payment-receipt'), 'refresh');
+                return;
+            }
+
+            if (!empty($data['is_approved']) && $data['is_approved'] == 1) {
+                $this->session->set_flashdata('error_message', 'Approved payment cannot be edited.');
+                redirect(base_url('inventory/payment-receipt'), 'refresh');
+                return;
+            }
+
+            $page_data['data']       = $data;
+            $page_data['id']         = $param2;
+            $page_data['navigation'] = 'payment_receipt';
+            $page_data['page_name']  = 'payment_receipt_edit';
+            $page_data['page_title'] = 'Edit Payment Receipt';
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -1388,6 +1404,77 @@ class Inventory extends CI_Controller
         }
     }
 
+    // Convert Payment Starts
+    public function convert_payment($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_convert_payment();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_convert_payment($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_convert_payment($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'convert_payment';
+            $page_data['page_name']  = 'convert_payment';
+            $page_data['page_title'] = 'Convert Payment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function convert_payment_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $company_id = $this->session->userdata('company_id');
+        $cash_summary = $this->inventory_model->get_cash_in_hand_summary($company_id);
+        $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
+        $page_data['bank_accounts']   = ($bank_accounts != '') ? $bank_accounts : [];
+        $page_data['cash_summary']    = $cash_summary;
+        $page_data['official_cash']   = (float)($cash_summary['official']['cash_in_hand'] ?? 0);
+        $page_data['unofficial_cash'] = (float)($cash_summary['unofficial']['cash_in_hand'] ?? 0);
+
+        if ($param1 == 'add') {
+            $page_data['navigation'] = 'convert_payment';
+            $page_data['page_name']  = 'convert_payment_add';
+            $page_data['page_title'] = 'Add Convert Payment';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'edit') {
+            $data = $this->db->get_where('converted_payment', [
+                'id'         => $param2,
+                'company_id' => $company_id,
+                'is_deleted' => 0,
+            ])->row_array();
+            $page_data['data'] = ($data != '') ? $data : [];
+            $page_data['id']   = $param2;
+
+            // Restore converted-from cash so edit can re-validate against available balance
+            if (!empty($data) && ($data['method_from'] ?? '') === 'cash') {
+                $from_type = (($data['converted_from'] ?? '') === 'unofficial') ? 'unofficial' : 'official';
+                $page_data[$from_type . '_cash'] += (float)($data['amount'] ?? 0);
+            }
+
+            $page_data['navigation'] = 'convert_payment';
+            $page_data['page_name']  = 'convert_payment_edit';
+            $page_data['page_title'] = 'Edit Convert Payment';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_convert_payments_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_convert_payments();
+        }
+    }
+
     // Petty Cash Starts
     public function petty_cash($param1 = "", $param2 = "")
     {
@@ -1399,6 +1486,8 @@ class Inventory extends CI_Controller
             $this->inventory_model->edit_petty_cash($param2);
         } elseif ($param1 == "transfer_post") {
             $this->inventory_model->add_transfer_cash();
+        } elseif ($param1 == "transfer_edit_post") {
+            $this->inventory_model->edit_transfer_cash($param2);
         } elseif ($param1 == "delete_transfer") {
             $this->inventory_model->delete_transfer_cash($param2);
         } elseif ($param1 == "delete") {
@@ -1420,20 +1509,41 @@ class Inventory extends CI_Controller
         }
 
         $company_id   = $this->session->userdata('company_id');
-        $cash_in_hand = $this->inventory_model->get_cash_in_hand($company_id);
+        $cash_summary = $this->inventory_model->get_cash_in_hand_summary($company_id);
+
+        $supplier_list = $this->common_model->getResultById('supplier', 'id, name, type', [
+            'is_deleted' => '0',
+            'company_id' => $company_id,
+            'type'       => 'local',
+        ]);
+        $page_data['supplier_list'] = ($supplier_list != '') ? $supplier_list : [];
+        $page_data['cash_summary']  = $cash_summary;
+        $page_data['cash_in_hand']  = $cash_summary['cash_in_hand'];
+        $page_data['official_cash']   = (float)($cash_summary['official']['cash_in_hand'] ?? 0);
+        $page_data['unofficial_cash'] = (float)($cash_summary['unofficial']['cash_in_hand'] ?? 0);
 
         if ($param1 == 'add') {
-            $page_data['cash_in_hand'] = $cash_in_hand;
             $page_data['navigation']   = 'petty_cash';
             $page_data['page_name']    = 'petty_cash_add';
             $page_data['page_title']   = 'Add Cash Book Expense';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'edit') {
-            $data = $this->common_model->getRowById('petty_cash', '*', ['is_deleted' => '0', 'id' => $param2]);
+            $data = $this->common_model->getRowById('payments', '*', [
+                'is_delete'  => '0',
+                'type'       => 'expense',
+                'id'         => $param2,
+                'company_id' => $company_id,
+            ]);
             $page_data['data'] = ($data != '') ? $data : [];
             $page_data['id'] = $param2;
-            $existing_amount = (float)($data['amount'] ?? 0);
-            $page_data['cash_in_hand'] = $cash_in_hand + $existing_amount;
+            $existing_amount = (float)($data['amount_rs'] ?? 0);
+            $existing_type   = (($data['payment_type'] ?? '') === 'unofficial') ? 'unofficial' : 'official';
+            if ($existing_type === 'unofficial') {
+                $page_data['unofficial_cash'] += $existing_amount;
+            } else {
+                $page_data['official_cash'] += $existing_amount;
+            }
+            $page_data['cash_in_hand'] = $page_data['official_cash'] + $page_data['unofficial_cash'];
             $page_data['navigation']  = 'petty_cash';
             $page_data['page_name']   = 'petty_cash_edit';
             $page_data['page_title']  = 'Edit Cash Book Expense';
@@ -1448,6 +1558,30 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_petty_cash();
+        }
+    }
+
+    // Bank Book Starts
+    public function bank_book($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation'] = 'bank_book';
+        $page_data['page_name']  = 'bank_book';
+        $page_data['page_title'] = 'Bank Book';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function get_bank_book_ajax()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_bank_book();
         }
     }
 
@@ -1497,7 +1631,7 @@ class Inventory extends CI_Controller
             $page_data['page_title'] = 'Add Payment';
             $this->load->view('backend/index', $page_data);
         } elseif($param1 == 'edit') {
-            $data = $this->common_model->getRowById('payments', '*', ['is_delete' => '0', 'id' => $param2]);
+            $data = $this->common_model->getRowById('payments', '*', ['is_delete' => '0', 'type' => 'payment', 'id' => $param2]);
             $page_data['data'] = ($data != '') ? $data : [];
             $page_data['id'] = $param2;
             $page_data['navigation']  = 'payments';

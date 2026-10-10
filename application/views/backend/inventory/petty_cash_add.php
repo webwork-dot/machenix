@@ -1,39 +1,97 @@
+<link rel="stylesheet" href="<?php echo base_url('assets/css/po.css'); ?>">
+
+<?php
+  $official_cash   = (float)($official_cash ?? 0);
+  $unofficial_cash = (float)($unofficial_cash ?? 0);
+?>
+
 <div class="row">
   <div class="col-12">
     <div class="card">
       <div class="card-header border-bottom">
         <h4 class="card-title">Add Cash Book Expense</h4>
       </div>
-      <div class="card-body py-2">
+      <div class="card-body py-1 my-0">
+
         <?php echo form_open('inventory/petty_cash/add_post', ['class' => 'add-ajax-redirect-form', 'id' => 'petty_cash_form', 'onsubmit' => 'return validatePettyCash(this);']);?>
+        <input type="hidden" name="payment_method" value="cash">
         <div class="row">
 
           <div class="col-12 mb-2">
-            <div class="card bg-light-primary border-primary shadow-none mb-0">
-              <div class="card-body p-1 d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                  <h6 class="text-primary mb-25 font-weight-bold">Current Cash in Hand</h6>
-                  <small class="text-muted">Available balance from customer cash payments</small>
+            <div class="row g-1">
+              <div class="col-md-6 mb-1 mb-md-0">
+                <div class="card bg-light-primary border-primary shadow-none mb-0">
+                  <div class="card-body p-1 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                      <h6 class="text-primary mb-25 font-weight-bold">Official Cash in Hand</h6>
+                      <small class="text-muted">Customer payment − supplier expense</small>
+                    </div>
+                    <div>
+                      <h4 class="<?= $official_cash < 0 ? 'text-danger' : 'text-primary'; ?> font-weight-bolder mb-0" id="display_official_cash"><?= $official_cash < 0 ? '- ₹ ' . number_format(abs($official_cash), 2) : '₹ ' . number_format($official_cash, 2); ?></h4>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h4 class="text-primary font-weight-bolder mb-0" id="display_cash_in_hand">₹ <?= number_format($cash_in_hand ?? 0, 2); ?></h4>
+              </div>
+              <div class="col-md-6">
+                <div class="card bg-light-secondary border-secondary shadow-none mb-0">
+                  <div class="card-body p-1 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                      <h6 class="text-secondary mb-25 font-weight-bold">Unofficial Cash in Hand</h6>
+                      <small class="text-muted">Customer payment − supplier expense</small>
+                    </div>
+                    <div>
+                      <h4 class="<?= $unofficial_cash < 0 ? 'text-danger' : 'text-secondary'; ?> font-weight-bolder mb-0" id="display_unofficial_cash"><?= $unofficial_cash < 0 ? '- ₹ ' . number_format(abs($unofficial_cash), 2) : '₹ ' . number_format($unofficial_cash, 2); ?></h4>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="col-md-12 mb-1">
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Local Supplier <span class="required">*</span></label>
+              <select class="form-control select2" name="supplier_id" id="supplier_id" required>
+                <option value="">Select</option>
+                <?php foreach ($supplier_list as $key => $value): ?>
+                  <option value="<?php echo $value['id'];?>">
+                    <?php echo $value['name'];?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-4 mb-1">
+            <div class="form-group">
+              <label>Payment type <span class="required">*</span></label>
+              <select class="form-control select2" name="payment_type" id="payment_type" required>
+                <option value="">Select</option>
+                <option value="official">Official</option>
+                <option value="unofficial">Unofficial</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-4 mb-1">
             <div class="form-group">
               <label>Amount (in INR) <span class="required">*</span></label>
-              <input type="number" name="amount" id="amount" class="form-control" value="" min="0.01" max="<?= (float)($cash_in_hand ?? 0); ?>" step="0.01" placeholder="Enter amount (Max: ₹<?= number_format($cash_in_hand ?? 0, 2); ?>)" required>
-              <small class="text-danger mt-25 d-none font-weight-bold" id="amount_error_msg">Amount cannot exceed available cash in hand (₹<?= number_format($cash_in_hand ?? 0, 2); ?>)</small>
+              <input type="number" name="amount_rs" id="amount_rs" class="form-control" value="" min="0.01" step="0.01" placeholder="Select payment type first" required disabled>
+              <small class="text-danger mt-25 d-none font-weight-bold" id="amount_error_msg">Amount cannot exceed available cash in hand</small>
+            </div>
+          </div>
+
+          <div class="col-md-4 mb-1">
+            <div class="form-group">
+              <label class="control-label">Payment Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="payment_date" value="<?php echo date('Y-m-d');?>" id="date_picker" required>
             </div>
           </div>
 
           <div class="col-md-12 mb-2">
             <div class="form-group">
-              <label class="control-label">Remark / Narration</label>
-              <textarea class="form-control" rows="3" placeholder="Enter remark or narration..." name="remark"></textarea>
+              <label class="control-label">Narration</label>
+              <textarea class="form-control" rows="2" placeholder="Narration" name="narration"></textarea>
             </div>
           </div>
 
@@ -46,16 +104,61 @@
 
         </div>
         <?php echo form_close(); ?>
+
       </div>
     </div>
   </div>
 </div>
 
 <script>
-var maxCashInHand = <?= (float)($cash_in_hand ?? 0); ?>;
+var cashByType = {
+  official: <?= json_encode($official_cash); ?>,
+  unofficial: <?= json_encode($unofficial_cash); ?>
+};
+var maxCashInHand = 0;
+
+function getSelectedCashLimit() {
+  var type = $('#payment_type').val();
+  if (type === 'official' || type === 'unofficial') {
+    return parseFloat(cashByType[type]) || 0;
+  }
+  return 0;
+}
+
+function updateAmountLimit() {
+  maxCashInHand = getSelectedCashLimit();
+  var $amount = $('#amount_rs');
+  var type = $('#payment_type').val();
+
+  if (!type) {
+    $amount.prop('disabled', true).attr('max', '').attr('placeholder', 'Select payment type first');
+    $('#amount_error_msg').addClass('d-none').text('Amount cannot exceed available cash in hand');
+    return;
+  }
+
+  $amount.prop('disabled', false)
+    .attr('max', maxCashInHand)
+    .attr('placeholder', 'Enter amount (Max: ₹' + maxCashInHand.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ')');
+  $('#amount_error_msg').text('Amount cannot exceed available ' + type + ' cash in hand (₹' + maxCashInHand.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ')');
+  $amount.trigger('input');
+}
 
 function validatePettyCash(form) {
-  var amount = parseFloat($('#amount').val()) || 0;
+  var type = $('#payment_type').val();
+  var amount = parseFloat($('#amount_rs').val()) || 0;
+  maxCashInHand = getSelectedCashLimit();
+
+  if (!type) {
+    Swal.fire({
+      title: "Payment Type Required",
+      text: "Please select official or unofficial payment type",
+      icon: "warning",
+      customClass: { confirmButton: "btn btn-primary" },
+      buttonsStyling: false
+    });
+    return false;
+  }
+
   if (amount <= 0) {
     Swal.fire({
       title: "Invalid Amount",
@@ -64,39 +167,52 @@ function validatePettyCash(form) {
       customClass: { confirmButton: "btn btn-primary" },
       buttonsStyling: false
     });
-    $('#amount').focus();
+    $('#amount_rs').focus();
     return false;
   }
 
   if (amount > maxCashInHand) {
     Swal.fire({
       title: "Amount Exceeded",
-      text: "Amount cannot exceed available cash in hand (₹" + maxCashInHand.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ")",
+      text: "Amount cannot exceed available " + type + " cash in hand (₹" + maxCashInHand.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ")",
       icon: "error",
       customClass: { confirmButton: "btn btn-primary" },
       buttonsStyling: false
     });
-    $('#amount').addClass('is-invalid');
+    $('#amount_rs').addClass('is-invalid');
     $('#amount_error_msg').removeClass('d-none');
-    $('#amount').focus();
+    $('#amount_rs').focus();
     return false;
   }
 
-  $('#amount').removeClass('is-invalid');
+  $('#amount_rs').removeClass('is-invalid');
   $('#amount_error_msg').addClass('d-none');
   return checkForm(form);
 }
 
-$(document).ready(function() {
-  $('#amount').on('input change', function() {
+$(function () {
+  $('#payment_type').on('change', updateAmountLimit);
+  updateAmountLimit();
+
+  $('#amount_rs').on('input change', function() {
     var val = parseFloat($(this).val()) || 0;
-    if (val > maxCashInHand) {
+    maxCashInHand = getSelectedCashLimit();
+    if ($('#payment_type').val() && val > maxCashInHand) {
       $(this).addClass('is-invalid');
       $('#amount_error_msg').removeClass('d-none');
     } else {
       $(this).removeClass('is-invalid');
       $('#amount_error_msg').addClass('d-none');
     }
+  });
+});
+
+$(document).ready(function () {
+  $(document).on('focus', '#supplier_id + .select2 .select2-selection', function () {
+      $('#supplier_id').select2('open');
+  });
+  $(document).on('focus', '#payment_type + .select2 .select2-selection', function () {
+      $('#payment_type').select2('open');
   });
 });
 </script>

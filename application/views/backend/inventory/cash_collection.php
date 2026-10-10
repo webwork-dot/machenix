@@ -69,11 +69,14 @@
   $total_overall_amount = 0;
   if ($this->db->table_exists('transferred_cash')) {
     $coll_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt FROM transferred_cash WHERE 1=1";
-    if (!empty($company_id)) {
-      $coll_sql .= " AND company_id = '$company_id'";
+    if (!empty($company_id) && $this->db->field_exists('company_to_id', 'transferred_cash')) {
+      $coll_sql .= " AND company_to_id = '$company_id'";
     }
     if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
       $coll_sql .= " AND is_deleted = 0";
+    }
+    if ($this->db->field_exists('method_from', 'transferred_cash')) {
+      $coll_sql .= " AND LOWER(method_from) = 'cash'";
     }
     if ($status == 'received') {
       $coll_sql .= " AND is_approved = 1";
@@ -112,14 +115,19 @@
             <tr>
               <th style="width: 50px;" class="text-center">#</th>
               <th>Date</th>
+              <th>From Company</th>
+              <th>Type</th>
               <th>Amount</th>
               <th>Remark / Narration</th>
               <th>Transferred By</th>
               <?php if ($status == 'received'): ?>
+              <th>Approved By</th>
               <th>Approval Date</th>
               <?php endif; ?>
               <th>Status</th>
+              <?php if ($status != 'received'): ?>
               <th style="width: 80px;" class="text-center">Action</th>
+              <?php endif; ?>
             </tr>
           </thead>
         </table>
@@ -176,26 +184,31 @@ $(document).ready(function($) {
     "columns": [
       { "data": "sr_no", "className": "text-center" },
       { "data": "date" },
+      { "data": "from_company" },
+      { "data": "payment_type" },
       { "data": "amount" },
       { "data": "remark" },
       { "data": "transferred_by" },
       <?php if ($status == 'received'): ?>
+      { "data": "approved_by" },
       { "data": "approval_date" },
       <?php endif; ?>
       { "data": "status" },
+      <?php if ($status != 'received'): ?>
       { "data": "actions", "className": "text-center" },
+      <?php endif; ?>
     ],
 
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, <?php echo ($status == 'received') ? '5, 6' : '5'; ?>] }
+        "exportOptions": { "columns": <?php echo ($status == 'received') ? '[0, 1, 2, 3, 4, 5, 6, 7, 8]' : '[0, 1, 2, 3, 4, 5, 6, 7]'; ?> }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, <?php echo ($status == 'received') ? '5, 6' : '5'; ?>] }
+        "exportOptions": { "columns": <?php echo ($status == 'received') ? '[0, 1, 2, 3, 4, 5, 6, 7, 8]' : '[0, 1, 2, 3, 4, 5, 6, 7]'; ?> }
       }
     ],
 

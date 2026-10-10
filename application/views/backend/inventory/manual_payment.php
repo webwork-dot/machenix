@@ -44,11 +44,71 @@
     background: #5a79c0 !important;
     color: white !important;
   }
+
+  .cash-stat-card {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .cash-stat-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+  .cash-stat-card.card-official {
+    border-top: 4px solid #7367f0;
+  }
+  .cash-stat-card.card-unofficial {
+    border-top: 4px solid #82868b;
+  }
+  .cash-stat-card .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .cash-stat-card .stat-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #6e6b7b;
+    margin: 0;
+  }
+  .cash-stat-card .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #2b2b2b;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .cash-stat-card .stat-detail {
+    font-size: 11.5px;
+    color: #5e5873;
+    padding-top: 8px;
+    border-top: 1px dashed #ebe9f1;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cash-stat-card .stat-detail span b {
+    color: #1e1e1e;
+  }
 </style>
 
 <?php
   $company_id = $this->session->userdata('company_id');
-  $overall_payment_amount = 0;
+  $summary = [
+    'official'   => ['total' => 0.0, 'receive' => 0.0, 'transfer' => 0.0],
+    'unofficial' => ['total' => 0.0, 'receive' => 0.0, 'transfer' => 0.0],
+  ];
+
   if ($this->db->table_exists('customer_payment')) {
     $where_company = !empty($company_id) ? " WHERE company_id = '$company_id'" : " WHERE 1=1";
     if ($this->db->field_exists('is_deleted', 'customer_payment')) {
@@ -56,23 +116,81 @@
     }
     $where_company .= " AND type = 'manual'";
 
-    $pay_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amt FROM customer_payment $where_company")->row_array();
-    $overall_payment_amount = (float)($pay_res['total_amt'] ?? 0);
+    if (isset($_GET['date_range']) && $_GET['date_range'] != '') {
+      $date_range = explode(' - ', $_GET['date_range']);
+      $from = date('Y-m-d', strtotime($date_range[0]));
+      $to = date('Y-m-d', strtotime($date_range[1]));
+      $where_company .= " AND (DATE(date) >= '$from' AND DATE(date) <= '$to')";
+    }
+
+    $sql = "SELECT payment_type,
+              IFNULL(SUM(CASE WHEN (payment_mode = 'payment' OR payment_mode IS NULL) THEN amount ELSE 0 END), 0) as receive_amt,
+              IFNULL(SUM(CASE WHEN payment_mode = 'return' THEN amount ELSE 0 END), 0) as transfer_amt
+            FROM customer_payment
+            $where_company
+            GROUP BY payment_type";
+    $q = $this->db->query($sql);
+    if (!empty($q)) {
+      foreach ($q->result_array() as $row) {
+        $ptype = ($row['payment_type'] ?? '') === 'unofficial' ? 'unofficial' : 'official';
+        $receive = (float)($row['receive_amt'] ?? 0);
+        $transfer = (float)($row['transfer_amt'] ?? 0);
+        $summary[$ptype]['receive']  += $receive;
+        $summary[$ptype]['transfer'] += $transfer;
+        $summary[$ptype]['total']    += ($receive - $transfer);
+      }
+    }
   }
+
+  $official_net   = (float)$summary['official']['total'];
+  $unofficial_net = (float)$summary['unofficial']['total'];
 ?>
 
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
+  <div class="col-12 mb-2">
+    <div class="row g-2">
+      <div class="col-12 col-md-6 mb-1 mb-md-0">
+        <div class="cash-stat-card card-official">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-shield text-primary me-50"></i> Official</span>
+            <span class="badge bg-light-primary text-primary font-weight-bold">Official</span>
+          </div>
+          <div class="stat-value <?= $official_net < 0 ? 'text-danger' : 'text-primary'; ?>" id="official_total">
+            <?= $official_net < 0 ? '- ₹ ' . number_format(abs($official_net), 2) : '₹ ' . number_format($official_net, 2); ?>
+          </div>
+          <div class="stat-detail">
+            <span>Receive: <b id="official_receive" class="text-success">₹ <?= number_format($summary['official']['receive'], 2); ?></b></span>
+            <span>Transfer: <b id="official_transfer" class="text-danger">₹ <?= number_format($summary['official']['transfer'], 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="cash-stat-card card-unofficial">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-briefcase text-secondary me-50"></i> Unofficial</span>
+            <span class="badge bg-light-secondary text-secondary font-weight-bold">Unofficial</span>
+          </div>
+          <div class="stat-value <?= $unofficial_net < 0 ? 'text-danger' : 'text-secondary'; ?>" id="unofficial_total">
+            <?= $unofficial_net < 0 ? '- ₹ ' . number_format(abs($unofficial_net), 2) : '₹ ' . number_format($unofficial_net, 2); ?>
+          </div>
+          <div class="stat-detail">
+            <span>Receive: <b id="unofficial_receive" class="text-success">₹ <?= number_format($summary['unofficial']['receive'], 2); ?></b></span>
+            <span>Transfer: <b id="unofficial_transfer" class="text-danger">₹ <?= number_format($summary['unofficial']['transfer'], 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="col-12">
     <div class="card">
       <div class="card-body">
         <div class="row align-items-center">
-          <div class="col-md-6 col-12 mt-10">
+          <div class="col-12 mt-10">
             <h5 class="mb-0"><b>Total Manual Payments<span id="total_count"> (0)</span></b></h5>
-          </div>
-          <div class="col-md-6 col-12 mt-10 text-md-end">
-            <h5 class="mb-0 d-inline-block"><b>Total Amount: <span id="total_payment_amount" class="text-success">₹ <?= number_format($overall_payment_amount, 2); ?></span></b></h5>
           </div>
         </div>
       </div>
@@ -85,8 +203,8 @@
             <tr>
               <th>#</th>
               <th>Date</th>
-              <th>Inv No</th>
               <th>Amount</th>
+              <th>Mode</th>
               <th>Type</th>
               <th>Method</th>
               <th>Added By</th>
@@ -101,6 +219,11 @@
 
 <script type="text/javascript">
 $(document).ready(function($) {
+  function fmtAmt(val) {
+    var n = parseFloat(val) || 0;
+    return '₹ ' + Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
   var dataTable = $('#report-datatable').DataTable({
     "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
@@ -126,8 +249,26 @@ $(document).ready(function($) {
         data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
       },
       "dataSrc": function(json) {
-        if (json.total_payment_amount !== undefined) {
-          $('#total_payment_amount').html(json.total_payment_amount);
+        function fmtNet(val) {
+          var n = parseFloat(val) || 0;
+          if (n < 0) {
+            return '- ₹ ' + Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          }
+          return '₹ ' + Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        if (json.summary) {
+          var oNet = parseFloat(json.summary.official.total) || 0;
+          var uNet = parseFloat(json.summary.unofficial.total) || 0;
+          $('#official_total').html(fmtNet(oNet))
+            .toggleClass('text-danger', oNet < 0)
+            .toggleClass('text-primary', oNet >= 0);
+          $('#official_receive').html(fmtAmt(json.summary.official.receive));
+          $('#official_transfer').html(fmtAmt(json.summary.official.transfer));
+          $('#unofficial_total').html(fmtNet(uNet))
+            .toggleClass('text-danger', uNet < 0)
+            .toggleClass('text-secondary', uNet >= 0);
+          $('#unofficial_receive').html(fmtAmt(json.summary.unofficial.receive));
+          $('#unofficial_transfer').html(fmtAmt(json.summary.unofficial.transfer));
         }
         return json.data;
       },
@@ -142,8 +283,8 @@ $(document).ready(function($) {
     "columns": [
       { "data": "sr_no" },
       { "data": "date" },
-      { "data": "inv_no" },
       { "data": "amount" },
+      { "data": "payment_mode" },
       { "data": "payment_type" },
       { "data": "payment_method" },
       { "data": "added_by_name" },

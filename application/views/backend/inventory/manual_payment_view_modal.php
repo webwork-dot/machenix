@@ -189,15 +189,20 @@
 
     <div class="meta-grid">
       <div class="meta-item">
-        <span class="meta-label">Receipt / Inv No</span>
-        <span class="meta-value font-monospace text-primary"><?= htmlspecialchars($payment['inv_no']); ?></span>
-      </div>
-
-      <div class="meta-item">
         <span class="meta-label">Payment Date</span>
         <span class="meta-value"><?= $payment['date'] ? date('d M, Y', strtotime($payment['date'])) : '-'; ?></span>
       </div>
 
+      <div class="meta-item">
+        <span class="meta-label">Mode</span>
+        <span class="meta-value">
+          <?php if (($payment['payment_mode'] ?? 'payment') === 'return'): ?>
+            <span class="badge-type text-danger">Transfer</span>
+          <?php else: ?>
+            <span class="badge-type text-success">Receive</span>
+          <?php endif; ?>
+        </span>
+      </div>
 
       <div class="meta-item">
         <span class="meta-label">Payment Method</span>

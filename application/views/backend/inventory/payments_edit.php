@@ -12,8 +12,10 @@
   $amount_rs     = isset($row['amount_rs']) ? $row['amount_rs'] : 0;
   $amount_rmb    = isset($row['amount_rmb']) ? $row['amount_rmb'] : 0;
 
-  $payment_type  = isset($row['payment_type']) ? $row['payment_type'] : '';
-  $bank_account  = isset($row['bank_account']) ? $row['bank_account'] : '';
+  $payment_type          = isset($row['payment_type']) ? $row['payment_type'] : '';
+  $payment_method        = isset($row['payment_method']) ? $row['payment_method'] : '';
+  $company_bank          = isset($row['company_bank']) ? $row['company_bank'] : '';
+  $company_bank_account  = isset($row['company_bank_account']) ? $row['company_bank_account'] : '';
 
   $payment_date  = !empty($row['payment_date']) ? $row['payment_date'] : date('Y-m-d');
   $narration     = isset($row['narration']) ? $row['narration'] : '';
@@ -105,18 +107,31 @@
             </div>
           </div>
 
-          <div class="col-md-4 mb-1" id="bank_account_wrap" style="display:none;">
+          <div class="col-md-4 mb-1">
             <div class="form-group">
-              <label>Bank Account <span class="bank_required" style="display:none;">*</span></label>
-              <select class="form-control" name="bank_account" id="bank_account">
+              <label>Payment Method <span class="required">*</span></label>
+              <select class="form-control select2" name="payment_method" id="payment_method" required>
+                <option value="">Select</option>
+                <option value="cash"   <?php echo ($payment_method === 'cash') ? 'selected' : ''; ?>>Cash</option>
+                <option value="cheque" <?php echo ($payment_method === 'cheque') ? 'selected' : ''; ?>>Cheque</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-4 mb-1" id="bank_account_wrap" style="<?php echo ($payment_method === 'cheque') ? '' : 'display:none;'; ?>">
+            <div class="form-group">
+              <label>Bank Account <span class="bank_required" style="<?php echo ($payment_method === 'cheque') ? '' : 'display:none;'; ?>">*</span></label>
+              <select class="form-control select2" name="company_bank" id="company_bank">
                 <option value="">Select</option>
                 <?php foreach ($bank_accounts as $key => $value): ?>
                   <option value="<?php echo $value['id'];?>"
-                    <?php echo ((string)$bank_account === (string)$value['id']) ? 'selected' : ''; ?>>
+                    data-account-no="<?php echo htmlspecialchars($value['account_no']);?>"
+                    <?php echo ((string)$company_bank === (string)$value['id']) ? 'selected' : ''; ?>>
                     <?php echo $value['bank_name'].' ('.$value['account_no'].')';?>
                   </option>
                 <?php endforeach; ?>
               </select>
+              <input type="hidden" name="company_bank_account" id="company_bank_account" value="<?php echo html_escape($company_bank_account); ?>">
             </div>
           </div>
 
@@ -153,16 +168,23 @@
 
 <script>
   $(function () {
+    function updateAccountNo() {
+      const accountNo = $('#company_bank').find(':selected').data('account-no') || '';
+      $('#company_bank_account').val(accountNo);
+    }
+
     function toggleBankAccount() {
-      const isOfficial = $('#payment_type').val() === 'official';
+      const isCheque = $('#payment_method').val() === 'cheque';
 
-      $('#bank_account_wrap').toggle(isOfficial);
-      $('#bank_account').prop('required', isOfficial);
-      $('.bank_required').toggle(isOfficial);
+      $('#bank_account_wrap').toggle(isCheque);
+      $('#company_bank').prop('required', isCheque);
+      $('.bank_required').toggle(isCheque);
 
-      // for edit: do NOT reset bank if it already has a value
-      if (!isOfficial) {
-        $('#bank_account').val('');
+      if (!isCheque) {
+        $('#company_bank').val('').trigger('change');
+        $('#company_bank_account').val('');
+      } else {
+        updateAccountNo();
       }
     }
 
@@ -179,7 +201,8 @@
       }
     }
 
-    $('#payment_type').on('change', toggleBankAccount);
+    $('#payment_method').on('change', toggleBankAccount);
+    $('#company_bank').on('change', updateAccountNo);
 
     // run once on page load
     toggleBankAccount();
@@ -253,6 +276,12 @@
     });
     $(document).on('focus', '#payment_type + .select2 .select2-selection', function () {
         $('#payment_type').select2('open');
+    });
+    $(document).on('focus', '#payment_method + .select2 .select2-selection', function () {
+        $('#payment_method').select2('open');
+    });
+    $(document).on('focus', '#company_bank + .select2 .select2-selection', function () {
+        $('#company_bank').select2('open');
     });
   });
 </script>

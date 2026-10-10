@@ -227,9 +227,16 @@ $route[$r_inventory . '/payment-reconciliation/approve/(:num)']  = 'inventory/pa
 $route[$r_inventory . '/cash-collection']                         = 'inventory/cash_collection';
 $route[$r_inventory . '/cash-collection/approve/(:num)']         = 'inventory/cash_collection/approve/$1';
 
+$route[$r_inventory . '/convert-payment']                  = 'inventory/convert_payment';
+$route[$r_inventory . '/convert-payment/add']              = 'inventory/convert_payment_form/add';
+$route[$r_inventory . '/convert-payment/edit/(:num)']     = 'inventory/convert_payment_form/edit/$1';
+$route[$r_inventory . '/convert-payment/delete/(:num)']   = 'inventory/convert_payment/delete/$1';
+
 $route[$r_inventory . '/cash-book']                   = 'inventory/petty_cash';
 $route[$r_inventory . '/cash-book/add']               = 'inventory/petty_cash_form/add';
 $route[$r_inventory . '/cash-book/edit/(:num)']      = 'inventory/petty_cash_form/edit/$1';
+
+$route[$r_inventory . '/bank-book']                   = 'inventory/bank_book';
 
 $route[$r_inventory . '/petty-cash']                  = 'inventory/petty_cash';
 $route[$r_inventory . '/petty-cash/add']              = 'inventory/petty_cash_form/add';

@@ -465,10 +465,24 @@
                 <span class="menu-title text-truncate">Manual Payment</span>
             </a>
         </li>
+        <?php /* Convert Payment - hidden for now
+        <li class="nav-item <?php if($page_name == 'convert_payment' || $page_name == 'convert_payment_add' || $page_name == 'convert_payment_edit') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/convert-payment">
+                <i class="feather icon-refresh-cw"></i>
+                <span class="menu-title text-truncate">Convert Payment</span>
+            </a>
+        </li>
+        */ ?>
         <li class="nav-item <?php if($page_name == 'petty_cash' || $page_name == 'petty_cash_add' || $page_name == 'petty_cash_edit' || $page_name == 'cash_book') echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/cash-book">
                 <i class="feather icon-book"></i>
                 <span class="menu-title text-truncate">Cash Book</span>
+            </a>
+        </li>
+        <li class="nav-item <?php if($page_name == 'bank_book') echo 'active'; ?>">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/bank-book">
+                <i class="feather icon-credit-card"></i>
+                <span class="menu-title text-truncate">Bank Book</span>
             </a>
         </li>
         <?php } ?>

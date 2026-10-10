@@ -8,19 +8,22 @@
         <?php echo form_open('inventory/manual_payment/add_post', ['class' => 'add-ajax-redirect-form','onsubmit' => 'return checkForm(this);']);?>
         <input type="hidden" name="company_id" value="<?php echo $this->session->userdata('company_id'); ?>">
 
-        <!-- Row 1: Invoice/Receipt No, Payment Date, Payment Type -->
+        <!-- Row 1: Payment Date, Mode, Payment Type -->
         <div class="row mb-1">
           <div class="col-12 col-md-4">
             <div class="form-group">
-              <label><?php echo get_phrase('invoice_no'); ?><span class="required">*</span></label>
-              <input type="text" name="invoice_no" class="form-control" placeholder="Receipt / Invoice No" required>
+              <label class="control-label">Payment Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="payment_date" value="<?php echo date('Y-m-d');?>" id="date_picker" required>
             </div>
           </div>
 
           <div class="col-12 col-md-4">
             <div class="form-group">
-              <label class="control-label">Payment Date <span class="required">*</span></label>
-              <input type="date" class="form-control" name="payment_date" value="<?php echo date('Y-m-d');?>" id="date_picker" required>
+              <label>Mode <span class="required">*</span></label>
+              <select class="form-control select2" name="payment_mode" id="payment_mode" required>
+                <option value="payment">Receive</option>
+                <option value="return">Transfer</option>
+              </select>
             </div>
           </div>
 
