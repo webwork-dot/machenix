@@ -2,7 +2,7 @@
 $id = (int)($param2 ?? 0);
 $company_id = (int)$this->session->userdata('company_id');
 
-$transfer = $this->db->get_where('transferred_cash', ['id' => $id])->row_array();
+$transfer = $this->db->get_where('transferred_cash', ['id' => $id, 'is_deleted' => 0])->row_array();
 if (empty($transfer) || (int)($transfer['company_id'] ?? 0) !== $company_id) {
   echo '<div class="alert alert-danger mb-0">Transfer not found.</div>';
   return;

@@ -1377,7 +1377,7 @@ class Inventory extends CI_Controller
         }
     }
 
-    // Cash Collection Starts
+    // Payment Collection Starts (legacy alias: cash_collection)
     public function cash_collection($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -1388,10 +1388,15 @@ class Inventory extends CI_Controller
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation'] = 'cash_collection';
             $page_data['page_name']  = 'cash_collection';
-            $page_data['page_title'] = 'Cash Collection';
+            $page_data['page_title'] = 'Payment Collection';
             $page_data['status']     = (isset($_GET['status']) && $_GET['status'] == 'received') ? 'received' : 'pending';
             $this->load->view('backend/index', $page_data);
         }
+    }
+
+    public function payment_collection($param1 = "", $param2 = "")
+    {
+        return $this->cash_collection($param1, $param2);
     }
 
     public function get_cash_collection_ajax()
@@ -1566,13 +1571,20 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "transfer_post") {
+            $this->inventory_model->add_transfer_cash();
+        } elseif ($param1 == "transfer_edit_post") {
+            $this->inventory_model->edit_transfer_cash($param2);
+        } elseif ($param1 == "delete_transfer") {
+            $this->inventory_model->delete_transfer_cash($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'bank_book';
+            $page_data['page_name']  = 'bank_book';
+            $page_data['page_title'] = 'Bank Book';
+            $page_data['tab']        = (isset($_GET['tab']) && $_GET['tab'] == 'transferred') ? 'transferred' : 'bank';
+            $this->load->view('backend/index', $page_data);
         }
-
-        $this->session->set_userdata('previous_url', currentUrl());
-        $page_data['navigation'] = 'bank_book';
-        $page_data['page_name']  = 'bank_book';
-        $page_data['page_title'] = 'Bank Book';
-        $this->load->view('backend/index', $page_data);
     }
 
     public function get_bank_book_ajax()

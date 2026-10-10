@@ -109,36 +109,31 @@
     'unofficial' => ['total' => 0.0, 'receive' => 0.0, 'transfer' => 0.0],
   ];
 
-  if ($this->db->table_exists('customer_payment')) {
-    $where_company = !empty($company_id) ? " WHERE company_id = '$company_id'" : " WHERE 1=1";
-    if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-      $where_company .= " AND is_deleted = 0";
-    }
-    $where_company .= " AND type = 'manual'";
+  $where_company = !empty($company_id) ? " WHERE company_id = '$company_id'" : " WHERE 1=1";
+  $where_company .= " AND is_deleted = 0 AND type = 'manual'";
 
-    if (isset($_GET['date_range']) && $_GET['date_range'] != '') {
-      $date_range = explode(' - ', $_GET['date_range']);
-      $from = date('Y-m-d', strtotime($date_range[0]));
-      $to = date('Y-m-d', strtotime($date_range[1]));
-      $where_company .= " AND (DATE(date) >= '$from' AND DATE(date) <= '$to')";
-    }
+  if (isset($_GET['date_range']) && $_GET['date_range'] != '') {
+    $date_range = explode(' - ', $_GET['date_range']);
+    $from = date('Y-m-d', strtotime($date_range[0]));
+    $to = date('Y-m-d', strtotime($date_range[1]));
+    $where_company .= " AND (DATE(date) >= '$from' AND DATE(date) <= '$to')";
+  }
 
-    $sql = "SELECT payment_type,
-              IFNULL(SUM(CASE WHEN (payment_mode = 'payment' OR payment_mode IS NULL) THEN amount ELSE 0 END), 0) as receive_amt,
-              IFNULL(SUM(CASE WHEN payment_mode = 'return' THEN amount ELSE 0 END), 0) as transfer_amt
-            FROM customer_payment
-            $where_company
-            GROUP BY payment_type";
-    $q = $this->db->query($sql);
-    if (!empty($q)) {
-      foreach ($q->result_array() as $row) {
-        $ptype = ($row['payment_type'] ?? '') === 'unofficial' ? 'unofficial' : 'official';
-        $receive = (float)($row['receive_amt'] ?? 0);
-        $transfer = (float)($row['transfer_amt'] ?? 0);
-        $summary[$ptype]['receive']  += $receive;
-        $summary[$ptype]['transfer'] += $transfer;
-        $summary[$ptype]['total']    += ($receive - $transfer);
-      }
+  $sql = "SELECT payment_type,
+            IFNULL(SUM(CASE WHEN (payment_mode = 'payment' OR payment_mode IS NULL) THEN amount ELSE 0 END), 0) as receive_amt,
+            IFNULL(SUM(CASE WHEN payment_mode = 'return' THEN amount ELSE 0 END), 0) as transfer_amt
+          FROM customer_payment
+          $where_company
+          GROUP BY payment_type";
+  $q = $this->db->query($sql);
+  if (!empty($q)) {
+    foreach ($q->result_array() as $row) {
+      $ptype = ($row['payment_type'] ?? '') === 'unofficial' ? 'unofficial' : 'official';
+      $receive = (float)($row['receive_amt'] ?? 0);
+      $transfer = (float)($row['transfer_amt'] ?? 0);
+      $summary[$ptype]['receive']  += $receive;
+      $summary[$ptype]['transfer'] += $transfer;
+      $summary[$ptype]['total']    += ($receive - $transfer);
     }
   }
 

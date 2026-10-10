@@ -67,33 +67,27 @@
   $company_id = $this->session->userdata('company_id');
 
   $total_overall_amount = 0;
-  if ($this->db->table_exists('transferred_cash')) {
-    $coll_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt FROM transferred_cash WHERE 1=1";
-    if (!empty($company_id) && $this->db->field_exists('company_to_id', 'transferred_cash')) {
-      $coll_sql .= " AND company_to_id = '$company_id'";
-    }
-    if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
-      $coll_sql .= " AND is_deleted = 0";
-    }
-    if ($this->db->field_exists('method_from', 'transferred_cash')) {
-      $coll_sql .= " AND LOWER(method_from) = 'cash'";
-    }
-    if ($status == 'received') {
-      $coll_sql .= " AND is_approved = 1";
-    } else {
-      $coll_sql .= " AND (is_approved = 0 OR is_approved IS NULL)";
-    }
-    $res = $this->db->query($coll_sql)->row_array();
-    $total_overall_amount = (float)($res['total_amt'] ?? 0);
+  $coll_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt FROM transferred_cash WHERE 1=1";
+  if (!empty($company_id)) {
+    $coll_sql .= " AND company_to_id = '$company_id'";
   }
+  $coll_sql .= " AND is_deleted = 0";
+  // Payment Collection: cash + bank (no method_from filter)
+  if ($status == 'received') {
+    $coll_sql .= " AND is_approved = 1";
+  } else {
+    $coll_sql .= " AND (is_approved = 0 OR is_approved IS NULL)";
+  }
+  $res = $this->db->query($coll_sql)->row_array();
+  $total_overall_amount = (float)($res['total_amt'] ?? 0);
 ?>
 
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
   <div class="col-12 d-flex">
-    <a href="<?php echo base_url('inventory/cash-collection?status=pending' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">Pending</a>
-    <a href="<?php echo base_url('inventory/cash-collection?status=received' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'received') ? 'active' : ''; ?>">Received</a>
+    <a href="<?php echo base_url('inventory/payment-collection?status=pending' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">Pending</a>
+    <a href="<?php echo base_url('inventory/payment-collection?status=received' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'received') ? 'active' : ''; ?>">Received</a>
   </div>
 
   <div class="col-12">
@@ -101,7 +95,7 @@
       <div class="card-body">
         <div class="row align-items-center">
           <div class="col-md-6 col-12 mt-10">
-            <h5 class="mb-0"><b>Total <?= ($status == 'received') ? 'Received' : 'Pending'; ?> Cash Collections<span id="total_count"> (0)</span></b>
+            <h5 class="mb-0"><b>Total <?= ($status == 'received') ? 'Received' : 'Pending'; ?> Payment Collections<span id="total_count"> (0)</span></b>
             </h5>
           </div>
           <div class="col-md-6 col-12 mt-10 text-md-end">
@@ -116,6 +110,7 @@
               <th style="width: 50px;" class="text-center">#</th>
               <th>Date</th>
               <th>From Company</th>
+              <th>Method</th>
               <th>Type</th>
               <th>Amount</th>
               <th>Remark / Narration</th>
@@ -185,6 +180,7 @@ $(document).ready(function($) {
       { "data": "sr_no", "className": "text-center" },
       { "data": "date" },
       { "data": "from_company" },
+      { "data": "method_from" },
       { "data": "payment_type" },
       { "data": "amount" },
       { "data": "remark" },
@@ -202,13 +198,13 @@ $(document).ready(function($) {
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": <?php echo ($status == 'received') ? '[0, 1, 2, 3, 4, 5, 6, 7, 8]' : '[0, 1, 2, 3, 4, 5, 6, 7]'; ?> }
+        "exportOptions": { "columns": <?php echo ($status == 'received') ? '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": <?php echo ($status == 'received') ? '[0, 1, 2, 3, 4, 5, 6, 7, 8]' : '[0, 1, 2, 3, 4, 5, 6, 7]'; ?> }
+        "exportOptions": { "columns": <?php echo ($status == 'received') ? '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
       }
     ],
 

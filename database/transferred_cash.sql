@@ -47,6 +47,7 @@ CREATE TABLE `transferred_cash` (
   `approved_by` int(11) DEFAULT NULL,
   `approved_by_name` varchar(255) DEFAULT NULL,
   `approval_date` datetime DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `added_by` int(11) DEFAULT NULL,
   `added_by_name` text DEFAULT NULL,
   `added_date` datetime DEFAULT NULL

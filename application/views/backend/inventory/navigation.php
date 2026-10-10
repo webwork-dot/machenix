@@ -495,9 +495,9 @@
             </a>
         </li>
         <li class="nav-item <?php if($page_name == 'cash_collection') echo 'active'; ?>">
-            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/cash-collection">
+            <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payment-collection">
                 <i class="feather icon-inbox"></i>
-                <span class="menu-title text-truncate">Cash Collection</span>
+                <span class="menu-title text-truncate">Payment Collection</span>
             </a>
         </li>
         <?php } ?>

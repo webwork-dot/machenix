@@ -2,9 +2,9 @@
 $id = (int)($param2 ?? 0);
 $company_id = (int)$this->session->userdata('company_id');
 
-$transfer = $this->db->get_where('transferred_cash', ['id' => $id])->row_array();
+$transfer = $this->db->get_where('transferred_cash', ['id' => $id, 'is_deleted' => 0])->row_array();
 if (empty($transfer)) {
-  echo '<div class="alert alert-danger mb-0">Cash collection not found.</div>';
+  echo '<div class="alert alert-danger mb-0">Payment collection not found.</div>';
   return;
 }
 
@@ -29,6 +29,11 @@ $is_unofficial = ($from_type === 'unofficial');
 $type_badge_class = $is_unofficial ? 'bg-light-secondary text-secondary' : 'bg-light-primary text-primary';
 $accent_border = $is_unofficial ? '#82868b' : '#7367f0';
 $amount_class = $is_unofficial ? 'text-secondary' : 'text-primary';
+$method_from = strtolower($transfer['method_from'] ?? '');
+$method_from_label = ($method_from === 'cheque') ? 'Bank' : (($method_from === 'cash') ? 'Cash' : '-');
+$method_from_badge = ($method_from === 'cheque')
+  ? 'bg-light-info text-info'
+  : (($method_from === 'cash') ? 'bg-light-success text-success' : 'bg-light-secondary text-secondary');
 ?>
 
 <style>
@@ -166,6 +171,10 @@ $amount_class = $is_unofficial ? 'text-secondary' : 'text-primary';
         <div class="summary-meta-item">
           <div class="summary-label">Type</div>
           <span class="badge <?= $type_badge_class; ?> font-weight-bold"><?= ucfirst($from_type); ?></span>
+        </div>
+        <div class="summary-meta-item">
+          <div class="summary-label">Sent As</div>
+          <span class="badge <?= $method_from_badge; ?> font-weight-bold"><?= $method_from_label; ?></span>
         </div>
         <?php if (!empty($transfer['remark'])): ?>
         <div class="summary-meta-item" style="flex: 2 1 200px;">

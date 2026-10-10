@@ -77,30 +77,22 @@
   $company_id = $this->session->userdata('company_id');
 
   $total_overall_amount = 0;
-  if ($this->db->table_exists('customer_payment')) {
-    $rec_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt 
-                FROM customer_payment 
-                WHERE (LOWER(payment_method) != 'cash' OR payment_method IS NULL)";
-    if (!empty($company_id)) {
-      $rec_sql .= " AND company_id = '$company_id'";
-    }
-    if ($this->db->field_exists('payment_mode', 'customer_payment')) {
-      $rec_sql .= " AND (payment_mode != 'return' OR payment_mode IS NULL)";
-    }
-    if ($this->db->field_exists('type', 'customer_payment')) {
-      $rec_sql .= " AND (type = 'customer' OR type IS NULL OR type = '')";
-    }
-    if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-      $rec_sql .= " AND is_deleted = 0";
-    }
-    if ($status == 'approved') {
-      $rec_sql .= " AND is_approved = 1";
-    } else {
-      $rec_sql .= " AND (is_approved = 0 OR is_approved IS NULL)";
-    }
-    $res = $this->db->query($rec_sql)->row_array();
-    $total_overall_amount = (float)($res['total_amt'] ?? 0);
+  $rec_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt 
+              FROM customer_payment 
+              WHERE (LOWER(payment_method) != 'cash' OR payment_method IS NULL)
+              AND (payment_mode != 'return' OR payment_mode IS NULL)
+              AND (type = 'customer' OR type IS NULL OR type = '')
+              AND is_deleted = 0";
+  if (!empty($company_id)) {
+    $rec_sql .= " AND company_id = '$company_id'";
   }
+  if ($status == 'approved') {
+    $rec_sql .= " AND is_approved = 1";
+  } else {
+    $rec_sql .= " AND (is_approved = 0 OR is_approved IS NULL)";
+  }
+  $res = $this->db->query($rec_sql)->row_array();
+  $total_overall_amount = (float)($res['total_amt'] ?? 0);
 ?>
 
 <div class="row" id="table-bordered">

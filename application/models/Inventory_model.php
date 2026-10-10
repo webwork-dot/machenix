@@ -29696,7 +29696,7 @@ public function get_sales_return_reports()
 			$bill_order_nos[trim($bi['order_no'] ?? '')] = $bi;
 		}
 
-		$pay_del_filter = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (p.is_deleted = 0 OR p.is_deleted IS NULL)" : "";
+		$pay_del_filter = " AND p.is_deleted = 0";
 		$payments = $this->db->query(
 			"SELECT p.*,
 			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name,
@@ -31861,34 +31861,6 @@ public function get_sales_return_reports()
 
 	public function add_customer_payment()
 	{
-		if (!$this->db->field_exists('company_id', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_id int(11) NOT NULL DEFAULT 0 AFTER id");
-		}
-		if (!$this->db->field_exists('type', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN type enum('customer','manual') NOT NULL DEFAULT 'customer' AFTER company_id");
-		}
-		if (!$this->db->field_exists('company_bank', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank int(11) DEFAULT NULL AFTER payment_method");
-		}
-		if (!$this->db->field_exists('company_bank_account', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank_account varchar(255) DEFAULT NULL AFTER company_bank");
-		} else {
-			$acc_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'company_bank_account'")->row_array();
-			if (!empty($acc_col['Type']) && strpos(strtolower($acc_col['Type']), 'int') !== false) {
-				$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN company_bank_account varchar(255) DEFAULT NULL");
-			}
-		}
-		$method_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'payment_method'")->row_array();
-		if (!empty($method_col['Type']) && strpos($method_col['Type'], 'cheque') === false) {
-			$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN payment_method enum('cash','cheque') NOT NULL DEFAULT 'cash'");
-		}
-		if (!$this->db->field_exists('payment_mode', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN payment_mode enum('payment','return') NOT NULL DEFAULT 'payment' AFTER payment_method");
-		}
-		if (!$this->db->field_exists('is_deleted', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_deleted tinyint(1) NOT NULL DEFAULT 0 AFTER narration");
-		}
-
 		$customer_id = $this->input->post('customer_id');
 		$customer = $this->db->get_where('customer', ['id' => $customer_id])->row_array();
 
@@ -32034,11 +32006,7 @@ public function get_sales_return_reports()
 		}
 
 		$this->db->where('id', $id);
-		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-			$this->db->update('customer_payment', ['is_deleted' => 1]);
-		} else {
-			$this->db->delete('customer_payment');
-		}
+		$this->db->update('customer_payment', ['is_deleted' => 1]);
 
 		$resultpost = array(
 			"status"  => 200,
@@ -32051,34 +32019,6 @@ public function get_sales_return_reports()
 
 	public function add_manual_payment()
 	{
-		if (!$this->db->field_exists('company_id', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_id int(11) NOT NULL DEFAULT 0 AFTER id");
-		}
-		if (!$this->db->field_exists('type', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN type enum('customer','manual') NOT NULL DEFAULT 'customer' AFTER company_id");
-		}
-		if (!$this->db->field_exists('company_bank', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank int(11) DEFAULT NULL AFTER payment_method");
-		}
-		if (!$this->db->field_exists('company_bank_account', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN company_bank_account varchar(255) DEFAULT NULL AFTER company_bank");
-		} else {
-			$acc_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'company_bank_account'")->row_array();
-			if (!empty($acc_col['Type']) && strpos(strtolower($acc_col['Type']), 'int') !== false) {
-				$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN company_bank_account varchar(255) DEFAULT NULL");
-			}
-		}
-		$method_col = $this->db->query("SHOW COLUMNS FROM customer_payment LIKE 'payment_method'")->row_array();
-		if (!empty($method_col['Type']) && strpos($method_col['Type'], 'cheque') === false) {
-			$this->db->query("ALTER TABLE customer_payment MODIFY COLUMN payment_method enum('cash','cheque') NOT NULL DEFAULT 'cash'");
-		}
-		if (!$this->db->field_exists('payment_mode', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN payment_mode enum('payment','return') NOT NULL DEFAULT 'payment' AFTER payment_method");
-		}
-		if (!$this->db->field_exists('is_deleted', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_deleted tinyint(1) NOT NULL DEFAULT 0 AFTER narration");
-		}
-
 		$payment_method = $this->input->post('payment_method');
 		$payment_mode   = $this->input->post('payment_mode');
 		$payment_mode   = ($payment_mode === 'return') ? 'return' : 'payment'; // receive / transfer
@@ -32255,11 +32195,7 @@ public function get_sales_return_reports()
 	{
 		$this->db->where('id', $id);
 		$this->db->where('type', 'manual');
-		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-			$this->db->update('customer_payment', ['is_deleted' => 1]);
-		} else {
-			$this->db->delete('customer_payment');
-		}
+		$this->db->update('customer_payment', ['is_deleted' => 1]);
 
 		$resultpost = array(
 			"status"  => 200,
@@ -32278,11 +32214,7 @@ public function get_sales_return_reports()
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
-		$keyword_filter = " AND type = 'manual'";
-
-		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-			$keyword_filter .= " AND (is_deleted = 0 OR is_deleted IS NULL)";
-		}
+		$keyword_filter = " AND type = 'manual' AND is_deleted = 0";
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
 			$keyword = $filter_data['keywords'];
@@ -32395,13 +32327,6 @@ public function get_sales_return_reports()
 			"url"     => base_url('inventory/payment-reconciliation?status=pending'),
 		);
 
-		if (!$this->db->field_exists('is_approved', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN is_approved tinyint(1) NOT NULL DEFAULT 0 AFTER narration");
-		}
-		if (!$this->db->field_exists('approval_date', 'customer_payment')) {
-			$this->db->query("ALTER TABLE customer_payment ADD COLUMN approval_date datetime DEFAULT NULL AFTER is_approved");
-		}
-
 		$update_data = [
 			'is_approved'   => 1,
 			'approval_date' => date('Y-m-d H:i:s'),
@@ -32422,15 +32347,7 @@ public function get_sales_return_reports()
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
-		$keyword_filter = "";
-
-		if ($this->db->field_exists('type', 'customer_payment')) {
-			$keyword_filter .= " AND (type = 'customer' OR type IS NULL OR type = '')";
-		}
-
-		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-			$keyword_filter .= " AND (is_deleted = 0 OR is_deleted IS NULL)";
-		}
+		$keyword_filter = " AND (type = 'customer' OR type IS NULL OR type = '') AND is_deleted = 0";
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
 			$keyword = $filter_data['keywords'];
@@ -32452,15 +32369,14 @@ public function get_sales_return_reports()
 
 		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
 
-		$has_mode = $this->db->field_exists('payment_mode', 'customer_payment');
 		$summary = [
 			'official'   => ['payment' => 0.0, 'return' => 0.0],
 			'unofficial' => ['payment' => 0.0, 'return' => 0.0],
 		];
 
 		$sum_sql = "SELECT payment_type,
-				IFNULL(SUM(CASE WHEN " . ($has_mode ? "(payment_mode = 'payment' OR payment_mode IS NULL)" : "1=1") . " THEN amount ELSE 0 END), 0) as payment_amt,
-				IFNULL(SUM(CASE WHEN " . ($has_mode ? "payment_mode = 'return'" : "1=0") . " THEN amount ELSE 0 END), 0) as return_amt
+				IFNULL(SUM(CASE WHEN (payment_mode = 'payment' OR payment_mode IS NULL) THEN amount ELSE 0 END), 0) as payment_amt,
+				IFNULL(SUM(CASE WHEN payment_mode = 'return' THEN amount ELSE 0 END), 0) as return_amt
 			FROM customer_payment
 			WHERE 1=1" . $keyword_filter . "
 			GROUP BY payment_type";
@@ -32554,20 +32470,7 @@ public function get_sales_return_reports()
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
-		$keyword_filter = "";
-
-		if ($this->db->field_exists('is_deleted', 'customer_payment')) {
-			$keyword_filter .= " AND (is_deleted = 0 OR is_deleted IS NULL)";
-		}
-
-		if ($this->db->field_exists('type', 'customer_payment')) {
-			$keyword_filter .= " AND (type = 'customer' OR type IS NULL OR type = '')";
-		}
-
-		// Don't show return type payment in reconciliation
-		if ($this->db->field_exists('payment_mode', 'customer_payment')) {
-			$keyword_filter .= " AND (payment_mode != 'return' OR payment_mode IS NULL)";
-		}
+		$keyword_filter = " AND is_deleted = 0 AND (type = 'customer' OR type IS NULL OR type = '') AND (payment_mode != 'return' OR payment_mode IS NULL)";
 
 		$company_id = $this->session->userdata('company_id');
 		if (!empty($company_id)) {
@@ -32652,33 +32555,31 @@ public function get_sales_return_reports()
 	{
 		$resultpost = array(
 			"status"  => 200,
-			"message" => "Cash collection approved successfully",
-			"url"     => base_url('inventory/cash-collection?status=received'),
+			"message" => "Payment collection approved successfully",
+			"url"     => base_url('inventory/payment-collection?status=received'),
 		);
 
 		$id         = (int) $id;
 		$company_id = (int) ($this->session->userdata('company_id') ?: 0);
 
-		$existing = $this->db->get_where('transferred_cash', ['id' => $id])->row_array();
+		$existing = $this->db->get_where('transferred_cash', ['id' => $id, 'is_deleted' => 0])->row_array();
 		if (empty($existing)) {
 			$resultpost['status']  = 400;
-			$resultpost['message'] = "Cash collection not found.";
+			$resultpost['message'] = "Payment collection not found.";
 			return simple_json_output($resultpost);
 		}
 
 		if (!empty($existing['is_approved'])) {
 			$resultpost['status']  = 400;
-			$resultpost['message'] = "This cash collection is already approved.";
+			$resultpost['message'] = "This payment collection is already approved.";
 			return simple_json_output($resultpost);
 		}
 
 		// Only the destination company can approve
-		if ($this->db->field_exists('company_to_id', 'transferred_cash')) {
-			if ((int)($existing['company_to_id'] ?? 0) !== $company_id) {
-				$resultpost['status']  = 400;
-				$resultpost['message'] = "You are not allowed to approve this cash collection.";
-				return simple_json_output($resultpost);
-			}
+		if ((int)($existing['company_to_id'] ?? 0) !== $company_id) {
+			$resultpost['status']  = 400;
+			$resultpost['message'] = "You are not allowed to approve this payment collection.";
+			return simple_json_output($resultpost);
 		}
 
 		$method_to = clean_and_escape($this->input->post('method_to'));
@@ -32689,11 +32590,7 @@ public function get_sales_return_reports()
 		}
 
 		// Receive type must match transferred type (official/unofficial)
-		$converted_from = $existing['converted_from'] ?? '';
-		if ($converted_from === '' && !empty($existing['payment_type'])) {
-			$converted_from = $existing['payment_type'];
-		}
-		$converted_from = ($converted_from === 'unofficial') ? 'unofficial' : 'official';
+		$converted_from = (($existing['converted_from'] ?? '') === 'unofficial') ? 'unofficial' : 'official';
 		$converted_to   = $converted_from;
 
 		$company_bank_to = null;
@@ -32718,29 +32615,20 @@ public function get_sales_return_reports()
 		}
 
 		$update_data = [
-			'is_approved'      => 1,
-			'approval_date'    => date('Y-m-d H:i:s'),
-			'approved_by'      => (int) $this->session->userdata('super_user_id'),
-			'approved_by_name' => $this->session->userdata('super_name'),
+			'is_approved'               => 1,
+			'approval_date'             => date('Y-m-d H:i:s'),
+			'approved_by'               => (int) $this->session->userdata('super_user_id'),
+			'approved_by_name'          => $this->session->userdata('super_name'),
+			'converted_to'              => $converted_to,
+			'method_to'                 => $method_to,
+			'company_bank_to'           => $company_bank_to,
+			'company_bank_account_to'   => $company_bank_account_to,
 		];
-
-		if ($this->db->field_exists('converted_to', 'transferred_cash')) {
-			$update_data['converted_to'] = $converted_to;
-		}
-		if ($this->db->field_exists('method_to', 'transferred_cash')) {
-			$update_data['method_to'] = $method_to;
-		}
-		if ($this->db->field_exists('company_bank_to', 'transferred_cash')) {
-			$update_data['company_bank_to'] = $company_bank_to;
-		}
-		if ($this->db->field_exists('company_bank_account_to', 'transferred_cash')) {
-			$update_data['company_bank_account_to'] = $company_bank_account_to;
-		}
 
 		$this->db->where('id', $id);
 		$this->db->update('transferred_cash', $update_data);
 
-		$this->session->set_flashdata('flash_message', "Cash collection approved successfully");
+		$this->session->set_flashdata('flash_message', "Payment collection approved successfully");
 		return simple_json_output($resultpost);
 	}
 
@@ -32757,25 +32645,13 @@ public function get_sales_return_reports()
 		$company_id = (int) ($this->session->userdata('company_id') ?: 0);
 
 		// Incoming transfers for the logged-in company
-		if ($this->db->field_exists('company_to_id', 'transferred_cash') && !empty($company_id)) {
+		if (!empty($company_id)) {
 			$where .= " AND tc.company_to_id = '$company_id'";
-		} elseif ($this->db->field_exists('company_to', 'transferred_cash') && !empty($company_id)) {
-			$company_row = $this->db->get_where('company', ['id' => $company_id])->row_array();
-			$company_name = $company_row['name'] ?? '';
-			if ($company_name !== '') {
-				$where .= " AND tc.company_to = " . $this->db->escape($company_name);
-			}
 		}
 
-		if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
-			$where .= " AND tc.is_deleted = 0";
-		}
+		$where .= " AND tc.is_deleted = 0";
 
-		// Cash Collection: only transfers sent as cash (method_from); method_to does not matter
-		if ($this->db->field_exists('method_from', 'transferred_cash')) {
-			$where .= " AND LOWER(tc.method_from) = 'cash'";
-		}
-
+		// Payment Collection: cash + bank transfers (method_from); method_to set on approve
 		$status = isset($_REQUEST['status']) ? clean_and_escape($_REQUEST['status']) : 'pending';
 		if ($status === 'received' || (isset($_REQUEST['is_approved']) && $_REQUEST['is_approved'] == '1')) {
 			$where .= " AND tc.is_approved = 1";
@@ -32807,7 +32683,7 @@ public function get_sales_return_reports()
 			$sr_no = $start;
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
-				$approve_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_approve_cash_collection/' . $id) . "', 'Approve Cash Collection')";
+				$approve_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_approve_cash_collection/' . $id) . "', 'Approve Payment Collection')";
 
 				$action = '';
 				if (empty($item['is_approved']) || $item['is_approved'] == 0) {
@@ -32834,10 +32710,18 @@ public function get_sales_return_reports()
 						? '<span class="badge bg-light-primary text-primary">' . $ptype . '</span>'
 						: '-');
 
+				$method_from = strtolower($item['method_from'] ?? '');
+				$method_from_badge = ($method_from === 'cheque')
+					? '<span class="badge bg-light-info text-info">Bank</span>'
+					: (($method_from === 'cash')
+						? '<span class="badge bg-light-success text-success">Cash</span>'
+						: '-');
+
 				$data[] = array(
 					"sr_no"          => ++$sr_no,
 					"date"           => $item['added_date'] ? date('d M, Y', strtotime($item['added_date'])) : '-',
 					"from_company"   => !empty($item['from_company_name']) ? htmlspecialchars($item['from_company_name']) : (!empty($item['company_name']) ? htmlspecialchars($item['company_name']) : '-'),
+					"method_from"    => $method_from_badge,
 					"payment_type"   => $ptype_badge,
 					"amount"         => '₹' . number_format((float)$item['amount'], 2),
 					"remark"         => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
@@ -32878,42 +32762,11 @@ public function get_sales_return_reports()
 		$net_amount_val = 0.0;
 
 		if ($tab == 'transferred') {
-			if (!$this->db->table_exists('transferred_cash')) {
-				$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
-				  `id` int(11) NOT NULL AUTO_INCREMENT,
-				  `company_id` int(11) NOT NULL,
-				  `company_name` varchar(255) DEFAULT NULL,
-				  `company_to_id` int(11) DEFAULT NULL,
-				  `company_to` varchar(255) DEFAULT NULL,
-				  `converted_from` enum('official','unofficial','') NOT NULL DEFAULT '',
-				  `converted_to` enum('official','unofficial','') NOT NULL DEFAULT '',
-				  `method_from` enum('cash','cheque','') NOT NULL DEFAULT '',
-				  `method_to` enum('cash','cheque','') NOT NULL DEFAULT '',
-				  `company_bank_from` int(11) DEFAULT NULL,
-				  `company_bank_account_from` varchar(255) DEFAULT NULL,
-				  `company_bank_to` int(11) DEFAULT NULL,
-				  `company_bank_account_to` varchar(255) DEFAULT NULL,
-				  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
-				  `remark` text DEFAULT NULL,
-				  `is_approved` tinyint(1) NOT NULL DEFAULT 0,
-				  `approved_by` int(11) DEFAULT NULL,
-				  `approved_by_name` varchar(255) DEFAULT NULL,
-				  `approval_date` datetime DEFAULT NULL,
-				  `added_by` int(11) DEFAULT NULL,
-				  `added_by_name` text DEFAULT NULL,
-				  `added_date` datetime DEFAULT NULL,
-				  PRIMARY KEY (`id`)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
-			}
-
 			$where_conditions = "WHERE 1=1";
 			if (!empty($company_id)) {
 				$where_conditions .= " AND company_id = '$company_id'";
 			}
-
-			if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
-				$where_conditions .= " AND is_deleted = 0";
-			}
+			$where_conditions .= " AND LOWER(method_from) = 'cash' AND is_deleted = 0";
 
 			if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
 				$keyword = $filter_data['keywords'];
@@ -32987,189 +32840,155 @@ public function get_sales_return_reports()
 			$unions = [];
 
 			// customer_payment: customer + manual; payment=In, return=Out
-			if ($this->db->table_exists('customer_payment')) {
-				$cp_del = $this->db->field_exists('is_deleted', 'customer_payment')
-					? " AND (cp.is_deleted = 0 OR cp.is_deleted IS NULL)" : "";
-				$unions[] = "
-					SELECT
-						DATE(cp.date) AS entry_date,
-						COALESCE(NULLIF(TRIM(cp.customer_name), ''), NULLIF(TRIM(cp.narration), ''), '-') AS party_name,
-						CASE
-							WHEN cp.type = 'manual' AND cp.payment_mode = 'return' THEN 'manual_transfer'
-							WHEN cp.type = 'manual' THEN 'manual_receive'
-							WHEN cp.payment_mode = 'return' THEN 'customer_return'
-							ELSE 'customer'
-						END AS source,
-						CASE WHEN cp.payment_mode = 'return' THEN 'out' ELSE 'in' END AS direction,
-						CASE WHEN cp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-						CAST(cp.amount AS DECIMAL(16,5)) AS amount,
-						IFNULL(cp.narration, '') AS remark,
-						IFNULL(cp.added_by_name, '') AS added_by_name,
-						'customer_payment' AS source_table,
-						cp.id AS source_id,
-						0 AS can_edit
-					FROM customer_payment cp
-					WHERE LOWER(cp.payment_method) = 'cash'
-						AND cp.company_id = '{$comp}'
-						{$cp_del}
-				";
-			}
+			$unions[] = "
+				SELECT
+					DATE(cp.date) AS entry_date,
+					COALESCE(NULLIF(TRIM(cp.customer_name), ''), NULLIF(TRIM(cp.narration), ''), '-') AS party_name,
+					CASE
+						WHEN cp.type = 'manual' AND cp.payment_mode = 'return' THEN 'manual_transfer'
+						WHEN cp.type = 'manual' THEN 'manual_receive'
+						WHEN cp.payment_mode = 'return' THEN 'customer_return'
+						ELSE 'customer'
+					END AS source,
+					CASE WHEN cp.payment_mode = 'return' THEN 'out' ELSE 'in' END AS direction,
+					CASE WHEN cp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+					CAST(cp.amount AS DECIMAL(16,5)) AS amount,
+					IFNULL(cp.narration, '') AS remark,
+					IFNULL(cp.added_by_name, '') AS added_by_name,
+					'customer_payment' AS source_table,
+					cp.id AS source_id,
+					0 AS can_edit
+				FROM customer_payment cp
+				WHERE LOWER(cp.payment_method) = 'cash'
+					AND cp.company_id = '{$comp}'
+					AND cp.is_deleted = 0
+			";
 
 			// payments: supplier payment + cash expense (all Out)
-			if ($this->db->table_exists('payments')) {
-				$unions[] = "
-					SELECT
-						DATE(p.payment_date) AS entry_date,
-						COALESCE(NULLIF(TRIM(p.supplier_name), ''), '-') AS party_name,
-						CASE WHEN p.type = 'expense' THEN 'expense' ELSE 'supplier' END AS source,
-						'out' AS direction,
-						CASE WHEN p.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-						CAST(p.amount_rs AS DECIMAL(16,5)) AS amount,
-						IFNULL(p.narration, '') AS remark,
-						TRIM(CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, ''))) AS added_by_name,
-						'payments' AS source_table,
-						p.id AS source_id,
-						CASE WHEN p.type = 'expense' THEN 1 ELSE 0 END AS can_edit
-					FROM payments p
-					LEFT JOIN sys_users u ON p.added_by = u.id
-					WHERE p.is_delete = 0
-						AND LOWER(p.payment_method) = 'cash'
-						AND p.company_id = '{$comp}'
-				";
-			}
+			$unions[] = "
+				SELECT
+					DATE(p.payment_date) AS entry_date,
+					COALESCE(NULLIF(TRIM(p.supplier_name), ''), '-') AS party_name,
+					CASE WHEN p.type = 'expense' THEN 'expense' ELSE 'supplier' END AS source,
+					'out' AS direction,
+					CASE WHEN p.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+					CAST(p.amount_rs AS DECIMAL(16,5)) AS amount,
+					IFNULL(p.narration, '') AS remark,
+					TRIM(CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, ''))) AS added_by_name,
+					'payments' AS source_table,
+					p.id AS source_id,
+					CASE WHEN p.type = 'expense' THEN 1 ELSE 0 END AS can_edit
+				FROM payments p
+				LEFT JOIN sys_users u ON p.added_by = u.id
+				WHERE p.is_delete = 0
+					AND LOWER(p.payment_method) = 'cash'
+					AND p.company_id = '{$comp}'
+			";
 
 			// vendor_payments (Out)
-			if ($this->db->table_exists('vendor_payments') && $this->db->field_exists('payment_method', 'vendor_payments')) {
-				$unions[] = "
-					SELECT
-						DATE(vp.payment_date) AS entry_date,
-						COALESCE(NULLIF(TRIM(vp.vendor_name), ''), '-') AS party_name,
-						'vendor' AS source,
-						'out' AS direction,
-						CASE WHEN vp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-						CAST(vp.inr AS DECIMAL(16,5)) AS amount,
-						IFNULL(vp.narration, '') AS remark,
-						TRIM(CONCAT(IFNULL(vu.first_name, ''), ' ', IFNULL(vu.last_name, ''))) AS added_by_name,
-						'vendor_payments' AS source_table,
-						vp.id AS source_id,
-						0 AS can_edit
-					FROM vendor_payments vp
-					LEFT JOIN sys_users vu ON vp.added_by = vu.id
-					WHERE vp.is_delete = 0
-						AND LOWER(vp.payment_method) = 'cash'
-						AND vp.company_id = '{$comp}'
-				";
-			}
+			$unions[] = "
+				SELECT
+					DATE(vp.payment_date) AS entry_date,
+					COALESCE(NULLIF(TRIM(vp.vendor_name), ''), '-') AS party_name,
+					'vendor' AS source,
+					'out' AS direction,
+					CASE WHEN vp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+					CAST(vp.inr AS DECIMAL(16,5)) AS amount,
+					IFNULL(vp.narration, '') AS remark,
+					TRIM(CONCAT(IFNULL(vu.first_name, ''), ' ', IFNULL(vu.last_name, ''))) AS added_by_name,
+					'vendor_payments' AS source_table,
+					vp.id AS source_id,
+					0 AS can_edit
+				FROM vendor_payments vp
+				LEFT JOIN sys_users vu ON vp.added_by = vu.id
+				WHERE vp.is_delete = 0
+					AND LOWER(vp.payment_method) = 'cash'
+					AND vp.company_id = '{$comp}'
+			";
 
 			// transferred_cash out (from this company)
-			if ($this->db->table_exists('transferred_cash')) {
-				$t_del = $this->db->field_exists('is_deleted', 'transferred_cash')
-					? " AND (tc.is_deleted = 0 OR tc.is_deleted IS NULL)" : "";
-				$method_from_filter = $this->db->field_exists('method_from', 'transferred_cash')
-					? " AND (LOWER(tc.method_from) = 'cash' OR tc.method_from = '' OR tc.method_from IS NULL)" : "";
-				$type_from = $this->db->field_exists('converted_from', 'transferred_cash')
-					? "CASE WHEN tc.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END"
-					: ($this->db->field_exists('payment_type', 'transferred_cash')
-						? "CASE WHEN tc.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END"
-						: "'official'");
+			$unions[] = "
+				SELECT
+					DATE(tc.added_date) AS entry_date,
+					COALESCE(NULLIF(TRIM(tc.company_to), ''), '-') AS party_name,
+					'transfer_out' AS source,
+					'out' AS direction,
+					CASE WHEN tc.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+					CAST(tc.amount AS DECIMAL(16,5)) AS amount,
+					IFNULL(tc.remark, '') AS remark,
+					IFNULL(tc.added_by_name, '') AS added_by_name,
+					'transferred_cash' AS source_table,
+					tc.id AS source_id,
+					0 AS can_edit
+				FROM transferred_cash tc
+				WHERE tc.company_id = '{$comp}'
+					AND tc.is_deleted = 0
+					AND LOWER(tc.method_from) = 'cash'
+			";
 
-				$unions[] = "
-					SELECT
-						DATE(tc.added_date) AS entry_date,
-						COALESCE(NULLIF(TRIM(tc.company_to), ''), '-') AS party_name,
-						'transfer_out' AS source,
-						'out' AS direction,
-						{$type_from} AS payment_type,
-						CAST(tc.amount AS DECIMAL(16,5)) AS amount,
-						IFNULL(tc.remark, '') AS remark,
-						IFNULL(tc.added_by_name, '') AS added_by_name,
-						'transferred_cash' AS source_table,
-						tc.id AS source_id,
-						0 AS can_edit
-					FROM transferred_cash tc
-					WHERE tc.company_id = '{$comp}'
-						{$t_del}
-						{$method_from_filter}
-				";
-
-				// transferred_cash in (approved cash to this company)
-				if ($this->db->field_exists('company_to_id', 'transferred_cash') && $this->db->field_exists('method_to', 'transferred_cash')) {
-					$type_to = $this->db->field_exists('converted_to', 'transferred_cash')
-						? "CASE
-								WHEN tc.converted_to IN ('official','unofficial') THEN tc.converted_to
-								WHEN tc.converted_from = 'unofficial' THEN 'unofficial'
-								ELSE 'official'
-							END"
-						: $type_from;
-					$party_from = $this->db->field_exists('company_name', 'transferred_cash')
-						? "COALESCE(NULLIF(TRIM(tc.company_name), ''), '-')"
-						: "'-'";
-
-					$unions[] = "
-						SELECT
-							DATE(COALESCE(tc.approval_date, tc.added_date)) AS entry_date,
-							{$party_from} AS party_name,
-							'transfer_in' AS source,
-							'in' AS direction,
-							{$type_to} AS payment_type,
-							CAST(tc.amount AS DECIMAL(16,5)) AS amount,
-							IFNULL(tc.remark, '') AS remark,
-							IFNULL(tc.added_by_name, '') AS added_by_name,
-							'transferred_cash' AS source_table,
-							tc.id AS source_id,
-							0 AS can_edit
-						FROM transferred_cash tc
-						WHERE tc.company_to_id = '{$comp}'
-							AND tc.is_approved = 1
-							AND LOWER(tc.method_to) = 'cash'
-							{$t_del}
-					";
-				}
-			}
+			// transferred_cash in (approved cash to this company)
+			$unions[] = "
+				SELECT
+					DATE(COALESCE(tc.approval_date, tc.added_date)) AS entry_date,
+					COALESCE(NULLIF(TRIM(tc.company_name), ''), '-') AS party_name,
+					'transfer_in' AS source,
+					'in' AS direction,
+					CASE
+						WHEN tc.converted_to IN ('official','unofficial') THEN tc.converted_to
+						WHEN tc.converted_from = 'unofficial' THEN 'unofficial'
+						ELSE 'official'
+					END AS payment_type,
+					CAST(tc.amount AS DECIMAL(16,5)) AS amount,
+					IFNULL(tc.remark, '') AS remark,
+					IFNULL(tc.added_by_name, '') AS added_by_name,
+					'transferred_cash' AS source_table,
+					tc.id AS source_id,
+					0 AS can_edit
+				FROM transferred_cash tc
+				WHERE tc.company_to_id = '{$comp}'
+					AND tc.is_approved = 1
+					AND LOWER(tc.method_to) = 'cash'
+					AND tc.is_deleted = 0
+			";
 
 			// converted_payment cash legs
-			if ($this->db->table_exists('converted_payment')) {
-				$c_del = $this->db->field_exists('is_deleted', 'converted_payment')
-					? " AND (cv.is_deleted = 0 OR cv.is_deleted IS NULL)" : "";
+			$unions[] = "
+				SELECT
+					DATE(cv.added_date) AS entry_date,
+					CONCAT('Converted → ', UPPER(LEFT(cv.converted_to, 1)), SUBSTRING(cv.converted_to, 2)) AS party_name,
+					'convert_out' AS source,
+					'out' AS direction,
+					CASE WHEN cv.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+					CAST(cv.amount AS DECIMAL(16,5)) AS amount,
+					IFNULL(cv.narration, '') AS remark,
+					IFNULL(cv.added_by_name, '') AS added_by_name,
+					'converted_payment' AS source_table,
+					cv.id AS source_id,
+					0 AS can_edit
+				FROM converted_payment cv
+				WHERE LOWER(cv.method_from) = 'cash'
+					AND cv.company_id = '{$comp}'
+					AND cv.is_deleted = 0
+			";
 
-				$unions[] = "
-					SELECT
-						DATE(cv.added_date) AS entry_date,
-						CONCAT('Converted → ', UPPER(LEFT(cv.converted_to, 1)), SUBSTRING(cv.converted_to, 2)) AS party_name,
-						'convert_out' AS source,
-						'out' AS direction,
-						CASE WHEN cv.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-						CAST(cv.amount AS DECIMAL(16,5)) AS amount,
-						IFNULL(cv.narration, '') AS remark,
-						IFNULL(cv.added_by_name, '') AS added_by_name,
-						'converted_payment' AS source_table,
-						cv.id AS source_id,
-						0 AS can_edit
-					FROM converted_payment cv
-					WHERE LOWER(cv.method_from) = 'cash'
-						AND cv.company_id = '{$comp}'
-						{$c_del}
-				";
-
-				$unions[] = "
-					SELECT
-						DATE(cv.added_date) AS entry_date,
-						CONCAT('Converted ← ', UPPER(LEFT(cv.converted_from, 1)), SUBSTRING(cv.converted_from, 2)) AS party_name,
-						'convert_in' AS source,
-						'in' AS direction,
-						CASE WHEN cv.converted_to = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-						CAST(cv.amount AS DECIMAL(16,5)) AS amount,
-						IFNULL(cv.narration, '') AS remark,
-						IFNULL(cv.added_by_name, '') AS added_by_name,
-						'converted_payment' AS source_table,
-						cv.id AS source_id,
-						0 AS can_edit
-					FROM converted_payment cv
-					WHERE LOWER(cv.method_to) = 'cash'
-						AND cv.company_id = '{$comp}'
-						{$c_del}
-				";
-			}
+			$unions[] = "
+				SELECT
+					DATE(cv.added_date) AS entry_date,
+					CONCAT('Converted ← ', UPPER(LEFT(cv.converted_from, 1)), SUBSTRING(cv.converted_from, 2)) AS party_name,
+					'convert_in' AS source,
+					'in' AS direction,
+					CASE WHEN cv.converted_to = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+					CAST(cv.amount AS DECIMAL(16,5)) AS amount,
+					IFNULL(cv.narration, '') AS remark,
+					IFNULL(cv.added_by_name, '') AS added_by_name,
+					'converted_payment' AS source_table,
+					cv.id AS source_id,
+					0 AS can_edit
+				FROM converted_payment cv
+				WHERE LOWER(cv.method_to) = 'cash'
+					AND cv.company_id = '{$comp}'
+					AND cv.is_deleted = 0
+			";
 
 			$total_count = 0;
 			$total_amount_val = 0.0;
@@ -33315,35 +33134,6 @@ public function get_sales_return_reports()
 		}
 		$company_id = (int)$company_id;
 
-		// Ensure transferred_cash table exists
-		if (!$this->db->table_exists('transferred_cash')) {
-			$this->db->query("CREATE TABLE IF NOT EXISTS `transferred_cash` (
-			  `id` int(11) NOT NULL AUTO_INCREMENT,
-			  `company_id` int(11) NOT NULL,
-			  `company_name` varchar(255) DEFAULT NULL,
-			  `company_to_id` int(11) DEFAULT NULL,
-			  `company_to` varchar(255) DEFAULT NULL,
-			  `converted_from` enum('official','unofficial','') NOT NULL DEFAULT '',
-			  `converted_to` enum('official','unofficial','') NOT NULL DEFAULT '',
-			  `method_from` enum('cash','cheque','') NOT NULL DEFAULT '',
-			  `method_to` enum('cash','cheque','') NOT NULL DEFAULT '',
-			  `company_bank_from` int(11) DEFAULT NULL,
-			  `company_bank_account_from` varchar(255) DEFAULT NULL,
-			  `company_bank_to` int(11) DEFAULT NULL,
-			  `company_bank_account_to` varchar(255) DEFAULT NULL,
-			  `amount` decimal(16,5) NOT NULL DEFAULT 0.00000,
-			  `remark` text DEFAULT NULL,
-			  `is_approved` tinyint(1) NOT NULL DEFAULT 0,
-			  `approved_by` int(11) DEFAULT NULL,
-			  `approved_by_name` varchar(255) DEFAULT NULL,
-			  `approval_date` datetime DEFAULT NULL,
-			  `added_by` int(11) DEFAULT NULL,
-			  `added_by_name` text DEFAULT NULL,
-			  `added_date` datetime DEFAULT NULL,
-			  PRIMARY KEY (`id`)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
-		}
-
 		$empty_type = [
 			'customer_payments' => 0.0,
 			'customer_returns'  => 0.0,
@@ -33370,38 +33160,35 @@ public function get_sales_return_reports()
 		];
 
 		// Customer cash receipts (official / unofficial)
-		if ($this->db->table_exists('customer_payment')) {
-			$del_filter  = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
-			$comp_filter = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$comp_filter = !empty($company_id) ? " AND company_id = '$company_id'" : "";
 
-			$sql = "SELECT 
-						payment_type,
-						type,
-						payment_mode,
-						IFNULL(SUM(amount), 0) as total_amt
-					FROM customer_payment
-					WHERE LOWER(payment_method) = 'cash' {$comp_filter} {$del_filter}
-					GROUP BY payment_type, type, payment_mode";
-			$q = $this->db->query($sql);
-			if (!empty($q)) {
-				foreach ($q->result_array() as $row) {
-					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
-					$type  = $row['type'];
-					$mode  = $row['payment_mode'];
-					$amt   = (float)$row['total_amt'];
+		$sql = "SELECT 
+					payment_type,
+					type,
+					payment_mode,
+					IFNULL(SUM(amount), 0) as total_amt
+				FROM customer_payment
+				WHERE LOWER(payment_method) = 'cash' AND is_deleted = 0 {$comp_filter}
+				GROUP BY payment_type, type, payment_mode";
+		$q = $this->db->query($sql);
+		if (!empty($q)) {
+			foreach ($q->result_array() as $row) {
+				$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+				$type  = $row['type'];
+				$mode  = $row['payment_mode'];
+				$amt   = (float)$row['total_amt'];
 
-					if ($type == 'manual') {
-						if ($mode == 'return') {
-							$summary[$ptype]['manual_returns'] += $amt; // Transfer out
-						} else {
-							$summary[$ptype]['manual_payments'] += $amt; // Receive
-						}
+				if ($type == 'manual') {
+					if ($mode == 'return') {
+						$summary[$ptype]['manual_returns'] += $amt; // Transfer out
 					} else {
-						if ($mode == 'return') {
-							$summary[$ptype]['customer_returns'] += $amt;
-						} else {
-							$summary[$ptype]['customer_payments'] += $amt;
-						}
+						$summary[$ptype]['manual_payments'] += $amt; // Receive
+					}
+				} else {
+					if ($mode == 'return') {
+						$summary[$ptype]['customer_returns'] += $amt;
+					} else {
+						$summary[$ptype]['customer_payments'] += $amt;
 					}
 				}
 			}
@@ -33415,37 +33202,33 @@ public function get_sales_return_reports()
 		}
 
 		// Cash outflows: supplier payments (all types) + vendor payments, payment_method = cash
-		if ($this->db->table_exists('payments')) {
-			$p_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
-			$p_sql = "SELECT payment_type, IFNULL(SUM(amount_rs), 0) as amt
-				FROM payments
-				WHERE is_delete = 0
-				AND LOWER(payment_method) = 'cash'
-				{$p_comp}
-				GROUP BY payment_type";
-			$p_q = $this->db->query($p_sql);
-			if (!empty($p_q)) {
-				foreach ($p_q->result_array() as $row) {
-					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
-					$summary[$ptype]['expense'] += (float)($row['amt'] ?? 0);
-				}
+		$p_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$p_sql = "SELECT payment_type, IFNULL(SUM(amount_rs), 0) as amt
+			FROM payments
+			WHERE is_delete = 0
+			AND LOWER(payment_method) = 'cash'
+			{$p_comp}
+			GROUP BY payment_type";
+		$p_q = $this->db->query($p_sql);
+		if (!empty($p_q)) {
+			foreach ($p_q->result_array() as $row) {
+				$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['expense'] += (float)($row['amt'] ?? 0);
 			}
 		}
 
-		if ($this->db->table_exists('vendor_payments')) {
-			$v_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
-			$v_sql = "SELECT payment_type, IFNULL(SUM(inr), 0) as amt
-				FROM vendor_payments
-				WHERE is_delete = 0
-				AND LOWER(payment_method) = 'cash'
-				{$v_comp}
-				GROUP BY payment_type";
-			$v_q = $this->db->query($v_sql);
-			if (!empty($v_q)) {
-				foreach ($v_q->result_array() as $row) {
-					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
-					$summary[$ptype]['expense'] += (float)($row['amt'] ?? 0);
-				}
+		$v_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$v_sql = "SELECT payment_type, IFNULL(SUM(inr), 0) as amt
+			FROM vendor_payments
+			WHERE is_delete = 0
+			AND LOWER(payment_method) = 'cash'
+			{$v_comp}
+			GROUP BY payment_type";
+		$v_q = $this->db->query($v_sql);
+		if (!empty($v_q)) {
+			foreach ($v_q->result_array() as $row) {
+				$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['expense'] += (float)($row['amt'] ?? 0);
 			}
 		}
 
@@ -33453,83 +33236,64 @@ public function get_sales_return_reports()
 		$summary['total_expense']  = $summary['official']['expense'] + $summary['unofficial']['expense'];
 
 		// Transferred out (sender cash) + approved cash received in (destination)
-		if ($this->db->table_exists('transferred_cash')) {
-			$t_del  = $this->db->field_exists('is_deleted', 'transferred_cash') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
-			$type_col = $this->db->field_exists('converted_from', 'transferred_cash') ? 'converted_from' : ($this->db->field_exists('payment_type', 'transferred_cash') ? 'payment_type' : '');
-
-			// Outgoing from this company (cash book method_from = cash)
-			$t_comp_out = !empty($company_id) ? " AND company_id = '$company_id'" : "";
-			$method_from_filter = $this->db->field_exists('method_from', 'transferred_cash')
-				? " AND (LOWER(method_from) = 'cash' OR method_from = '' OR method_from IS NULL)"
-				: "";
-			if ($type_col !== '') {
-				$t_sql = "SELECT {$type_col} as ptype, IFNULL(SUM(amount), 0) as amt
-					FROM transferred_cash
-					WHERE 1=1 {$t_comp_out} {$t_del} {$method_from_filter}
-					GROUP BY {$type_col}";
-				$t_q = $this->db->query($t_sql);
-				if (!empty($t_q)) {
-					foreach ($t_q->result_array() as $row) {
-						$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
-						$summary[$ptype]['transferred'] += (float)($row['amt'] ?? 0);
-					}
-				}
-			} else {
-				$t_res = $this->db->query("SELECT IFNULL(SUM(amount), 0) as amt FROM transferred_cash WHERE 1=1 {$t_comp_out} {$t_del}")->row_array();
-				$summary['official']['transferred'] = (float)($t_res['amt'] ?? 0);
+		$t_comp_out = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$t_sql = "SELECT converted_from as ptype, IFNULL(SUM(amount), 0) as amt
+			FROM transferred_cash
+			WHERE is_deleted = 0
+			AND LOWER(method_from) = 'cash'
+			{$t_comp_out}
+			GROUP BY converted_from";
+		$t_q = $this->db->query($t_sql);
+		if (!empty($t_q)) {
+			foreach ($t_q->result_array() as $row) {
+				$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['transferred'] += (float)($row['amt'] ?? 0);
 			}
-
-			// Incoming approved to this company received as cash → increases cash in hand
-			if ($this->db->field_exists('company_to_id', 'transferred_cash') && $this->db->field_exists('method_to', 'transferred_cash')) {
-				$t_comp_in = !empty($company_id) ? " AND company_to_id = '$company_id'" : "";
-				$ptype_expr = $this->db->field_exists('converted_to', 'transferred_cash')
-					? "CASE WHEN converted_to IN ('official','unofficial') THEN converted_to ELSE converted_from END"
-					: ($type_col !== '' ? $type_col : "'official'");
-				$in_sql = "SELECT {$ptype_expr} as ptype, IFNULL(SUM(amount), 0) as amt
-					FROM transferred_cash
-					WHERE is_approved = 1
-					AND LOWER(method_to) = 'cash'
-					{$t_comp_in} {$t_del}
-					GROUP BY ptype";
-				$in_q = $this->db->query($in_sql);
-				if (!empty($in_q)) {
-					foreach ($in_q->result_array() as $row) {
-						$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
-						$summary[$ptype]['received'] += (float)($row['amt'] ?? 0);
-					}
-				}
-			}
-
-			$summary['total_received'] = $summary['official']['received'] + $summary['unofficial']['received'];
 		}
 
-		// Converted payment cash impact: cash leaving from_type / cash entering to_type
-		if ($this->db->table_exists('converted_payment')) {
-			$c_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
-			$c_del  = $this->db->field_exists('is_deleted', 'converted_payment') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
-
-			$out_sql = "SELECT converted_from as ptype, IFNULL(SUM(amount), 0) as amt
-				FROM converted_payment
-				WHERE LOWER(method_from) = 'cash' {$c_comp} {$c_del}
-				GROUP BY converted_from";
-			$out_q = $this->db->query($out_sql);
-			if (!empty($out_q)) {
-				foreach ($out_q->result_array() as $row) {
-					$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
-					$summary[$ptype]['converted_out'] += (float)($row['amt'] ?? 0);
-				}
+		// Incoming approved to this company received as cash → increases cash in hand
+		$t_comp_in = !empty($company_id) ? " AND company_to_id = '$company_id'" : "";
+		$in_sql = "SELECT CASE WHEN converted_to IN ('official','unofficial') THEN converted_to ELSE converted_from END as ptype, IFNULL(SUM(amount), 0) as amt
+			FROM transferred_cash
+			WHERE is_approved = 1
+			AND LOWER(method_to) = 'cash'
+			AND is_deleted = 0
+			{$t_comp_in}
+			GROUP BY ptype";
+		$in_q = $this->db->query($in_sql);
+		if (!empty($in_q)) {
+			foreach ($in_q->result_array() as $row) {
+				$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['received'] += (float)($row['amt'] ?? 0);
 			}
+		}
 
-			$in_sql = "SELECT converted_to as ptype, IFNULL(SUM(amount), 0) as amt
-				FROM converted_payment
-				WHERE LOWER(method_to) = 'cash' {$c_comp} {$c_del}
-				GROUP BY converted_to";
-			$in_q = $this->db->query($in_sql);
-			if (!empty($in_q)) {
-				foreach ($in_q->result_array() as $row) {
-					$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
-					$summary[$ptype]['converted_in'] += (float)($row['amt'] ?? 0);
-				}
+		$summary['total_received'] = $summary['official']['received'] + $summary['unofficial']['received'];
+
+		// Converted payment cash impact: cash leaving from_type / cash entering to_type
+		$c_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+
+		$out_sql = "SELECT converted_from as ptype, IFNULL(SUM(amount), 0) as amt
+			FROM converted_payment
+			WHERE LOWER(method_from) = 'cash' AND is_deleted = 0 {$c_comp}
+			GROUP BY converted_from";
+		$out_q = $this->db->query($out_sql);
+		if (!empty($out_q)) {
+			foreach ($out_q->result_array() as $row) {
+				$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['converted_out'] += (float)($row['amt'] ?? 0);
+			}
+		}
+
+		$in_sql = "SELECT converted_to as ptype, IFNULL(SUM(amount), 0) as amt
+			FROM converted_payment
+			WHERE LOWER(method_to) = 'cash' AND is_deleted = 0 {$c_comp}
+			GROUP BY converted_to";
+		$in_q = $this->db->query($in_sql);
+		if (!empty($in_q)) {
+			foreach ($in_q->result_array() as $row) {
+				$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['converted_in'] += (float)($row['amt'] ?? 0);
 			}
 		}
 
@@ -33583,6 +33347,7 @@ public function get_sales_return_reports()
 			'out'               => 0.0,
 			'supplier'          => 0.0,
 			'vendor'            => 0.0,
+			'transferred'       => 0.0,
 			'bank_in_hand'      => 0.0,
 		];
 
@@ -33594,78 +33359,100 @@ public function get_sales_return_reports()
 			'bank_in_hand'   => 0.0,
 		];
 
-		if ($this->db->table_exists('customer_payment')) {
-			$del_filter  = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (is_deleted = 0 OR is_deleted IS NULL)" : "";
-			$comp_filter = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$comp_filter = !empty($company_id) ? " AND company_id = '$company_id'" : "";
 
-			$sql = "SELECT payment_type, type, payment_mode, IFNULL(SUM(amount), 0) as total_amt
-				FROM customer_payment
-				WHERE LOWER(payment_method) = 'cheque' {$comp_filter} {$del_filter}
-				GROUP BY payment_type, type, payment_mode";
-			$q = $this->db->query($sql);
-			if (!empty($q)) {
-				foreach ($q->result_array() as $row) {
-					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
-					$amt   = (float)$row['total_amt'];
-					if (($row['type'] ?? '') == 'manual') {
-						if (($row['payment_mode'] ?? '') == 'return') {
-							$summary[$ptype]['manual_returns'] += $amt;
-						} else {
-							$summary[$ptype]['manual_payments'] += $amt;
-						}
+		$sql = "SELECT payment_type, type, payment_mode, IFNULL(SUM(amount), 0) as total_amt
+			FROM customer_payment
+			WHERE LOWER(payment_method) = 'cheque' AND is_deleted = 0 {$comp_filter}
+			GROUP BY payment_type, type, payment_mode";
+		$q = $this->db->query($sql);
+		if (!empty($q)) {
+			foreach ($q->result_array() as $row) {
+				$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+				$amt   = (float)$row['total_amt'];
+				if (($row['type'] ?? '') == 'manual') {
+					if (($row['payment_mode'] ?? '') == 'return') {
+						$summary[$ptype]['manual_returns'] += $amt;
 					} else {
-						if (($row['payment_mode'] ?? '') == 'return') {
-							$summary[$ptype]['customer_returns'] += $amt;
-						} else {
-							$summary[$ptype]['customer_payments'] += $amt;
-						}
+						$summary[$ptype]['manual_payments'] += $amt;
+					}
+				} else {
+					if (($row['payment_mode'] ?? '') == 'return') {
+						$summary[$ptype]['customer_returns'] += $amt;
+					} else {
+						$summary[$ptype]['customer_payments'] += $amt;
 					}
 				}
 			}
 		}
 
-		if ($this->db->table_exists('payments')) {
-			$p_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
-			$p_sql = "SELECT payment_type, IFNULL(SUM(amount_rs), 0) as amt
-				FROM payments
-				WHERE is_delete = 0
-				AND type = 'payment'
-				AND LOWER(payment_method) = 'cheque'
-				{$p_comp}
-				GROUP BY payment_type";
-			$p_q = $this->db->query($p_sql);
-			if (!empty($p_q)) {
-				foreach ($p_q->result_array() as $row) {
-					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
-					$summary[$ptype]['supplier'] += (float)($row['amt'] ?? 0);
-				}
+		$p_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$p_sql = "SELECT payment_type, IFNULL(SUM(amount_rs), 0) as amt
+			FROM payments
+			WHERE is_delete = 0
+			AND type = 'payment'
+			AND LOWER(payment_method) = 'cheque'
+			{$p_comp}
+			GROUP BY payment_type";
+		$p_q = $this->db->query($p_sql);
+		if (!empty($p_q)) {
+			foreach ($p_q->result_array() as $row) {
+				$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['supplier'] += (float)($row['amt'] ?? 0);
 			}
 		}
 
-		if ($this->db->table_exists('vendor_payments') && $this->db->field_exists('payment_method', 'vendor_payments')) {
-			$v_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
-			$v_sql = "SELECT payment_type, IFNULL(SUM(inr), 0) as amt
-				FROM vendor_payments
-				WHERE is_delete = 0
-				AND LOWER(payment_method) = 'cheque'
-				{$v_comp}
-				GROUP BY payment_type";
-			$v_q = $this->db->query($v_sql);
-			if (!empty($v_q)) {
-				foreach ($v_q->result_array() as $row) {
-					$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
-					$summary[$ptype]['vendor'] += (float)($row['amt'] ?? 0);
-				}
+		$v_comp = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$v_sql = "SELECT payment_type, IFNULL(SUM(inr), 0) as amt
+			FROM vendor_payments
+			WHERE is_delete = 0
+			AND LOWER(payment_method) = 'cheque'
+			{$v_comp}
+			GROUP BY payment_type";
+		$v_q = $this->db->query($v_sql);
+		if (!empty($v_q)) {
+			foreach ($v_q->result_array() as $row) {
+				$ptype = ($row['payment_type'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['vendor'] += (float)($row['amt'] ?? 0);
+			}
+		}
+
+		$transfer_in_by_type = ['official' => 0.0, 'unofficial' => 0.0];
+
+		$t_comp_out = !empty($company_id) ? " AND company_id = '$company_id'" : "";
+		$t_q = $this->db->query("SELECT converted_from as ptype, IFNULL(SUM(amount), 0) as amt
+			FROM transferred_cash
+			WHERE LOWER(method_from) = 'cheque' AND is_deleted = 0 {$t_comp_out}
+			GROUP BY converted_from");
+		if (!empty($t_q)) {
+			foreach ($t_q->result_array() as $row) {
+				$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
+				$summary[$ptype]['transferred'] += (float)($row['amt'] ?? 0);
+			}
+		}
+
+		$t_comp_in = !empty($company_id) ? " AND company_to_id = '$company_id'" : "";
+		$ptype_expr = "CASE WHEN converted_to IN ('official','unofficial') THEN converted_to ELSE converted_from END";
+		$in_q = $this->db->query("SELECT {$ptype_expr} as ptype, IFNULL(SUM(amount), 0) as amt
+			FROM transferred_cash
+			WHERE is_approved = 1 AND LOWER(method_to) = 'cheque' AND is_deleted = 0 {$t_comp_in}
+			GROUP BY ptype");
+		if (!empty($in_q)) {
+			foreach ($in_q->result_array() as $row) {
+				$ptype = ($row['ptype'] == 'unofficial') ? 'unofficial' : 'official';
+				$transfer_in_by_type[$ptype] += (float)($row['amt'] ?? 0);
 			}
 		}
 
 		foreach (['official', 'unofficial'] as $ptype) {
 			$summary[$ptype]['received'] = $summary[$ptype]['customer_payments']
-				+ $summary[$ptype]['manual_payments'];
+				+ $summary[$ptype]['manual_payments']
+				+ $transfer_in_by_type[$ptype];
 			$summary[$ptype]['out'] = $summary[$ptype]['customer_returns']
 				+ $summary[$ptype]['manual_returns']
 				+ $summary[$ptype]['supplier']
-				+ $summary[$ptype]['vendor'];
+				+ $summary[$ptype]['vendor']
+				+ $summary[$ptype]['transferred'];
 			$summary[$ptype]['bank_in_hand'] = $summary[$ptype]['received'] - $summary[$ptype]['out'];
 		}
 
@@ -33676,8 +33463,16 @@ public function get_sales_return_reports()
 		return $summary;
 	}
 
+	public function get_bank_in_hand_by_type($payment_type, $company_id = null)
+	{
+		$payment_type = ($payment_type === 'unofficial') ? 'unofficial' : 'official';
+		$summary = $this->get_bank_in_hand_summary($company_id);
+		return (float)($summary[$payment_type]['bank_in_hand'] ?? 0);
+	}
+
 	public function get_bank_book()
 	{
+		$tab = $_REQUEST['tab'] ?? 'bank';
 		$params['draw'] = $_REQUEST['draw'] ?? 1;
 		$start  = $_REQUEST['start'] ?? 0;
 		$length = $_REQUEST['length'] ?? 10;
@@ -33693,17 +33488,106 @@ public function get_sales_return_reports()
 		$total_out_val = 0.0;
 		$net_amount_val = 0.0;
 
+		if ($tab == 'transferred') {
+			$where_conditions = "WHERE 1=1 AND company_id = '{$comp}' AND is_deleted = 0 AND LOWER(method_from) = 'cheque'";
+			if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+				$keyword = $filter_data['keywords'];
+				$where_conditions .= " AND (remark LIKE '%{$keyword}%' OR added_by_name LIKE '%{$keyword}%' OR amount LIKE '%{$keyword}%' OR company_to LIKE '%{$keyword}%' OR converted_from LIKE '%{$keyword}%')";
+			}
+			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+				$date_range = explode(' - ', $_REQUEST['date_range']);
+				$from = date('Y-m-d', strtotime($date_range['0']));
+				$to = date('Y-m-d', strtotime($date_range['1']));
+				$where_conditions .= " AND (DATE(added_date) >= '{$from}' AND DATE(added_date) <= '{$to}')";
+			}
+
+			$total_count = $this->db->query("SELECT id FROM transferred_cash {$where_conditions}")->num_rows();
+			$amount_query = $this->db->query("SELECT IFNULL(SUM(amount), 0) as total_amount FROM transferred_cash {$where_conditions}")->row_array();
+			$total_amount_val = (float)($amount_query['total_amount'] ?? 0);
+			$query = $this->db->query("SELECT * FROM transferred_cash {$where_conditions} ORDER BY id DESC LIMIT " . (int)$start . ", " . (int)$length);
+
+			if (!empty($query)) {
+				$sr_no = $start;
+				foreach ($query->result_array() as $item) {
+					$id = $item['id'];
+					$is_approved = !empty($item['is_approved']) && $item['is_approved'] == 1;
+					$view_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_bank_view/' . $id) . "', 'View Bank Transfer')";
+					$menu_items = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+					if (!$is_approved) {
+						$edit_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_bank_edit/' . $id) . "', 'Edit Bank Transfer')";
+						$delete_url = "confirm_modal('" . base_url('inventory/bank_book/delete_transfer/' . $id) . "', 'Are you sure want to delete!')";
+						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+					}
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $menu_items . '</div>
+					</div>';
+
+					$type_val = $item['converted_from'] ?? '';
+					$ptype = ($type_val === 'unofficial') ? 'Unofficial' : 'Official';
+					$ptype_badge = ($ptype === 'Unofficial')
+						? '<span class="badge bg-light-secondary text-secondary">' . $ptype . '</span>'
+						: '<span class="badge bg-light-primary text-primary">' . $ptype . '</span>';
+					$status_badge = $is_approved
+						? '<span class="badge bg-light-success text-success">Approved</span>'
+						: '<span class="badge bg-light-warning text-warning">Pending</span>';
+					$bank_label = !empty($item['company_bank_account_from']) ? htmlspecialchars($item['company_bank_account_from']) : '-';
+					if (!empty($item['company_bank_from'])) {
+						$ba = $this->db->get_where('bank_accounts', ['id' => $item['company_bank_from']])->row_array();
+						if (!empty($ba)) {
+							$bank_label = htmlspecialchars(($ba['bank_name'] ?? 'Bank') . ' (' . ($item['company_bank_account_from'] ?: ($ba['account_no'] ?? '-')) . ')');
+						}
+					}
+
+					$data[] = [
+						"sr_no"         => ++$sr_no,
+						"date"          => $item['added_date'] ? date('d M, Y', strtotime($item['added_date'])) : '-',
+						"supplier_name" => !empty($item['company_to']) ? htmlspecialchars($item['company_to']) : '-',
+						"source"        => '<span class="badge bg-light-primary text-primary">Transfer Out</span>',
+						"direction"     => '<span class="badge bg-light-danger text-danger">Out</span>',
+						"payment_type"  => $ptype_badge,
+						"bank_account"  => $bank_label,
+						"amount"        => '₹' . number_format((float)$item['amount'], 2),
+						"remark"        => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
+						"status"        => $status_badge,
+						"added_by_name" => $item['added_by_name'] ?: '-',
+						"actions"       => $action
+					];
+				}
+			}
+
+			echo json_encode([
+				"draw"            => intval($params['draw']),
+				"recordsTotal"    => $total_count,
+				"recordsFiltered" => $total_count,
+				"total_amount"    => '₹ ' . number_format($total_amount_val, 2),
+				"total_in"        => '₹ 0.00',
+				"total_out"       => '₹ ' . number_format($total_amount_val, 2),
+				"net_amount"      => '- ₹ ' . number_format($total_amount_val, 2),
+				"data"            => $data
+			]);
+			return;
+		}
+
 		$unions = [];
 
 		// customer_payment: customer + manual; payment=In, return=Out (cheque only)
-		if ($this->db->table_exists('customer_payment')) {
-			$cp_del = $this->db->field_exists('is_deleted', 'customer_payment')
-				? " AND (cp.is_deleted = 0 OR cp.is_deleted IS NULL)" : "";
-			$cp_bank_join = "";
-			$cp_bank_expr = "COALESCE(NULLIF(TRIM(cp.company_bank_account), ''), '-')";
-			if ($this->db->field_exists('company_bank', 'customer_payment') && $this->db->table_exists('bank_accounts')) {
-				$cp_bank_join = "LEFT JOIN bank_accounts cba ON cba.id = cp.company_bank";
-				$cp_bank_expr = "CASE
+		$unions[] = "
+			SELECT
+				DATE(cp.date) AS entry_date,
+				COALESCE(NULLIF(TRIM(cp.customer_name), ''), NULLIF(TRIM(cp.narration), ''), '-') AS party_name,
+				CASE
+					WHEN cp.type = 'manual' AND cp.payment_mode = 'return' THEN 'manual_transfer'
+					WHEN cp.type = 'manual' THEN 'manual_receive'
+					WHEN cp.payment_mode = 'return' THEN 'customer_return'
+					ELSE 'customer'
+				END AS source,
+				CASE WHEN cp.payment_mode = 'return' THEN 'out' ELSE 'in' END AS direction,
+				CASE WHEN cp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+				CAST(cp.amount AS DECIMAL(16,5)) AS amount,
+				CASE
 					WHEN cba.id IS NOT NULL THEN CONCAT(
 						IFNULL(cba.bank_name, 'Bank'),
 						' (',
@@ -33711,41 +33595,28 @@ public function get_sales_return_reports()
 						')'
 					)
 					ELSE COALESCE(NULLIF(TRIM(cp.company_bank_account), ''), '-')
-				END";
-			}
-			$unions[] = "
-				SELECT
-					DATE(cp.date) AS entry_date,
-					COALESCE(NULLIF(TRIM(cp.customer_name), ''), NULLIF(TRIM(cp.narration), ''), '-') AS party_name,
-					CASE
-						WHEN cp.type = 'manual' AND cp.payment_mode = 'return' THEN 'manual_transfer'
-						WHEN cp.type = 'manual' THEN 'manual_receive'
-						WHEN cp.payment_mode = 'return' THEN 'customer_return'
-						ELSE 'customer'
-					END AS source,
-					CASE WHEN cp.payment_mode = 'return' THEN 'out' ELSE 'in' END AS direction,
-					CASE WHEN cp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-					CAST(cp.amount AS DECIMAL(16,5)) AS amount,
-					{$cp_bank_expr} AS bank_account,
-					IFNULL(cp.narration, '') AS remark,
-					IFNULL(cp.added_by_name, '') AS added_by_name,
-					'customer_payment' AS source_table,
-					cp.id AS source_id
-				FROM customer_payment cp
-				{$cp_bank_join}
-				WHERE LOWER(cp.payment_method) = 'cheque'
-					AND cp.company_id = '{$comp}'
-					{$cp_del}
-			";
-		}
+				END AS bank_account,
+				IFNULL(cp.narration, '') AS remark,
+				IFNULL(cp.added_by_name, '') AS added_by_name,
+				'customer_payment' AS source_table,
+				cp.id AS source_id
+			FROM customer_payment cp
+			LEFT JOIN bank_accounts cba ON cba.id = cp.company_bank
+			WHERE LOWER(cp.payment_method) = 'cheque'
+				AND cp.company_id = '{$comp}'
+				AND cp.is_deleted = 0
+		";
 
 		// supplier payments only (exclude expense)
-		if ($this->db->table_exists('payments')) {
-			$p_bank_join = "LEFT JOIN sys_users u ON p.added_by = u.id";
-			$p_bank_expr = "COALESCE(NULLIF(TRIM(p.company_bank_account), ''), '-')";
-			if ($this->db->field_exists('company_bank', 'payments') && $this->db->table_exists('bank_accounts')) {
-				$p_bank_join .= " LEFT JOIN bank_accounts pba ON pba.id = p.company_bank";
-				$p_bank_expr = "CASE
+		$unions[] = "
+			SELECT
+				DATE(p.payment_date) AS entry_date,
+				COALESCE(NULLIF(TRIM(p.supplier_name), ''), '-') AS party_name,
+				'supplier' AS source,
+				'out' AS direction,
+				CASE WHEN p.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+				CAST(p.amount_rs AS DECIMAL(16,5)) AS amount,
+				CASE
 					WHEN pba.id IS NOT NULL THEN CONCAT(
 						IFNULL(pba.bank_name, 'Bank'),
 						' (',
@@ -33753,72 +33624,93 @@ public function get_sales_return_reports()
 						')'
 					)
 					ELSE COALESCE(NULLIF(TRIM(p.company_bank_account), ''), '-')
-				END";
-			}
-			$unions[] = "
-				SELECT
-					DATE(p.payment_date) AS entry_date,
-					COALESCE(NULLIF(TRIM(p.supplier_name), ''), '-') AS party_name,
-					'supplier' AS source,
-					'out' AS direction,
-					CASE WHEN p.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-					CAST(p.amount_rs AS DECIMAL(16,5)) AS amount,
-					{$p_bank_expr} AS bank_account,
-					IFNULL(p.narration, '') AS remark,
-					TRIM(CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, ''))) AS added_by_name,
-					'payments' AS source_table,
-					p.id AS source_id
-				FROM payments p
-				{$p_bank_join}
-				WHERE p.is_delete = 0
-					AND p.type = 'payment'
-					AND LOWER(p.payment_method) = 'cheque'
-					AND p.company_id = '{$comp}'
-			";
-		}
+				END AS bank_account,
+				IFNULL(p.narration, '') AS remark,
+				TRIM(CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, ''))) AS added_by_name,
+				'payments' AS source_table,
+				p.id AS source_id
+			FROM payments p
+			LEFT JOIN sys_users u ON p.added_by = u.id
+			LEFT JOIN bank_accounts pba ON pba.id = p.company_bank
+			WHERE p.is_delete = 0
+				AND p.type = 'payment'
+				AND LOWER(p.payment_method) = 'cheque'
+				AND p.company_id = '{$comp}'
+		";
 
 		// vendor_payments
-		if ($this->db->table_exists('vendor_payments') && $this->db->field_exists('payment_method', 'vendor_payments')) {
-			$vp_bank_expr = "'-'";
-			$vp_join = "LEFT JOIN sys_users vu ON vp.added_by = vu.id";
-			if ($this->db->field_exists('bank_account', 'vendor_payments') && $this->db->table_exists('bank_accounts')) {
-				$vp_join .= " LEFT JOIN bank_accounts vba ON vba.id = vp.bank_account";
-				$name_fallback = $this->db->field_exists('bank_account_name', 'vendor_payments')
-					? "NULLIF(TRIM(vp.bank_account_name), '')"
-					: "NULL";
-				$vp_bank_expr = "CASE
+		$unions[] = "
+			SELECT
+				DATE(vp.payment_date) AS entry_date,
+				COALESCE(NULLIF(TRIM(vp.vendor_name), ''), '-') AS party_name,
+				'vendor' AS source,
+				'out' AS direction,
+				CASE WHEN vp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+				CAST(vp.inr AS DECIMAL(16,5)) AS amount,
+				CASE
 					WHEN vba.id IS NOT NULL THEN CONCAT(
 						IFNULL(vba.bank_name, 'Bank'),
 						' (',
-						COALESCE(NULLIF(TRIM(vba.account_no), ''), {$name_fallback}, '-'),
+						COALESCE(NULLIF(TRIM(vba.account_no), ''), NULLIF(TRIM(vp.bank_account_name), ''), '-'),
 						')'
 					)
-					ELSE COALESCE({$name_fallback}, '-')
-				END";
-			} elseif ($this->db->field_exists('bank_account_name', 'vendor_payments')) {
-				$vp_bank_expr = "COALESCE(NULLIF(TRIM(vp.bank_account_name), ''), '-')";
-			}
+					ELSE COALESCE(NULLIF(TRIM(vp.bank_account_name), ''), '-')
+				END AS bank_account,
+				IFNULL(vp.narration, '') AS remark,
+				TRIM(CONCAT(IFNULL(vu.first_name, ''), ' ', IFNULL(vu.last_name, ''))) AS added_by_name,
+				'vendor_payments' AS source_table,
+				vp.id AS source_id
+			FROM vendor_payments vp
+			LEFT JOIN sys_users vu ON vp.added_by = vu.id
+			LEFT JOIN bank_accounts vba ON vba.id = vp.bank_account
+			WHERE vp.is_delete = 0
+				AND LOWER(vp.payment_method) = 'cheque'
+				AND vp.company_id = '{$comp}'
+		";
 
-			$unions[] = "
-				SELECT
-					DATE(vp.payment_date) AS entry_date,
-					COALESCE(NULLIF(TRIM(vp.vendor_name), ''), '-') AS party_name,
-					'vendor' AS source,
-					'out' AS direction,
-					CASE WHEN vp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
-					CAST(vp.inr AS DECIMAL(16,5)) AS amount,
-					{$vp_bank_expr} AS bank_account,
-					IFNULL(vp.narration, '') AS remark,
-					TRIM(CONCAT(IFNULL(vu.first_name, ''), ' ', IFNULL(vu.last_name, ''))) AS added_by_name,
-					'vendor_payments' AS source_table,
-					vp.id AS source_id
-				FROM vendor_payments vp
-				{$vp_join}
-				WHERE vp.is_delete = 0
-					AND LOWER(vp.payment_method) = 'cheque'
-					AND vp.company_id = '{$comp}'
-			";
-		}
+		// Bank transfers out / approved in
+		$unions[] = "
+			SELECT
+				DATE(tc.added_date) AS entry_date,
+				COALESCE(NULLIF(TRIM(tc.company_to), ''), '-') AS party_name,
+				'transfer_out' AS source,
+				'out' AS direction,
+				CASE WHEN tc.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
+				CAST(tc.amount AS DECIMAL(16,5)) AS amount,
+				COALESCE(NULLIF(TRIM(tc.company_bank_account_from), ''), '-') AS bank_account,
+				IFNULL(tc.remark, '') AS remark,
+				IFNULL(tc.added_by_name, '') AS added_by_name,
+				'transferred_cash' AS source_table,
+				tc.id AS source_id
+			FROM transferred_cash tc
+			WHERE tc.company_id = '{$comp}'
+				AND LOWER(tc.method_from) = 'cheque'
+				AND tc.is_deleted = 0
+		";
+
+		$unions[] = "
+			SELECT
+				DATE(COALESCE(tc.approval_date, tc.added_date)) AS entry_date,
+				COALESCE(NULLIF(TRIM(tc.company_name), ''), '-') AS party_name,
+				'transfer_in' AS source,
+				'in' AS direction,
+				CASE
+					WHEN tc.converted_to IN ('official','unofficial') THEN tc.converted_to
+					WHEN tc.converted_from = 'unofficial' THEN 'unofficial'
+					ELSE 'official'
+				END AS payment_type,
+				CAST(tc.amount AS DECIMAL(16,5)) AS amount,
+				COALESCE(NULLIF(TRIM(tc.company_bank_account_to), ''), '-') AS bank_account,
+				IFNULL(tc.remark, '') AS remark,
+				IFNULL(tc.added_by_name, '') AS added_by_name,
+				'transferred_cash' AS source_table,
+				tc.id AS source_id
+			FROM transferred_cash tc
+			WHERE tc.company_to_id = '{$comp}'
+				AND tc.is_approved = 1
+				AND LOWER(tc.method_to) = 'cheque'
+				AND tc.is_deleted = 0
+		";
 
 		if (!empty($unions)) {
 			$union_sql = implode(' UNION ALL ', $unions);
@@ -33877,6 +33769,8 @@ public function get_sales_return_reports()
 				'manual_transfer'  => ['Manual Transfer', 'bg-light-secondary text-secondary'],
 				'supplier'         => ['Supplier', 'bg-light-info text-info'],
 				'vendor'           => ['Vendor', 'bg-light-warning text-warning'],
+				'transfer_out'     => ['Transfer Out', 'bg-light-primary text-primary'],
+				'transfer_in'      => ['Transfer In', 'bg-light-primary text-primary'],
 			];
 
 			if (!empty($query)) {
@@ -33935,36 +33829,8 @@ public function get_sales_return_reports()
 		]);
 	}
 
-	private function ensure_converted_payment_table()
-	{
-		if ($this->db->table_exists('converted_payment')) {
-			return;
-		}
-		$this->db->query("CREATE TABLE IF NOT EXISTS `converted_payment` (
-		  `id` int(11) NOT NULL AUTO_INCREMENT,
-		  `company_id` int(11) NOT NULL,
-		  `amount` decimal(16,2) NOT NULL DEFAULT 0.00,
-		  `converted_from` enum('official','unofficial','') NOT NULL DEFAULT '',
-		  `converted_to` enum('official','unofficial','') NOT NULL DEFAULT '',
-		  `method_from` enum('cash','cheque') NOT NULL DEFAULT 'cash',
-		  `method_to` enum('cash','cheque') NOT NULL DEFAULT 'cash',
-		  `company_bank_from` int(11) DEFAULT NULL,
-		  `company_bank_account_from` varchar(255) DEFAULT NULL,
-		  `company_bank_to` int(11) DEFAULT NULL,
-		  `company_bank_account_to` varchar(255) DEFAULT NULL,
-		  `narration` text DEFAULT NULL,
-		  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
-		  `added_by` int(11) DEFAULT NULL,
-		  `added_by_name` varchar(255) DEFAULT NULL,
-		  `added_date` datetime NOT NULL DEFAULT current_timestamp(),
-		  PRIMARY KEY (`id`)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
-	}
-
 	public function get_convert_payments()
 	{
-		$this->ensure_converted_payment_table();
-
 		$params['draw'] = $_REQUEST['draw'] ?? 1;
 		$start  = $_REQUEST['start'] ?? 0;
 		$length = $_REQUEST['length'] ?? 10;
@@ -34155,8 +34021,6 @@ public function get_sales_return_reports()
 
 	public function add_convert_payment()
 	{
-		$this->ensure_converted_payment_table();
-
 		$resultpost = [
 			'status'  => 200,
 			'message' => 'Payment converted successfully',
@@ -34183,8 +34047,6 @@ public function get_sales_return_reports()
 
 	public function edit_convert_payment($id)
 	{
-		$this->ensure_converted_payment_table();
-
 		$resultpost = [
 			'status'  => 200,
 			'message' => 'Conversion updated successfully',
@@ -34219,8 +34081,6 @@ public function get_sales_return_reports()
 
 	public function delete_convert_payment($id)
 	{
-		$this->ensure_converted_payment_table();
-
 		$resultpost = [
 			'status'  => 200,
 			'message' => 'Conversion deleted successfully',
@@ -34424,18 +34284,24 @@ public function get_sales_return_reports()
 
 	public function add_transfer_cash()
 	{
-		$resultpost = array(
-			"status"  => 200,
-			"message" => "Cash transferred successfully",
-			"url"     => base_url('inventory/cash-book?tab=transferred'),
-		);
-
 		$company_id     = (int) ($this->session->userdata('company_id') ?: 0);
 		$amount         = (float) $this->input->post('amount');
 		$converted_from = clean_and_escape($this->input->post('converted_from') ?: $this->input->post('payment_type'));
 		$company_to_id  = (int) $this->input->post('company_to_id');
 		$remark         = $this->input->post('remark') ?: $this->input->post('narration');
-		$method_from    = 'cash'; // Cash book transfer always from cash
+		$method_from    = clean_and_escape($this->input->post('method_from'));
+		if (!in_array($method_from, ['cash', 'cheque'], true)) {
+			$method_from = 'cash';
+		}
+
+		$is_bank = ($method_from === 'cheque');
+		$resultpost = array(
+			"status"  => 200,
+			"message" => $is_bank ? "Bank amount transferred successfully" : "Cash transferred successfully",
+			"url"     => $is_bank
+				? base_url('inventory/bank-book?tab=transferred')
+				: base_url('inventory/cash-book?tab=transferred'),
+		);
 
 		if ($amount <= 0) {
 			$resultpost['status']  = 400;
@@ -34471,68 +34337,97 @@ public function get_sales_return_reports()
 			return simple_json_output($resultpost);
 		}
 
-		$cash_in_hand = $this->get_cash_in_hand_by_type($converted_from, $company_id);
-		if ($amount > $cash_in_hand) {
-			$resultpost['status']  = 400;
-			$resultpost['message'] = "Amount cannot exceed available " . $converted_from . " cash in hand (₹" . number_format($cash_in_hand, 2) . ")";
-			return simple_json_output($resultpost);
+		$company_bank_from = null;
+		$company_bank_account_from = null;
+		if ($is_bank) {
+			$company_bank_from = (int)$this->input->post('company_bank_from');
+			if ($company_bank_from <= 0) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Please select a bank account.";
+				return simple_json_output($resultpost);
+			}
+			$bank = $this->db->get_where('bank_accounts', [
+				'id' => $company_bank_from,
+				'company_id' => $company_id,
+			])->row_array();
+			if (empty($bank)) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Invalid bank account selected.";
+				return simple_json_output($resultpost);
+			}
+			$company_bank_account_from = $this->input->post('company_bank_account_from') ?: ($bank['account_no'] ?? '');
+
+			$available = $this->get_bank_in_hand_by_type($converted_from, $company_id);
+			if ($amount > $available) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Amount cannot exceed available " . $converted_from . " bank in hand (₹" . number_format($available, 2) . ")";
+				return simple_json_output($resultpost);
+			}
+		} else {
+			$available = $this->get_cash_in_hand_by_type($converted_from, $company_id);
+			if ($amount > $available) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Amount cannot exceed available " . $converted_from . " cash in hand (₹" . number_format($available, 2) . ")";
+				return simple_json_output($resultpost);
+			}
 		}
 
 		$data = array(
-			'company_id'       => $company_id,
-			'company_to_id'    => $company_to_id,
-			'company_to'       => $company_to['name'],
-			'amount'           => $amount,
-			'remark'           => $remark,
-			'is_approved'      => 0,
-			'added_by'         => $this->session->userdata('super_user_id'),
-			'added_by_name'    => $this->session->userdata('super_name'),
-			'added_date'       => date('Y-m-d H:i:s'),
+			'company_id'                  => $company_id,
+			'company_name'                => $company_from['name'] ?? '',
+			'company_to_id'               => $company_to_id,
+			'company_to'                  => $company_to['name'],
+			'converted_from'              => $converted_from,
+			'converted_to'                => '',
+			'method_from'                 => $method_from,
+			'method_to'                   => '',
+			'amount'                      => $amount,
+			'remark'                      => $remark,
+			'is_approved'                 => 0,
+			'is_deleted'                  => 0,
+			'added_by'                    => $this->session->userdata('super_user_id'),
+			'added_by_name'               => $this->session->userdata('super_name'),
+			'added_date'                  => date('Y-m-d H:i:s'),
 		);
 
-		if ($this->db->field_exists('company_name', 'transferred_cash')) {
-			$data['company_name'] = $company_from['name'] ?? '';
-		}
-		if ($this->db->field_exists('converted_from', 'transferred_cash')) {
-			$data['converted_from'] = $converted_from;
-		}
-		if ($this->db->field_exists('converted_to', 'transferred_cash')) {
-			$data['converted_to'] = '';
-		}
-		if ($this->db->field_exists('method_from', 'transferred_cash')) {
-			$data['method_from'] = $method_from;
-		}
-		if ($this->db->field_exists('method_to', 'transferred_cash')) {
-			$data['method_to'] = '';
-		}
-		// Backward compatibility if old column still exists
-		if ($this->db->field_exists('payment_type', 'transferred_cash')) {
-			$data['payment_type'] = $converted_from;
+		if ($is_bank) {
+			$data['company_bank_from'] = $company_bank_from;
+			$data['company_bank_account_from'] = $company_bank_account_from;
 		}
 
 		$this->db->insert('transferred_cash', $data);
 
-		$this->session->set_flashdata('flash_message', "Cash transferred successfully");
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
 		return simple_json_output($resultpost);
 	}
 
 	public function edit_transfer_cash($id)
 	{
-		$resultpost = array(
-			"status"  => 200,
-			"message" => "Transfer updated successfully",
-			"url"     => base_url('inventory/cash-book?tab=transferred'),
-		);
-
 		$id         = (int)$id;
 		$company_id = (int)($this->session->userdata('company_id') ?: 0);
 
-		$existing = $this->db->get_where('transferred_cash', ['id' => $id])->row_array();
+		$existing = $this->db->get_where('transferred_cash', ['id' => $id, 'is_deleted' => 0])->row_array();
 		if (empty($existing) || (int)($existing['company_id'] ?? 0) !== $company_id) {
-			$resultpost['status']  = 400;
-			$resultpost['message'] = "Transfer not found.";
-			return simple_json_output($resultpost);
+			return simple_json_output([
+				"status" => 400,
+				"message" => "Transfer not found.",
+				"url" => base_url('inventory/cash-book?tab=transferred'),
+			]);
 		}
+
+		$method_from = clean_and_escape($this->input->post('method_from') ?: ($existing['method_from'] ?? 'cash'));
+		if (!in_array($method_from, ['cash', 'cheque'], true)) {
+			$method_from = 'cash';
+		}
+		$is_bank = ($method_from === 'cheque');
+
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Transfer updated successfully",
+			"url"     => $is_bank
+				? base_url('inventory/bank-book?tab=transferred')
+				: base_url('inventory/cash-book?tab=transferred'),
+		);
 
 		if (!empty($existing['is_approved'])) {
 			$resultpost['status']  = 400;
@@ -34544,7 +34439,6 @@ public function get_sales_return_reports()
 		$converted_from = clean_and_escape($this->input->post('converted_from') ?: $this->input->post('payment_type'));
 		$company_to_id  = (int)$this->input->post('company_to_id');
 		$remark         = $this->input->post('remark') ?: $this->input->post('narration');
-		$method_from    = 'cash';
 
 		if ($amount <= 0) {
 			$resultpost['status']  = 400;
@@ -34575,19 +34469,18 @@ public function get_sales_return_reports()
 			return simple_json_output($resultpost);
 		}
 
-		// Available cash + current transfer amount (already counted in transferred)
-		$cash_in_hand = $this->get_cash_in_hand_by_type($converted_from, $company_id);
 		$old_type = (($existing['converted_from'] ?? '') === 'unofficial') ? 'unofficial' : 'official';
-		if (empty($existing['converted_from']) && !empty($existing['payment_type'])) {
-			$old_type = ($existing['payment_type'] === 'unofficial') ? 'unofficial' : 'official';
-		}
+		$available = $is_bank
+			? $this->get_bank_in_hand_by_type($converted_from, $company_id)
+			: $this->get_cash_in_hand_by_type($converted_from, $company_id);
 		if ($old_type === $converted_from) {
-			$cash_in_hand += (float)($existing['amount'] ?? 0);
+			$available += (float)($existing['amount'] ?? 0);
 		}
 
-		if ($amount > $cash_in_hand) {
+		if ($amount > $available) {
+			$label = $is_bank ? 'bank' : 'cash';
 			$resultpost['status']  = 400;
-			$resultpost['message'] = "Amount cannot exceed available " . $converted_from . " cash in hand (₹" . number_format($cash_in_hand, 2) . ")";
+			$resultpost['message'] = "Amount cannot exceed available " . $converted_from . " {$label} in hand (₹" . number_format($available, 2) . ")";
 			return simple_json_output($resultpost);
 		}
 
@@ -34596,16 +34489,28 @@ public function get_sales_return_reports()
 			'company_to'    => $company_to['name'],
 			'amount'        => $amount,
 			'remark'        => $remark,
+			'converted_from' => $converted_from,
+			'method_from'   => $method_from,
 		];
 
-		if ($this->db->field_exists('converted_from', 'transferred_cash')) {
-			$data['converted_from'] = $converted_from;
-		}
-		if ($this->db->field_exists('method_from', 'transferred_cash')) {
-			$data['method_from'] = $method_from;
-		}
-		if ($this->db->field_exists('payment_type', 'transferred_cash')) {
-			$data['payment_type'] = $converted_from;
+		if ($is_bank) {
+			$company_bank_from = (int)$this->input->post('company_bank_from');
+			if ($company_bank_from <= 0) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Please select a bank account.";
+				return simple_json_output($resultpost);
+			}
+			$bank = $this->db->get_where('bank_accounts', [
+				'id' => $company_bank_from,
+				'company_id' => $company_id,
+			])->row_array();
+			if (empty($bank)) {
+				$resultpost['status']  = 400;
+				$resultpost['message'] = "Invalid bank account selected.";
+				return simple_json_output($resultpost);
+			}
+			$data['company_bank_from'] = $company_bank_from;
+			$data['company_bank_account_from'] = $this->input->post('company_bank_account_from') ?: ($bank['account_no'] ?? '');
 		}
 
 		$this->db->where('id', $id)->update('transferred_cash', $data);
@@ -34616,17 +34521,20 @@ public function get_sales_return_reports()
 
 	public function delete_transfer_cash($id)
 	{
-		$resultpost = array(
-			"status"  => 200,
-			"message" => "Transferred cash deleted successfully",
-			"url"     => base_url('inventory/cash-book?tab=transferred'),
-		);
-
 		$id = (int)$id;
 		$existing = $this->db->get_where('transferred_cash', ['id' => $id])->row_array();
-		if (empty($existing)) {
+		$is_bank = (($existing['method_from'] ?? '') === 'cheque');
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Transfer deleted successfully",
+			"url"     => $is_bank
+				? base_url('inventory/bank-book?tab=transferred')
+				: base_url('inventory/cash-book?tab=transferred'),
+		);
+
+		if (empty($existing) || !empty($existing['is_deleted'])) {
 			$resultpost['status']  = 400;
-			$resultpost['message'] = "Transferred cash not found.";
+			$resultpost['message'] = "Transfer not found.";
 			echo json_encode($resultpost);
 			exit();
 		}
@@ -34646,11 +34554,7 @@ public function get_sales_return_reports()
 			exit();
 		}
 
-		if ($this->db->field_exists('is_deleted', 'transferred_cash')) {
-			$this->db->where('id', $id)->update('transferred_cash', ['is_deleted' => 1]);
-		} else {
-			$this->db->where('id', $id)->delete('transferred_cash');
-		}
+		$this->db->where('id', $id)->update('transferred_cash', ['is_deleted' => 1]);
 
 		echo json_encode($resultpost);
 		exit();
@@ -34658,7 +34562,7 @@ public function get_sales_return_reports()
 
 	public function get_customer_payments_by_id($customer_id)
 	{
-		$pay_del_filter = $this->db->field_exists('is_deleted', 'customer_payment') ? " AND (p.is_deleted = 0 OR p.is_deleted IS NULL)" : "";
+		$pay_del_filter = " AND p.is_deleted = 0";
 		$query = $this->db->query("SELECT 
 										p.*,
 										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
