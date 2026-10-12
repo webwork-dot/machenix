@@ -1,32 +1,67 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.0
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Oct 12, 2026 at 01:36 PM
+-- Server version: 10.4.27-MariaDB
+-- PHP Version: 7.4.33
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `machenix_dbc`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_settings`
+--
+
 CREATE TABLE `tbl_settings` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `app_order_email` varchar(150) NOT NULL,
+  `id` int(11) NOT NULL,
   `app_name` varchar(255) NOT NULL,
   `app_email` varchar(150) NOT NULL,
-  `app_logo` varchar(255) NOT NULL,
-  `web_favicon` varchar(150) NOT NULL,
-  `app_author` varchar(255) NOT NULL,
-  `app_contact` varchar(255) NOT NULL,
-  `app_website` varchar(255) NOT NULL,
-  `app_description` text NOT NULL,
-  `app_developed_by` varchar(255) NOT NULL,
-  `facebook_url` text NOT NULL,
-  `twitter_url` text NOT NULL,
-  `youtube_url` text NOT NULL,
-  `instagram_url` text NOT NULL,
-  `app_privacy_policy` text NOT NULL,
-  `app_currency_code` varchar(30) NOT NULL,
-  `app_currency_html_code` text NOT NULL,
-  `cod_status` varchar(30) NOT NULL DEFAULT 'true',
-  `paypal_status` varchar(30) NOT NULL DEFAULT 'true',
-  `paypal_mode` varchar(10) NOT NULL,
-  `paypal_client_id` text NOT NULL,
-  `paypal_secret_key` text NOT NULL,
-  `stripe_status` varchar(30) NOT NULL DEFAULT 'false',
-  `stripe_key` text NOT NULL,
-  `stripe_secret` text NOT NULL,
-  `razorpay_status` varchar(20) NOT NULL DEFAULT 'false',
-  `razorpay_key` text NOT NULL,
-  `razorpay_secret` text NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `max_booking_days` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- Dumping data for table `tbl_settings`
+--
+
+INSERT INTO `tbl_settings` (`id`, `app_name`, `app_email`, `max_booking_days`) VALUES
+(1, 'Machenix', 'info@machenix.com', 20);
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `tbl_settings`
+--
+ALTER TABLE `tbl_settings`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `tbl_settings`
+--
+ALTER TABLE `tbl_settings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

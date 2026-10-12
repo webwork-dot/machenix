@@ -29,6 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `transferred_cash` (
   `id` int(11) NOT NULL,
+  `is_reverse` tinyint(1) NOT NULL DEFAULT 0,
   `company_id` int(11) NOT NULL,
   `company_name` varchar(255) DEFAULT NULL,
   `company_to_id` int(11) DEFAULT NULL,

@@ -56,14 +56,15 @@
           <div class="col-md-3" id="bank_account_wrap" style="display:none;">
             <div class="form-group">
               <label>Bank Account <span class="bank_required" style="display:none;">*</span></label>
-              <select class="form-control select2" name="bank_account" id="bank_account">
+              <select class="form-control select2" name="company_bank" id="company_bank">
                 <option value="">Select</option>
                 <?php foreach ($bank_accounts as $key => $value): ?>
-                  <option value="<?php echo $value['id'];?>">
+                  <option value="<?php echo $value['id'];?>" data-account-no="<?php echo htmlspecialchars($value['account_no']);?>">
                     <?php echo $value['bank_name'].' ('.$value['account_no'].')';?>
                   </option>
                 <?php endforeach; ?>
               </select>
+              <input type="hidden" name="company_bank_account" id="company_bank_account" value="">
             </div>
           </div>
 
@@ -141,18 +142,25 @@
       }
     }
 
+    function updateAccountNo() {
+      const accountNo = $('#company_bank').find(':selected').data('account-no') || '';
+      $('#company_bank_account').val(accountNo);
+    }
+
     function toggleBankAccount() {
       const isCheque = $('#payment_method').val() === 'cheque';
 
       $('#bank_account_wrap').toggle(isCheque);
-      $('#bank_account').prop('required', isCheque);
+      $('#company_bank').prop('required', isCheque);
       $('.bank_required').toggle(isCheque);
 
       if (isCheque) {
         $('#pay_type_wrap, #pay_method_wrap, #pay_date_wrap, #bank_account_wrap')
           .removeClass('col-md-4 col-md-6').addClass('col-md-3');
+        updateAccountNo();
       } else {
-        $('#bank_account').val('').trigger('change');
+        $('#company_bank').val('').trigger('change');
+        $('#company_bank_account').val('');
         $('#pay_type_wrap, #pay_method_wrap, #pay_date_wrap')
           .removeClass('col-md-3').addClass('col-md-4');
       }
@@ -160,6 +168,7 @@
 
     $('#payment_type').on('change', toggleCurrencyByType);
     $('#payment_method').on('change', toggleBankAccount);
+    $('#company_bank').on('change', updateAccountNo);
 
     toggleCurrencyByType();
     toggleBankAccount();
@@ -175,8 +184,8 @@
     $(document).on('focus', '#payment_method + .select2 .select2-selection', function () {
         $('#payment_method').select2('open');
     });
-    $(document).on('focus', '#bank_account + .select2 .select2-selection', function () {
-        $('#bank_account').select2('open');
+    $(document).on('focus', '#company_bank + .select2 .select2-selection', function () {
+        $('#company_bank').select2('open');
     });
   });
 </script>

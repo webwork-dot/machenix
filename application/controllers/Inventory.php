@@ -1382,8 +1382,16 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_reverse_payment_collection();
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_reverse_payment_collection($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_reverse_payment_collection($param2);
         } elseif ($param1 == "approve") {
             $this->inventory_model->approve_cash_collection($param2);
+        } elseif ($param1 == "approve_pending_transfer") {
+            $this->inventory_model->approve_pending_reverse_transfer($param2);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation'] = 'cash_collection';
@@ -1502,7 +1510,8 @@ class Inventory extends CI_Controller
             $page_data['navigation'] = 'petty_cash';
             $page_data['page_name']  = 'petty_cash';
             $page_data['page_title'] = 'Cash Book';
-            $page_data['tab']        = (isset($_GET['tab']) && $_GET['tab'] == 'transferred') ? 'transferred' : 'cash';
+            $tab = isset($_GET['tab']) ? $_GET['tab'] : 'cash';
+            $page_data['tab'] = in_array($tab, ['cash', 'pending_transfer', 'transferred'], true) ? $tab : 'cash';
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -1582,7 +1591,8 @@ class Inventory extends CI_Controller
             $page_data['navigation'] = 'bank_book';
             $page_data['page_name']  = 'bank_book';
             $page_data['page_title'] = 'Bank Book';
-            $page_data['tab']        = (isset($_GET['tab']) && $_GET['tab'] == 'transferred') ? 'transferred' : 'bank';
+            $tab = isset($_GET['tab']) ? $_GET['tab'] : 'bank';
+            $page_data['tab'] = in_array($tab, ['bank', 'pending_transfer', 'transferred'], true) ? $tab : 'bank';
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -1592,9 +1602,8 @@ class Inventory extends CI_Controller
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
         }
-        if ($this->input->is_ajax_request()) {
-            $this->inventory_model->get_bank_book();
-        }
+        // Always serve JSON for DataTables (same as cash book usage)
+        $this->inventory_model->get_bank_book();
     }
 
     // payments Starts
@@ -5849,6 +5858,23 @@ class Inventory extends CI_Controller
             $page_data['navigation']  = 'bank_accounts';
             $page_data['page_name']  = 'bank_accounts';
             $page_data['page_title'] = 'Bank Accounts';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function settings($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "update_post") {
+            $this->inventory_model->update_settings();
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $settings = $this->db->get_where('tbl_settings', ['id' => 1])->row_array();
+            $page_data['settings']    = !empty($settings) ? $settings : [];
+            $page_data['navigation']  = 'settings';
+            $page_data['page_name']   = 'settings';
+            $page_data['page_title']  = 'Settings';
             $this->load->view('backend/index', $page_data);
         }
     }

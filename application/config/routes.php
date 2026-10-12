@@ -113,6 +113,9 @@ $route[$r_inventory . '/bank-accounts'] = 'inventory/bank_accounts';
 $route[$r_inventory . '/bank-accounts/add']    = 'inventory/bank_accounts_form/bank_accounts_add';
 $route[$r_inventory . '/bank-accounts/edit/(:num)'] = 'inventory/bank_accounts_form/bank_accounts_edit/$1';
 
+$route[$r_inventory . '/settings']              = 'inventory/settings';
+$route[$r_inventory . '/settings/update_post']  = 'inventory/settings/update_post';
+
 $route[$r_inventory . '/customer'] = 'inventory/customer';
 $route[$r_inventory . '/customer/add']    = 'inventory/customer_form/customer_add';
 $route[$r_inventory . '/customer/edit/(:num)'] = 'inventory/customer_form/customer_edit/$1';
@@ -227,7 +230,11 @@ $route[$r_inventory . '/payment-reconciliation/approve/(:num)']  = 'inventory/pa
 $route[$r_inventory . '/cash-collection']                         = 'inventory/cash_collection';
 $route[$r_inventory . '/cash-collection/approve/(:num)']         = 'inventory/cash_collection/approve/$1';
 $route[$r_inventory . '/payment-collection']                      = 'inventory/payment_collection';
+$route[$r_inventory . '/payment-collection/add_post']            = 'inventory/payment_collection/add_post';
+$route[$r_inventory . '/payment-collection/edit_post/(:num)']    = 'inventory/payment_collection/edit_post/$1';
+$route[$r_inventory . '/payment-collection/delete/(:num)']       = 'inventory/payment_collection/delete/$1';
 $route[$r_inventory . '/payment-collection/approve/(:num)']      = 'inventory/payment_collection/approve/$1';
+$route[$r_inventory . '/payment-collection/approve_pending_transfer/(:num)'] = 'inventory/payment_collection/approve_pending_transfer/$1';
 
 $route[$r_inventory . '/convert-payment']                  = 'inventory/convert_payment';
 $route[$r_inventory . '/convert-payment/add']              = 'inventory/convert_payment_form/add';

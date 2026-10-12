@@ -113,44 +113,58 @@
     font-weight: 800;
     color: #2b2b2b;
     line-height: 1.2;
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
-  .cash-stat-card .stat-detail {
-    font-size: 11.5px;
-    color: #5e5873;
-    padding-top: 8px;
-    border-top: 1px dashed #ebe9f1;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 6px;
+
+  /* Ledger label badges (theme only ships bg-light-primary) */
+  #report-datatable .badge {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+    border-radius: 0.358rem;
   }
-  .cash-stat-card .stat-detail span b {
-    color: #1e1e1e;
+  #report-datatable .badge.bg-light-primary {
+    background-color: rgba(115, 103, 240, 0.12) !important;
+    color: #7367f0 !important;
+  }
+  #report-datatable .badge.bg-light-secondary {
+    background-color: rgba(130, 134, 139, 0.12) !important;
+    color: #82868b !important;
+  }
+  #report-datatable .badge.bg-light-success {
+    background-color: rgba(40, 199, 111, 0.12) !important;
+    color: #28c76f !important;
+  }
+  #report-datatable .badge.bg-light-danger {
+    background-color: rgba(234, 84, 85, 0.12) !important;
+    color: #ea5455 !important;
+  }
+  #report-datatable .badge.bg-light-info {
+    background-color: rgba(0, 207, 232, 0.12) !important;
+    color: #00cfe8 !important;
+  }
+  #report-datatable .badge.bg-light-warning {
+    background-color: rgba(255, 159, 67, 0.12) !important;
+    color: #ff9f43 !important;
   }
 </style>
 
 <?php
-  $tab = (isset($_GET['tab']) && $_GET['tab'] == 'transferred') ? 'transferred' : 'cash';
+  $tab_get = isset($_GET['tab']) ? $_GET['tab'] : 'cash';
+  $tab = in_array($tab_get, ['cash', 'pending_transfer', 'transferred'], true) ? $tab_get : 'cash';
   $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
   $cash_summary = $this->inventory_model->get_cash_in_hand_summary($company_id);
-  $cash_in_hand = $cash_summary['cash_in_hand'];
-
+  $official_balance   = (float)($cash_summary['official']['cash_in_hand'] ?? 0);
+  $unofficial_balance = (float)($cash_summary['unofficial']['cash_in_hand'] ?? 0);
+  $actual_on_hand     = $official_balance + $unofficial_balance;
 ?>
 
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
-  <!-- Cash in Hand Summary Cards (Official & Unofficial) -->
-  <?php
-    $official_balance   = (float)($cash_summary['official']['cash_in_hand'] ?? 0);
-    $unofficial_balance = (float)($cash_summary['unofficial']['cash_in_hand'] ?? 0);
-  ?>
   <div class="col-12 mb-2">
     <div class="row g-2">
-      <!-- Official Cash in Hand -->
-      <div class="col-12 col-md-6 mb-1 mb-md-0">
+      <div class="col-12 col-md-4 mb-1 mb-md-0">
         <div class="cash-stat-card card-official">
           <div class="stat-header">
             <span class="stat-title"><i class="feather icon-shield text-primary me-50"></i> Official Cash in Hand</span>
@@ -159,17 +173,10 @@
           <div class="stat-value <?= $official_balance < 0 ? 'text-danger' : 'text-primary'; ?>">
             <?= $official_balance < 0 ? '- ₹ ' . number_format(abs($official_balance), 2) : '₹ ' . number_format($official_balance, 2); ?>
           </div>
-          <div class="stat-detail">
-            <span>Received: <b>₹ <?= number_format($cash_summary['official']['received'], 2); ?></b></span>
-            <span>Expense: <b>₹ <?= number_format($cash_summary['official']['expense'], 2); ?></b></span>
-            <span>Transferred: <b>₹ <?= number_format($cash_summary['official']['transferred'] ?? 0, 2); ?></b></span>
-            <?php /* <span>Converted: <b>₹ <?= number_format($cash_summary['official']['converted'] ?? 0, 2); ?></b></span> */ ?>
-          </div>
         </div>
       </div>
 
-      <!-- Unofficial Cash in Hand -->
-      <div class="col-12 col-md-6">
+      <div class="col-12 col-md-4 mb-1 mb-md-0">
         <div class="cash-stat-card card-unofficial">
           <div class="stat-header">
             <span class="stat-title"><i class="feather icon-briefcase text-secondary me-50"></i> Unofficial Cash in Hand</span>
@@ -178,11 +185,17 @@
           <div class="stat-value <?= $unofficial_balance < 0 ? 'text-danger' : 'text-secondary'; ?>">
             <?= $unofficial_balance < 0 ? '- ₹ ' . number_format(abs($unofficial_balance), 2) : '₹ ' . number_format($unofficial_balance, 2); ?>
           </div>
-          <div class="stat-detail">
-            <span>Received: <b>₹ <?= number_format($cash_summary['unofficial']['received'], 2); ?></b></span>
-            <span>Expense: <b>₹ <?= number_format($cash_summary['unofficial']['expense'], 2); ?></b></span>
-            <span>Transferred: <b>₹ <?= number_format($cash_summary['unofficial']['transferred'] ?? 0, 2); ?></b></span>
-            <?php /* <span>Converted: <b>₹ <?= number_format($cash_summary['unofficial']['converted'] ?? 0, 2); ?></b></span> */ ?>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <div class="cash-stat-card card-total">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-dollar-sign text-success me-50"></i> Actual Cash on Hand</span>
+            <span class="badge bg-light-success text-success font-weight-bold">Official + Unofficial</span>
+          </div>
+          <div class="stat-value <?= $actual_on_hand < 0 ? 'text-danger' : 'text-success'; ?>">
+            <?= $actual_on_hand < 0 ? '- ₹ ' . number_format(abs($actual_on_hand), 2) : '₹ ' . number_format($actual_on_hand, 2); ?>
           </div>
         </div>
       </div>
@@ -191,43 +204,43 @@
 
   <div class="col-12 d-flex">
     <a href="<?php echo base_url('inventory/cash-book?tab=cash' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'cash') ? 'active' : ''; ?>">Cash</a>
+    <a href="<?php echo base_url('inventory/cash-book?tab=pending_transfer' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'pending_transfer') ? 'active' : ''; ?>">Pending Transfer</a>
     <a href="<?php echo base_url('inventory/cash-book?tab=transferred' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'transferred') ? 'active' : ''; ?>">Transferred</a>
   </div>
 
+  <?php
+    $is_transfer_tab = in_array($tab, ['transferred', 'pending_transfer'], true);
+    $tab_title = ($tab == 'pending_transfer') ? 'Pending Transfer' : (($tab == 'transferred') ? 'Total Transferred' : 'Cash Ledger');
+  ?>
   <div class="col-12">
     <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
         <div class="row align-items-center">
-          <div class="col-md-6 col-12 mt-10">
-            <h5 class="mb-0"><b><?= ($tab == 'transferred') ? 'Total Transferred' : 'Cash Ledger'; ?><span id="total_count"> (0)</span></b>
+          <div class="col-12 mt-10">
+            <h5 class="mb-0"><b><?= $tab_title; ?><span id="total_count"> (0)</span></b>
             </h5>
           </div>
-          <?php if ($tab != 'transferred'): ?>
-          <div class="col-md-6 col-12 mt-10 text-md-end">
-            <small class="me-1">In: <b class="text-success" id="ledger_total_in">₹ 0.00</b></small>
-            <small class="me-1">Out: <b class="text-danger" id="ledger_total_out">₹ 0.00</b></small>
-            <small>Net: <b id="ledger_net_amount">₹ 0.00</b></small>
-          </div>
-          <?php endif; ?>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
+        <?php if ($tab == 'cash'): ?>
         <a href="<?php echo site_url('inventory/cash-book/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Expense</span></a>     
-        <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_transfer_cash'); ?>', 'Transfer Cash');" class="dt-button add-new desktop-tab add-btn btn btn-success" style="margin-right: 8px;" tabindex="0"><span><i class="feather icon-arrow-right-circle"></i> Transfer</span></a>     
+        <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_transfer_cash'); ?>', 'Transfer Cash');" class="dt-button add-new desktop-tab add-btn btn btn-success" style="margin-right: 8px;" tabindex="0"><span><i class="feather icon-arrow-right-circle"></i> Transfer</span></a>
+        <?php endif; ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th style="width: 50px;" class="text-center">#</th>
               <th>Date</th>
-              <th><?= ($tab == 'transferred') ? 'Company' : 'Particular'; ?></th>
-              <?php if ($tab != 'transferred'): ?>
+              <th><?= $is_transfer_tab ? 'Company' : 'Particular'; ?></th>
+              <?php if (!$is_transfer_tab): ?>
               <th>Source</th>
               <th>In/Out</th>
               <?php endif; ?>
               <th>Type</th>
               <th>Amount</th>
               <th>Remark / Narration</th>
-              <?php if ($tab == 'transferred'): ?>
+              <?php if ($is_transfer_tab): ?>
               <th>Status</th>
               <?php endif; ?>
               <th>Added By</th>
@@ -272,11 +285,6 @@ $(document).ready(function($) {
         data.tab = '<?php echo $tab; ?>';
       },
       "dataSrc": function(json) {
-        <?php if ($tab != 'transferred'): ?>
-        if (json.total_in !== undefined) { $('#ledger_total_in').html(json.total_in); }
-        if (json.total_out !== undefined) { $('#ledger_total_out').html(json.total_out); }
-        if (json.net_amount !== undefined) { $('#ledger_net_amount').html(json.net_amount); }
-        <?php endif; ?>
         return json.data;
       },
       "beforeSend": function() {
@@ -291,14 +299,14 @@ $(document).ready(function($) {
       { "data": "sr_no", "className": "text-center" },
       { "data": "date" },
       { "data": "supplier_name" },
-      <?php if ($tab != 'transferred'): ?>
+      <?php if (!$is_transfer_tab): ?>
       { "data": "source" },
       { "data": "direction" },
       <?php endif; ?>
       { "data": "payment_type" },
       { "data": "amount" },
       { "data": "remark" },
-      <?php if ($tab == 'transferred'): ?>
+      <?php if ($is_transfer_tab): ?>
       { "data": "status" },
       <?php endif; ?>
       { "data": "added_by_name" },
@@ -308,13 +316,13 @@ $(document).ready(function($) {
     "buttons": [{
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": <?php echo ($tab == 'transferred') ? '[0, 1, 2, 3, 4, 5, 6, 7]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
+        "exportOptions": { "columns": <?php echo $is_transfer_tab ? '[0, 1, 2, 3, 4, 5, 6, 7]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": <?php echo ($tab == 'transferred') ? '[0, 1, 2, 3, 4, 5, 6, 7]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
+        "exportOptions": { "columns": <?php echo $is_transfer_tab ? '[0, 1, 2, 3, 4, 5, 6, 7]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
       }
     ],
 

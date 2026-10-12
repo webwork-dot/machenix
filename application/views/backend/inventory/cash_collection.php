@@ -104,6 +104,9 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
+        <?php if ($status != 'received'): ?>
+        <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_add_payment_collection'); ?>', 'Add Payment');" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0"><span><i class="feather icon-plus"></i> Add Payment</span></a>
+        <?php endif; ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
