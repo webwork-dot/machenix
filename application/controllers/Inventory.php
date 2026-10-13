@@ -4743,6 +4743,26 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function get_intimation_batches()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_intimation_batches();
+        }
+    }
+
+    public function sales_order_intimation_save($id = '')
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->save_sales_order_intimation($id);
+        }
+    }
+
     public function get_batch_qty_details()
     {
         if ($this->session->userdata('inventory_login') != true) {

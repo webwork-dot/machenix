@@ -371,6 +371,8 @@ $route[$r_inventory . '/sales-order/edit-order/(:num)']    = 'inventory/sales_or
 $route[$r_inventory . '/sales-order/view/(:num)']    = 'inventory/sales_order_form/view/$1';
 $route[$r_inventory . '/sales-order/not-uploaded/(:num)']    = 'inventory/sales_order_form/excel/$1';
 $route[$r_inventory . '/sales-order/products/(:num)']    = 'inventory/sales_order_form/products/$1';
+$route[$r_inventory . '/get_intimation_batches'] = 'inventory/get_intimation_batches';
+$route[$r_inventory . '/sales_order_intimation_save/(:num)'] = 'inventory/sales_order_intimation_save/$1';
 
 $route[$r_inventory . '/purchase-return'] = 'inventory/purchase_return';
 $route[$r_inventory . '/purchase-return/add'] = 'inventory/purchase_return_form/add';

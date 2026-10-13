@@ -14225,9 +14225,14 @@ class Inventory_model extends CI_Model
 			$data['billing_gst']         = $billing_gst;
 			$data['billing_gst_no']      = $billing_gst_no;
 			$data['billing_address']     = $billing_address;
+			$data['is_intimation']       = 0;
+			$data['intimation_remark']   = null;
 
 			$this->db->where('id', $id)->update('sales_order', $data);
 			$order_id = $id;
+
+			// Clear intimation batches when order is edited
+			$this->db->where('sales_order_id', $order_id)->where('is_deleted', 0)->update('sales_order_intimation_products', array('is_deleted' => 1));
 
 			// Delete existing products for this order
 			$this->db->where('order_id', $order_id)->delete('sales_order_product');
@@ -17030,7 +17035,7 @@ class Inventory_model extends CI_Model
 	
 			$query = $this->db->query("
 				SELECT 
-					so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.date, so.expected_date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name, so.sale_person_id,
+					so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.is_intimation, so.date, so.expected_date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total, so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name, so.sale_person_id,
 					TRIM(CONCAT(IFNULL(su.first_name, ''), ' ', IFNULL(su.last_name, ''))) AS sales_person_name
 				FROM sales_order AS so
 				LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
@@ -17139,6 +17144,17 @@ class Inventory_model extends CI_Model
 						$approve_html = '<a class="dropdown-item" href="' . $approve_url . '"><i class="fa fa-check" aria-hidden="true"></i> Approve</a>';
 					}
 
+					$intimation_html = '';
+					if (!empty($item['is_intimation'])) {
+						$view_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/view', 'View Intimation')";
+						$edit_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/edit', 'Edit Intimation')";
+						$intimation_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_intimation_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Intimation</a>'
+							. '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_intimation_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Intimation</a>';
+					} else {
+						$add_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/add', 'Add Intimation')";
+						$intimation_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $add_intimation_url . '"><i class="fa fa-bell" aria-hidden="true"></i> Add Intimation</a>';
+					}
+
 					$action ='<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
@@ -17146,6 +17162,7 @@ class Inventory_model extends CI_Model
 							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
 						   ' . $approve_html . '
 							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
+							' . $intimation_html . '
 							' . $cancel_order_html . '
 							' . $delete_html . '
 							' . $history_html . '
@@ -21012,6 +21029,285 @@ class Inventory_model extends CI_Model
 			}
 		}
 		echo $html;
+	}
+
+	public function get_intimation_batches()
+	{
+		$warehouse_id = (int) $this->input->post('warehouse_id');
+		$product_id = (int) $this->input->post('product_id');
+		$company_id = (int) $this->session->userdata('company_id');
+		$html = '';
+
+		if ($warehouse_id <= 0 || $product_id <= 0 || $company_id <= 0) {
+			echo $html;
+			return;
+		}
+
+		$inv_query = $this->db->query(
+			"SELECT id, batch_no FROM inventory
+			WHERE warehouse_id = ? AND product_id = ? AND company_id = ? AND quantity > 0
+			ORDER BY id DESC",
+			array($warehouse_id, $product_id, $company_id)
+		);
+		if ($inv_query->num_rows() > 0) {
+			foreach ($inv_query->result_array() as $row) {
+				$batch_no = $row['batch_no'] !== null && $row['batch_no'] !== '' ? $row['batch_no'] : '-';
+				$value = 'inventory|' . $row['id'];
+				$html .= '<option value="' . $value . '" data-batch-type="inventory" data-batch-id="' . $row['id'] . '" data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '</option>';
+			}
+		}
+
+		$po_query = $this->db->query(
+			"SELECT pop.id, po.voucher_no
+			FROM purchase_order po
+			JOIN purchase_order_product pop ON po.id = pop.parent_id
+			WHERE pop.product_id = ?
+			AND po.company_id = ?
+			AND po.warehouse_id = ?
+			AND po.delivery_status = 'pending'
+			AND po.is_deleted = '0'
+			AND pop.quantity > 0
+			ORDER BY po.date DESC, pop.id DESC",
+			array($product_id, $company_id, $warehouse_id)
+		);
+		if ($po_query->num_rows() > 0) {
+			foreach ($po_query->result_array() as $row) {
+				$batch_no = !empty($row['voucher_no']) ? $row['voucher_no'] : ('PO-' . $row['id']);
+				$label = $batch_no . ' (PO Pending)';
+				$value = 'po|' . $row['id'];
+				$html .= '<option value="' . $value . '" data-batch-type="po" data-batch-id="' . $row['id'] . '" data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+			}
+		}
+
+		$loading_query = $this->db->query(
+			"SELECT lpp.id, po.voucher_no
+			FROM purchase_order po
+			JOIN loading_po_product lpp ON po.id = lpp.parent_id
+			WHERE lpp.product_id = ?
+			AND po.company_id = ?
+			AND po.warehouse_id = ?
+			AND po.delivery_status = 'loading'
+			AND po.is_deleted = '0'
+			AND lpp.is_deleted = '0'
+			AND (CASE WHEN lpp.loading_qty > 0 THEN lpp.loading_qty ELSE lpp.quantity END) > 0
+			ORDER BY po.date DESC, lpp.id DESC",
+			array($product_id, $company_id, $warehouse_id)
+		);
+		if ($loading_query->num_rows() > 0) {
+			foreach ($loading_query->result_array() as $row) {
+				$batch_no = !empty($row['voucher_no']) ? $row['voucher_no'] : ('LD-' . $row['id']);
+				$label = $batch_no . ' (Loading)';
+				$value = 'loading|' . $row['id'];
+				$html .= '<option value="' . $value . '" data-batch-type="loading" data-batch-id="' . $row['id'] . '" data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+			}
+		}
+
+		echo $html;
+	}
+
+	public function save_sales_order_intimation($order_id)
+	{
+		$order_id = (int) $order_id;
+		$company_id = (int) $this->session->userdata('company_id');
+		$user_id = (int) $this->session->userdata('super_user_id');
+		$user_name = (string) $this->session->userdata('super_name');
+
+		$order = $this->db->get_where('sales_order', array(
+			'id' => $order_id,
+			'is_deleted' => '0'
+		))->row_array();
+
+		if (empty($order) || (int) $order['is_approved'] !== 0) {
+			echo json_encode(array('status' => 400, 'message' => 'Sales order not found or not pending.'));
+			return;
+		}
+
+		if (!empty($order['is_cancelled'])) {
+			echo json_encode(array('status' => 400, 'message' => 'Cancelled sales order cannot have intimation.'));
+			return;
+		}
+
+		$warehouse_id = (int) $this->input->post('warehouse_id');
+		$remark = $this->input->post('intimation_remark');
+		$batches = $this->input->post('batches');
+
+		if ($warehouse_id <= 0) {
+			echo json_encode(array('status' => 400, 'message' => 'Please select a warehouse.'));
+			return;
+		}
+
+		$warehouse = $this->db->get_where('warehouse', array(
+			'id' => $warehouse_id,
+			'company_id' => $company_id,
+			'is_deleted' => '0'
+		))->row_array();
+		if (empty($warehouse)) {
+			echo json_encode(array('status' => 400, 'message' => 'Invalid warehouse for current company.'));
+			return;
+		}
+
+		$products = $this->db->get_where('sales_order_product', array('order_id' => $order_id))->result_array();
+		if (empty($products)) {
+			echo json_encode(array('status' => 400, 'message' => 'No products found on this sales order.'));
+			return;
+		}
+
+		$product_map = array();
+		foreach ($products as $p) {
+			$product_map[(int) $p['id']] = $p;
+		}
+
+		if (!is_array($batches)) {
+			$batches = array();
+		}
+
+		$allocated = array();
+		$insert_rows = array();
+		$seen_keys = array();
+
+		foreach ($batches as $row) {
+			$order_product_id = isset($row['order_product_id']) ? (int) $row['order_product_id'] : 0;
+			$product_id = isset($row['product_id']) ? (int) $row['product_id'] : 0;
+			$batch_type = isset($row['batch_type']) ? trim($row['batch_type']) : '';
+			$batch_id = isset($row['batch_id']) ? (int) $row['batch_id'] : 0;
+			$batch_no = isset($row['batch_no']) ? trim($row['batch_no']) : '';
+			$white_qty = isset($row['white_qty']) ? (int) $row['white_qty'] : 0;
+			$black_qty = isset($row['black_qty']) ? (int) $row['black_qty'] : 0;
+
+			if ($order_product_id <= 0 || !isset($product_map[$order_product_id])) {
+				echo json_encode(array('status' => 400, 'message' => 'Invalid product line in intimation.'));
+				return;
+			}
+			if ($product_id !== (int) $product_map[$order_product_id]['product_id']) {
+				echo json_encode(array('status' => 400, 'message' => 'Product mismatch in intimation.'));
+				return;
+			}
+			if (!in_array($batch_type, array('inventory', 'po', 'loading'), true) || $batch_id <= 0) {
+				echo json_encode(array('status' => 400, 'message' => 'Please select a valid batch.'));
+				return;
+			}
+			if ($white_qty < 0 || $black_qty < 0 || ($white_qty + $black_qty) <= 0) {
+				echo json_encode(array('status' => 400, 'message' => 'Batch white/black quantity is invalid.'));
+				return;
+			}
+
+			$dup_key = $order_product_id . '|' . $batch_type . '|' . $batch_id;
+			if (isset($seen_keys[$dup_key])) {
+				echo json_encode(array('status' => 400, 'message' => 'Duplicate batch selected for the same product.'));
+				return;
+			}
+			$seen_keys[$dup_key] = true;
+
+			if ($batch_type === 'inventory') {
+				$inv = $this->db->get_where('inventory', array(
+					'id' => $batch_id,
+					'product_id' => $product_id,
+					'warehouse_id' => $warehouse_id,
+					'company_id' => $company_id
+				))->row_array();
+				if (empty($inv)) {
+					echo json_encode(array('status' => 400, 'message' => 'Inventory batch not found for selected warehouse.'));
+					return;
+				}
+				if ($white_qty > (int) $inv['official_qty'] || $black_qty > (int) $inv['black_qty']) {
+					echo json_encode(array('status' => 400, 'message' => 'Quantity exceeds available stock for batch ' . ($inv['batch_no'] ?: $batch_id) . '.'));
+					return;
+				}
+				if ($batch_no === '') {
+					$batch_no = $inv['batch_no'] !== null && $inv['batch_no'] !== '' ? $inv['batch_no'] : '-';
+				}
+			} elseif ($batch_type === 'po') {
+				$po_row = $this->db->query(
+					"SELECT pop.id, po.voucher_no
+					FROM purchase_order_product pop
+					JOIN purchase_order po ON po.id = pop.parent_id
+					WHERE pop.id = ? AND pop.product_id = ?
+					AND po.warehouse_id = ? AND po.company_id = ?
+					AND po.delivery_status = 'pending' AND po.is_deleted = '0'",
+					array($batch_id, $product_id, $warehouse_id, $company_id)
+				)->row_array();
+				if (empty($po_row)) {
+					echo json_encode(array('status' => 400, 'message' => 'PO pending batch not found.'));
+					return;
+				}
+				if ($batch_no === '') {
+					$batch_no = !empty($po_row['voucher_no']) ? $po_row['voucher_no'] : ('PO-' . $batch_id);
+				}
+			} else {
+				$ld_row = $this->db->query(
+					"SELECT lpp.id, po.voucher_no
+					FROM loading_po_product lpp
+					JOIN purchase_order po ON po.id = lpp.parent_id
+					WHERE lpp.id = ? AND lpp.product_id = ?
+					AND po.warehouse_id = ? AND po.company_id = ?
+					AND po.delivery_status = 'loading' AND po.is_deleted = '0' AND lpp.is_deleted = '0'",
+					array($batch_id, $product_id, $warehouse_id, $company_id)
+				)->row_array();
+				if (empty($ld_row)) {
+					echo json_encode(array('status' => 400, 'message' => 'Loading batch not found.'));
+					return;
+				}
+				if ($batch_no === '') {
+					$batch_no = !empty($ld_row['voucher_no']) ? $ld_row['voucher_no'] : ('LD-' . $batch_id);
+				}
+			}
+
+			if (!isset($allocated[$order_product_id])) {
+				$allocated[$order_product_id] = 0;
+			}
+			$allocated[$order_product_id] += ($white_qty + $black_qty);
+
+			$max_qty = (int) $product_map[$order_product_id]['qty'];
+			if ($allocated[$order_product_id] > $max_qty) {
+				echo json_encode(array(
+					'status' => 400,
+					'message' => 'Allocated quantity for "' . $product_map[$order_product_id]['product_name'] . '" cannot exceed ordered qty (' . $max_qty . ').'
+				));
+				return;
+			}
+
+			$insert_rows[] = array(
+				'batch_id' => $batch_id,
+				'batch_no' => $batch_no,
+				'batch_type' => $batch_type,
+				'sales_order_id' => $order_id,
+				'order_product_id' => $order_product_id,
+				'product_id' => $product_id,
+				'warehouse_id' => $warehouse_id,
+				'quantity' => $white_qty + $black_qty,
+				'white_qty' => $white_qty,
+				'black_qty' => $black_qty,
+				'is_deleted' => 0,
+				'created_at' => date('Y-m-d H:i:s'),
+				'added_by_id' => $user_id,
+				'added_by_name' => $user_name
+			);
+		}
+
+		$this->db->trans_start();
+
+		$this->db->where('sales_order_id', $order_id);
+		$this->db->where('is_deleted', 0);
+		$this->db->update('sales_order_intimation_products', array('is_deleted' => 1));
+
+		if (!empty($insert_rows)) {
+			$this->db->insert_batch('sales_order_intimation_products', $insert_rows);
+		}
+
+		$this->db->where('id', $order_id);
+		$this->db->update('sales_order', array(
+			'is_intimation' => 1,
+			'intimation_remark' => $remark
+		));
+
+		$this->db->trans_complete();
+
+		if ($this->db->trans_status() === false) {
+			echo json_encode(array('status' => 500, 'message' => 'Failed to save intimation.'));
+			return;
+		}
+
+		echo json_encode(array('status' => 200, 'message' => 'Intimation saved successfully.'));
 	}
 
 	public function get_batch_qty_details()

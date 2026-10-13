@@ -54,6 +54,8 @@ CREATE TABLE `sales_order` (
   `is_generated` tinyint(1) NOT NULL DEFAULT 0,
   `is_weird` tinyint(1) NOT NULL DEFAULT 0,
   `is_approved` tinyint(1) NOT NULL DEFAULT 0,
+  `is_intimation` tinyint(1) NOT NULL DEFAULT 0,
+  `intimation_remark` mediumtext DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `is_cancelled` tinyint(1) NOT NULL DEFAULT 0,
   `deleted_date` datetime NOT NULL,
