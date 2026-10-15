@@ -13874,9 +13874,18 @@ class Inventory_model extends CI_Model
 				}
 			}
 
-			$x_value_arr = ($this->input->post('x_value'));
-			$old_id_arr = ($this->input->post('old_id'));
-			$quantity_arr = ($this->input->post('quantity'));
+			$x_value_arr = $this->input->post('x_value');
+			$old_id_arr = $this->input->post('old_id');
+			$quantity_arr = $this->input->post('quantity');
+			if (!is_array($x_value_arr)) {
+				$x_value_arr = array();
+			}
+			if (!is_array($old_id_arr)) {
+				$old_id_arr = array();
+			}
+			if (!is_array($quantity_arr)) {
+				$quantity_arr = array();
+			}
 
 			$batch_id                 = $this->input->post('batch_id');
 			$available_white_qty      = $this->input->post('available_white_qty');
@@ -13894,6 +13903,152 @@ class Inventory_model extends CI_Model
 			$batch_black_amt          = $this->input->post('batch_black_amt');
 			$batch_black_total_amt    = $this->input->post('batch_black_total_amt');
 			$batch_final_total        = $this->input->post('batch_final_total');
+			if (!is_array($batch_id)) {
+				$batch_id = array();
+			}
+
+			$sales_product_map = array();
+			foreach ($sales_products as $sp) {
+				$sales_product_map[(int) $sp['id']] = $sp;
+			}
+
+			$allocation_map = array();
+			$total_allocated_all = 0;
+			$has_remaining = false;
+			$remaining_products = array();
+
+			for ($in = 0; $in < count($x_value_arr); $in++) {
+				$i = $x_value_arr[$in];
+				$order_product_id = (int) ($old_id_arr[$in] ?? 0);
+				$ordered_qty = (int) ($quantity_arr[$in] ?? 0);
+				if (isset($sales_product_map[$order_product_id])) {
+					$ordered_qty = (int) $sales_product_map[$order_product_id]['qty'];
+				}
+
+				$allocated_qty = 0;
+				$rollup = array(
+					'total_amount' => 0,
+					'bill_total' => 0,
+					'gst_amount' => 0,
+					'total_bill_gst_amount' => 0,
+					'black_total' => 0,
+					'final_total' => 0,
+					'gst' => 0,
+					'amount' => 0,
+					'bill_amount' => 0,
+					'black_amount' => 0,
+					'white_qty' => 0,
+				);
+
+				if (!empty($batch_id[$i]) && is_array($batch_id[$i])) {
+					foreach ($batch_id[$i] as $index => $bid) {
+						if (empty($bid)) {
+							continue;
+						}
+						$w = (float) ($batch_white_qty[$i][$index] ?? 0);
+						$b = (float) ($batch_black_qty[$i][$index] ?? 0);
+						$row_alloc = $w + $b;
+						if ($row_alloc <= 0) {
+							continue;
+						}
+						$allocated_qty += $row_alloc;
+						$rollup['white_qty'] += $w;
+						$rollup['total_amount'] += $row_alloc * (float) ($batch_rate[$i][$index] ?? 0);
+						$rollup['bill_total'] += (float) ($batch_bill_total[$i][$index] ?? 0);
+						$rollup['gst_amount'] += (float) ($batch_gst_amt[$i][$index] ?? 0);
+						$rollup['total_bill_gst_amount'] += (float) ($batch_total_bill_gst[$i][$index] ?? 0);
+						$rollup['black_total'] += (float) ($batch_black_total_amt[$i][$index] ?? 0);
+						$rollup['final_total'] += (float) ($batch_final_total[$i][$index] ?? 0);
+						$rollup['gst'] = (float) ($batch_gst_per[$i][$index] ?? $rollup['gst']);
+						$rollup['amount'] = (float) ($batch_rate[$i][$index] ?? $rollup['amount']);
+						$rollup['bill_amount'] = (float) ($batch_bill_amount[$i][$index] ?? $rollup['bill_amount']);
+						$rollup['black_amount'] = (float) ($batch_black_amt[$i][$index] ?? $rollup['black_amount']);
+					}
+				}
+
+				if ($allocated_qty > $ordered_qty) {
+					$pname = isset($sales_product_map[$order_product_id]) ? $sales_product_map[$order_product_id]['product_name'] : 'product';
+					throw new Exception('Allocated quantity exceeds ordered qty for ' . $pname . '.');
+				}
+
+				$remaining_qty = $ordered_qty - (int) $allocated_qty;
+				if ($remaining_qty > 0) {
+					$has_remaining = true;
+					if (isset($sales_product_map[$order_product_id])) {
+						$remaining_products[] = array(
+							'product' => $sales_product_map[$order_product_id],
+							'remaining_qty' => $remaining_qty,
+						);
+					}
+				}
+
+				$total_allocated_all += $allocated_qty;
+				$allocation_map[$in] = array(
+					'order_product_id' => $order_product_id,
+					'ordered_qty' => $ordered_qty,
+					'allocated_qty' => (int) $allocated_qty,
+					'remaining_qty' => $remaining_qty,
+					'rollup' => $rollup,
+				);
+			}
+
+			if ($total_allocated_all <= 0) {
+				throw new Exception('Please allocate batch quantity for at least one product before approving.');
+			}
+
+			$split_remaining_order_id = null;
+			if ($has_remaining) {
+				$split_remaining_order_id = $this->create_remaining_sales_order_booking(array(
+					'sales_record' => $sales_record,
+					'approve_data' => $data,
+					'remaining_products' => $remaining_products,
+					'sale_person_id' => $sale_person_id,
+					'is_distributor' => $is_distributor,
+					'warehouse_id' => $warehouse_id,
+					'warehouse_name' => $warehouse_name,
+					'gst_type' => $gst_type,
+				));
+				$log_json['split_remaining_order_id'] = $split_remaining_order_id;
+			}
+
+			foreach ($allocation_map as $in => $alloc_row) {
+				$order_product_id = $alloc_row['order_product_id'];
+				if ($order_product_id <= 0) {
+					continue;
+				}
+				if ($alloc_row['allocated_qty'] <= 0) {
+					if ($has_remaining) {
+						$this->db->where('sales_order_id', $order_id)
+							->where('order_product_id', $order_product_id)
+							->where('is_deleted', 0)
+							->update('sales_order_intimation_products', array('is_deleted' => 1));
+						$this->db->where('id', $order_product_id)->delete('sales_order_product');
+					}
+					continue;
+				}
+
+				$rollup = $alloc_row['rollup'];
+				$allocated_qty = $alloc_row['allocated_qty'];
+				$orig = isset($sales_product_map[$order_product_id]) ? $sales_product_map[$order_product_id] : array();
+				$unit_amount = $allocated_qty > 0 ? ($rollup['total_amount'] / $allocated_qty) : (float) ($orig['amount'] ?? 0);
+				$unit_bill = $rollup['white_qty'] > 0
+					? ($rollup['bill_total'] / $rollup['white_qty'])
+					: (float) ($orig['bill_amount'] ?? 0);
+
+				$this->db->where('id', $order_product_id)->update('sales_order_product', array(
+					'qty' => $allocated_qty,
+					'amount' => price_format_decimal($unit_amount),
+					'total_amount' => price_format_decimal($rollup['total_amount']),
+					'bill_amount' => price_format_decimal($unit_bill),
+					'bill_total' => price_format_decimal($rollup['bill_total']),
+					'gst' => price_format_decimal($rollup['gst'] > 0 ? $rollup['gst'] : ($orig['gst'] ?? 0)),
+					'gst_amount' => price_format_decimal($rollup['gst_amount']),
+					'total_bill_gst_amount' => price_format_decimal($rollup['total_bill_gst_amount']),
+					'black_amount' => price_format_decimal($rollup['black_amount'] > 0 ? $rollup['black_amount'] : ($orig['black_amount'] ?? 0)),
+					'black_total' => price_format_decimal($rollup['black_total']),
+					'final_total' => price_format_decimal($rollup['final_total']),
+				));
+			}
 			
 			// Soft delete existing sales commission records if any (e.g. for re-approval)
 			$this->db->where('order_id', $id)->update('sales_commission', ['is_deleted' => 1]);
@@ -13904,32 +14059,53 @@ class Inventory_model extends CI_Model
 			$total_white_qty_sum = 0;
 			for ($in = 0; $in < count($x_value_arr); $in++) {
 				$i = $x_value_arr[$in];
+				$alloc_row = isset($allocation_map[$in]) ? $allocation_map[$in] : null;
+				if (empty($alloc_row) || $alloc_row['allocated_qty'] <= 0) {
+					continue;
+				}
 				
-				$order_product_id = $old_id_arr[$in];
+				$order_product_id = $alloc_row['order_product_id'];
 				$product_log_data = $this->db->where('id', $order_product_id)->get('sales_order_product')->row_array();
+				if (empty($product_log_data)) {
+					continue;
+				}
 				$product_log_data['batches'] = array();
 
 				$product_id = (int)$product_log_data['product_id'];
+				$product_allocated_qty = (int) $alloc_row['allocated_qty'];
 
 				$product_total_amt = 0;
-				foreach($batch_id[$i] as $index => $bid) {
+				$batch_rows = (!empty($batch_id[$i]) && is_array($batch_id[$i])) ? $batch_id[$i] : array();
+				foreach ($batch_rows as $index => $bid) {
+					if (empty($bid)) {
+						continue;
+					}
+					$white_qty_row = (float) ($batch_white_qty[$i][$index] ?? 0);
+					$black_qty_row = (float) ($batch_black_qty[$i][$index] ?? 0);
+					if (($white_qty_row + $black_qty_row) <= 0) {
+						continue;
+					}
+
 					$effective_bid = (!empty($intercompany['is_intercompany']) && isset($intercompany['batch_mapping'][$i][$index])) ? $intercompany['batch_mapping'][$i][$index] : $bid;
 
 					$batch_detail = $this->db->where('id', $effective_bid)->get('inventory')->row_array();
+					if (empty($batch_detail)) {
+						throw new Exception('Inventory batch not found.');
+					}
 
 					$data_product_bat = array();
 					$data_product_bat = array(
 						'order_id'          => $order_id,
-						'order_product_id'  => $old_id_arr[$in],
+						'order_product_id'  => $order_product_id,
 						'batch_no'      		=> $batch_detail['batch_no'],
 						'batch_qty'       	=> $batch_detail['quantity'],
 
 						'avail_white_qty'		=> $batch_detail['official_qty'],
 						'avail_black_qty'		=> $batch_detail['black_qty'],
-						'qty'								=> $quantity_arr[$in],
-						'white_qty'					=> $batch_white_qty[$i][$index],
-						'black_qty'					=> $batch_black_qty[$i][$index],
-						'recieved_black_qty'=> ($batch_detail['black_qty'] < $batch_black_qty[$i][$index]) ? $batch_detail['black_qty'] : $batch_black_qty[$i][$index],
+						'qty'								=> $product_allocated_qty,
+						'white_qty'					=> $white_qty_row,
+						'black_qty'					=> $black_qty_row,
+						'recieved_black_qty'=> ($batch_detail['black_qty'] < $black_qty_row) ? $batch_detail['black_qty'] : $black_qty_row,
 
 						'amount'						=> $batch_rate[$i][$index],
 						'remark'						=> isset($batch_remark[$i][$index]) ? clean_and_escape($batch_remark[$i][$index]) : null,
@@ -13947,25 +14123,25 @@ class Inventory_model extends CI_Model
 
 					$this->db->insert('sales_order_product_batch', $data_product_bat);
 					$product_log_data['batches'][] = $data_product_bat;
-					$total_white_qty_sum += (float) ($batch_white_qty[$i][$index] ?? 0);
+					$total_white_qty_sum += $white_qty_row;
 
-					$allocated_qty = (float)($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]);
+					$allocated_qty = $white_qty_row + $black_qty_row;
 					$product_total_amt = $product_total_amt + ($allocated_qty * (float) $batch_rate[$i][$index]);
 
-					if($batch_detail['quantity'] < ($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]) || $batch_detail['quantity'] == 0) {
+					if($batch_detail['quantity'] < ($white_qty_row + $black_qty_row) || $batch_detail['quantity'] == 0) {
 						throw new Exception('Insufficient stock for ' . ($batch_detail['product_name'] ?? 'product') . '. Available Live Qty: ' . ($batch_detail['quantity'] ?? 0) . '.');
 					} else {
 						
 						$pending_qty = 0;
-						if($batch_detail['black_qty'] < $batch_black_qty[$i][$index]){
+						if($batch_detail['black_qty'] < $black_qty_row){
 							$this->db->where('id', $order_id)->update('sales_order', ["is_weird" => 1]);
-							$pending_qty = ($batch_black_qty[$i][$index] - $batch_detail['black_qty']);
+							$pending_qty = ($black_qty_row - $batch_detail['black_qty']);
 						}
 
 						$this->db->where('id', $effective_bid)->update('inventory', array(
-							'quantity' => $batch_detail['quantity'] - ($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]),
-							'black_qty' => ($batch_detail['black_qty'] >= $batch_black_qty[$i][$index]) ? $batch_detail['black_qty'] - $batch_black_qty[$i][$index] : 0,
-							'official_qty' => ($batch_detail['black_qty'] >= $batch_black_qty[$i][$index]) ? $batch_detail['official_qty'] - $batch_white_qty[$i][$index] : $batch_detail['official_qty'] - $batch_white_qty[$i][$index] - ($batch_black_qty[$i][$index] - $batch_detail['black_qty']),
+							'quantity' => $batch_detail['quantity'] - ($white_qty_row + $black_qty_row),
+							'black_qty' => ($batch_detail['black_qty'] >= $black_qty_row) ? $batch_detail['black_qty'] - $black_qty_row : 0,
+							'official_qty' => ($batch_detail['black_qty'] >= $black_qty_row) ? $batch_detail['official_qty'] - $white_qty_row : $batch_detail['official_qty'] - $white_qty_row - ($black_qty_row - $batch_detail['black_qty']),
 							'pending_qty' => $batch_detail['pending_qty'] + $pending_qty
 						));
 
@@ -13983,16 +14159,16 @@ class Inventory_model extends CI_Model
 							'sku'         			=> $batch_detail['sku'] ?? '',
 							'order_id'        	=> $order_id,
 							'status'        		=> 'out',
-							'quantity'        	=> ($batch_white_qty[$i][$index] + $batch_black_qty[$i][$index]),
+							'quantity'        	=> ($white_qty_row + $black_qty_row),
 
 							'actual_rmb'        => 0,
 							'total_rmb'         => 0,
 							'actual_usd'        => 0,
 							'actual_inr'        => 0,
-							'official_qty'      => $batch_white_qty[$i][$index],
+							'official_qty'      => $white_qty_row,
 							'official_rate_rs'  => $batch_bill_amount[$i][$index],
 							'official_total_rs' => $batch_bill_total[$i][$index],
-							'black_qty'         => $batch_black_qty[$i][$index],
+							'black_qty'         => $black_qty_row,
 							'pending_qty' 			=> $pending_qty,
 							'black_rate_rs'  		=> $batch_black_amt[$i][$index],
 							'black_total_rs' 		=> $batch_black_total_amt[$i][$index],
@@ -14032,7 +14208,7 @@ class Inventory_model extends CI_Model
 						'product_id' => $product_id,
 						'product_name' => $item_name,
 						'item_code' => $item_code,
-						'qty' => (int) ($quantity_arr[$in] ?? 0),
+						'qty' => $product_allocated_qty,
 						'added_by' => $this->session->userdata('super_user_id')
 					);
 					$this->db->insert('replace_products', $replace_data);
@@ -14048,12 +14224,17 @@ class Inventory_model extends CI_Model
 				$this->db->where('id', $order_id)->update('sales_order', ['is_generated' => 1]);
 			}
 
+			$approve_message = 'Sale Order approved by ' . $this->session->userdata('super_name');
+			if (!empty($split_remaining_order_id)) {
+				$approve_message .= '; remaining qty created as pending booking #' . $split_remaining_order_id;
+			}
+
 			$log_data = array(
 				'parent_id'      => $order_id,
-				'ref_id'         => NULL,
+				'ref_id'         => $split_remaining_order_id,
 				'module'         => 'sales',
 				'action'         => 'approve',
-				'message'        => 'Sale Order approved by ' . $this->session->userdata('super_name'),
+				'message'        => $approve_message,
 				'json'           => json_encode($log_json),
 				'table_name'     => 'sales_order',
 				'added_by'       => $this->session->userdata('super_user_id'),
@@ -14071,10 +14252,14 @@ class Inventory_model extends CI_Model
 				'sale_order'    => array_merge((array) $sales_record, $data),
 				'products'      => $log_json['new_sale_order']['products'] ?? [],
 				'other_charges' => $log_json['new_sale_order']['other_charges'] ?? [],
+				'split_remaining_order_id' => $split_remaining_order_id,
 			];
 			$this->insert_customer_sales_log($customer_id, 'sales_approve', $customer_log_json, $approve_order_no);
 
-			$this->session->set_flashdata('flash_message', get_phrase('sales_order_added_successfully'));
+			$success_message = !empty($split_remaining_order_id)
+				? 'Sales order approved. Remaining quantity created as a new pending booking with the same order no.'
+				: get_phrase('sales_order_added_successfully');
+			$this->session->set_flashdata('flash_message', $success_message);
 
 			if ($this->db->trans_status() === FALSE) {
 				$this->db->trans_rollback();
@@ -14086,7 +14271,7 @@ class Inventory_model extends CI_Model
 				$this->db->trans_commit();
 				$resultpost = array(
 					"status" => 200,
-					"message" => get_phrase('sales_order_added_successfully'),
+					"message" => $success_message,
 					"url" => $this->session->userdata('previous_url'),
 				);
 			}
@@ -14100,6 +14285,182 @@ class Inventory_model extends CI_Model
 		}
 
 		return simple_json_output($resultpost);
+	}
+
+	/**
+	 * Create a pending booking sales order for remaining qty after partial approve.
+	 * Same order_no; no batches; no charges.
+	 */
+	private function create_remaining_sales_order_booking($params)
+	{
+		$sales_record = $params['sales_record'];
+		$approve_data = $params['approve_data'];
+		$remaining_products = $params['remaining_products'];
+		$sale_person_id = (int) $params['sale_person_id'];
+		$is_distributor = (int) $params['is_distributor'];
+		$warehouse_id = $params['warehouse_id'];
+		$warehouse_name = $params['warehouse_name'];
+		$gst_type = $params['gst_type'];
+		if ($warehouse_id === '' || $warehouse_id === null) {
+			$warehouse_id = $sales_record['warehouse_id'] ?? 0;
+			$warehouse_name = $sales_record['warehouse_name'] ?? '';
+		}
+
+		if (empty($remaining_products)) {
+			return null;
+		}
+
+		$basic_value = 0;
+		$net_sales_value_1 = 0;
+		$total_black_amt = 0;
+		$net_sales_value_2 = 0;
+		$product_rows = array();
+
+		foreach ($remaining_products as $item) {
+			$product = $item['product'];
+			$remaining_qty = (int) $item['remaining_qty'];
+			if ($remaining_qty <= 0) {
+				continue;
+			}
+
+			$amount = (float) ($product['amount'] ?? 0);
+			$bill_amount = (float) ($product['bill_amount'] ?? 0);
+			$gst = (float) ($product['gst'] ?? 0);
+			$black_amount = (float) ($product['black_amount'] ?? 0);
+			if ($black_amount <= 0 && $amount > $bill_amount) {
+				$black_amount = $amount - $bill_amount;
+			}
+
+			$total_amount = $amount * $remaining_qty;
+			$bill_total = $bill_amount * $remaining_qty;
+			$gst_amount = ($bill_total * $gst) / 100;
+			$total_bill_gst_amount = $bill_total + $gst_amount;
+			$black_total = max(0, $total_amount - $bill_total);
+			$final_total = $total_bill_gst_amount + $black_total;
+
+			$basic_value += $bill_total;
+			$net_sales_value_1 += $total_bill_gst_amount;
+			$total_black_amt += $black_total;
+			$net_sales_value_2 += $final_total;
+
+			$product_rows[] = array(
+				'product_id' => (int) $product['product_id'],
+				'is_replace' => (int) ($product['is_replace'] ?? 0),
+				'product_name' => $product['product_name'],
+				'qty' => $remaining_qty,
+				'item_code' => $product['item_code'] ?? '',
+				'amount' => price_format_decimal($amount),
+				'total_amount' => price_format_decimal($total_amount),
+				'available' => (float) ($product['available'] ?? 0),
+				'black_amount' => price_format_decimal($black_amount),
+				'bill_amount' => price_format_decimal($bill_amount),
+				'black_total' => price_format_decimal($black_total),
+				'total_bill_gst_amount' => price_format_decimal($total_bill_gst_amount),
+				'gst' => price_format_decimal($gst),
+				'gst_amount' => price_format_decimal($gst_amount),
+				'bill_total' => price_format_decimal($bill_total),
+				'final_total' => price_format_decimal($final_total),
+			);
+		}
+
+		if (empty($product_rows)) {
+			return null;
+		}
+
+		if ($gst_type === 'IGST') {
+			$igst = $net_sales_value_1 - $basic_value;
+			if ($igst < 0) {
+				$igst = 0;
+			}
+			$central_gst = 0;
+			$state_gst = 0;
+			$gst_total = $igst;
+		} else {
+			$gst_total = $net_sales_value_1 - $basic_value;
+			if ($gst_total < 0) {
+				$gst_total = 0;
+			}
+			$central_gst = $gst_total / 2;
+			$state_gst = $gst_total / 2;
+			$igst = 0;
+		}
+
+		$new_order = array(
+			'sale_person_id' => $sale_person_id,
+			'type' => isset($sales_record['type']) ? $sales_record['type'] : 'normal',
+			'is_distributor' => $is_distributor,
+			'unique_id' => null,
+			'invoice_no' => null,
+			'invoice_date' => null,
+			'order_type' => 'hold',
+			'order_no' => $sales_record['order_no'],
+			'refrence_no' => isset($approve_data['refrence_no']) ? $approve_data['refrence_no'] : ($sales_record['refrence_no'] ?? ''),
+			'date' => (!empty($sales_record['date']) && $sales_record['date'] != '0000-00-00') ? $sales_record['date'] : date('Y-m-d'),
+			'expected_date' => (!empty($sales_record['expected_date']) && $sales_record['expected_date'] != '0000-00-00') ? $sales_record['expected_date'] : date('Y-m-d'),
+			'booking_days' => isset($sales_record['booking_days']) ? (int) $sales_record['booking_days'] : null,
+			'customer_id' => (int) $sales_record['customer_id'],
+			'customer_name' => $sales_record['customer_name'],
+			'shipping_state_id' => $approve_data['shipping_state_id'] ?? ($sales_record['shipping_state_id'] ?? null),
+			'shipping_state_name' => $approve_data['shipping_state_name'] ?? ($sales_record['shipping_state_name'] ?? ''),
+			'shipping_city_id' => $approve_data['shipping_city_id'] ?? ($sales_record['shipping_city_id'] ?? null),
+			'shipping_city_name' => $approve_data['shipping_city_name'] ?? ($sales_record['shipping_city_name'] ?? ''),
+			'shipping_pincode' => $approve_data['shipping_pincode'] ?? ($sales_record['shipping_pincode'] ?? ''),
+			'shipping_gst' => $approve_data['shipping_gst'] ?? ($sales_record['shipping_gst'] ?? ''),
+			'shipping_gst_no' => $approve_data['shipping_gst_no'] ?? ($sales_record['shipping_gst_no'] ?? ''),
+			'shipping_address' => $approve_data['shipping_address'] ?? ($sales_record['shipping_address'] ?? ''),
+			'billing_state_id' => $approve_data['billing_state_id'] ?? ($sales_record['billing_state_id'] ?? null),
+			'billing_state_name' => $approve_data['billing_state_name'] ?? ($sales_record['billing_state_name'] ?? ''),
+			'billing_city_id' => $approve_data['billing_city_id'] ?? ($sales_record['billing_city_id'] ?? null),
+			'billing_city_name' => $approve_data['billing_city_name'] ?? ($sales_record['billing_city_name'] ?? ''),
+			'billing_pincode' => $approve_data['billing_pincode'] ?? ($sales_record['billing_pincode'] ?? ''),
+			'billing_gst' => $approve_data['billing_gst'] ?? ($sales_record['billing_gst'] ?? ''),
+			'billing_gst_no' => $approve_data['billing_gst_no'] ?? ($sales_record['billing_gst_no'] ?? ''),
+			'billing_address' => $approve_data['billing_address'] ?? ($sales_record['billing_address'] ?? ''),
+			'warehouse_id' => $warehouse_id,
+			'warehouse_name' => $warehouse_name,
+			'company_id' => $sales_record['company_id'] ?? $this->session->userdata('company_id'),
+			'company_name' => $sales_record['company_name'] ?? '',
+			'narration' => $approve_data['narration'] ?? ($sales_record['narration'] ?? ''),
+			'remark' => $approve_data['remark'] ?? ($sales_record['remark'] ?? ''),
+			'basic_value' => price_format_decimal($basic_value),
+			'net_sales_value_1' => price_format_decimal($net_sales_value_1),
+			'total_black_amt' => price_format_decimal($total_black_amt),
+			'gst_type' => $gst_type,
+			'cgst_per' => 0,
+			'sgst_per' => 0,
+			'igst_per' => 0,
+			'central_gst' => price_format_decimal($central_gst),
+			'state_gst' => price_format_decimal($state_gst),
+			'igst' => price_format_decimal($igst),
+			'gst_total' => price_format_decimal($gst_total),
+			'net_sales_value_2' => price_format_decimal($net_sales_value_2),
+			'other_charges_name' => null,
+			'other_charges_amount' => 0,
+			'round_of' => 0,
+			'grand_total' => price_format_decimal($net_sales_value_2),
+			'is_generated' => 0,
+			'is_weird' => 0,
+			'is_approved' => 0,
+			'is_intimation' => 0,
+			'intimation_remark' => null,
+			'is_deleted' => 0,
+			'is_cancelled' => 0,
+			'added_by_id' => $this->session->userdata('super_user_id'),
+			'added_by_name' => $this->session->userdata('super_name'),
+			'added_date' => date('Y-m-d H:i:s'),
+		);
+
+		if (!$this->db->insert('sales_order', $new_order)) {
+			throw new Exception('Failed to create remaining sales order booking.');
+		}
+
+		$new_order_id = (int) $this->db->insert_id();
+		foreach ($product_rows as $row) {
+			$row['order_id'] = $new_order_id;
+			$this->db->insert('sales_order_product', $row);
+		}
+
+		return $new_order_id;
 	}
 
 	public function edit_sales_order($id)
@@ -14169,7 +14530,9 @@ class Inventory_model extends CI_Model
 			$data['sale_person_id']         = $sale_person_id;
 			$data['is_distributor']         = $is_distributor;
 			$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
-			$data['date']     		   	 		= ($this->input->post('date'));
+			$data['date']     		   	 		= (!empty($old_sales_record['date']) && $old_sales_record['date'] != '0000-00-00')
+				? $old_sales_record['date']
+				: date('Y-m-d');
 			$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
 			$data['customer_id']       		= $customer_id;
 			$data['customer_name']     		= $customer_name;
@@ -14876,13 +15239,17 @@ class Inventory_model extends CI_Model
 				$igst                 = price_format_decimal($this->input->post('igst'));
 				$gst_total            = ($gst_type == 'IGST') ? $igst : ($central_gst + $state_gst);
 
+				$settings = $this->db->get_where('tbl_settings', array('id' => 1))->row_array();
+				$booking_days = isset($settings['max_booking_days']) ? (int) $settings['max_booking_days'] : 0;
+
 				$data = array();
 				$data['sale_person_id']         = $sale_person_id;
 				$data['is_distributor']         = $is_distributor;
 				$data['order_no']          		= $order_no;
 				$data['refrence_no']       		= clean_and_escape($this->input->post('refrence_no'));
-				$data['date']     		   	 		= ($this->input->post('date'));
+				$data['date']     		   	 		= date('Y-m-d');
 				$data['expected_date']		= ($this->input->post('expected_date') != '') ? $this->input->post('expected_date') : date('Y-m-d');
+				$data['booking_days']      		= $booking_days;
 				$data['customer_id']       		= $customer_id;
 				$data['customer_name']     		= $customer_name;
 				$data['warehouse_id']      		= $warehouse_id;
@@ -17244,6 +17611,16 @@ class Inventory_model extends CI_Model
 					$sales_person = '-';
 				}
 
+				if (!empty($item['is_intimation'])) {
+					$status_label = '<span class="badge badge-light-success">Intimation Added</span>';
+				} elseif (($item['order_type'] ?? '') === 'hold') {
+					$status_label = '<span class="badge badge-light-danger">Hold</span>';
+				} elseif (($item['order_type'] ?? '') === 'excel') {
+					$status_label = '<span class="badge badge-light-info">Excel</span>';
+				} else {
+					$status_label = '<span class="badge badge-light-warning">Pending</span>';
+				}
+
 				$data[] = array(
 					"sr_no"						=> ++$start,
 					"id"          		=> $item['id'],
@@ -17258,6 +17635,7 @@ class Inventory_model extends CI_Model
 					"delivery_date"		=> $delivery_date,
 					"booking_days"		=> $booking_days,
 					"sales_person"		=> $sales_person,
+					"status"			=> $status_label,
 					"total_pro"     	=> $total_pro,
 					"qty"           	=> $qty,
 					"remark"        	=> $item['remark'],
@@ -21033,72 +21411,102 @@ class Inventory_model extends CI_Model
 
 	public function get_intimation_batches()
 	{
-		$warehouse_id = (int) $this->input->post('warehouse_id');
 		$product_id = (int) $this->input->post('product_id');
-		$company_id = (int) $this->session->userdata('company_id');
 		$html = '';
 
-		if ($warehouse_id <= 0 || $product_id <= 0 || $company_id <= 0) {
+		if ($product_id <= 0) {
 			echo $html;
 			return;
 		}
 
 		$inv_query = $this->db->query(
-			"SELECT id, batch_no FROM inventory
-			WHERE warehouse_id = ? AND product_id = ? AND company_id = ? AND quantity > 0
-			ORDER BY id DESC",
-			array($warehouse_id, $product_id, $company_id)
+			"SELECT i.id, i.batch_no, i.warehouse_id, i.official_qty, i.black_qty,
+				COALESCE(w.name, 'Unknown Warehouse') AS warehouse_name
+			FROM inventory i
+			LEFT JOIN warehouse w ON w.id = i.warehouse_id
+			WHERE i.product_id = ? AND i.quantity > 0
+			ORDER BY w.name ASC, i.id DESC",
+			array($product_id)
 		);
 		if ($inv_query->num_rows() > 0) {
 			foreach ($inv_query->result_array() as $row) {
 				$batch_no = $row['batch_no'] !== null && $row['batch_no'] !== '' ? $row['batch_no'] : '-';
+				$warehouse_name = !empty($row['warehouse_name']) ? $row['warehouse_name'] : 'Unknown Warehouse';
+				$white = (int) $row['official_qty'];
+				$black = (int) $row['black_qty'];
+				$label = $batch_no . ' - ' . $warehouse_name . ' - W:' . $white . ' / B:' . $black;
 				$value = 'inventory|' . $row['id'];
-				$html .= '<option value="' . $value . '" data-batch-type="inventory" data-batch-id="' . $row['id'] . '" data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '</option>';
+				$html .= '<option value="' . $value . '"'
+					. ' data-batch-type="inventory"'
+					. ' data-batch-id="' . $row['id'] . '"'
+					. ' data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '"'
+					. ' data-warehouse-id="' . (int) $row['warehouse_id'] . '"'
+					. ' data-official-qty="' . $white . '"'
+					. ' data-black-qty="' . $black . '">'
+					. htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+					. '</option>';
 			}
 		}
 
 		$po_query = $this->db->query(
-			"SELECT pop.id, po.voucher_no
+			"SELECT pop.id, po.voucher_no, po.warehouse_id, pop.quantity,
+				COALESCE(w.name, 'Unknown Warehouse') AS warehouse_name
 			FROM purchase_order po
 			JOIN purchase_order_product pop ON po.id = pop.parent_id
+			LEFT JOIN warehouse w ON w.id = po.warehouse_id
 			WHERE pop.product_id = ?
-			AND po.company_id = ?
-			AND po.warehouse_id = ?
 			AND po.delivery_status = 'pending'
 			AND po.is_deleted = '0'
 			AND pop.quantity > 0
-			ORDER BY po.date DESC, pop.id DESC",
-			array($product_id, $company_id, $warehouse_id)
+			ORDER BY w.name ASC, po.date DESC, pop.id DESC",
+			array($product_id)
 		);
 		if ($po_query->num_rows() > 0) {
 			foreach ($po_query->result_array() as $row) {
 				$batch_no = !empty($row['voucher_no']) ? $row['voucher_no'] : ('PO-' . $row['id']);
-				$label = $batch_no . ' (PO Pending)';
+				$warehouse_name = !empty($row['warehouse_name']) ? $row['warehouse_name'] : 'Unknown Warehouse';
+				$qty = (int) $row['quantity'];
+				$label = $batch_no . ' - ' . $warehouse_name . ' - Qty:' . $qty . ' (PO Pending)';
 				$value = 'po|' . $row['id'];
-				$html .= '<option value="' . $value . '" data-batch-type="po" data-batch-id="' . $row['id'] . '" data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+				$html .= '<option value="' . $value . '"'
+					. ' data-batch-type="po"'
+					. ' data-batch-id="' . $row['id'] . '"'
+					. ' data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '"'
+					. ' data-warehouse-id="' . (int) $row['warehouse_id'] . '">'
+					. htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+					. '</option>';
 			}
 		}
 
 		$loading_query = $this->db->query(
-			"SELECT lpp.id, po.voucher_no
+			"SELECT lpp.id, po.voucher_no, po.warehouse_id,
+				(CASE WHEN lpp.loading_qty > 0 THEN lpp.loading_qty ELSE lpp.quantity END) AS avail_qty,
+				COALESCE(w.name, 'Unknown Warehouse') AS warehouse_name
 			FROM purchase_order po
 			JOIN loading_po_product lpp ON po.id = lpp.parent_id
+			LEFT JOIN warehouse w ON w.id = po.warehouse_id
 			WHERE lpp.product_id = ?
-			AND po.company_id = ?
-			AND po.warehouse_id = ?
 			AND po.delivery_status = 'loading'
 			AND po.is_deleted = '0'
 			AND lpp.is_deleted = '0'
 			AND (CASE WHEN lpp.loading_qty > 0 THEN lpp.loading_qty ELSE lpp.quantity END) > 0
-			ORDER BY po.date DESC, lpp.id DESC",
-			array($product_id, $company_id, $warehouse_id)
+			ORDER BY w.name ASC, po.date DESC, lpp.id DESC",
+			array($product_id)
 		);
 		if ($loading_query->num_rows() > 0) {
 			foreach ($loading_query->result_array() as $row) {
 				$batch_no = !empty($row['voucher_no']) ? $row['voucher_no'] : ('LD-' . $row['id']);
-				$label = $batch_no . ' (Loading)';
+				$warehouse_name = !empty($row['warehouse_name']) ? $row['warehouse_name'] : 'Unknown Warehouse';
+				$qty = (int) $row['avail_qty'];
+				$label = $batch_no . ' - ' . $warehouse_name . ' - Qty:' . $qty . ' (Loading)';
 				$value = 'loading|' . $row['id'];
-				$html .= '<option value="' . $value . '" data-batch-type="loading" data-batch-id="' . $row['id'] . '" data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+				$html .= '<option value="' . $value . '"'
+					. ' data-batch-type="loading"'
+					. ' data-batch-id="' . $row['id'] . '"'
+					. ' data-batch-no="' . htmlspecialchars($batch_no, ENT_QUOTES, 'UTF-8') . '"'
+					. ' data-warehouse-id="' . (int) $row['warehouse_id'] . '">'
+					. htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+					. '</option>';
 			}
 		}
 
@@ -21127,24 +21535,20 @@ class Inventory_model extends CI_Model
 			return;
 		}
 
-		$warehouse_id = (int) $this->input->post('warehouse_id');
 		$remark = $this->input->post('intimation_remark');
+		$expected_date = trim((string) $this->input->post('expected_date'));
 		$batches = $this->input->post('batches');
 
-		if ($warehouse_id <= 0) {
-			echo json_encode(array('status' => 400, 'message' => 'Please select a warehouse.'));
+		if ($expected_date === '' || $expected_date === '0000-00-00') {
+			echo json_encode(array('status' => 400, 'message' => 'Please select expected delivery date.'));
 			return;
 		}
-
-		$warehouse = $this->db->get_where('warehouse', array(
-			'id' => $warehouse_id,
-			'company_id' => $company_id,
-			'is_deleted' => '0'
-		))->row_array();
-		if (empty($warehouse)) {
-			echo json_encode(array('status' => 400, 'message' => 'Invalid warehouse for current company.'));
+		$expected_ts = strtotime($expected_date);
+		if ($expected_ts === false) {
+			echo json_encode(array('status' => 400, 'message' => 'Invalid expected delivery date.'));
 			return;
 		}
+		$expected_date = date('Y-m-d', $expected_ts);
 
 		$products = $this->db->get_where('sales_order_product', array('order_id' => $order_id))->result_array();
 		if (empty($products)) {
@@ -21171,6 +21575,7 @@ class Inventory_model extends CI_Model
 			$batch_type = isset($row['batch_type']) ? trim($row['batch_type']) : '';
 			$batch_id = isset($row['batch_id']) ? (int) $row['batch_id'] : 0;
 			$batch_no = isset($row['batch_no']) ? trim($row['batch_no']) : '';
+			$warehouse_id = isset($row['warehouse_id']) ? (int) $row['warehouse_id'] : 0;
 			$white_qty = isset($row['white_qty']) ? (int) $row['white_qty'] : 0;
 			$black_qty = isset($row['black_qty']) ? (int) $row['black_qty'] : 0;
 
@@ -21201,12 +21606,10 @@ class Inventory_model extends CI_Model
 			if ($batch_type === 'inventory') {
 				$inv = $this->db->get_where('inventory', array(
 					'id' => $batch_id,
-					'product_id' => $product_id,
-					'warehouse_id' => $warehouse_id,
-					'company_id' => $company_id
+					'product_id' => $product_id
 				))->row_array();
 				if (empty($inv)) {
-					echo json_encode(array('status' => 400, 'message' => 'Inventory batch not found for selected warehouse.'));
+					echo json_encode(array('status' => 400, 'message' => 'Inventory batch not found.'));
 					return;
 				}
 				if ($white_qty > (int) $inv['official_qty'] || $black_qty > (int) $inv['black_qty']) {
@@ -21216,15 +21619,15 @@ class Inventory_model extends CI_Model
 				if ($batch_no === '') {
 					$batch_no = $inv['batch_no'] !== null && $inv['batch_no'] !== '' ? $inv['batch_no'] : '-';
 				}
+				$warehouse_id = (int) $inv['warehouse_id'];
 			} elseif ($batch_type === 'po') {
 				$po_row = $this->db->query(
-					"SELECT pop.id, po.voucher_no
+					"SELECT pop.id, po.voucher_no, po.warehouse_id
 					FROM purchase_order_product pop
 					JOIN purchase_order po ON po.id = pop.parent_id
 					WHERE pop.id = ? AND pop.product_id = ?
-					AND po.warehouse_id = ? AND po.company_id = ?
 					AND po.delivery_status = 'pending' AND po.is_deleted = '0'",
-					array($batch_id, $product_id, $warehouse_id, $company_id)
+					array($batch_id, $product_id)
 				)->row_array();
 				if (empty($po_row)) {
 					echo json_encode(array('status' => 400, 'message' => 'PO pending batch not found.'));
@@ -21233,15 +21636,15 @@ class Inventory_model extends CI_Model
 				if ($batch_no === '') {
 					$batch_no = !empty($po_row['voucher_no']) ? $po_row['voucher_no'] : ('PO-' . $batch_id);
 				}
+				$warehouse_id = (int) $po_row['warehouse_id'];
 			} else {
 				$ld_row = $this->db->query(
-					"SELECT lpp.id, po.voucher_no
+					"SELECT lpp.id, po.voucher_no, po.warehouse_id
 					FROM loading_po_product lpp
 					JOIN purchase_order po ON po.id = lpp.parent_id
 					WHERE lpp.id = ? AND lpp.product_id = ?
-					AND po.warehouse_id = ? AND po.company_id = ?
 					AND po.delivery_status = 'loading' AND po.is_deleted = '0' AND lpp.is_deleted = '0'",
-					array($batch_id, $product_id, $warehouse_id, $company_id)
+					array($batch_id, $product_id)
 				)->row_array();
 				if (empty($ld_row)) {
 					echo json_encode(array('status' => 400, 'message' => 'Loading batch not found.'));
@@ -21250,6 +21653,12 @@ class Inventory_model extends CI_Model
 				if ($batch_no === '') {
 					$batch_no = !empty($ld_row['voucher_no']) ? $ld_row['voucher_no'] : ('LD-' . $batch_id);
 				}
+				$warehouse_id = (int) $ld_row['warehouse_id'];
+			}
+
+			if ($warehouse_id <= 0) {
+				echo json_encode(array('status' => 400, 'message' => 'Warehouse missing for selected batch.'));
+				return;
 			}
 
 			if (!isset($allocated[$order_product_id])) {
@@ -21297,7 +21706,8 @@ class Inventory_model extends CI_Model
 		$this->db->where('id', $order_id);
 		$this->db->update('sales_order', array(
 			'is_intimation' => 1,
-			'intimation_remark' => $remark
+			'intimation_remark' => $remark,
+			'expected_date' => $expected_date
 		));
 
 		$this->db->trans_complete();

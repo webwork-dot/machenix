@@ -503,6 +503,7 @@
 					<th>Tot Product</th>
 					<th>Tot Amt</th>
 					<th>Sales Person</th>
+					<th>Status</th>
 					<th>Actions</th>
                   <?php } elseif ($status == 'cancelled') { ?>
 					<th>#</th>
@@ -553,7 +554,7 @@ if ($status == 'all' && $sub_tab == 'product') {
 } elseif ($status == 'all') {
     $num_cols = 32; // exclude Actions from export
 } elseif ($status == 'pending') {
-    $num_cols = 11; // exclude Actions from export
+    $num_cols = 12; // exclude Actions from export
 } elseif ($status == 'cancelled') {
     $num_cols = 11;
     if ($staff_access !== 7) {
@@ -698,6 +699,7 @@ if ($status == 'all' && $sub_tab != 'product') {
                 { "data": "total_pro" },
                 { "data": "grand_total" },
                 { "data": "sales_person" },
+                { "data": "status" },
                 { "data": "action" }
                 <?php } elseif ($status == 'cancelled') { ?>
                 { "data": "sr_no" },
@@ -787,7 +789,7 @@ if ($status == 'all' && $sub_tab != 'product') {
                 }
                 <?php } elseif ($status == 'pending') { ?>
                 {
-                    "targets": [0, 1, 2, 3, 7, 8, 9],
+                    "targets": [0, 1, 2, 3, 7, 8, 9, 11],
                     "className": "text-center",
                 }
                 <?php } elseif ($status == 'cancelled') { ?>

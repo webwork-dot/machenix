@@ -12,10 +12,6 @@ if (empty($sales_order)) {
 
 $products = $this->db->query("SELECT * FROM sales_order_product WHERE order_id = ?", array($sales_order_id))->result_array();
 $company_id = (int) $this->session->userdata('company_id');
-$warehouses = $this->db->query(
-	"SELECT id, name FROM warehouse WHERE is_deleted = '0' AND company_id = ? ORDER BY sort ASC, name ASC",
-	array($company_id)
-)->result_array();
 
 $existing_rows = $this->db->query(
 	"SELECT * FROM sales_order_intimation_products WHERE sales_order_id = ? AND is_deleted = 0 ORDER BY id ASC",
@@ -23,26 +19,75 @@ $existing_rows = $this->db->query(
 )->result_array();
 
 $existing_by_product = array();
-$selected_warehouse_id = 0;
 foreach ($existing_rows as $row) {
 	$op_id = (int) $row['order_product_id'];
 	if (!isset($existing_by_product[$op_id])) {
 		$existing_by_product[$op_id] = array();
 	}
 	$existing_by_product[$op_id][] = $row;
-	if ($selected_warehouse_id <= 0 && !empty($row['warehouse_id'])) {
-		$selected_warehouse_id = (int) $row['warehouse_id'];
+}
+
+$stock_by_product = array();
+$product_ids = array();
+foreach ($products as $product) {
+	$pid = (int) $product['product_id'];
+	if ($pid > 0) {
+		$product_ids[$pid] = $pid;
+	}
+}
+if (!empty($product_ids)) {
+	$ids_list = implode(',', array_map('intval', $product_ids));
+	$stock_rows = $this->db->query(
+		"SELECT product_id,
+			COALESCE(SUM(CASE WHEN company_id = ? THEN official_qty ELSE 0 END), 0) AS company_white,
+			COALESCE(SUM(CASE WHEN company_id = ? THEN black_qty ELSE 0 END), 0) AS company_black,
+			COALESCE(SUM(official_qty), 0) AS overall_white,
+			COALESCE(SUM(black_qty), 0) AS overall_black
+		FROM inventory
+		WHERE product_id IN ($ids_list)
+		GROUP BY product_id",
+		array($company_id, $company_id)
+	)->result_array();
+	foreach ($stock_rows as $sr) {
+		$stock_by_product[(int) $sr['product_id']] = array(
+			'company_white' => (int) $sr['company_white'],
+			'company_black' => (int) $sr['company_black'],
+			'overall_white' => (int) $sr['overall_white'],
+			'overall_black' => (int) $sr['overall_black'],
+		);
+	}
+}
+
+$warehouse_name_map = array();
+$warehouse_ids = array();
+foreach ($existing_rows as $row) {
+	$wid = (int) $row['warehouse_id'];
+	if ($wid > 0) {
+		$warehouse_ids[$wid] = $wid;
+	}
+}
+if (!empty($warehouse_ids)) {
+	$wh_list = implode(',', array_map('intval', $warehouse_ids));
+	$wh_rows = $this->db->query("SELECT id, name FROM warehouse WHERE id IN ($wh_list)")->result_array();
+	foreach ($wh_rows as $wh) {
+		$warehouse_name_map[(int) $wh['id']] = $wh['name'];
 	}
 }
 
 $intimation_remark = isset($sales_order['intimation_remark']) ? $sales_order['intimation_remark'] : '';
+$expected_date = (!empty($sales_order['expected_date']) && $sales_order['expected_date'] != '0000-00-00')
+	? $sales_order['expected_date']
+	: date('Y-m-d');
 
 if (!function_exists('intimation_batch_row_html')) {
-function intimation_batch_row_html($p_index, $batch, $is_view) {
+function intimation_batch_row_html($p_index, $batch, $is_view, $warehouse_name = '') {
 	$batch_type = $batch['batch_type'];
 	$batch_value = $batch_type . '|' . $batch['batch_id'];
 	$show_avail = ($batch_type === 'inventory');
 	$label = $batch['batch_no'];
+	if ($warehouse_name !== '') {
+		$label .= ' - ' . $warehouse_name;
+	}
 	if ($batch_type === 'po') {
 		$label .= ' (PO Pending)';
 	} elseif ($batch_type === 'loading') {
@@ -61,6 +106,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 						data-batch-type="<?php echo htmlspecialchars($batch_type, ENT_QUOTES, 'UTF-8'); ?>"
 						data-batch-id="<?php echo (int) $batch['batch_id']; ?>"
 						data-batch-no="<?php echo htmlspecialchars($batch['batch_no'], ENT_QUOTES, 'UTF-8'); ?>"
+						data-warehouse-id="<?php echo (int) $batch['warehouse_id']; ?>"
 						selected>
 						<?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
 					</option>
@@ -68,6 +114,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 				<input type="hidden" class="batch-type" value="<?php echo htmlspecialchars($batch_type, ENT_QUOTES, 'UTF-8'); ?>">
 				<input type="hidden" class="batch-id" value="<?php echo (int) $batch['batch_id']; ?>">
 				<input type="hidden" class="batch-no" value="<?php echo htmlspecialchars($batch['batch_no'], ENT_QUOTES, 'UTF-8'); ?>">
+				<input type="hidden" class="warehouse-id" value="<?php echo (int) $batch['warehouse_id']; ?>">
 			</div>
 			<div class="ibg-qty">
 				<div class="qty-box">
@@ -104,7 +151,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 .intimation-modal .im-meta span { color: #64748b; }
 .intimation-modal .im-meta strong { color: #0f172a; font-weight: 600; }
 .intimation-modal .im-top {
-	display: grid; grid-template-columns: minmax(180px, 240px) 1fr; gap: 10px;
+	display: grid; grid-template-columns: minmax(160px, 220px) 1fr; gap: 10px;
 	margin-bottom: 12px; align-items: end;
 }
 .intimation-modal .im-top label {
@@ -165,6 +212,8 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 	padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
 	background: #eef2ff; color: #4338ca; white-space: nowrap;
 }
+.intimation-modal .chip.stock { background: #ecfdf5; color: #047857; }
+.intimation-modal .chip.overall { background: #f1f5f9; color: #334155; }
 .intimation-modal .chip.alloc { background: #f1f5f9; color: #475569; }
 .intimation-modal .chip.alloc.ok { background: #dcfce7; color: #166534; }
 .intimation-modal .chip.alloc.warn { background: #fef3c7; color: #92400e; }
@@ -176,7 +225,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 .intimation-modal .intimation-batch-row + .intimation-batch-row { margin-top: 6px; }
 .intimation-modal .intimation-batch-grid {
 	display: grid;
-	grid-template-columns: minmax(180px, 1.4fr) minmax(180px, 1fr) 36px;
+	grid-template-columns: minmax(220px, 1.6fr) minmax(180px, 1fr) 36px;
 	gap: 8px; align-items: end;
 }
 .intimation-modal .ibg-qty {
@@ -209,15 +258,8 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 	<form id="sales_order_intimation_form" onsubmit="return submitSalesOrderIntimation(event);">
 		<div class="im-top">
 			<div>
-				<label>Warehouse <span class="text-danger">*</span></label>
-				<select class="form-control select2" name="warehouse_id" id="intimation_warehouse_id" <?php echo $is_view ? 'disabled' : ''; ?> required>
-					<option value="">Select Warehouse</option>
-					<?php foreach ($warehouses as $wh) { ?>
-						<option value="<?php echo (int) $wh['id']; ?>" <?php echo ($selected_warehouse_id == (int) $wh['id']) ? 'selected' : ''; ?>>
-							<?php echo htmlspecialchars($wh['name'], ENT_QUOTES, 'UTF-8'); ?>
-						</option>
-					<?php } ?>
-				</select>
+				<label>Expected Delivery Date</label>
+				<input type="date" class="form-control" name="expected_date" id="intimation_expected_date" <?php echo $is_view ? 'readonly' : ''; ?> required value="<?php echo htmlspecialchars($expected_date, ENT_QUOTES, 'UTF-8'); ?>">
 			</div>
 			<div>
 				<label>Remark</label>
@@ -233,6 +275,10 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 				$product_id = (int) $product['product_id'];
 				$ordered_qty = (int) $product['qty'];
 				$existing = isset($existing_by_product[$op_id]) ? $existing_by_product[$op_id] : array();
+				$company_white = isset($stock_by_product[$product_id]) ? $stock_by_product[$product_id]['company_white'] : 0;
+				$company_black = isset($stock_by_product[$product_id]) ? $stock_by_product[$product_id]['company_black'] : 0;
+				$overall_white = isset($stock_by_product[$product_id]) ? $stock_by_product[$product_id]['overall_white'] : 0;
+				$overall_black = isset($stock_by_product[$product_id]) ? $stock_by_product[$product_id]['overall_black'] : 0;
 			?>
 			<div class="product-card intimation-product" data-index="<?php echo $p_index; ?>" data-order-product-id="<?php echo $op_id; ?>" data-product-id="<?php echo $product_id; ?>" data-ordered-qty="<?php echo $ordered_qty; ?>">
 				<div class="product-head">
@@ -244,6 +290,8 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 					</div>
 					<div class="product-meta">
 						<span class="chip">Qty <?php echo $ordered_qty; ?></span>
+						<span class="chip stock" title="Current company stock">Company W:<?php echo $company_white; ?> / B:<?php echo $company_black; ?></span>
+						<span class="chip overall" title="Overall stock (all companies)">Overall W:<?php echo $overall_white; ?> / B:<?php echo $overall_black; ?></span>
 						<span class="chip alloc" id="allocated_info_<?php echo $p_index; ?>">0 / <?php echo $ordered_qty; ?></span>
 						<?php if (!$is_view) { ?>
 							<button type="button" class="btn btn-sm btn-primary" onclick="addIntimationBatchRow(<?php echo $p_index; ?>)">
@@ -257,7 +305,8 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 						<?php
 						if (!empty($existing)) {
 							foreach ($existing as $batch) {
-								echo intimation_batch_row_html($p_index, $batch, $is_view);
+								$wh_name = isset($warehouse_name_map[(int) $batch['warehouse_id']]) ? $warehouse_name_map[(int) $batch['warehouse_id']] : '';
+								echo intimation_batch_row_html($p_index, $batch, $is_view, $wh_name);
 							}
 						}
 						?>
@@ -289,10 +338,6 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 	var intimationIsView = <?php echo $is_view ? 'true' : 'false'; ?>;
 	var intimationBatchCounters = {};
 
-	function getWarehouseId() {
-		return $('#intimation_warehouse_id').val() || '';
-	}
-
 	function toggleEmptyState(productIndex) {
 		var hasRows = $('#intimation_batch_body_' + productIndex + ' .intimation-batch-row').length > 0;
 		$('#empty_batches_' + productIndex).toggleClass('d-none', hasRows);
@@ -323,6 +368,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 						<input type="hidden" class="batch-type" value="">
 						<input type="hidden" class="batch-id" value="">
 						<input type="hidden" class="batch-no" value="">
+						<input type="hidden" class="warehouse-id" value="">
 					</div>
 					<div class="ibg-qty">
 						<div class="qty-box">
@@ -344,19 +390,24 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 		`;
 	}
 
+	function loadBatchOptions($select, productId, onDone) {
+		$.ajax({
+			type: "POST",
+			url: "<?php echo base_url(); ?>inventory/get_intimation_batches",
+			data: { product_id: productId },
+			success: function(res) {
+				if (typeof onDone === 'function') {
+					onDone(res);
+				} else {
+					$select.append(res);
+					initIntimationSelect2($select.parent());
+				}
+			}
+		});
+	}
+
 	window.addIntimationBatchRow = function(productIndex) {
 		if (intimationIsView) return;
-		var warehouseId = getWarehouseId();
-		if (!warehouseId) {
-			Swal.fire({
-				title: "Warehouse Required",
-				text: "Please select a warehouse first.",
-				icon: "warning",
-				customClass: { confirmButton: "btn btn-primary" },
-				buttonsStyling: false
-			});
-			return;
-		}
 
 		if (typeof intimationBatchCounters[productIndex] === 'undefined') {
 			intimationBatchCounters[productIndex] = $('#intimation_batch_body_' + productIndex + ' .intimation-batch-row').length;
@@ -370,18 +421,10 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 		var $select = $body.find('.intimation-batch-row:last .intimation-batch-select');
 		var productId = $('.intimation-product[data-index="' + productIndex + '"]').data('product-id');
 
-		$.ajax({
-			type: "POST",
-			url: "<?php echo base_url(); ?>inventory/get_intimation_batches",
-			data: {
-				warehouse_id: warehouseId,
-				product_id: productId
-			},
-			success: function(res) {
-				$select.append(res);
-				initIntimationSelect2($select.parent());
-				$select.select2('open');
-			}
+		loadBatchOptions($select, productId, function(res) {
+			$select.append(res);
+			initIntimationSelect2($select.parent());
+			$select.select2('open');
 		});
 
 		updateIntimationAllocated(productIndex);
@@ -401,6 +444,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 		var batchType = $option.data('batch-type') || '';
 		var batchId = $option.data('batch-id') || '';
 		var batchNo = $option.data('batch-no') || '';
+		var warehouseId = $option.data('warehouse-id') || '';
 
 		if (!batchType && value) {
 			var parts = value.split('|');
@@ -411,6 +455,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 		$row.find('.batch-type').val(batchType);
 		$row.find('.batch-id').val(batchId);
 		$row.find('.batch-no').val(batchNo);
+		$row.find('.warehouse-id').val(warehouseId);
 
 		$row.find('.available-white-qty').val(0);
 		$row.find('.available-black-qty').val(0);
@@ -423,21 +468,33 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 		}
 
 		if (batchType === 'inventory' && batchId) {
-			$.ajax({
-				type: "POST",
-				url: "<?php echo base_url(); ?>inventory/get_batch_qty_details",
-				data: { batch_id: batchId },
-				dataType: "json",
-				success: function(res) {
-					var white = parseInt(res.official_qty || 0, 10);
-					var black = parseInt(res.black_qty || 0, 10);
-					$row.find('.available-white-qty').val(white);
-					$row.find('.available-black-qty').val(black);
-					$row.find('.avail-white-text').text(white);
-					$row.find('.avail-black-text').text(black);
-					$row.find('.avail-white-badge, .avail-black-badge').removeClass('d-none');
-				}
-			});
+			var optWhite = parseInt($option.data('official-qty'), 10);
+			var optBlack = parseInt($option.data('black-qty'), 10);
+			if (!isNaN(optWhite) || !isNaN(optBlack)) {
+				var white = isNaN(optWhite) ? 0 : optWhite;
+				var black = isNaN(optBlack) ? 0 : optBlack;
+				$row.find('.available-white-qty').val(white);
+				$row.find('.available-black-qty').val(black);
+				$row.find('.avail-white-text').text(white);
+				$row.find('.avail-black-text').text(black);
+				$row.find('.avail-white-badge, .avail-black-badge').removeClass('d-none');
+			} else {
+				$.ajax({
+					type: "POST",
+					url: "<?php echo base_url(); ?>inventory/get_batch_qty_details",
+					data: { batch_id: batchId },
+					dataType: "json",
+					success: function(res) {
+						var white = parseInt(res.official_qty || 0, 10);
+						var black = parseInt(res.black_qty || 0, 10);
+						$row.find('.available-white-qty').val(white);
+						$row.find('.available-black-qty').val(black);
+						$row.find('.avail-white-text').text(white);
+						$row.find('.avail-black-text').text(black);
+						$row.find('.avail-white-badge, .avail-black-badge').removeClass('d-none');
+					}
+				});
+			}
 		}
 	};
 
@@ -464,7 +521,6 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 
 	function reloadAllBatchOptions() {
 		if (intimationIsView) return;
-		var warehouseId = getWarehouseId();
 		$('.intimation-product').each(function() {
 			var productIndex = $(this).data('index');
 			var productId = $(this).data('product-id');
@@ -475,40 +531,28 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 				var currentType = $row.find('.batch-type').val();
 				var currentId = $row.find('.batch-id').val();
 				var currentNo = $row.find('.batch-no').val();
+				var currentWh = $row.find('.warehouse-id').val();
 				var white = $row.find('.white-qty').val();
 				var black = $row.find('.black-qty').val();
 
-				if (!warehouseId) {
-					$select.html('<option value="">Select Batch</option>');
-					return;
-				}
-
-				$.ajax({
-					type: "POST",
-					url: "<?php echo base_url(); ?>inventory/get_intimation_batches",
-					data: {
-						warehouse_id: warehouseId,
-						product_id: productId
-					},
-					success: function(res) {
-						$select.html('<option value="">Select Batch</option>' + res);
-						var restoreVal = currentType && currentId ? (currentType + '|' + currentId) : currentVal;
-						if (restoreVal && $select.find('option[value="' + restoreVal + '"]').length === 0 && currentType && currentId) {
-							var label = currentNo || restoreVal;
-							if (currentType === 'po') label += ' (PO Pending)';
-							if (currentType === 'loading') label += ' (Loading)';
-							$select.append(
-								'<option value="' + restoreVal + '" data-batch-type="' + currentType + '" data-batch-id="' + currentId + '" data-batch-no="' + (currentNo || '') + '">' + label + '</option>'
-							);
-						}
-						if (restoreVal) {
-							$select.val(restoreVal).trigger('change');
-						}
-						$row.find('.white-qty').val(white);
-						$row.find('.black-qty').val(black);
-						initIntimationSelect2($row);
-						updateIntimationAllocated(productIndex);
+				loadBatchOptions($select, productId, function(res) {
+					$select.html('<option value="">Select Batch</option>' + res);
+					var restoreVal = currentType && currentId ? (currentType + '|' + currentId) : currentVal;
+					if (restoreVal && $select.find('option[value="' + restoreVal + '"]').length === 0 && currentType && currentId) {
+						var label = currentNo || restoreVal;
+						if (currentType === 'po') label += ' (PO Pending)';
+						if (currentType === 'loading') label += ' (Loading)';
+						$select.append(
+							'<option value="' + restoreVal + '" data-batch-type="' + currentType + '" data-batch-id="' + currentId + '" data-batch-no="' + (currentNo || '') + '" data-warehouse-id="' + (currentWh || '') + '">' + label + '</option>'
+						);
 					}
+					if (restoreVal) {
+						$select.val(restoreVal).trigger('change');
+					}
+					$row.find('.white-qty').val(white);
+					$row.find('.black-qty').val(black);
+					initIntimationSelect2($row);
+					updateIntimationAllocated(productIndex);
 				});
 			});
 		});
@@ -517,12 +561,6 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 	window.submitSalesOrderIntimation = function(e) {
 		if (e) e.preventDefault();
 		if (intimationIsView) return false;
-
-		var warehouseId = getWarehouseId();
-		if (!warehouseId) {
-			Swal.fire({ title: "Warehouse Required", text: "Please select a warehouse.", icon: "warning", customClass: { confirmButton: "btn btn-primary" }, buttonsStyling: false });
-			return false;
-		}
 
 		var batches = [];
 		var validationError = '';
@@ -543,6 +581,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 				var batchType = $row.find('.batch-type').val();
 				var batchId = parseInt($row.find('.batch-id').val(), 10) || 0;
 				var batchNo = $row.find('.batch-no').val() || '';
+				var warehouseId = parseInt($row.find('.warehouse-id').val(), 10) || 0;
 				var white = parseInt($row.find('.white-qty').val(), 10) || 0;
 				var black = parseInt($row.find('.black-qty').val(), 10) || 0;
 				var availWhite = parseInt($row.find('.available-white-qty').val(), 10) || 0;
@@ -586,6 +625,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 					batch_type: batchType,
 					batch_id: batchId,
 					batch_no: batchNo,
+					warehouse_id: warehouseId,
 					white_qty: white,
 					black_qty: black
 				});
@@ -611,7 +651,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 			type: 'POST',
 			url: '<?php echo base_url(); ?>inventory/sales_order_intimation_save/' + intimationOrderId,
 			data: {
-				warehouse_id: warehouseId,
+				expected_date: $('#intimation_expected_date').val(),
 				intimation_remark: $('#intimation_remark').val(),
 				batches: batches
 			},
@@ -670,11 +710,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view) {
 			updateIntimationAllocated(idx);
 		});
 
-		$('#intimation_warehouse_id').on('change', function() {
-			reloadAllBatchOptions();
-		});
-
-		<?php if (($is_edit || $is_view) && $selected_warehouse_id > 0) { ?>
+		<?php if ($is_edit || $is_view) { ?>
 		$('.intimation-batch-row').each(function() {
 			var $row = $(this);
 			if ($row.find('.batch-type').val() === 'inventory') {

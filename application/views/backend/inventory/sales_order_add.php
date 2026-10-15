@@ -251,7 +251,7 @@
             <div class="form-group">
               <label>Date <span class="required">*</span></label>
               <input type="date" class="form-control" name="date" max="<?php echo date('Y-m-d');?>"
-                value="<?php echo date('Y-m-d');?>" id="date_picker">
+                value="<?php echo date('Y-m-d');?>" id="date_picker" readonly>
             </div>
           </div>
 
@@ -1138,11 +1138,8 @@ function appendRequirement() {
       }
     });
 
-    // Restricted access check
-    <?php if($this->session->userdata('super_type_id') == 7): // Salesman role ID ?>
-      $('#date_picker').prop('readonly', true);
-      $('#date_picker').on('mousedown', function(e){ e.preventDefault(); });
-    <?php endif; ?>
+    $('#date_picker').prop('readonly', true);
+    $('#date_picker').on('mousedown click keydown', function(e){ e.preventDefault(); });
 
     change_gst($('#gst_type').val());
     recalculate();
