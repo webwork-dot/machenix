@@ -507,7 +507,512 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (490, 457, 'columns', 'SKU', 'item_code', 6, 0, '2026-10-17 18:01:00'),
 (491, 457, 'columns', 'Quantity', 'qty', 7, 0, '2026-10-17 18:01:00'),
 (492, 457, 'columns', 'Order By', 'salesperson', 8, 0, '2026-10-17 18:01:00'),
-(493, 457, 'actions', 'Excel / PDF Export', '', 1, 0, '2026-10-17 18:01:00');
+(493, 457, 'actions', 'Excel / PDF Export', '', 1, 0, '2026-10-17 18:01:00'),
+
+(494, 0, 'module', 'Warehouses', 'inventory/warehouse', 16, 0, '2026-10-17 18:54:00'),
+(495, 494, 'columns', 'Warehouse Name', 'name', 1, 0, '2026-10-17 18:54:00'),
+(496, 494, 'actions', 'Add', 'inventory/warehouse/add', 1, 0, '2026-10-17 18:54:00'),
+(497, 494, 'actions', 'Edit', 'inventory/warehouse/edit/[:id]', 2, 0, '2026-10-17 18:54:00'),
+(498, 494, 'actions', 'Delete', '', 3, 0, '2026-10-17 18:54:00'),
+(499, 494, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-17 18:54:00'),
+
+-- =========================================================
+-- Customer
+-- =========================================================
+(500, 0, 'module', 'Customer', 'inventory/customer', 17, 0, '2026-10-17 18:54:00'),
+(501, 500, 'columns', 'Company Name', 'name', 1, 0, '2026-10-17 18:54:00'),
+(502, 500, 'columns', 'Distributor', 'distributor', 2, 0, '2026-10-17 18:54:00'),
+(503, 500, 'columns', 'GST Name', 'gst_name', 3, 0, '2026-10-17 18:54:00'),
+(504, 500, 'columns', 'GST No', 'gst_no', 4, 0, '2026-10-17 18:54:00'),
+(505, 500, 'columns', 'City', 'city_name', 5, 0, '2026-10-17 18:54:00'),
+(506, 500, 'columns', 'State', 'state_name', 6, 0, '2026-10-17 18:54:00'),
+(507, 500, 'columns', 'Salesperson', 'salesperson', 7, 0, '2026-10-17 18:54:00'),
+(508, 500, 'columns', 'Added By', 'added_by_name', 8, 0, '2026-10-17 18:54:00'),
+
+(509, 500, 'actions', 'Add', 'inventory/customer/add', 1, 0, '2026-10-17 18:54:00'),
+(510, 500, 'actions', 'View', '', 2, 0, '2026-10-17 18:54:00'),
+(511, 500, 'actions', 'Edit', 'inventory/customer/edit/[:id]', 3, 0, '2026-10-17 18:54:00'),
+(512, 500, 'actions', 'Cancel', '', 4, 0, '2026-10-17 18:54:00'),
+(513, 500, 'actions', 'Reassign', '', 5, 0, '2026-10-17 18:54:00'),
+(514, 500, 'actions', 'Timeline', '', 6, 0, '2026-10-17 18:54:00'),
+(515, 500, 'actions', 'Share Customer', '', 7, 0, '2026-10-17 18:54:00'),
+(516, 500, 'actions', 'Ledger', 'inventory/customer/ledger/[:id]', 8, 0, '2026-10-17 18:54:00'),
+(517, 500, 'actions', 'Excel / PDF Export', '', 9, 0, '2026-10-17 18:54:00'),
+
+-- =========================================================
+-- Customer Adjustment
+-- =========================================================
+(518, 0, 'module', 'Customer Adjustment', 'inventory/customer-adjustment', 18, 0, '2026-10-17 18:54:00'),
+(519, 518, 'columns', 'Date', 'date', 1, 0, '2026-10-17 18:54:00'),
+(520, 518, 'columns', 'Customer Name', 'customer_name', 2, 0, '2026-10-17 18:54:00'),
+(521, 518, 'columns', 'Amount (INR)', 'inr', 3, 0, '2026-10-17 18:54:00'),
+(522, 518, 'columns', 'Amt Type', 'amt_type', 4, 0, '2026-10-17 18:54:00'),
+(523, 518, 'columns', 'Type', 'type', 5, 0, '2026-10-17 18:54:00'),
+(524, 518, 'columns', 'Remark', 'remark', 6, 0, '2026-10-17 18:54:00'),
+(525, 518, 'columns', 'Added By', 'added_by', 7, 0, '2026-10-17 18:54:00'),
+
+(526, 518, 'actions', 'Add', 'inventory/add-customer-adjustment', 1, 0, '2026-10-17 18:54:00'),
+(527, 518, 'actions', 'Edit', 'inventory/edit-customer-adjustment/[:id]', 2, 0, '2026-10-17 18:54:00'),
+(528, 518, 'actions', 'Delete', 'inventory/customer-adjustment/delete/[:id]', 3, 0, '2026-10-17 18:54:00'),
+(529, 518, 'actions', 'Excel Export', '', 4, 0, '2026-10-17 18:54:00'),
+
+-- =========================================================
+-- Leads (module + tabs)
+-- =========================================================
+(530, 0, 'module', 'Leads', 'inventory/leads/all', 19, 0, '2026-10-17 18:54:00'),
+(531, 530, 'tabs', 'All Leads', 'inventory/leads/all', 1, 0, '2026-10-17 18:54:00'),
+(532, 530, 'tabs', 'New Leads', 'inventory/leads/new', 2, 0, '2026-10-17 18:54:00'),
+(533, 530, 'tabs', 'Customers/Leads Calls', 'inventory/customer_calls', 3, 0, '2026-10-17 18:54:00'),
+(534, 530, 'tabs', 'Todays Follow-up', 'inventory/leads/today', 4, 0, '2026-10-17 18:54:00'),
+(535, 530, 'tabs', 'Upcoming Follow-up', 'inventory/leads/upcoming', 5, 0, '2026-10-17 18:54:00'),
+(536, 530, 'tabs', 'Missed Leads', 'inventory/leads/missed', 6, 0, '2026-10-17 18:54:00'),
+(537, 530, 'tabs', 'Lost Leads', 'inventory/leads/lost', 7, 0, '2026-10-17 18:54:00'),
+(538, 530, 'tabs', 'Move To Customer', 'inventory/leads/moved', 8, 0, '2026-10-17 18:54:00'),
+
+-- All Leads (531)
+(539, 531, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(540, 531, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(541, 531, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(542, 531, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(543, 531, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(544, 531, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(545, 531, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(546, 531, 'actions', 'Add', 'inventory/leads/add', 1, 0, '2026-10-17 18:54:00'),
+(547, 531, 'actions', 'Import Excel', 'inventory/leads/import', 2, 0, '2026-10-17 18:54:00'),
+(548, 531, 'actions', 'Assign Leads', '', 3, 0, '2026-10-17 18:54:00'),
+(549, 531, 'actions', 'View', '', 4, 0, '2026-10-17 18:54:00'),
+(550, 531, 'actions', 'Edit', 'inventory/leads/edit/[:id]', 5, 0, '2026-10-17 18:54:00'),
+(551, 531, 'actions', 'Delete', '', 6, 0, '2026-10-17 18:54:00'),
+(552, 531, 'actions', 'Assign', '', 7, 0, '2026-10-17 18:54:00'),
+(553, 531, 'actions', 'Excel / PDF Export', '', 8, 0, '2026-10-17 18:54:00'),
+
+-- New Leads (532)
+(554, 532, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(555, 532, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(556, 532, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(557, 532, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(558, 532, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(559, 532, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(560, 532, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(561, 532, 'columns', 'Status', 'status', 8, 0, '2026-10-17 18:54:00'),
+(562, 532, 'columns', 'Staff', 'staff', 9, 0, '2026-10-17 18:54:00'),
+(563, 532, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 18:54:00'),
+(564, 532, 'columns', 'Assigned Date', 'assigned_date', 11, 0, '2026-10-17 18:54:00'),
+(565, 532, 'actions', 'Add', 'inventory/leads/add', 1, 0, '2026-10-17 18:54:00'),
+(566, 532, 'actions', 'View', '', 2, 0, '2026-10-17 18:54:00'),
+(567, 532, 'actions', 'Add Follow-Up', '', 3, 0, '2026-10-17 18:54:00'),
+(568, 532, 'actions', 'Edit', 'inventory/leads/edit/[:id]', 4, 0, '2026-10-17 18:54:00'),
+(569, 532, 'actions', 'Move To Customer', 'inventory/leads/move/[:id]', 5, 0, '2026-10-17 18:54:00'),
+(570, 532, 'actions', 'Timeline', '', 6, 0, '2026-10-17 18:54:00'),
+(571, 532, 'actions', 'Excel / PDF Export', '', 7, 0, '2026-10-17 18:54:00'),
+
+-- Customers/Leads Calls (533) — no row actions
+(572, 533, 'columns', 'Staff', 'staff', 1, 0, '2026-10-17 18:54:00'),
+(573, 533, 'columns', 'Distributor', 'distributor', 2, 0, '2026-10-17 18:54:00'),
+(574, 533, 'columns', 'Company Name', 'name', 3, 0, '2026-10-17 18:54:00'),
+(575, 533, 'columns', 'Customer Name', 'owner_name', 4, 0, '2026-10-17 18:54:00'),
+(576, 533, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 5, 0, '2026-10-17 18:54:00'),
+(577, 533, 'columns', 'Type', 'type', 6, 0, '2026-10-17 18:54:00'),
+(578, 533, 'columns', 'Status', 'status', 7, 0, '2026-10-17 18:54:00'),
+(579, 533, 'columns', 'Remark', 'remark', 8, 0, '2026-10-17 18:54:00'),
+(580, 533, 'columns', 'Follow Up Date', 'follow_up_date', 9, 0, '2026-10-17 18:54:00'),
+(581, 533, 'columns', 'Added Date', 'created_at', 10, 0, '2026-10-17 18:54:00'),
+(582, 533, 'columns', 'Added By', 'added_by_name', 11, 0, '2026-10-17 18:54:00'),
+(583, 533, 'actions', 'Excel / PDF Export', '', 1, 0, '2026-10-17 18:54:00'),
+
+-- Todays Follow-up (534)
+(584, 534, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(585, 534, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(586, 534, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(587, 534, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(588, 534, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(589, 534, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(590, 534, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(591, 534, 'columns', 'Status', 'status', 8, 0, '2026-10-17 18:54:00'),
+(592, 534, 'columns', 'Staff', 'staff', 9, 0, '2026-10-17 18:54:00'),
+(593, 534, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 18:54:00'),
+(594, 534, 'columns', 'Assigned Date', 'assigned_date', 11, 0, '2026-10-17 18:54:00'),
+(595, 534, 'actions', 'View', '', 1, 0, '2026-10-17 18:54:00'),
+(596, 534, 'actions', 'Add Follow-Up', '', 2, 0, '2026-10-17 18:54:00'),
+(597, 534, 'actions', 'Edit', 'inventory/leads/edit/[:id]', 3, 0, '2026-10-17 18:54:00'),
+(598, 534, 'actions', 'Move To Customer', 'inventory/leads/move/[:id]', 4, 0, '2026-10-17 18:54:00'),
+(599, 534, 'actions', 'Timeline', '', 5, 0, '2026-10-17 18:54:00'),
+(600, 534, 'actions', 'Excel / PDF Export', '', 6, 0, '2026-10-17 18:54:00'),
+
+-- Upcoming Follow-up (535)
+(601, 535, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(602, 535, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(603, 535, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(604, 535, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(605, 535, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(606, 535, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(607, 535, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(608, 535, 'columns', 'Status', 'status', 8, 0, '2026-10-17 18:54:00'),
+(609, 535, 'columns', 'Staff', 'staff', 9, 0, '2026-10-17 18:54:00'),
+(610, 535, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 18:54:00'),
+(611, 535, 'columns', 'Assigned Date', 'assigned_date', 11, 0, '2026-10-17 18:54:00'),
+(612, 535, 'actions', 'View', '', 1, 0, '2026-10-17 18:54:00'),
+(613, 535, 'actions', 'Add Follow-Up', '', 2, 0, '2026-10-17 18:54:00'),
+(614, 535, 'actions', 'Edit', 'inventory/leads/edit/[:id]', 3, 0, '2026-10-17 18:54:00'),
+(615, 535, 'actions', 'Move To Customer', 'inventory/leads/move/[:id]', 4, 0, '2026-10-17 18:54:00'),
+(616, 535, 'actions', 'Timeline', '', 5, 0, '2026-10-17 18:54:00'),
+(617, 535, 'actions', 'Excel / PDF Export', '', 6, 0, '2026-10-17 18:54:00'),
+
+-- Missed Leads (536)
+(618, 536, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(619, 536, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(620, 536, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(621, 536, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(622, 536, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(623, 536, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(624, 536, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(625, 536, 'columns', 'Status', 'status', 8, 0, '2026-10-17 18:54:00'),
+(626, 536, 'columns', 'Staff', 'staff', 9, 0, '2026-10-17 18:54:00'),
+(627, 536, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 18:54:00'),
+(628, 536, 'columns', 'Assigned Date', 'assigned_date', 11, 0, '2026-10-17 18:54:00'),
+(629, 536, 'actions', 'View', '', 1, 0, '2026-10-17 18:54:00'),
+(630, 536, 'actions', 'Add Follow-Up', '', 2, 0, '2026-10-17 18:54:00'),
+(631, 536, 'actions', 'Edit', 'inventory/leads/edit/[:id]', 3, 0, '2026-10-17 18:54:00'),
+(632, 536, 'actions', 'Move To Customer', 'inventory/leads/move/[:id]', 4, 0, '2026-10-17 18:54:00'),
+(633, 536, 'actions', 'Timeline', '', 5, 0, '2026-10-17 18:54:00'),
+(634, 536, 'actions', 'Excel / PDF Export', '', 6, 0, '2026-10-17 18:54:00'),
+
+-- Lost Leads (537)
+(635, 537, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(636, 537, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(637, 537, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(638, 537, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(639, 537, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(640, 537, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(641, 537, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(642, 537, 'columns', 'Status', 'status', 8, 0, '2026-10-17 18:54:00'),
+(643, 537, 'columns', 'Staff', 'staff', 9, 0, '2026-10-17 18:54:00'),
+(644, 537, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 18:54:00'),
+(645, 537, 'columns', 'Assigned Date', 'assigned_date', 11, 0, '2026-10-17 18:54:00'),
+(646, 537, 'actions', 'View', '', 1, 0, '2026-10-17 18:54:00'),
+(647, 537, 'actions', 'Timeline', '', 2, 0, '2026-10-17 18:54:00'),
+(648, 537, 'actions', 'Excel / PDF Export', '', 3, 0, '2026-10-17 18:54:00'),
+
+-- Move To Customer / Moved (538)
+(649, 538, 'columns', 'Distributor', 'distributor', 1, 0, '2026-10-17 18:54:00'),
+(650, 538, 'columns', 'Company Name', 'name', 2, 0, '2026-10-17 18:54:00'),
+(651, 538, 'columns', 'City', 'city_name', 3, 0, '2026-10-17 18:54:00'),
+(652, 538, 'columns', 'State', 'state_name', 4, 0, '2026-10-17 18:54:00'),
+(653, 538, 'columns', 'Owner Name', 'owner_name', 5, 0, '2026-10-17 18:54:00'),
+(654, 538, 'columns', 'Mobile/Whatsapp No', 'mobile_whatsapp', 6, 0, '2026-10-17 18:54:00'),
+(655, 538, 'columns', 'Email', 'owner_email', 7, 0, '2026-10-17 18:54:00'),
+(656, 538, 'columns', 'Status', 'status', 8, 0, '2026-10-17 18:54:00'),
+(657, 538, 'columns', 'Staff', 'staff', 9, 0, '2026-10-17 18:54:00'),
+(658, 538, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 18:54:00'),
+(659, 538, 'columns', 'Assigned Date', 'assigned_date', 11, 0, '2026-10-17 18:54:00'),
+(660, 538, 'actions', 'View', '', 1, 0, '2026-10-17 18:54:00'),
+(661, 538, 'actions', 'Timeline', '', 2, 0, '2026-10-17 18:54:00'),
+(662, 538, 'actions', 'Excel / PDF Export', '', 3, 0, '2026-10-17 18:54:00'),
+
+-- =========================================================
+-- Vendor (My Vendors)
+-- =========================================================
+(663, 0, 'module', 'Vendor', 'inventory/my-company', 20, 0, '2026-10-17 19:01:00'),
+(664, 663, 'columns', 'Vendor Name', 'name', 1, 0, '2026-10-17 19:01:00'),
+(665, 663, 'columns', 'Contact Person Name', 'contact_name', 2, 0, '2026-10-17 19:01:00'),
+(666, 663, 'columns', 'Contact Person Number', 'contact_no', 3, 0, '2026-10-17 19:01:00'),
+(667, 663, 'columns', 'Email', 'email', 4, 0, '2026-10-17 19:01:00'),
+(668, 663, 'actions', 'Add', 'inventory/my-company/add', 1, 0, '2026-10-17 19:01:00'),
+(669, 663, 'actions', 'Edit', 'inventory/my-company/edit/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(670, 663, 'actions', 'Ledger', 'inventory/vendor-ledger/[:id]', 3, 0, '2026-10-17 19:01:00'),
+(671, 663, 'actions', 'Delete', '', 4, 0, '2026-10-17 19:01:00'),
+(672, 663, 'actions', 'Excel / PDF Export', '', 5, 0, '2026-10-17 19:01:00'),
+
+-- =========================================================
+-- Vendor Adjustment
+-- =========================================================
+(673, 0, 'module', 'Vendor Adjustment', 'inventory/vendor-adjustment', 21, 0, '2026-10-17 19:01:00'),
+(674, 673, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:01:00'),
+(675, 673, 'columns', 'Vendor Name', 'vendor_name', 2, 0, '2026-10-17 19:01:00'),
+(676, 673, 'columns', 'USD', 'usd', 3, 0, '2026-10-17 19:01:00'),
+(677, 673, 'columns', 'RMB', 'rmb', 4, 0, '2026-10-17 19:01:00'),
+(678, 673, 'columns', 'INR', 'inr', 5, 0, '2026-10-17 19:01:00'),
+(679, 673, 'columns', 'Amt Type', 'amt_type', 6, 0, '2026-10-17 19:01:00'),
+(680, 673, 'columns', 'Type', 'type', 7, 0, '2026-10-17 19:01:00'),
+(681, 673, 'columns', 'Remark', 'remark', 8, 0, '2026-10-17 19:01:00'),
+(682, 673, 'columns', 'Added By', 'added_by', 9, 0, '2026-10-17 19:01:00'),
+(683, 673, 'actions', 'Add', 'inventory/add-vendor-adjustment', 1, 0, '2026-10-17 19:01:00'),
+(684, 673, 'actions', 'Edit', 'inventory/edit-vendor-adjustment/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(685, 673, 'actions', 'Delete', 'inventory/vendor-adjustment/delete/[:id]', 3, 0, '2026-10-17 19:01:00'),
+(686, 673, 'actions', 'Excel Export', '', 4, 0, '2026-10-17 19:01:00'),
+
+-- =========================================================
+-- Import Supplier
+-- =========================================================
+(687, 0, 'module', 'Import Supplier', 'inventory/supplier', 22, 0, '2026-10-17 19:01:00'),
+(688, 687, 'columns', 'Supplier Name', 'name', 1, 0, '2026-10-17 19:01:00'),
+(689, 687, 'columns', 'Contact Person Name', 'contact_name', 2, 0, '2026-10-17 19:01:00'),
+(690, 687, 'columns', 'Contact Person Number', 'contact_no', 3, 0, '2026-10-17 19:01:00'),
+(691, 687, 'actions', 'Add', 'inventory/supplier/add', 1, 0, '2026-10-17 19:01:00'),
+(692, 687, 'actions', 'Edit', 'inventory/supplier/edit/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(693, 687, 'actions', 'Ledger', 'inventory/supplier/ledger/[:id]', 3, 0, '2026-10-17 19:01:00'),
+(694, 687, 'actions', 'Delete', '', 4, 0, '2026-10-17 19:01:00'),
+(695, 687, 'actions', 'Replicate', '', 5, 0, '2026-10-17 19:01:00'),
+(696, 687, 'actions', 'Excel / PDF Export', '', 6, 0, '2026-10-17 19:01:00'),
+
+-- =========================================================
+-- Local Supplier
+-- =========================================================
+(697, 0, 'module', 'Local Supplier', 'inventory/local-supplier', 23, 0, '2026-10-17 19:01:00'),
+(698, 697, 'columns', 'Supplier Name', 'name', 1, 0, '2026-10-17 19:01:00'),
+(699, 697, 'columns', 'Contact Person Name', 'contact_name', 2, 0, '2026-10-17 19:01:00'),
+(700, 697, 'columns', 'Contact Person Number', 'contact_no', 3, 0, '2026-10-17 19:01:00'),
+(701, 697, 'actions', 'Add', 'inventory/local-supplier/add', 1, 0, '2026-10-17 19:01:00'),
+(702, 697, 'actions', 'Edit', 'inventory/local-supplier/edit/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(703, 697, 'actions', 'Ledger', 'inventory/local-supplier/ledger/[:id]', 3, 0, '2026-10-17 19:01:00'),
+(704, 697, 'actions', 'Delete', '', 4, 0, '2026-10-17 19:01:00'),
+(705, 697, 'actions', 'Replicate', '', 5, 0, '2026-10-17 19:01:00'),
+(706, 697, 'actions', 'Excel / PDF Export', '', 6, 0, '2026-10-17 19:01:00'),
+
+-- =========================================================
+-- Supplier Adjustment
+-- =========================================================
+(707, 0, 'module', 'Supplier Adjustment', 'inventory/supplier-adjustment', 24, 0, '2026-10-17 19:01:00'),
+(708, 707, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:01:00'),
+(709, 707, 'columns', 'Supplier Name', 'supplier_name', 2, 0, '2026-10-17 19:01:00'),
+(710, 707, 'columns', 'USD', 'usd', 3, 0, '2026-10-17 19:01:00'),
+(711, 707, 'columns', 'RMB', 'rmb', 4, 0, '2026-10-17 19:01:00'),
+(712, 707, 'columns', 'INR', 'inr', 5, 0, '2026-10-17 19:01:00'),
+(713, 707, 'columns', 'Amt Type', 'amt_type', 6, 0, '2026-10-17 19:01:00'),
+(714, 707, 'columns', 'Type', 'type', 7, 0, '2026-10-17 19:01:00'),
+(715, 707, 'columns', 'Remark', 'remark', 8, 0, '2026-10-17 19:01:00'),
+(716, 707, 'columns', 'Added By', 'added_by', 9, 0, '2026-10-17 19:01:00'),
+(717, 707, 'actions', 'Add', 'inventory/add-supplier-adjustment', 1, 0, '2026-10-17 19:01:00'),
+(718, 707, 'actions', 'Edit', 'inventory/edit-supplier-adjustment/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(719, 707, 'actions', 'Delete', 'inventory/supplier-adjustment/delete/[:id]', 3, 0, '2026-10-17 19:01:00'),
+(720, 707, 'actions', 'Excel Export', '', 4, 0, '2026-10-17 19:01:00'),
+
+-- =========================================================
+-- Supplier Payments
+-- =========================================================
+(721, 0, 'module', 'Supplier Payments', 'inventory/payments', 25, 0, '2026-10-17 19:01:00'),
+(722, 721, 'columns', 'Batch No.', 'batch_no', 1, 0, '2026-10-17 19:01:00'),
+(723, 721, 'columns', 'Supplier Name', 'supplier_name', 2, 0, '2026-10-17 19:01:00'),
+(724, 721, 'columns', 'Invoice No', 'invoice_no', 3, 0, '2026-10-17 19:01:00'),
+(725, 721, 'columns', 'Payment Type', 'type', 4, 0, '2026-10-17 19:01:00'),
+(726, 721, 'columns', 'Amount (Dollar)', 'amount_dollar', 5, 0, '2026-10-17 19:01:00'),
+(727, 721, 'columns', 'Amount (INR)', 'amount_inr', 6, 0, '2026-10-17 19:01:00'),
+(728, 721, 'columns', 'Amount (RMB)', 'amount_rmb', 7, 0, '2026-10-17 19:01:00'),
+(729, 721, 'columns', 'Date', 'date', 8, 0, '2026-10-17 19:01:00'),
+(730, 721, 'actions', 'Add', 'inventory/payments/add', 1, 0, '2026-10-17 19:01:00'),
+(731, 721, 'actions', 'Edit', 'inventory/payments/edit/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(732, 721, 'actions', 'Delete', '', 3, 0, '2026-10-17 19:01:00'),
+(733, 721, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-17 19:01:00'),
+
+-- =========================================================
+-- Vendor Payments
+-- =========================================================
+(734, 0, 'module', 'Vendor Payments', 'inventory/vendor-payments', 26, 0, '2026-10-17 19:01:00'),
+(735, 734, 'columns', 'Vendor Name', 'vendor_name', 1, 0, '2026-10-17 19:01:00'),
+(736, 734, 'columns', 'Invoice No', 'invoice_no', 2, 0, '2026-10-17 19:01:00'),
+(737, 734, 'columns', 'Payment Type', 'type', 3, 0, '2026-10-17 19:01:00'),
+(738, 734, 'columns', 'USD ($)', 'usd', 4, 0, '2026-10-17 19:01:00'),
+(739, 734, 'columns', 'RMB (¥)', 'rmb', 5, 0, '2026-10-17 19:01:00'),
+(740, 734, 'columns', 'INR (₹)', 'inr', 6, 0, '2026-10-17 19:01:00'),
+(741, 734, 'columns', 'Date', 'date', 7, 0, '2026-10-17 19:01:00'),
+(742, 734, 'actions', 'Add', 'inventory/vendor-payments/add', 1, 0, '2026-10-17 19:01:00'),
+(743, 734, 'actions', 'Edit', 'inventory/vendor-payments/edit/[:id]', 2, 0, '2026-10-17 19:01:00'),
+(744, 734, 'actions', 'Delete', '', 3, 0, '2026-10-17 19:01:00'),
+(745, 734, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-17 19:01:00')
+
+-- =========================================================
+-- Payment Receipt
+-- =========================================================
+(746, 0, 'module', 'Payment Receipt', 'inventory/payment-receipt', 27, 0, '2026-10-17 19:07:00'),
+(747, 746, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(748, 746, 'columns', 'Inv No', 'inv_no', 2, 0, '2026-10-17 19:07:00'),
+(749, 746, 'columns', 'Customer Name', 'customer_name', 3, 0, '2026-10-17 19:07:00'),
+(750, 746, 'columns', 'Amount', 'amount', 4, 0, '2026-10-17 19:07:00'),
+(751, 746, 'columns', 'Mode', 'payment_mode', 5, 0, '2026-10-17 19:07:00'),
+(752, 746, 'columns', 'Type', 'payment_type', 6, 0, '2026-10-17 19:07:00'),
+(753, 746, 'columns', 'Method', 'payment_method', 7, 0, '2026-10-17 19:07:00'),
+(754, 746, 'columns', 'Added By', 'added_by_name', 8, 0, '2026-10-17 19:07:00'),
+(755, 746, 'columns', 'Status', 'status', 9, 0, '2026-10-17 19:07:00'),
+(756, 746, 'actions', 'Add', 'inventory/payment-receipt/add', 1, 0, '2026-10-17 19:07:00'),
+(757, 746, 'actions', 'View Payment', '', 2, 0, '2026-10-17 19:07:00'),
+(758, 746, 'actions', 'Edit', 'inventory/payment-receipt/edit/[:id]', 3, 0, '2026-10-17 19:07:00'),
+(759, 746, 'actions', 'Delete', '', 4, 0, '2026-10-17 19:07:00'),
+(760, 746, 'actions', 'Excel / PDF Export', '', 5, 0, '2026-10-17 19:07:00'),
+
+-- =========================================================
+-- Manual Payment
+-- =========================================================
+(761, 0, 'module', 'Manual Payment', 'inventory/manual-payment', 28, 0, '2026-10-17 19:07:00'),
+(762, 761, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(763, 761, 'columns', 'Amount', 'amount', 2, 0, '2026-10-17 19:07:00'),
+(764, 761, 'columns', 'Mode', 'payment_mode', 3, 0, '2026-10-17 19:07:00'),
+(765, 761, 'columns', 'Type', 'payment_type', 4, 0, '2026-10-17 19:07:00'),
+(766, 761, 'columns', 'Method', 'payment_method', 5, 0, '2026-10-17 19:07:00'),
+(767, 761, 'columns', 'Added By', 'added_by_name', 6, 0, '2026-10-17 19:07:00'),
+(768, 761, 'actions', 'Add', 'inventory/manual-payment/add', 1, 0, '2026-10-17 19:07:00'),
+(769, 761, 'actions', 'View Payment', '', 2, 0, '2026-10-17 19:07:00'),
+(770, 761, 'actions', 'Edit', 'inventory/manual-payment/edit/[:id]', 3, 0, '2026-10-17 19:07:00'),
+(771, 761, 'actions', 'Delete', 'inventory/manual-payment/delete/[:id]', 4, 0, '2026-10-17 19:07:00'),
+(772, 761, 'actions', 'Excel / PDF Export', '', 5, 0, '2026-10-17 19:07:00'),
+
+-- =========================================================
+-- Cash Book (tabs: Cash / Pending Transfer / Transferred)
+-- =========================================================
+(773, 0, 'module', 'Cash Book', 'inventory/cash-book', 29, 0, '2026-10-17 19:07:00'),
+(774, 773, 'tabs', 'Cash', 'inventory/cash-book?tab=cash', 1, 0, '2026-10-17 19:07:00'),
+(775, 773, 'tabs', 'Pending Transfer', 'inventory/cash-book?tab=pending_transfer', 2, 0, '2026-10-17 19:07:00'),
+(776, 773, 'tabs', 'Transferred', 'inventory/cash-book?tab=transferred', 3, 0, '2026-10-17 19:07:00'),
+
+-- Cash (774)
+(777, 774, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(778, 774, 'columns', 'Particular', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(779, 774, 'columns', 'Source', 'source', 3, 0, '2026-10-17 19:07:00'),
+(780, 774, 'columns', 'In/Out', 'direction', 4, 0, '2026-10-17 19:07:00'),
+(781, 774, 'columns', 'Type', 'payment_type', 5, 0, '2026-10-17 19:07:00'),
+(782, 774, 'columns', 'Amount', 'amount', 6, 0, '2026-10-17 19:07:00'),
+(783, 774, 'columns', 'Remark / Narration', 'remark', 7, 0, '2026-10-17 19:07:00'),
+(784, 774, 'columns', 'Added By', 'added_by_name', 8, 0, '2026-10-17 19:07:00'),
+(785, 774, 'actions', 'Add Expense', 'inventory/cash-book/add', 1, 0, '2026-10-17 19:07:00'),
+(786, 774, 'actions', 'Transfer', '', 2, 0, '2026-10-17 19:07:00'),
+(787, 774, 'actions', 'Edit', 'inventory/cash-book/edit/[:id]', 3, 0, '2026-10-17 19:07:00'),
+(788, 774, 'actions', 'Delete', '', 4, 0, '2026-10-17 19:07:00'),
+(789, 774, 'actions', 'Excel / PDF Export', '', 5, 0, '2026-10-17 19:07:00'),
+
+-- Pending Transfer (775)
+(790, 775, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(791, 775, 'columns', 'Company', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(792, 775, 'columns', 'Type', 'payment_type', 3, 0, '2026-10-17 19:07:00'),
+(793, 775, 'columns', 'Amount', 'amount', 4, 0, '2026-10-17 19:07:00'),
+(794, 775, 'columns', 'Remark / Narration', 'remark', 5, 0, '2026-10-17 19:07:00'),
+(795, 775, 'columns', 'Status', 'status', 6, 0, '2026-10-17 19:07:00'),
+(796, 775, 'columns', 'Added By', 'added_by_name', 7, 0, '2026-10-17 19:07:00'),
+(797, 775, 'actions', 'Approve', '', 1, 0, '2026-10-17 19:07:00'),
+(798, 775, 'actions', 'Excel / PDF Export', '', 2, 0, '2026-10-17 19:07:00'),
+
+-- Transferred (776)
+(799, 776, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(800, 776, 'columns', 'Company', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(801, 776, 'columns', 'Type', 'payment_type', 3, 0, '2026-10-17 19:07:00'),
+(802, 776, 'columns', 'Amount', 'amount', 4, 0, '2026-10-17 19:07:00'),
+(803, 776, 'columns', 'Remark / Narration', 'remark', 5, 0, '2026-10-17 19:07:00'),
+(804, 776, 'columns', 'Status', 'status', 6, 0, '2026-10-17 19:07:00'),
+(805, 776, 'columns', 'Added By', 'added_by_name', 7, 0, '2026-10-17 19:07:00'),
+(806, 776, 'actions', 'View', '', 1, 0, '2026-10-17 19:07:00'),
+(807, 776, 'actions', 'Edit', '', 2, 0, '2026-10-17 19:07:00'),
+(808, 776, 'actions', 'Delete', '', 3, 0, '2026-10-17 19:07:00'),
+(809, 776, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-17 19:07:00'),
+
+-- =========================================================
+-- Bank Book (tabs: Bank / Pending Transfer / Transferred)
+-- =========================================================
+(810, 0, 'module', 'Bank Book', 'inventory/bank-book', 30, 0, '2026-10-17 19:07:00'),
+(811, 810, 'tabs', 'Bank', 'inventory/bank-book?tab=bank', 1, 0, '2026-10-17 19:07:00'),
+(812, 810, 'tabs', 'Pending Transfer', 'inventory/bank-book?tab=pending_transfer', 2, 0, '2026-10-17 19:07:00'),
+(813, 810, 'tabs', 'Transferred', 'inventory/bank-book?tab=transferred', 3, 0, '2026-10-17 19:07:00'),
+
+-- Bank (811)
+(814, 811, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(815, 811, 'columns', 'Particular', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(816, 811, 'columns', 'Source', 'source', 3, 0, '2026-10-17 19:07:00'),
+(817, 811, 'columns', 'In/Out', 'direction', 4, 0, '2026-10-17 19:07:00'),
+(818, 811, 'columns', 'Type', 'payment_type', 5, 0, '2026-10-17 19:07:00'),
+(819, 811, 'columns', 'Bank Account', 'bank_account', 6, 0, '2026-10-17 19:07:00'),
+(820, 811, 'columns', 'Amount', 'amount', 7, 0, '2026-10-17 19:07:00'),
+(821, 811, 'columns', 'Remark / Narration', 'remark', 8, 0, '2026-10-17 19:07:00'),
+(822, 811, 'columns', 'Added By', 'added_by_name', 9, 0, '2026-10-17 19:07:00'),
+(823, 811, 'actions', 'Transfer', '', 1, 0, '2026-10-17 19:07:00'),
+(824, 811, 'actions', 'Excel / PDF Export', '', 2, 0, '2026-10-17 19:07:00'),
+
+-- Pending Transfer (812)
+(825, 812, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(826, 812, 'columns', 'Company', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(827, 812, 'columns', 'Type', 'payment_type', 3, 0, '2026-10-17 19:07:00'),
+(828, 812, 'columns', 'Bank Account', 'bank_account', 4, 0, '2026-10-17 19:07:00'),
+(829, 812, 'columns', 'Amount', 'amount', 5, 0, '2026-10-17 19:07:00'),
+(830, 812, 'columns', 'Remark / Narration', 'remark', 6, 0, '2026-10-17 19:07:00'),
+(831, 812, 'columns', 'Status', 'status', 7, 0, '2026-10-17 19:07:00'),
+(832, 812, 'columns', 'Added By', 'added_by_name', 8, 0, '2026-10-17 19:07:00'),
+(833, 812, 'actions', 'Approve', '', 1, 0, '2026-10-17 19:07:00'),
+(834, 812, 'actions', 'Excel / PDF Export', '', 2, 0, '2026-10-17 19:07:00'),
+
+-- Transferred (813)
+(835, 813, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(836, 813, 'columns', 'Company', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(837, 813, 'columns', 'Type', 'payment_type', 3, 0, '2026-10-17 19:07:00'),
+(838, 813, 'columns', 'Bank Account', 'bank_account', 4, 0, '2026-10-17 19:07:00'),
+(839, 813, 'columns', 'Amount', 'amount', 5, 0, '2026-10-17 19:07:00'),
+(840, 813, 'columns', 'Remark / Narration', 'remark', 6, 0, '2026-10-17 19:07:00'),
+(841, 813, 'columns', 'Status', 'status', 7, 0, '2026-10-17 19:07:00'),
+(842, 813, 'columns', 'Added By', 'added_by_name', 8, 0, '2026-10-17 19:07:00'),
+(843, 813, 'actions', 'View', '', 1, 0, '2026-10-17 19:07:00'),
+(844, 813, 'actions', 'Edit', '', 2, 0, '2026-10-17 19:07:00'),
+(845, 813, 'actions', 'Delete', '', 3, 0, '2026-10-17 19:07:00'),
+(846, 813, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-17 19:07:00'),
+
+-- =========================================================
+-- Payment Reconciliation (tabs: Pending / Approved)
+-- =========================================================
+(847, 0, 'module', 'Payment Reconciliation', 'inventory/payment-reconciliation', 31, 0, '2026-10-17 19:07:00'),
+(848, 847, 'tabs', 'Pending', 'inventory/payment-reconciliation?status=pending', 1, 0, '2026-10-17 19:07:00'),
+(849, 847, 'tabs', 'Approved', 'inventory/payment-reconciliation?status=approved', 2, 0, '2026-10-17 19:07:00'),
+
+-- Pending (848)
+(850, 848, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(851, 848, 'columns', 'Inv No', 'inv_no', 2, 0, '2026-10-17 19:07:00'),
+(852, 848, 'columns', 'Customer Name', 'customer_name', 3, 0, '2026-10-17 19:07:00'),
+(853, 848, 'columns', 'Amount', 'amount', 4, 0, '2026-10-17 19:07:00'),
+(854, 848, 'columns', 'Type', 'payment_type', 5, 0, '2026-10-17 19:07:00'),
+(855, 848, 'columns', 'Method', 'payment_method', 6, 0, '2026-10-17 19:07:00'),
+(856, 848, 'columns', 'Added By', 'added_by_name', 7, 0, '2026-10-17 19:07:00'),
+(857, 848, 'actions', 'View Payment', '', 1, 0, '2026-10-17 19:07:00'),
+(858, 848, 'actions', 'Approve', 'inventory/payment-reconciliation/approve/[:id]', 2, 0, '2026-10-17 19:07:00'),
+(859, 848, 'actions', 'Excel / PDF Export', '', 3, 0, '2026-10-17 19:07:00'),
+
+-- Approved (849)
+(860, 849, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(861, 849, 'columns', 'Inv No', 'inv_no', 2, 0, '2026-10-17 19:07:00'),
+(862, 849, 'columns', 'Customer Name', 'customer_name', 3, 0, '2026-10-17 19:07:00'),
+(863, 849, 'columns', 'Amount', 'amount', 4, 0, '2026-10-17 19:07:00'),
+(864, 849, 'columns', 'Type', 'payment_type', 5, 0, '2026-10-17 19:07:00'),
+(865, 849, 'columns', 'Method', 'payment_method', 6, 0, '2026-10-17 19:07:00'),
+(866, 849, 'columns', 'Added By', 'added_by_name', 7, 0, '2026-10-17 19:07:00'),
+(867, 849, 'actions', 'View Payment', '', 1, 0, '2026-10-17 19:07:00'),
+(868, 849, 'actions', 'Excel / PDF Export', '', 2, 0, '2026-10-17 19:07:00'),
+
+-- =========================================================
+-- Payment Collection (tabs: Pending / Received)
+-- =========================================================
+(869, 0, 'module', 'Payment Collection', 'inventory/payment-collection', 32, 0, '2026-10-17 19:07:00'),
+(870, 869, 'tabs', 'Pending', 'inventory/payment-collection?status=pending', 1, 0, '2026-10-17 19:07:00'),
+(871, 869, 'tabs', 'Received', 'inventory/payment-collection?status=received', 2, 0, '2026-10-17 19:07:00'),
+
+-- Pending (870)
+(872, 870, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(873, 870, 'columns', 'From Company', 'from_company', 2, 0, '2026-10-17 19:07:00'),
+(874, 870, 'columns', 'Method', 'method_from', 3, 0, '2026-10-17 19:07:00'),
+(875, 870, 'columns', 'Type', 'payment_type', 4, 0, '2026-10-17 19:07:00'),
+(876, 870, 'columns', 'Amount', 'amount', 5, 0, '2026-10-17 19:07:00'),
+(877, 870, 'columns', 'Remark / Narration', 'remark', 6, 0, '2026-10-17 19:07:00'),
+(878, 870, 'columns', 'Transferred By', 'transferred_by', 7, 0, '2026-10-17 19:07:00'),
+(879, 870, 'columns', 'Status', 'status', 8, 0, '2026-10-17 19:07:00'),
+(880, 870, 'actions', 'Add Payment', '', 1, 0, '2026-10-17 19:07:00'),
+(881, 870, 'actions', 'Approve', '', 2, 0, '2026-10-17 19:07:00'),
+(882, 870, 'actions', 'Edit', '', 3, 0, '2026-10-17 19:07:00'),
+(883, 870, 'actions', 'Delete', 'inventory/payment-collection/delete/[:id]', 4, 0, '2026-10-17 19:07:00'),
+(884, 870, 'actions', 'Excel / PDF Export', '', 5, 0, '2026-10-17 19:07:00'),
+
+-- Received (871)
+(885, 871, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
+(886, 871, 'columns', 'From Company', 'from_company', 2, 0, '2026-10-17 19:07:00'),
+(887, 871, 'columns', 'Method', 'method_from', 3, 0, '2026-10-17 19:07:00'),
+(888, 871, 'columns', 'Type', 'payment_type', 4, 0, '2026-10-17 19:07:00'),
+(889, 871, 'columns', 'Amount', 'amount', 5, 0, '2026-10-17 19:07:00'),
+(890, 871, 'columns', 'Remark / Narration', 'remark', 6, 0, '2026-10-17 19:07:00'),
+(891, 871, 'columns', 'Transferred By', 'transferred_by', 7, 0, '2026-10-17 19:07:00'),
+(892, 871, 'columns', 'Approved By', 'approved_by', 8, 0, '2026-10-17 19:07:00'),
+(893, 871, 'columns', 'Approval Date', 'approval_date', 9, 0, '2026-10-17 19:07:00'),
+(894, 871, 'columns', 'Status', 'status', 10, 0, '2026-10-17 19:07:00'),
+(895, 871, 'actions', 'Excel / PDF Export', '', 1, 0, '2026-10-17 19:07:00');
 --
 -- Indexes for dumped tables
 --

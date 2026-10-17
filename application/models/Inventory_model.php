@@ -27315,14 +27315,16 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 		$data = array();
 		$keyword_filter = "";
 
+		$user_id = $this->session->userdata('super_user_id');
+
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
 			$keyword_filter = " AND (name like '%" . $keyword . "%' 
             OR contact_name like '%" . $keyword . "%')";
 		endif;
 
-		$total_count = $this->db->query("SELECT id FROM access WHERE (id<>'') $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, name,access_id FROM access WHERE (id<>'') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$total_count = $this->db->query("SELECT id FROM access WHERE (id<>'') $keyword_filter AND user_id = '$user_id' ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, name,access_id FROM access WHERE (id<>'') $keyword_filter AND user_id = '$user_id' ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {

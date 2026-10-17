@@ -9,6 +9,22 @@ class Common_model extends CI_Model{
         return $this->db->count_all($table);
     }
 
+    public function get_access_by_id($id){
+        $access_id = $this->session->userdata('super_type_id');
+        $access_row = $this->db->get_where('access', ['id' => $access_id]);
+        if($access_row->num_rows() > 0){
+            $access_row = $access_row->row_array();
+            $access_array = explode(',', $access_row['access_id']);
+            if(in_array($id, $access_array)){
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     // get id by slug
     public function getIdBySlug($where,$table){
         $this->db->select('id');
@@ -31,7 +47,7 @@ class Common_model extends CI_Model{
          return '';
         }
     }
-    
+
     public function getMaxId($table,$where=''){
         if($where==''){
             $this->db->select_max('id');

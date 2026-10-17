@@ -45,14 +45,7 @@
                <span class="menu-title text-truncate" data-i18n="Orders">Product Master</span>
             </a>
             <ul class="menu-content"> -->
-                <?php if($user_id == 4 || in_array('19',$access_array)) {?>
-                    <!-- <li class="nav-item <?php if($page_name == 'categories' || $page_name == 'category_add' || $page_name == 'category_edit') echo 'active'; ?>">
-                       <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/category">
-                           <i class="feather icon-circle"></i>
-                           <span class="menu-title text-truncate">Category</span>
-                       </a>
-                    </li> -->
-                <?php } ?>
+                
                 <?php if($user_id == 4 || in_array('20',$access_array)) {?>
                     <!-- <li class="nav-item <?php if($page_name == 'product_size' || $page_name == 'product_size_add' || $page_name == 'product_size_edit') echo 'active'; ?>">
                        <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/product-size">
@@ -75,13 +68,6 @@
         <?php } ?>
         
         <?php if($user_id == 4 || in_array('22',$access_array)) {?>
-            <!-- <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'raw_products_add' || $page_name == 'raw_products_edit' || $page_name == 'raw_products_import') echo 'active'; ?>">
-                <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/raw-products">
-                    <i class="feather icon-layers"></i>
-                    <span class="menu-title text-truncate">Product</span>
-                </a>
-            </li> -->
-
             <li class="nav-item <?php if($page_name == 'raw_products' || $page_name == 'raw_products_add' || $page_name == 'raw_products_edit' || $page_name == 'raw_products_import' || $page_name == 'local_products' || $page_name == 'local_products_add' || $page_name == 'local_products_edit' || $page_name == 'product_formula' || $page_name == 'product_formula_add' || $page_name == 'product_formula_edit') echo 'active'; ?>">   
                 <a class="d-flex align-items-center" href="#">
                     <i class="feather icon-layers"></i>
@@ -146,7 +132,6 @@
         </li>
         <?php } ?>
 
-        <?php // if($user_id == 4 || in_array('23',$access_array)) {?>
 	    <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'stock_history' || $page_name == 'my_stock_batch' || $page_name == 'overall_stock' || $page_name == 'low_stock') echo 'active'; ?>">
            <a class="d-flex align-items-center" href="#">
                <i data-feather="database"></i>
@@ -173,7 +158,6 @@
                </li>
            </ul>
         </li>
-        <?php // } ?>
         
         <?php if($user_id == 4 || in_array('26',$access_array) || in_array('27',$access_array)) {?>
         <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order' || $page_name == 'sales_order_invoice' || $page_name == 'sales_order_complete' || $page_name == 'sales_order_all' || $page_name == 'sales_order_cancelled' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman' || $page_name == 'conversion_order' || $page_name == 'company_sales' || $page_name == 'company_sales_add' || $navigation == 'company_sales' || $page_name == 'black_order' || $page_name == 'black_order_edit' || $page_name == 'sales_commission' || $page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view' || $page_name == 'replace_products' || $navigation == 'customer_quotations' || $page_name == 'customer_quotations' || $page_name == 'customer_quotation_add' || $page_name == 'customer_quotation_edit') echo 'active'; ?>">
@@ -451,7 +435,6 @@
         <?php } ?>
         
 
-        <?php if($user_id != 4) {?>
         <li class="nav-item <?php if($page_name == 'payment_receipt' || $page_name == 'payment_receipt_add' || $page_name == 'payment_receipt_edit') echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/payment-receipt">
                 <i class="feather icon-layers"></i>
@@ -484,7 +467,7 @@
                 <span class="menu-title text-truncate">Bank Book</span>
             </a>
         </li>
-        <?php } ?>
+        
 
         <?php if($user_id == 4) { ?>
         <li class="nav-item <?php if($page_name == 'payment_reconciliation') echo 'active'; ?>">
