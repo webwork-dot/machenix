@@ -52,13 +52,13 @@
         <div class="fixedElement new-fix" id="fixedElement">
             <ul class="nav nav-pills bg-nav-pills nav-justified">
                 <li class="nav-item">
-                    <a href="<?php echo base_url('inventory/pending_po?type=order'); ?>" class="nav-link <?php echo ($type == 'order') ? 'active' : ''; ?>">
+                    <a href="<?php echo base_url('inventory/pending-po?type=order'); ?>" class="nav-link <?php echo ($type == 'order') ? 'active' : ''; ?>">
                         <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
                         <span class="d-none d-md-block">Order</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?php echo base_url('inventory/pending_po?type=product'); ?>" class="nav-link <?php echo ($type == 'product') ? 'active' : ''; ?>">
+                    <a href="<?php echo base_url('inventory/pending-po?type=product'); ?>" class="nav-link <?php echo ($type == 'product') ? 'active' : ''; ?>">
                         <i class="mdi mdi-package-variant d-md-none d-block"></i>
                         <span class="d-none d-md-block">Product</span>
                     </a>

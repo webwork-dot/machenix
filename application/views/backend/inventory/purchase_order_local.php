@@ -16,21 +16,6 @@
         font-weight: 600 !important;
     }
 
-	.fixedElement{
-		background : white;
-		border-radius: .428rem;
-	}
-	.nav-pills.nav-justified .nav-item {
-		display: flex;
-		align-items: center;
-	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
-		color: #1e652e;
-		border: 1px solid #1e652e !important;
-		background: white;
-		box-shadow: initial;
-		font-weight: 600;
-	}
 	.small-img{
 		max-height: 50px;
 		min-height: 50px;
@@ -43,30 +28,7 @@
 	
 </style>
 
-<?php
-    $type = (isset($_GET['type']) && $_GET['type'] != '') ? $_GET['type'] : 'local';
-?>
-
 <div class="row" id="table-bordered">
-    <div class="col-md-12 mb-1">
-        <div class="fixedElement" id="fixedElement">
-            <ul class="nav nav-pills bg-nav-pills nav-justified">
-                <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/purchase-order?type=local" class="nav-link <?php echo ($type == 'local') ? 'active' : ''; ?>">
-                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                        <span class="d-none d-md-block">Local Purchase</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/purchase-order?type=company" class="nav-link <?php echo ($type == 'company') ? 'active' : ''; ?>">
-                        <i class="mdi mdi-home-variant d-md-none d-block"></i>
-                        <span class="d-none d-md-block">Company Purchase</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-
     <?php include('filter/date_range.php'); ?>	
     
    <div class="col-12">
@@ -74,21 +36,20 @@
          <div class="card-body">
             <div class="row">
                <div class="col-md-12 mt-10">
-                  <h5 class="mb-0"><b>Total <?php echo ($type == 'company') ? 'Company' : 'Local'; ?> Purchase In<span id="total_count"> (0)</span></b>
+                  <h5 class="mb-0"><b>Total Purchase In<span id="total_count"> (0)</span></b>
 				  </h5>
                </div>
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-          <?php if ($type != 'company') { ?>
 		  <a href="<?php echo site_url('inventory/purchase-order/add-local'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_purchase_in');?></span></a>          
-          <?php } ?>
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
 					<th>Date / PO No.</th>
 					<th>Supplier Name</th>
+					<th>Source</th>
 					<th>Total Product</th>
 					<th>Total Quantity</th>
 					<th>Date</th>
@@ -126,7 +87,6 @@
                 "type": "POST",
                 "data": function(data){
                        data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
-                       data.type = '<?php echo $type; ?>';
                        data.keywords = '<?php echo (isset($_GET['keywords'])) ? addslashes($_GET['keywords']):'' ?>';
                 },
                 "beforeSend": function() {
@@ -141,6 +101,7 @@
                 { "data": "sr_no" },
                 { "data": "date" },
                 { "data": "suppliers" },
+                { "data": "source" },
                 { "data": "total_products" },
                 { "data": "total_quantity" },
                 { "data": "po_date" },

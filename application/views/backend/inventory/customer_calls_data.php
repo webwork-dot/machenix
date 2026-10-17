@@ -8,35 +8,7 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.html5.min.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
 
-<style>
-  .sub-link {
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
-    margin-right: 4px;
-    background: white;
-    padding: 8px 10px;
-    min-width: 100px;
-    text-align: center;
-  }
-
-  .sub-link.active {
-    background: #5a79c0 !important;
-    color: white;
-  }
-</style>
-
-<div class="col-12 d-flex">
-    <?php if($this->session->userdata('super_type') == 'Inventory'){ ?>
-      <a href="<?php echo site_url('inventory/leads/all'); ?>" class="sub-link <?php echo ($status == 'all') ? 'active' : ''; ?>">All Leads</a>
-    <?php } ?>
-    <a href="<?php echo site_url('inventory/leads/new'); ?>" class="sub-link <?php echo ($status == 'new') ? 'active' : ''; ?>">New Leads</a>
-    <a href="<?php echo site_url('inventory/customer_calls'); ?>" class="sub-link <?php echo ($status == 'customer_calls') ? 'active' : ''; ?>">Customers/Leads Calls</a>
-    <a href="<?php echo site_url('inventory/leads/today'); ?>" class="sub-link <?php echo ($status == 'today') ? 'active' : ''; ?>">Todays Follow-up</a>
-    <a href="<?php echo site_url('inventory/leads/upcoming'); ?>" class="sub-link <?php echo ($status == 'upcoming') ? 'active' : ''; ?>">Upcoming Follow-up</a>
-    <a href="<?php echo site_url('inventory/leads/missed'); ?>" class="sub-link <?php echo ($status == 'missed') ? 'active' : ''; ?>">Missed Leads</a>
-    <a href="<?php echo site_url('inventory/leads/lost'); ?>" class="sub-link <?php echo ($status == 'lost') ? 'active' : ''; ?>">Lost Leads</a>
-    <a href="<?php echo site_url('inventory/leads/moved'); ?>" class="sub-link <?php echo ($status == 'moved') ? 'active' : ''; ?>">Move To Customer</a>
-</div>
+<?php include('nav/nav_leads.php'); ?>
 
 <div class="row" id="table-bordered">
     <?php include('filter/customer_calls_filter.php'); ?>

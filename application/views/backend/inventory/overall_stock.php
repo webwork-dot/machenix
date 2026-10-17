@@ -1050,6 +1050,8 @@
         return w;
     }
 
+    var currentStockMode = 'all';
+
     function formatProductChildRow(rowData) {
         var showZeroQty = $('#toggle-zero-qty').is(':checked');
         var allCompanies = rowData.companies || [];
@@ -1395,8 +1397,6 @@
                 }
             });
         }
-
-        var currentStockMode = 'all';
 
         var dataTable = $('#report-datatable').DataTable({
             "dom": '<"dt-toolbar"<"d-flex align-items-center"l><"dt-search"f>>t<"d-flex justify-content-between align-items-center p-1"ip>',

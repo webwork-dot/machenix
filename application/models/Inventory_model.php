@@ -5678,28 +5678,19 @@ class Inventory_model extends CI_Model
 
 		$data = array();
 		$keyword_filter = "";
-		$method = (isset($_REQUEST['type']) && $_REQUEST['type'] == 'company') ? 'company' : 'local';
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
-			if ($method == 'company') {
-				$keyword_filter .= " AND (
-					voucher_no LIKE '%" . $keyword . "%' 
-					OR supplier_name LIKE '%" . $keyword . "%' 
-					OR company_name LIKE '%" . $keyword . "%' 
-					OR supplier_id IN (SELECT c.id FROM company c WHERE c.name LIKE '%" . $keyword . "%')
-					OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN company c ON pop.supplier_id = c.id WHERE c.name LIKE '%" . $keyword . "%')
-					OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.item_code LIKE '%" . $keyword . "%')
-				)";
-			} else {
-				$keyword_filter .= " AND (
-					voucher_no LIKE '%" . $keyword . "%' 
-					OR supplier_name LIKE '%" . $keyword . "%' 
-					OR supplier_id IN (SELECT s.id FROM supplier s WHERE s.name LIKE '%" . $keyword . "%')
-					OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
-					OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.item_code LIKE '%" . $keyword . "%')
-				)";
-			}
+			$keyword_filter .= " AND (
+				voucher_no LIKE '%" . $keyword . "%' 
+				OR supplier_name LIKE '%" . $keyword . "%' 
+				OR company_name LIKE '%" . $keyword . "%' 
+				OR supplier_id IN (SELECT c.id FROM company c WHERE c.name LIKE '%" . $keyword . "%')
+				OR supplier_id IN (SELECT s.id FROM supplier s WHERE s.name LIKE '%" . $keyword . "%')
+				OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN company c ON pop.supplier_id = c.id WHERE c.name LIKE '%" . $keyword . "%')
+				OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
+				OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.fix_code LIKE '%" . $keyword . "%')
+			)";
 		endif;
 
 		if (count($delivery_status) > 0) {
@@ -5719,12 +5710,14 @@ class Inventory_model extends CI_Model
 			}
 		}
 
-		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id ASC")->num_rows();
-		$query = $this->db->query("SELECT id, method, supplier_id, supplier_name, warehouse_id, company_id, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') AND method = '$method' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+		$method_filter = " AND method IN ('local', 'company')";
+		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') $method_filter $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, method, supplier_id, supplier_name, warehouse_id, company_id, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') $method_filter $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
+				$method = $item['method'];
 				$delivery_status = $item['delivery_status'];
 
 				// Get totals and supplier list
@@ -5833,11 +5826,17 @@ class Inventory_model extends CI_Model
 					</div>
 				</div>';
 
+				$source_label = ($method == 'company') ? 'Company' : 'Local';
+				$source_badge = ($method == 'company')
+					? '<span class="badge bg-info">' . $source_label . '</span>'
+					: '<span class="badge bg-success">' . $source_label . '</span>';
+
 				$data[] = array(
 					"sr_no"             => ++$start,
 					"id"                => $item['id'],
 					"date"              => date('d M, Y', strtotime($item['date'])) . ' - ' . $item['voucher_no'],
 					"suppliers"         => !empty($suppliers) ? array_to_list($suppliers) : '-',
+					"source"            => $source_badge,
 					"total_products"    => $total_products,
 					"total_quantity"    => $total_qty,
 					"po_date"           => date('d M, Y', strtotime($item['date'])),
@@ -27241,8 +27240,69 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 
 	public function get_access_type()
 	{
-		$query = $this->db->query("SELECT id,name FROM access_manager order by id asc");
-		return $query;
+		$rows = $this->db->query("SELECT id, parent_id, type, name, structure, sort FROM access_manager WHERE is_deleted = 0 ORDER BY sort ASC, id ASC")->result_array();
+		return $this->build_access_tree($rows, 0);
+	}
+
+	private function build_access_tree($rows, $parent_id = 0)
+	{
+		$tree = array();
+		foreach ($rows as $row) {
+			if ((int)$row['parent_id'] !== (int)$parent_id) {
+				continue;
+			}
+			$children = $this->build_access_tree($rows, $row['id']);
+			$row['children'] = $children;
+			$row['tabs'] = array();
+			$row['columns'] = array();
+			$row['actions'] = array();
+			$row['datatypes'] = array();
+			foreach ($children as $child) {
+				if ($child['type'] === 'tabs') {
+					$row['tabs'][] = $child;
+				} elseif ($child['type'] === 'columns') {
+					$row['columns'][] = $child;
+				} elseif ($child['type'] === 'actions') {
+					$row['actions'][] = $child;
+				} elseif ($child['type'] === 'datatype') {
+					$row['datatypes'][] = $child;
+				}
+			}
+			$tree[] = $row;
+		}
+		return $tree;
+	}
+
+	private function expand_access_with_parents($selected_ids)
+	{
+		if (empty($selected_ids) || !is_array($selected_ids)) {
+			return array();
+		}
+
+		$selected_ids = array_map('intval', $selected_ids);
+		$selected_ids = array_filter($selected_ids);
+		$selected_ids = array_unique($selected_ids);
+
+		$parent_map = array();
+		$query = $this->db->query("SELECT id, parent_id FROM access_manager WHERE is_deleted = 0");
+		foreach ($query->result_array() as $row) {
+			$parent_map[(int)$row['id']] = (int)$row['parent_id'];
+		}
+
+		$final = array();
+		foreach ($selected_ids as $id) {
+			$current = $id;
+			$guard = 0;
+			while ($current > 0 && $guard < 50) {
+				$final[$current] = $current;
+				$current = isset($parent_map[$current]) ? $parent_map[$current] : 0;
+				$guard++;
+			}
+		}
+
+		$final = array_values($final);
+		sort($final, SORT_NUMERIC);
+		return $final;
 	}
 
 	public function get_manage_access()
@@ -27268,7 +27328,15 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 
-				$access_name = $this->common_model->getBulkNameIds('access_manager', 'name', $item['access_id']);
+				$access_name = '';
+				if (!empty($item['access_id'])) {
+					$ids = array_filter(array_map('intval', explode(',', $item['access_id'])));
+					if (!empty($ids)) {
+						$id_list = implode(',', $ids);
+						$modules = $this->db->query("SELECT name FROM access_manager WHERE parent_id = 0 AND is_deleted = 0 AND id IN ($id_list) ORDER BY sort ASC, id ASC")->result_array();
+						$access_name = !empty($modules) ? implode(', ', array_column($modules, 'name')) : '';
+					}
+				}
 
 				$delete_url = "confirm_modal('" . base_url() . "inventory/manage_access/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/access/edit/' . $id;
@@ -27304,7 +27372,9 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 		);
 
 		$name = $this->input->post('name');
-		$access_id = implode(',', $this->input->post('access_id'));
+		$selected = $this->input->post('access_id');
+		$expanded = $this->expand_access_with_parents($selected);
+		$access_id = !empty($expanded) ? implode(',', $expanded) : '';
 		$user = $this->session->userdata('super_user_id');
 		$check_email = $this->db->query("SELECT id FROM access WHERE name='$name' and user_id='$user' limit 1")->num_rows();
 
@@ -27341,7 +27411,9 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 
 		$user = $this->session->userdata('super_user_id');
 		$name = $this->input->post('name');
-		$access_id = implode(',', $this->input->post('access_id'));
+		$selected = $this->input->post('access_id');
+		$expanded = $this->expand_access_with_parents($selected);
+		$access_id = !empty($expanded) ? implode(',', $expanded) : '';
 
 		$check_email = $this->db->query("SELECT id FROM access WHERE  name='$name' and user_id='$user' and id!='$id' limit 1")->num_rows();
 

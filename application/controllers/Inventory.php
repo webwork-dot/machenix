@@ -280,6 +280,7 @@ class Inventory extends CI_Controller
             // redirect(site_url('admin/manage-access'), 'refresh');
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation'] = 'manage_access';
             $page_data['page_name'] = 'manage_access';
             $page_data['page_title'] = get_phrase('access_management');
             $this->load->view('backend/index', $page_data);
@@ -292,16 +293,21 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         }
 
-        $page_data['access_type']  = $this->inventory_model->get_access_type()->result_array();
+        $page_data['access_tree']  = $this->inventory_model->get_access_type();
+        $page_data['navigation'] = 'manage_access';
         if ($param1 == 'add') {
+            $page_data['selected_access'] = array();
             $page_data['page_name'] = 'manage_access_add';
-            $page_data['page_title'] = get_phrase('add_staff');
+            $page_data['page_title'] = 'Add Access from staff';
             $this->load->view('backend/index', $page_data);
         } elseif ($param1 == 'edit') {
             $page_data['data'] = $this->inventory_model->get_access_by_id($param2)->row_array();
+            $page_data['selected_access'] = !empty($page_data['data']['access_id'])
+                ? array_map('intval', explode(',', $page_data['data']['access_id']))
+                : array();
             $page_data['page_name'] = 'manage_access_edit';
             $page_data['id'] = $param2;
-            $page_data['page_title'] = get_phrase('edit_staff');
+            $page_data['page_title'] = 'Edit Access from staff';
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -4023,21 +4029,97 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
-        } else {
-            $this->session->set_userdata('previous_url', currentUrl());
-            $page_data['navigation']  = 'leads';
-            $page_data['status']      = ($param1 == '') ? 'all' : $param1;
-            if ($param1 == 'add') {
-                $this->leads_form('leads_add');
-                return;
-            } elseif ($param1 == 'import') {
-                $this->leads_form('leads_import');
-                return;
-            }
-            $page_data['page_name']     = 'leads_data';
-            $page_data['page_title'] = get_phrase('leads');
-            $this->load->view('backend/index', $page_data);
         }
+
+        // Default landing: All for Inventory users, New for others
+        if ($this->session->userdata('super_type') == 'Inventory') {
+            redirect(site_url('inventory/leads/all'), 'refresh');
+        }
+        redirect(site_url('inventory/leads/new'), 'refresh');
+    }
+
+    public function leads_all()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_all';
+        $page_data['page_title']  = 'All Leads';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function leads_new()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_new';
+        $page_data['page_title']  = 'New Leads';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function leads_today()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_today';
+        $page_data['page_title']  = "Today's Follow-up";
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function leads_upcoming()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_upcoming';
+        $page_data['page_title']  = 'Upcoming Follow-up';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function leads_missed()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_missed';
+        $page_data['page_title']  = 'Missed Leads';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function leads_lost()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_lost';
+        $page_data['page_title']  = 'Lost Leads';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function leads_moved()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        $this->session->set_userdata('previous_url', currentUrl());
+        $page_data['navigation']  = 'leads';
+        $page_data['page_name']   = 'leads_moved';
+        $page_data['page_title']  = 'Move To Customer';
+        $this->load->view('backend/index', $page_data);
     }
 
     public function leads_form($param1 = "", $param2 = "")
@@ -4077,13 +4159,6 @@ class Inventory extends CI_Controller
             $page_data['page_name']  = 'leads_move';
             $page_data['id']         = $param2;
             $page_data['page_title'] = 'Move to Customer';
-            $this->load->view('backend/index', $page_data);
-        } elseif ($param1 == 'leads') {
-            $this->session->set_userdata('previous_url', currentUrl());
-            $page_data['navigation']    = 'leads';
-            $page_data['page_name']     = 'leads_data';
-            $page_data['status']        = $param2;
-            $page_data['page_title']    = get_phrase('leads');
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -4243,11 +4318,85 @@ class Inventory extends CI_Controller
         } elseif ($param1 == "generate_bill_post") {
             $this->inventory_model->generate_bill_sales_order_post();
         } else {
+            // Backward compat: redirect old ?status= tabs to dedicated pages
+            $legacy_status = $this->input->get('status');
+            if ($legacy_status !== null && $legacy_status !== '' && $legacy_status !== 'pending') {
+                $status_map = [
+                    'invoice'   => 'sales-order-invoice',
+                    'complete'  => 'sales-order-complete',
+                    'all'       => 'sales-order-all',
+                    'cancelled' => 'sales-order-cancelled',
+                ];
+                if (isset($status_map[$legacy_status])) {
+                    $qs = $_GET;
+                    unset($qs['status']);
+                    $query = http_build_query($qs);
+                    $redirect = site_url('inventory/' . $status_map[$legacy_status]);
+                    if ($query !== '') {
+                        $redirect .= '?' . $query;
+                    }
+                    redirect($redirect, 'refresh');
+                    return;
+                }
+            }
+
             $this->session->set_userdata('previous_url', currentUrl());
 
             $page_data['navigation']  = 'sales_order';
             $page_data['page_name']  = 'sales_order';
-            $page_data['page_title'] = get_phrase('sales');
+            $page_data['page_title'] = 'Pending Sales Order';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function sales_order_invoice()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'sales_order';
+            $page_data['page_name']  = 'sales_order_invoice';
+            $page_data['page_title'] = 'Generate Invoice';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function sales_order_complete()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'sales_order';
+            $page_data['page_name']  = 'sales_order_complete';
+            $page_data['page_title'] = 'Complete Sales Order';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function sales_order_all()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'sales_order';
+            $page_data['page_name']  = 'sales_order_all';
+            $page_data['page_title'] = 'All Sales Orders';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function sales_order_cancelled()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'sales_order';
+            $page_data['page_name']  = 'sales_order_cancelled';
+            $page_data['page_title'] = 'Cancelled Sales Order';
             $this->load->view('backend/index', $page_data);
         }
     }

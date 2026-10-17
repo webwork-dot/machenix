@@ -11,12 +11,11 @@
     }
 
     $navigation = isset($navigation) ? $navigation : '';
-    $page_folder = isset($page_folder) ? $page_folder : '';
 ?>
 
 <div class="main-menu-content">
     <ul class="navigation navigation-main" id="main-menu-navigation" data-menu="menu-navigation">
-        <li class="nav-item <?php if ($page_name == 'dashboard')echo 'active';?>">
+        <li class="nav-item <?php if ($page_name == 'dashboard') echo 'active';?>">
         	<a class="d-flex align-items-center" href="<?php echo site_url('inventory/dashboard'); ?>">
         	    <i data-feather="home"></i>
         	    <span class="menu-title text-truncate fw-bolder" data-i18n="Dashboard">Dashboard</span>
@@ -24,7 +23,7 @@
         </li>  
         
         <?php if($user_id == 4) { ?>
-            <li class="nav-item hidden <?php if($page_name == 'manage_access' || $page_name == 'manage_access_add' || $page_name == 'manage_access_edit') echo 'active'; ?>">
+            <li class="nav-item <?php if($navigation == 'manage_access') echo 'active'; ?>">
                 <a class="d-flex align-items-center " href="<?php echo site_url('inventory/manage-access'); ?>">
                     <i data-feather="align-left"></i>
                     <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Access Management</span>
@@ -177,14 +176,14 @@
         <?php // } ?>
         
         <?php if($user_id == 4 || in_array('26',$access_array) || in_array('27',$access_array)) {?>
-        <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman' || $page_name == 'conversion_order' || $page_name == 'company_sales' || $page_name == 'company_sales_add' || $navigation == 'company_sales' || $page_name == 'black_order' || $page_name == 'black_order_edit' || $page_name == 'sales_commission' || $page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view' || $page_name == 'replace_products' || $navigation == 'customer_quotations' || $page_name == 'customer_quotations' || $page_name == 'customer_quotation_add' || $page_name == 'customer_quotation_edit') echo 'active'; ?>">
+        <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order' || $page_name == 'sales_order_invoice' || $page_name == 'sales_order_complete' || $page_name == 'sales_order_all' || $page_name == 'sales_order_cancelled' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman' || $page_name == 'conversion_order' || $page_name == 'company_sales' || $page_name == 'company_sales_add' || $navigation == 'company_sales' || $page_name == 'black_order' || $page_name == 'black_order_edit' || $page_name == 'sales_commission' || $page_name == 'goods_return' || $page_name == 'goods_return_add' || $page_name == 'goods_return_view' || $page_name == 'replace_products' || $navigation == 'customer_quotations' || $page_name == 'customer_quotations' || $page_name == 'customer_quotation_add' || $page_name == 'customer_quotation_edit') echo 'active'; ?>">
            <a class="d-flex align-items-center" href="#">
                <i data-feather="align-left"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Sales</span>
            </a>
            <ul class="menu-content">
                <?php if($user_id == 4 || in_array('26',$access_array)) {?>
-                   <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
+                   <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order' || $page_name == 'sales_order_invoice' || $page_name == 'sales_order_complete' || $page_name == 'sales_order_all' || $page_name == 'sales_order_cancelled' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
                        <a class="d-flex align-items-center" href="<?php echo site_url('inventory/sales-order'); ?>">
                            <i class="feather icon-circle"></i>
                            <span class="menu-title text-truncate">Sales Booking</span>
@@ -316,7 +315,7 @@
         <?php } ?>
 
         <?php if($user_id == 4 || in_array('2',$access_array)) { ?>
-        <li class="nav-item <?php if($navigation == 'leads') echo 'active'; ?>">
+        <li class="nav-item <?php if($navigation == 'leads' || in_array($page_name, ['leads_all', 'leads_new', 'leads_today', 'leads_upcoming', 'leads_missed', 'leads_lost', 'leads_moved', 'customer_calls_data', 'customer_add', 'customer_edit', 'leads_move', 'leads_import'])) echo 'active'; ?>">
             <a class="d-flex align-items-center " href="<?php echo base_url();?>inventory/leads/<?php echo ($this->session->userdata('super_type') == 'Inventory') ? 'all' : 'new';?>">
                 <i class="feather icon-layers"></i>
                 <span class="menu-title text-truncate">Leads</span>

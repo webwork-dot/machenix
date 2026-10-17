@@ -1045,6 +1045,8 @@
         return w;
     }
 
+    var currentStockMode = 'all';
+
     function formatChildRow(rowData) {
         var showZeroQty = $('#toggle-zero-qty').is(':checked');
         var allBatches = rowData.batches || [];
@@ -1249,8 +1251,6 @@
                 }
             });
         }
-
-        var currentStockMode = 'all';
 
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"dt-toolbar"<"d-flex align-items-center"l><"dt-search"f>>t<"d-flex justify-content-between align-items-center p-1"ip>',
