@@ -54,6 +54,7 @@ CREATE TABLE `raw_products` (
   `has_formula` tinyint(1) NOT NULL DEFAULT 0,
   `remark` text DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `added_by` int(11) NULL DEFAULT NULL,
   `added_date` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id` (`id`)

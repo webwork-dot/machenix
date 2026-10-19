@@ -51,7 +51,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -73,6 +73,11 @@
 
 <?php
   $status = (isset($_GET['status']) && $_GET['status'] == 'approved') ? 'approved' : 'pending';
+  if ($status == 'pending' && !is_access('848') && is_access('849')) {
+    $status = 'approved';
+  } elseif ($status == 'approved' && !is_access('849') && is_access('848')) {
+    $status = 'pending';
+  }
   $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
 
@@ -93,14 +98,23 @@
   }
   $res = $this->db->query($rec_sql)->row_array();
   $total_overall_amount = (float)($res['total_amt'] ?? 0);
+
+  $show_actions = ($status == 'pending')
+    ? (is_access('857') || is_access('858'))
+    : is_access('867');
+  $show_export = ($status == 'pending') ? is_access('859') : is_access('868');
 ?>
 
 <div class="row" id="table-bordered">
   <?php include('filter/date_range.php'); ?>
 
   <div class="col-12 d-flex">
+    <?php if (is_access('848')) { ?>
     <a href="<?php echo base_url('inventory/payment-reconciliation?status=pending' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">Pending</a>
+    <?php } ?>
+    <?php if (is_access('849')) { ?>
     <a href="<?php echo base_url('inventory/payment-reconciliation?status=approved' . $date_range_param); ?>" class="sub-link <?php echo ($status == 'approved') ? 'active' : ''; ?>">Approved</a>
+    <?php } ?>
   </div>
 
   <div class="col-12">
@@ -121,14 +135,24 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Date</th>
-              <th>Inv No</th>
-              <th>Customer Name</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Added By</th>
-              <th style="width: 80px;" class="text-center">Action</th>
+              <?php if ($status == 'pending') { ?>
+                <?php if (is_access('850')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('851')) { ?><th>Inv No</th><?php } ?>
+                <?php if (is_access('852')) { ?><th>Customer Name</th><?php } ?>
+                <?php if (is_access('853')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('854')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('855')) { ?><th>Method</th><?php } ?>
+                <?php if (is_access('856')) { ?><th>Added By</th><?php } ?>
+              <?php } else { ?>
+                <?php if (is_access('860')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('861')) { ?><th>Inv No</th><?php } ?>
+                <?php if (is_access('862')) { ?><th>Customer Name</th><?php } ?>
+                <?php if (is_access('863')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('864')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('865')) { ?><th>Method</th><?php } ?>
+                <?php if (is_access('866')) { ?><th>Added By</th><?php } ?>
+              <?php } ?>
+              <?php if ($show_actions) { ?><th style="width: 80px;" class="text-center">Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -184,27 +208,38 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "date" },
-      { "data": "inv_no" },
-      { "data": "customer_name" },
-      { "data": "amount" },
-      { "data": "payment_type" },
-      { "data": "payment_method" },
-      { "data": "added_by_name" },
-      { "data": "actions", "className": "text-center" },
+      <?php if ($status == 'pending') { ?>
+        <?php if (is_access('850')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('851')) { ?>{ "data": "inv_no" },<?php } ?>
+        <?php if (is_access('852')) { ?>{ "data": "customer_name" },<?php } ?>
+        <?php if (is_access('853')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('854')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('855')) { ?>{ "data": "payment_method" },<?php } ?>
+        <?php if (is_access('856')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } else { ?>
+        <?php if (is_access('860')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('861')) { ?>{ "data": "inv_no" },<?php } ?>
+        <?php if (is_access('862')) { ?>{ "data": "customer_name" },<?php } ?>
+        <?php if (is_access('863')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('864')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('865')) { ?>{ "data": "payment_method" },<?php } ?>
+        <?php if (is_access('866')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } ?>
+      <?php if ($show_actions) { ?>{ "data": "actions", "className": "text-center" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if ($show_export) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

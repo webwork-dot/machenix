@@ -23,7 +23,7 @@
 		display: flex;
 		align-items: center;
 	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+	.new-form .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
 		color: #1e652e;
 		border: 1px solid #1e652e !important;
 		background: white;
@@ -43,9 +43,14 @@
 </style>
 
 <?php
-    // echo json_encode($this->session->userdata());
     include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
+    $status = (isset($_GET['status']) && $_GET['status'] != '') ? $_GET['status'] : 'pending';
+    if ($status != 'completed' && !is_access('393') && is_access('394')) {
+        $status = 'completed';
+    } elseif ($status == 'completed' && !is_access('394') && is_access('393')) {
+        $status = 'pending';
+    }
+    $is_completed = ($status == 'completed');
 ?>
 	
 <div class="row" id="table-bordered">
@@ -53,21 +58,22 @@
     <div class="col-md-12 mb-1">
 		<div class="fixedElement" id="fixedElement">
 			<ul class="nav nav-pills bg-nav-pills nav-justified ">
-				
+                <?php if (is_access('393')) { ?>
                 <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/black-order" class="nav-link <?php echo ($_GET['status']!= 'completed') ? 'active' : ''; ?>">
+                    <a href="<?php echo base_url();?>inventory/black-order" class="nav-link <?php echo (!$is_completed) ? 'active' : ''; ?>">
                         <i class="mdi mdi-home-variant d-md-none d-block"></i>
                         <span class="d-none d-md-block">Pending</span>
                     </a>
                 </li>
-				
+                <?php } ?>
+                <?php if (is_access('394')) { ?>
                 <li class="nav-item">
-                    <a href="<?php echo base_url();?>inventory/black-order?status=completed" class="nav-link <?php echo (isset($_GET['status']) && $_GET['status'] == 'completed') ? 'active' : ''; ?>">
+                    <a href="<?php echo base_url();?>inventory/black-order?status=completed" class="nav-link <?php echo ($is_completed) ? 'active' : ''; ?>">
                         <i class="mdi mdi-home-variant d-md-none d-block"></i>
                         <span class="d-none d-md-block">Completed</span>
                     </a>
                 </li>
-                
+                <?php } ?>
 			</ul>
 		</div>
 	</div>
@@ -78,7 +84,7 @@
             <div class="row">
                <div class="col-md-12 mt-10">
                   <h5 class="mb-0"><b>Total Black Order <span id="total_count"> (0)</span></b>
-                    <?php if ($_GET['status'] != 'completed') { ?>
+                    <?php if (!$is_completed && is_access('404')) { ?>
                         <button type="button" id="btn_generate_invoice" class="btn btn-primary float-end" style="margin-top: -5px;" disabled>Generate Invoice</button>
                     <?php } ?>
 				  </h5>
@@ -89,28 +95,27 @@
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-                    <?php if ($_GET['status'] != 'completed') { ?>
+                    <?php if (!$is_completed) { ?>
                       <th style="width: 15px;">#</th>
-                      <th>Date</th>
-                      <th>Customer Name</th>
-                      <th>Order NO</th>
-                      <th>Product Name</th>
-                      <th>Item Code</th>
-                      <th>Batch No</th>
-                      <th>Warehouse</th>
-                      <th>Black Qty</th>
+                      <?php if (is_access('395')) { ?><th>Date</th><?php } ?>
+                      <?php if (is_access('396')) { ?><th>Customer Name</th><?php } ?>
+                      <?php if (is_access('397')) { ?><th>Order NO</th><?php } ?>
+                      <?php if (is_access('398')) { ?><th>Product Name</th><?php } ?>
+                      <?php if (is_access('399')) { ?><th>Item Code</th><?php } ?>
+                      <?php if (is_access('400')) { ?><th>Batch No</th><?php } ?>
+                      <?php if (is_access('401')) { ?><th>Warehouse</th><?php } ?>
+                      <?php if (is_access('402')) { ?><th>Black Qty</th><?php } ?>
+                      <?php if (is_access('403')) { ?><th>Actions</th><?php } ?>
                     <?php } else { ?>
                       <th style="width: 15px;">#</th>
-                      <th>Date</th>
-                      <th>Customer Name</th>
-                      <th>Invoice No</th>
-                      <th>Warehouse</th>
-                      <th>Product Count</th>
-                      <th>Qty Count</th>
-                      <th>Grand Total</th>
-                    <?php } ?>
-                    <?php if ($staff_access !== 7) { ?>
-                      <th>Actions</th>
+                      <?php if (is_access('406')) { ?><th>Date</th><?php } ?>
+                      <?php if (is_access('407')) { ?><th>Customer Name</th><?php } ?>
+                      <?php if (is_access('408')) { ?><th>Invoice No</th><?php } ?>
+                      <?php if (is_access('409')) { ?><th>Warehouse</th><?php } ?>
+                      <?php if (is_access('410')) { ?><th>Product Count</th><?php } ?>
+                      <?php if (is_access('411')) { ?><th>Qty Count</th><?php } ?>
+                      <?php if (is_access('412')) { ?><th>Grand Total</th><?php } ?>
+                      <?php if (is_access('413') || is_access('414') || is_access('415') || is_access('416') || is_access('417')) { ?><th>Actions</th><?php } ?>
                     <?php } ?>
                   </tr>
                </thead>
@@ -180,13 +185,13 @@
             },	
             "drawCallback": function (settings, json) {
                 $('[data-toggle="tooltip"]').tooltip('update');
-                <?php if ($_GET['status'] != 'completed') { ?>
+                <?php if (!$is_completed) { ?>
                 applyCheckboxVisibility();
                 <?php } ?>
             },
       
             "ajax":{
-                <?php if ($_GET['status'] != 'completed') { ?>
+                <?php if (!$is_completed) { ?>
                 "url": "<?php echo base_url('inventory/get_black_order'); ?>",
                 <?php } else { ?>
                 "url": "<?php echo base_url('inventory/get_completed_black_order'); ?>",
@@ -196,7 +201,7 @@
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']:'pending'; ?>';	
+                    data.status = '<?php echo $status; ?>';	
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -207,55 +212,42 @@
             },   
                      
             "columns": [
-                <?php if ($_GET['status'] != 'completed') { ?>
+                <?php if (!$is_completed) { ?>
                     { "data": "sr_no" },
-                    { "data": "date" },
-                    { "data": "customer_name" },
-                    { "data": "order_no" },
-                    { "data": "product_name" },
-                    { "data": "item_code" },
-                    { "data": "batch_no" },
-                    { "data": "warehouse_name" },
-                    { "data": "black_qty" },
+                    <?php if (is_access('395')) { ?>{ "data": "date" },<?php } ?>
+                    <?php if (is_access('396')) { ?>{ "data": "customer_name" },<?php } ?>
+                    <?php if (is_access('397')) { ?>{ "data": "order_no" },<?php } ?>
+                    <?php if (is_access('398')) { ?>{ "data": "product_name" },<?php } ?>
+                    <?php if (is_access('399')) { ?>{ "data": "item_code" },<?php } ?>
+                    <?php if (is_access('400')) { ?>{ "data": "batch_no" },<?php } ?>
+                    <?php if (is_access('401')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                    <?php if (is_access('402')) { ?>{ "data": "black_qty" },<?php } ?>
+                    <?php if (is_access('403')) { ?>{ "data": "action" },<?php } ?>
                 <?php } else { ?>
                     { "data": "sr_no" },
-                    { "data": "date" },
-                    { "data": "customer_name" },
-                    { "data": "invoice_no" },
-                    { "data": "warehouse_name" },
-                    { "data": "product_count" },
-                    { "data": "qty_count" },
-                    { "data": "grand_total" },
-                <?php } ?>
-                <?php if ($staff_access !== 7) { ?>
-                   { "data": "action" },
+                    <?php if (is_access('406')) { ?>{ "data": "date" },<?php } ?>
+                    <?php if (is_access('407')) { ?>{ "data": "customer_name" },<?php } ?>
+                    <?php if (is_access('408')) { ?>{ "data": "invoice_no" },<?php } ?>
+                    <?php if (is_access('409')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                    <?php if (is_access('410')) { ?>{ "data": "product_count" },<?php } ?>
+                    <?php if (is_access('411')) { ?>{ "data": "qty_count" },<?php } ?>
+                    <?php if (is_access('412')) { ?>{ "data": "grand_total" },<?php } ?>
+                    <?php if (is_access('413') || is_access('414') || is_access('415') || is_access('416') || is_access('417')) { ?>{ "data": "action" },<?php } ?>
                 <?php } ?>
             ], 
            
             "buttons": [
+                <?php if ((!$is_completed && is_access('405')) || ($is_completed && is_access('418'))) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                        <?php if ($_GET['status'] != 'completed') { ?>
-                        "columns": [0,1,2,3,4,5,6,7,8]
-                        <?php } else { ?>
-                        "columns": [0,1,2,3,4,5,6,7]
-                        <?php } ?>
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                        <?php if ($_GET['status'] != 'completed') { ?>
-                        "columns": [0,1,2,3,4,5,6,7,8]
-                        <?php } else { ?>
-                        "columns": [0,1,2,3,4,5,6,7]
-                        <?php } ?>
-                    }
                 }
+                <?php } ?>
             ], 
             "lengthMenu": [
                 [25, 50, 100, 250, 500, 1000],
@@ -274,7 +266,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 

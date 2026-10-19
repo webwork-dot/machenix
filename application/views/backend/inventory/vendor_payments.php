@@ -27,7 +27,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -61,19 +61,21 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/vendor-payments/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_vendor_payments');?></span></a>     
+        <?php if (is_access('742')) { ?>
+        <a href="<?php echo site_url('inventory/vendor-payments/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_vendor_payments');?></span></a>
+        <?php } ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Vendor Name</th>
-              <th>Invoice No</th>
-              <th>Payment Type</th>
-              <th>USD ($)</th>
-              <th>RMB (¥)</th>
-              <th>INR (₹)</th>
-              <th>Date</th>
-              <th>Action</th>
+              <?php if (is_access('735')) { ?><th>Vendor Name</th><?php } ?>
+              <?php if (is_access('736')) { ?><th>Invoice No</th><?php } ?>
+              <?php if (is_access('737')) { ?><th>Payment Type</th><?php } ?>
+              <?php if (is_access('738')) { ?><th>USD ($)</th><?php } ?>
+              <?php if (is_access('739')) { ?><th>RMB (¥)</th><?php } ?>
+              <?php if (is_access('740')) { ?><th>INR (₹)</th><?php } ?>
+              <?php if (is_access('741')) { ?><th>Date</th><?php } ?>
+              <?php if (is_access('743') || is_access('744')) { ?><th>Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -118,27 +120,28 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "vendor_name" },
-      { "data": "invoice_no" },
-      { "data": "type" },
-      { "data": "usd" },
-      { "data": "rmb" },
-      { "data": "inr" },
-      { "data": "date" },
-      { "data": "actions" },
+      <?php if (is_access('735')) { ?>{ "data": "vendor_name" },<?php } ?>
+      <?php if (is_access('736')) { ?>{ "data": "invoice_no" },<?php } ?>
+      <?php if (is_access('737')) { ?>{ "data": "type" },<?php } ?>
+      <?php if (is_access('738')) { ?>{ "data": "usd" },<?php } ?>
+      <?php if (is_access('739')) { ?>{ "data": "rmb" },<?php } ?>
+      <?php if (is_access('740')) { ?>{ "data": "inr" },<?php } ?>
+      <?php if (is_access('741')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('743') || is_access('744')) { ?>{ "data": "actions" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('745')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7] }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

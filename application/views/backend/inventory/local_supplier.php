@@ -22,20 +22,22 @@
       </div>
       <div class="card-datatable d-report mb-2">
 
+        <?php if (is_access('701')) { ?>
         <a href="<?php echo site_url('inventory/local-supplier/add'); ?>"
           class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
             Add Local Supplier</span></a>
+        <?php } ?>
 
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Supplier Name</th>
-              <th>Contact Person Name</th>
-              <th>Contact Person Number</th>
-              <th>Actions</th>
+              <?php if (is_access('698')) { ?><th>Supplier Name</th><?php } ?>
+              <?php if (is_access('699')) { ?><th>Contact Person Name</th><?php } ?>
+              <?php if (is_access('700')) { ?><th>Contact Person Number</th><?php } ?>
+              <?php if (is_access('702') || is_access('703') || is_access('704') || is_access('705')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -81,35 +83,24 @@ $(document).ready(function($) {
     "columns": [{
         "data": "sr_no"
       },
-      {
-        "data": "name"
-      },
-      {
-        "data": "contact_name"
-      },
-      {
-        "data": "contact_no"
-      },
-      {
-        "data": "action"
-      },
+      <?php if (is_access('698')) { ?>{ "data": "name" },<?php } ?>
+      <?php if (is_access('699')) { ?>{ "data": "contact_name" },<?php } ?>
+      <?php if (is_access('700')) { ?>{ "data": "contact_no" },<?php } ?>
+      <?php if (is_access('702') || is_access('703') || is_access('704') || is_access('705')) { ?>{ "data": "action" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('706')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4]
-        }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4]
-        }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -119,7 +110,7 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
     }, ]
 

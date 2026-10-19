@@ -56,11 +56,21 @@ class Local_supplier_model extends CI_Model
                 $edit_url = base_url() . 'inventory/local-supplier/edit/' . $id;
                 $replicate_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/supplier_replicate_modal/" . $id . "','Replicate Supplier')";
                 $action = '';
-                $action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-             <a href="' . base_url() . 'inventory/local-supplier/ledger/' . $id . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 btn-outline-primary" style="padding: 4px 8px;"><i class="fa fa-book" aria-hidden="true"></i></button></a>
-             <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-             <a href="javascript:void(0);" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
-             ';
+                if (is_access('702')) {
+                    $action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+                }
+                if (is_access('703')) {
+                    $action .= '<a href="' . base_url() . 'inventory/local-supplier/ledger/' . $id . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 btn-outline-primary" style="padding: 4px 8px;"><i class="fa fa-book" aria-hidden="true"></i></button></a>';
+                }
+                if (is_access('704')) {
+                    $action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+                }
+                if (is_access('705')) {
+                    $action .= '<a href="javascript:void(0);" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
+                }
+                if ($action == '') {
+                    $action = '-';
+                }
 
                 $data[] = array(
                     "sr_no"       => ++$start,

@@ -25,10 +25,7 @@
 	}
 </style>
 
-<?php
-    include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
-?>
+<?php include('filter/date_range.php'); ?>
 	
 <div class="row" id="table-bordered">
    <div class="col-12">
@@ -41,21 +38,21 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-            <a href="<?php echo site_url('inventory/conversion-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> Add Sales Conversion</span></a>   
+            <?php if (is_access('372')) { ?>
+            <a href="<?php echo site_url('inventory/conversion-order/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> Add Sales Conversion</span></a>
+            <?php } ?>
           <table class="table leads-table" id="report-datatable">
                <thead>
                    <tr>
 					<th>#</th>
-					<th>Date</th>
-					<th>Customer Name</th>
-					<th>Invoice No</th>
-					<th>Invoice Date</th>
-					<th>Warehouse</th>
-					<th>Total Qty</th>
-					<th>Total Products</th>
-                    <?php if ($staff_access !== 7) { ?>
-                    <th>Actions</th>
-                    <?php } ?>
+					<?php if (is_access('365')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('366')) { ?><th>Customer Name</th><?php } ?>
+					<?php if (is_access('367')) { ?><th>Invoice No</th><?php } ?>
+					<?php if (is_access('368')) { ?><th>Invoice Date</th><?php } ?>
+					<?php if (is_access('369')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('370')) { ?><th>Total Qty</th><?php } ?>
+					<?php if (is_access('371')) { ?><th>Total Products</th><?php } ?>
+					<?php if (is_access('373') || is_access('374') || is_access('375') || is_access('376') || is_access('377')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -101,34 +98,28 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "customer_name" },
-                { "data": "invoice_no" },
-                { "data": "invoice_date" },
-                { "data": "warehouse_name" },
-                { "data": "qty" },
-                { "data": "total_pro" },
-                <?php if ($staff_access !== 7) { ?>
-                   { "data": "action" },
-                <?php } ?>
+                <?php if (is_access('365')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('366')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('367')) { ?>{ "data": "invoice_no" },<?php } ?>
+                <?php if (is_access('368')) { ?>{ "data": "invoice_date" },<?php } ?>
+                <?php if (is_access('369')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                <?php if (is_access('370')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('371')) { ?>{ "data": "total_pro" },<?php } ?>
+                <?php if (is_access('373') || is_access('374') || is_access('375') || is_access('376') || is_access('377')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('378')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -144,7 +135,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // serial number column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 

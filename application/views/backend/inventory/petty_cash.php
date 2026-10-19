@@ -51,7 +51,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -116,7 +116,6 @@
     margin-bottom: 0;
   }
 
-  /* Ledger label badges (theme only ships bg-light-primary) */
   #report-datatable .badge {
     font-weight: 600;
     padding: 0.35em 0.65em;
@@ -151,12 +150,36 @@
 <?php
   $tab_get = isset($_GET['tab']) ? $_GET['tab'] : 'cash';
   $tab = in_array($tab_get, ['cash', 'pending_transfer', 'transferred'], true) ? $tab_get : 'cash';
+  if ($tab == 'cash' && !is_access('774')) {
+    if (is_access('775')) { $tab = 'pending_transfer'; }
+    elseif (is_access('776')) { $tab = 'transferred'; }
+  } elseif ($tab == 'pending_transfer' && !is_access('775')) {
+    if (is_access('774')) { $tab = 'cash'; }
+    elseif (is_access('776')) { $tab = 'transferred'; }
+  } elseif ($tab == 'transferred' && !is_access('776')) {
+    if (is_access('774')) { $tab = 'cash'; }
+    elseif (is_access('775')) { $tab = 'pending_transfer'; }
+  }
   $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
   $cash_summary = $this->inventory_model->get_cash_in_hand_summary($company_id);
   $official_balance   = (float)($cash_summary['official']['cash_in_hand'] ?? 0);
   $unofficial_balance = (float)($cash_summary['unofficial']['cash_in_hand'] ?? 0);
   $actual_on_hand     = $official_balance + $unofficial_balance;
+  $is_transfer_tab = in_array($tab, ['transferred', 'pending_transfer'], true);
+  $tab_title = ($tab == 'pending_transfer') ? 'Pending Transfer' : (($tab == 'transferred') ? 'Total Transferred' : 'Cash Ledger');
+  $show_actions = false;
+  $show_export = false;
+  if ($tab == 'cash') {
+    $show_actions = is_access('787') || is_access('788');
+    $show_export = is_access('789');
+  } elseif ($tab == 'pending_transfer') {
+    $show_actions = is_access('797');
+    $show_export = is_access('798');
+  } elseif ($tab == 'transferred') {
+    $show_actions = is_access('806') || is_access('807') || is_access('808');
+    $show_export = is_access('809');
+  }
 ?>
 
 <div class="row" id="table-bordered">
@@ -203,15 +226,17 @@
   </div>
 
   <div class="col-12 d-flex">
+    <?php if (is_access('774')) { ?>
     <a href="<?php echo base_url('inventory/cash-book?tab=cash' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'cash') ? 'active' : ''; ?>">Cash</a>
+    <?php } ?>
+    <?php if (is_access('775')) { ?>
     <a href="<?php echo base_url('inventory/cash-book?tab=pending_transfer' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'pending_transfer') ? 'active' : ''; ?>">Pending Transfer</a>
+    <?php } ?>
+    <?php if (is_access('776')) { ?>
     <a href="<?php echo base_url('inventory/cash-book?tab=transferred' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'transferred') ? 'active' : ''; ?>">Transferred</a>
+    <?php } ?>
   </div>
 
-  <?php
-    $is_transfer_tab = in_array($tab, ['transferred', 'pending_transfer'], true);
-    $tab_title = ($tab == 'pending_transfer') ? 'Pending Transfer' : (($tab == 'transferred') ? 'Total Transferred' : 'Cash Ledger');
-  ?>
   <div class="col-12">
     <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
@@ -224,27 +249,44 @@
       </div>
       <div class="card-datatable d-report mb-2">
         <?php if ($tab == 'cash'): ?>
-        <a href="<?php echo site_url('inventory/cash-book/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Expense</span></a>     
-        <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_transfer_cash'); ?>', 'Transfer Cash');" class="dt-button add-new desktop-tab add-btn btn btn-success" style="margin-right: 8px;" tabindex="0"><span><i class="feather icon-arrow-right-circle"></i> Transfer</span></a>
+          <?php if (is_access('785')) { ?>
+          <a href="<?php echo site_url('inventory/cash-book/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Expense</span></a>
+          <?php } ?>
+          <?php if (is_access('786')) { ?>
+          <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_transfer_cash'); ?>', 'Transfer Cash');" class="dt-button add-new desktop-tab add-btn btn btn-success" style="margin-right: 8px;" tabindex="0"><span><i class="feather icon-arrow-right-circle"></i> Transfer</span></a>
+          <?php } ?>
         <?php endif; ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th style="width: 50px;" class="text-center">#</th>
-              <th>Date</th>
-              <th><?= $is_transfer_tab ? 'Company' : 'Particular'; ?></th>
-              <?php if (!$is_transfer_tab): ?>
-              <th>Source</th>
-              <th>In/Out</th>
-              <?php endif; ?>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Remark / Narration</th>
-              <?php if ($is_transfer_tab): ?>
-              <th>Status</th>
-              <?php endif; ?>
-              <th>Added By</th>
-              <th style="width: 80px;" class="text-center">Action</th>
+              <?php if ($tab == 'cash') { ?>
+                <?php if (is_access('777')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('778')) { ?><th>Particular</th><?php } ?>
+                <?php if (is_access('779')) { ?><th>Source</th><?php } ?>
+                <?php if (is_access('780')) { ?><th>In/Out</th><?php } ?>
+                <?php if (is_access('781')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('782')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('783')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('784')) { ?><th>Added By</th><?php } ?>
+              <?php } elseif ($tab == 'pending_transfer') { ?>
+                <?php if (is_access('790')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('791')) { ?><th>Company</th><?php } ?>
+                <?php if (is_access('792')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('793')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('794')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('795')) { ?><th>Status</th><?php } ?>
+                <?php if (is_access('796')) { ?><th>Added By</th><?php } ?>
+              <?php } else { ?>
+                <?php if (is_access('799')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('800')) { ?><th>Company</th><?php } ?>
+                <?php if (is_access('801')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('802')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('803')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('804')) { ?><th>Status</th><?php } ?>
+                <?php if (is_access('805')) { ?><th>Added By</th><?php } ?>
+              <?php } ?>
+              <?php if ($show_actions) { ?><th style="width: 80px;" class="text-center">Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -297,33 +339,47 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no", "className": "text-center" },
-      { "data": "date" },
-      { "data": "supplier_name" },
-      <?php if (!$is_transfer_tab): ?>
-      { "data": "source" },
-      { "data": "direction" },
-      <?php endif; ?>
-      { "data": "payment_type" },
-      { "data": "amount" },
-      { "data": "remark" },
-      <?php if ($is_transfer_tab): ?>
-      { "data": "status" },
-      <?php endif; ?>
-      { "data": "added_by_name" },
-      { "data": "actions", "className": "text-center" },
+      <?php if ($tab == 'cash') { ?>
+        <?php if (is_access('777')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('778')) { ?>{ "data": "supplier_name" },<?php } ?>
+        <?php if (is_access('779')) { ?>{ "data": "source" },<?php } ?>
+        <?php if (is_access('780')) { ?>{ "data": "direction" },<?php } ?>
+        <?php if (is_access('781')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('782')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('783')) { ?>{ "data": "remark" },<?php } ?>
+        <?php if (is_access('784')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } elseif ($tab == 'pending_transfer') { ?>
+        <?php if (is_access('790')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('791')) { ?>{ "data": "supplier_name" },<?php } ?>
+        <?php if (is_access('792')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('793')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('794')) { ?>{ "data": "remark" },<?php } ?>
+        <?php if (is_access('795')) { ?>{ "data": "status" },<?php } ?>
+        <?php if (is_access('796')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } else { ?>
+        <?php if (is_access('799')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('800')) { ?>{ "data": "supplier_name" },<?php } ?>
+        <?php if (is_access('801')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('802')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('803')) { ?>{ "data": "remark" },<?php } ?>
+        <?php if (is_access('804')) { ?>{ "data": "status" },<?php } ?>
+        <?php if (is_access('805')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } ?>
+      <?php if ($show_actions) { ?>{ "data": "actions", "className": "text-center" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if ($show_export) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": <?php echo $is_transfer_tab ? '[0, 1, 2, 3, 4, 5, 6, 7]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": <?php echo $is_transfer_tab ? '[0, 1, 2, 3, 4, 5, 6, 7]' : '[0, 1, 2, 3, 4, 5, 6, 7, 8]'; ?> }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

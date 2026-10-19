@@ -27,18 +27,18 @@
             <thead>
               <tr>
                   <th>#</th>
-                  <th>Distributor</th>
-                  <th>Company Name</th>
-                  <th>City</th>
-                  <th>State</th>
-                  <th>Owner Name</th>
-                  <th>Mobile/Whatsapp No</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Staff</th>
-                  <th>Added By</th>
-                  <th>Assigned Date</th>
-                  <th>Actions</th>
+                  <?php if (is_access('584')) { ?><th>Distributor</th><?php } ?>
+                  <?php if (is_access('585')) { ?><th>Company Name</th><?php } ?>
+                  <?php if (is_access('586')) { ?><th>City</th><?php } ?>
+                  <?php if (is_access('587')) { ?><th>State</th><?php } ?>
+                  <?php if (is_access('588')) { ?><th>Owner Name</th><?php } ?>
+                  <?php if (is_access('589')) { ?><th>Mobile/Whatsapp No</th><?php } ?>
+                  <?php if (is_access('590')) { ?><th>Email</th><?php } ?>
+                  <?php if (is_access('591')) { ?><th>Status</th><?php } ?>
+                  <?php if (is_access('592')) { ?><th>Staff</th><?php } ?>
+                  <?php if (is_access('593')) { ?><th>Added By</th><?php } ?>
+                  <?php if (is_access('594')) { ?><th>Assigned Date</th><?php } ?>
+                  <?php if (is_access('595') || is_access('596') || is_access('597') || is_access('598') || is_access('599')) { ?><th>Actions</th><?php } ?>
               </tr>
             </thead>
           </table>
@@ -84,36 +84,32 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "distributor" },
-                { "data": "name" },
-                { "data": "city_name" },
-                { "data": "state_name" },
-                { "data": "owner_name" },
-                { "data": "mobile_whatsapp" },
-                { "data": "owner_email" },
-                { "data": "status" },
-                { "data": "staff" },
-                { "data": "added_by_name" },
-                { "data": "assigned_date" },
-                { "data": "action" },
+                <?php if (is_access('584')) { ?>{ "data": "distributor" },<?php } ?>
+                <?php if (is_access('585')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('586')) { ?>{ "data": "city_name" },<?php } ?>
+                <?php if (is_access('587')) { ?>{ "data": "state_name" },<?php } ?>
+                <?php if (is_access('588')) { ?>{ "data": "owner_name" },<?php } ?>
+                <?php if (is_access('589')) { ?>{ "data": "mobile_whatsapp" },<?php } ?>
+                <?php if (is_access('590')) { ?>{ "data": "owner_email" },<?php } ?>
+                <?php if (is_access('591')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('592')) { ?>{ "data": "staff" },<?php } ?>
+                <?php if (is_access('593')) { ?>{ "data": "added_by_name" },<?php } ?>
+                <?php if (is_access('594')) { ?>{ "data": "assigned_date" },<?php } ?>
+                <?php if (is_access('595') || is_access('596') || is_access('597') || is_access('598') || is_access('599')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('600')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": ":visible:not(:last-child)"
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": ":visible:not(:last-child)"
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

@@ -417,9 +417,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/warehouse/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/warehouse/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-                         <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-                         ';
+				if (is_access('497')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('498')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -807,11 +813,21 @@ class Inventory_model extends CI_Model
 				$edit_url = base_url() . 'inventory/supplier/edit/' . $id;
 				$replicate_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/supplier_replicate_modal/" . $id . "','Replicate Supplier')";
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-             <a href="' . base_url() . 'inventory/supplier/ledger/' . $id . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 btn-outline-primary" style="padding: 4px 8px;"><i class="fa fa-book" aria-hidden="true"></i></button></a>
-             <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-             <a href="javascript:void(0);" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>
-             ';
+				if (is_access('692')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('693')) {
+					$action .= '<a href="' . base_url() . 'inventory/supplier/ledger/' . $id . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 btn-outline-primary" style="padding: 4px 8px;"><i class="fa fa-book" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('694')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('695')) {
+					$action .= '<a href="javascript:void(0);" onclick="' . $replicate_url . '" data-toggle="tooltip" data-bs-placement="top" title="Replicate to Other Company"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-refresh" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -2418,6 +2434,7 @@ class Inventory_model extends CI_Model
 				$data['listed_7']       = 1;
 				$data['is_other_sku']   = 0;
 				$data['product_type']   = 'import';
+				$data['added_by']       = $this->session->userdata('super_user_id');
 				$data['added_date']     = date("Y-m-d H:i:s");
 				$opening_stock = $this->input->post('opening_stock');
 				$data['opening_stock']  = (!empty($opening_stock)) ? intval($opening_stock) : 0;
@@ -3099,53 +3116,84 @@ class Inventory_model extends CI_Model
 				$ctn_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_raw_product_ctn/" . $id . "', 'Pkg (Ctn) Sections')";
 				$supplier_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_raw_product_suppliers/" . $id . "', 'Suppliers')";
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 
-				$action .= '<a href="javascript:void(0);" onclick="' . $ctn_url . '" data-toggle="tooltip" data-bs-placement="top" title="Pkg (Ctn)"><button type="button" class="btn mr-1 mb-1" style="background-color: #28c76f; color: #fff; border-color: #28c76f;"><i class="fa fa-cubes" aria-hidden="true"></i></button></a>';
+				if (is_access('54')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+	
+					$action .= '<a href="javascript:void(0);" onclick="' . $ctn_url . '" data-toggle="tooltip" data-bs-placement="top" title="Pkg (Ctn)"><button type="button" class="btn mr-1 mb-1" style="background-color: #28c76f; color: #fff; border-color: #28c76f;"><i class="fa fa-cubes" aria-hidden="true"></i></button></a>';
 
-				$action .= '<a href="javascript:void(0);" onclick="' . $supplier_url . '" data-toggle="tooltip" data-bs-placement="top" title="Suppliers"><button type="button" class="btn mr-1 mb-1" style="background-color: #ff9f43; color: #fff; border-color: #ff9f43;"><i class="fa fa-users" aria-hidden="true"></i></button></a>';
+					$action .= '<a href="javascript:void(0);" onclick="' . $supplier_url . '" data-toggle="tooltip" data-bs-placement="top" title="Suppliers"><button type="button" class="btn mr-1 mb-1" style="background-color: #ff9f43; color: #fff; border-color: #ff9f43;"><i class="fa fa-users" aria-hidden="true"></i></button></a>';
+				}
 
-				$action .= '<a href="javascript:void(0);" onclick="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="History"><button type="button" class="btn mr-1 mb-1 icon-btn-history" style="background-color: #7367f0; color: #fff; border-color: #7367f0;"><i class="fa fa-history" aria-hidden="true"></i></button></a>';
+				if (is_access('55')) {
+					$action .= '<a href="javascript:void(0);" onclick="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="History"><button type="button" class="btn mr-1 mb-1 icon-btn-history" style="background-color: #7367f0; color: #fff; border-color: #7367f0;"><i class="fa fa-history" aria-hidden="true"></i></button></a>';
+				}
 
-				$action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
+				if (is_access('56')) {
+					$action .= '<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				} 
 
 				// Category
 				$category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
 				$category_name = $category['name'] ?? '-';
 
-				$alias_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$item_code_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$hsn_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$duty_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="duty_charge" value="' . htmlspecialchars(clean_number($item['duty_charge'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$gst_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="gst" value="' . htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$mrp_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="product_mrp" value="' . htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$costing_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="costing_price" value="' . htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$intimation_input = '<input type="number" step="1" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="intimation" value="' . htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$opening_input = '<input type="number" step="1" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="opening_stock" value="' . htmlspecialchars((string)(int)($item['opening_stock'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
-				$off_sale_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="off_sale_price" value="' . htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+				if (is_access('54')) {
+					$alias_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$item_code_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$hsn_input = '<input type="text" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$duty_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="duty_charge" value="' . htmlspecialchars(clean_number($item['duty_charge'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$gst_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="gst" value="' . htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$mrp_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="product_mrp" value="' . htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$costing_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="costing_price" value="' . htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$intimation_input = '<input type="number" step="1" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="intimation" value="' . htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$opening_input = '<input type="number" step="1" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="opening_stock" value="' . htmlspecialchars((string)(int)($item['opening_stock'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
+					$off_sale_input = '<input type="number" step="any" class="form-control form-control-sm raw-prod-field" data-id="' . $id . '" data-field="off_sale_price" value="' . htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateRawProductField(this)">';
 
-				$unit_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="unit" onchange="updateRawProductField(this)">';
-				$unit_select .= '<option value="">Select</option>';
-				foreach ($product_units as $unit) {
-					$selected = ((string)$item['unit'] === (string)$unit['name']) ? ' selected' : '';
-					$unit_select .= '<option value="' . htmlspecialchars($unit['name'], ENT_QUOTES) . '"' . $selected . '>' . htmlspecialchars($unit['name'], ENT_QUOTES) . '</option>';
+					$unit_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="unit" onchange="updateRawProductField(this)">';
+					$unit_select .= '<option value="">Select</option>';
+					foreach ($product_units as $unit) {
+						$selected = ((string)$item['unit'] === (string)$unit['name']) ? ' selected' : '';
+						$unit_select .= '<option value="' . htmlspecialchars($unit['name'], ENT_QUOTES) . '"' . $selected . '>' . htmlspecialchars($unit['name'], ENT_QUOTES) . '</option>';
+					}
+					$unit_select .= '</select>';
+
+					$commission_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="commission_id" onchange="updateRawProductField(this)">';
+					$commission_select .= '<option value="">Select</option>';
+					foreach ($commissions as $comm) {
+						$selected = ((int)$item['commission_id'] === (int)$comm['id']) ? ' selected' : '';
+						$commission_select .= '<option value="' . (int)$comm['id'] . '"' . $selected . '>' . htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES) . '</option>';
+					}
+					$commission_select .= '</select>';
+
+					$status_selected_1 = ((int)$item['status'] === 1) ? ' selected' : '';
+					$status_selected_0 = ((int)$item['status'] === 0) ? ' selected' : '';
+					$status_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="status" onchange="updateRawProductField(this)">';
+					$status_select .= '<option value="1"' . $status_selected_1 . '>Active</option>';
+					$status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
+					$status_select .= '</select>';
+				} else {
+					$alias_input = htmlspecialchars($item['alias'] ?? '-', ENT_QUOTES);
+					$item_code_input = htmlspecialchars($item['item_code'] ?? '-', ENT_QUOTES);
+					$hsn_input = htmlspecialchars($item['hsn_code'] ?? '-', ENT_QUOTES);
+					$duty_input = htmlspecialchars(clean_number($item['duty_charge'] ?? 0), ENT_QUOTES);
+					$gst_input = htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES);
+					$mrp_input = htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES);
+					$costing_input = htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES);
+					$intimation_input = htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES);
+					$opening_input = htmlspecialchars((string)(int)($item['opening_stock'] ?? 0), ENT_QUOTES);
+					$off_sale_input = htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES);
+					$unit_select = htmlspecialchars($item['unit'] ?? '-', ENT_QUOTES);
+
+					$commission_label = '-';
+					foreach ($commissions as $comm) {
+						if ((int)$item['commission_id'] === (int)$comm['id']) {
+							$commission_label = htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES);
+							break;
+						}
+					}
+					$commission_select = $commission_label;
+					$status_select = ((int)$item['status'] === 1) ? 'Active' : 'Inactive';
 				}
-				$unit_select .= '</select>';
-
-				$commission_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="commission_id" onchange="updateRawProductField(this)">';
-				$commission_select .= '<option value="">Select</option>';
-				foreach ($commissions as $comm) {
-					$selected = ((int)$item['commission_id'] === (int)$comm['id']) ? ' selected' : '';
-					$commission_select .= '<option value="' . (int)$comm['id'] . '"' . $selected . '>' . htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES) . '</option>';
-				}
-				$commission_select .= '</select>';
-
-				$status_selected_1 = ((int)$item['status'] === 1) ? ' selected' : '';
-				$status_selected_0 = ((int)$item['status'] === 0) ? ' selected' : '';
-				$status_select = '<select class="form-select form-select-sm raw-prod-field" data-id="' . $id . '" data-field="status" onchange="updateRawProductField(this)">';
-				$status_select .= '<option value="1"' . $status_selected_1 . '>Active</option>';
-				$status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
-				$status_select .= '</select>';
 
 				$image_src = !empty($item['product_image']) ? $item['product_image'] : (!empty($item['image']) ? $item['image'] : '');
 				if (!empty($image_src)) {
@@ -5768,22 +5816,26 @@ class Inventory_model extends CI_Model
 
 				// Actions
 				$view_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_in_details/" . $id . "','Purchase In Details - " . $item['voucher_no'] . "')";
-				
-				$receive_action_html = '';
-				if ($method == 'company') {
+				$local_menu = '';
+
+				if (is_access('192')) {
+					$local_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Details</a>';
+				}
+
+				if ($method == 'local' && is_access('193')) {
+					$edit_po_url = base_url('inventory/purchase-order/edit-local/' . $id);
+					$local_menu .= '<a class="dropdown-item" href="' . $edit_po_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+				}
+
+				if ($method == 'company' && is_access('194')) {
 					$unreceived_query = $this->db->query("SELECT id FROM purchase_order_product WHERE parent_id = '$id' AND is_complete = '0' AND (pending > 0 OR received < quantity)");
 					if ($unreceived_query->num_rows() > 0) {
 						$receive_qty_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_in_receive_qty/" . $id . "','Receive Quantity - " . $item['voucher_no'] . "')";
-						$receive_action_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $receive_qty_url . '"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i> Receive Quantity</a>';
+						$local_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $receive_qty_url . '"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i> Receive Quantity</a>';
 					}
 				}
 
-				$delete_action_html = '';
-				$edit_action_html = '';
-				if ($method == 'local') {
-					$edit_po_url = base_url('inventory/purchase-order/edit-local/' . $id);
-					$edit_action_html = '<a class="dropdown-item" href="' . $edit_po_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
-
+				if ($method == 'local' && is_access('195')) {
 					$can_delete = true;
 					$po_products_query = $this->db->query("SELECT id, product_id, product_name, quantity FROM purchase_order_product WHERE parent_id = '$id'");
 					$po_products = $po_products_query->result_array();
@@ -5811,20 +5863,18 @@ class Inventory_model extends CI_Model
 
 					if ($can_delete) {
 						$delete_local_po_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_local/" . $id . "','Are you sure want to delete this purchase in!')";
-						$delete_action_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_local_po_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+						$local_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_local_po_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
 					}
 				}
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Details</a>
-						' . $edit_action_html . '
-						' . $receive_action_html . '
-						' . $delete_action_html . '
-					</div>
-				</div>';
+				$action = '-';
+				if ($local_menu != '') {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $local_menu . '</div>
+					</div>';
+				}
 
 				$source_label = ($method == 'company') ? 'Company' : 'Local';
 				$source_badge = ($method == 'company')
@@ -6367,122 +6417,127 @@ class Inventory_model extends CI_Model
 				}
 
 				// PO Action
-				$action ='-';
-				$export_excel_url="generate_excel('".$id."')";
+				$action = '-';
+				$export_excel_url = "generate_excel('" . $id . "')";
 				$view_po_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_order_details/" . $id . "','PO Details - " . $item['voucher_no'] . "')";
 				$delete_po_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete/" . $id . "','Are you sure want to delete!')";
 				$priority_list_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_priority_list_modal/" . $id . "','Priority List')";
 				$edit_po_url = base_url() . "inventory/purchase-order/edit-import/" . $id;
-				if ($delivery_status == 'pending') {
-					$action ='<div class="btn-group">
+				$po_menu = '';
+				if (is_access('103')) {
+					$po_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>';
+				}
+				if ($delivery_status == 'pending' && is_access('102')) {
+					$po_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Priority List</a>';
+				}
+				if (is_access('101')) {
+					$po_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>';
+				}
+				if ($delivery_status == 'pending' && is_access('100')) {
+					$po_menu .= '<a class="dropdown-item" href="' . $edit_po_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit PO</a>';
+				}
+				if ($delivery_status == 'pending' && is_access('104')) {
+					$po_menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_po_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete PO</a>';
+				}
+				if ($po_menu != '') {
+					$action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Priority List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
-							<a class="dropdown-item" href="' . $edit_po_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit PO</a>
-							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_po_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete PO</a>
-						</div>
-					</div>';
-				} else {
-					$action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
-						</div>
+						<div class="dropdown-menu">' . $po_menu . '</div>
 					</div>';
 				}
 
 				// Priority List Action
-				$priority_list_action ='-';
-				$export_priority_list_excel_url="generate_excel('".$id."')";
+				$priority_list_action = '-';
+				$export_priority_list_excel_url = "generate_excel('" . $id . "')";
 				$loading_list_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_loading_list_modal/" . $id . "','Loading List')";
 				$priority_list_view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_priority_list_view_modal/" . $id . "','View Priority List')";
 				$priority_list_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_priority_list_edit_modal/" . $id . "','Edit Priority List')";
 				$delete_priority_list_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_priority_list/" . $id . "','Are you sure want to delete the priority list!')";
-				if ($delivery_status == 'priority') {
-					$priority_list_action ='<div class="btn-group">
+				$pl_menu = '';
+				if (is_access('115')) {
+					$pl_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_priority_list_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export Priority List</a>';
+				}
+				if ($delivery_status == 'priority' && is_access('114')) {
+					$pl_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Loading List</a>';
+				}
+				if ($delivery_status == 'priority' && is_access('112')) {
+					$pl_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Priority List</a>';
+				}
+				if (is_access('113')) {
+					$pl_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Priority List</a>';
+				}
+				if ($delivery_status == 'priority' && is_access('116')) {
+					$pl_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_priority_list_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete Priority List</a>';
+				}
+				if ($pl_menu != '') {
+					$priority_list_action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_priority_list_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export Priority List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Loading List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Priority List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Priority List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_priority_list_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete Priority List</a>
-						</div>
-					</div>';
-				} else {
-					$priority_list_action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_priority_list_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export Priority List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $priority_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Priority List</a>
-						</div>
+						<div class="dropdown-menu">' . $pl_menu . '</div>
 					</div>';
 				}
 
 				// Loading List Action
-				$loading_list_action ='-';
+				$loading_list_action = '-';
 				$loading_list_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_loading_list_edit_modal/" . $id . "','Edit Loading List')";
 				$loading_list_view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/purchase_order_loading_list_view_modal/" . $id . "','View Loading List')";
 				$delete_loading_list_url = "confirm_modal('" . base_url() . "inventory/purchase_order/delete_loading_list/" . $id . "','Are you sure want to delete the loading list!')";
 				$move_to_purchase_in_url = "confirm_modal('" . base_url() . "inventory/purchase_order/move_to_purchase_in/" . $id . "','Are you sure want to this PO to Purchase In & Customs!')";
 				$purchase_in_edit_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_modal/" . $id . "','Purchase In & Customs - " . $item['voucher_no'] . "')";
 				$purchase_in_view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/po_purchase_in_view_modal/" . $id . "','View Purchase In - " . $item['voucher_no'] . "')";
-				if ($delivery_status == 'loading') {
-					$loading_list_action ='<div class="btn-group">
+				$ll_menu = '';
+				if (is_access('132')) {
+					$ll_menu .= '<a href="' . base_url() . 'inventory/loading_list_po/download_invoice/' . $item['id'] . '" class="dropdown-item" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Download Invoice</a>';
+				}
+				if ($delivery_status == 'loading' && is_access('130')) {
+					$ll_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Loading List</a>';
+				}
+				if (is_access('131')) {
+					$ll_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Loading List</a>';
+				}
+				if ($delivery_status == 'loading' && is_access('134')) {
+					$ll_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_loading_list_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete Loading List</a>';
+				}
+				if ($delivery_status == 'loading' && is_access('133')) {
+					$ll_menu .= '<a href="javascript:void(0)" class="dropdown-item d-none" onclick="' . $move_to_purchase_in_url . '"><i class="fa fa-check" aria-hidden="true"></i> Move to Purchase In</a>';
+					$ll_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i>Purchase In</a>';
+				}
+				if ($ll_menu != '') {
+					$loading_list_action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="' . base_url() . 'inventory/loading_list_po/download_invoice/' . $item['id'] . '" class="dropdown-item" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Download Invoice</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Loading List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Loading List</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $delete_loading_list_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete Loading List</a>
-							<a href="javascript:void(0)" class="dropdown-item d-none" onclick="' . $move_to_purchase_in_url . '"><i class="fa fa-check" aria-hidden="true"></i> Move to Purchase In</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i>Purchase In</a>
-						</div>
-					</div>';
-				} else {
-					$loading_list_action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="' . base_url() . 'inventory/loading_list_po/download_invoice/' . $item['id'] . '" class="dropdown-item" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Download Invoice</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $loading_list_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Loading List</a>
-						</div>
+						<div class="dropdown-menu">' . $ll_menu . '</div>
 					</div>';
 				}
 
 				// Purchase In Action
-				$purchase_in_action ='-';
+				$purchase_in_action = '-';
 				$is_locked = !empty($item['is_locked']);
 				$lock_po_url = "confirm_modal('" . base_url() . "inventory/purchase_order/lock_po/" . $id . "','Are you sure want to lock this PO!')";
-				if ($delivery_status == 'purchase_in' && !$is_locked) {
-					$purchase_in_action ='<div class="btn-group">
+				$pi_menu = '';
+				if ($delivery_status == 'purchase_in') {
+					if (is_access('148')) {
+						$pi_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Purchase In</a>';
+					}
+					if (!$is_locked && is_access('149')) {
+						$pi_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Purchase In</a>';
+					}
+					if (!$is_locked && is_access('150')) {
+						$pi_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="revertPurchaseIn(' . $id . ')"><i class="fa fa-undo" aria-hidden="true"></i> Revert Stock In</a>';
+					}
+					if (!$is_locked && is_access('151')) {
+						$pi_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $lock_po_url . '"><i class="fa fa-lock" aria-hidden="true"></i> Lock PO</a>';
+					}
+				}
+				if ($pi_menu != '') {
+					$purchase_in_action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Purchase In</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Purchase In</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="revertPurchaseIn(' . $id . ')"><i class="fa fa-undo" aria-hidden="true"></i> Revert Stock In</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $lock_po_url . '"><i class="fa fa-lock" aria-hidden="true"></i> Lock PO</a>
-						</div>
+						<div class="dropdown-menu">' . $pi_menu . '</div>
 					</div>';
-				} elseif ($delivery_status == 'purchase_in' && $is_locked) {
-					$purchase_in_action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $purchase_in_view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Purchase In</a>
-						</div>
-					</div>';
-				} else {
-					$purchase_in_action ='';
+				} elseif ($delivery_status != 'purchase_in') {
+					$purchase_in_action = '';
 				}
 
 				$data[] = array(
@@ -6713,19 +6768,27 @@ class Inventory_model extends CI_Model
 					}
 
 					// PO Action
-					$action ='-';
-					$export_excel_url="generate_excel('".$id."')";
+					$action = '-';
+					$export_excel_url = "generate_excel('" . $id . "')";
 					$view_po_details_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_purchase_order_details/" . $id . "','PO Details - " . $item['voucher_no'] . "')";
 					$show_pending_product_url = "showLargeModal('" . base_url() . "modal/popup_inventory/modal_pending_products/" . $id . "','Pending Products - " . $item['voucher_no'] . "')";
-					$action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $show_pending_product_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Show Pending Product</a>
-						</div>
-					</div>';
+					$pending_menu = '';
+					if (is_access('172')) {
+						$pending_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $export_excel_url . '"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export PO</a>';
+					}
+					if (is_access('173')) {
+						$pending_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_po_details_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View PO Details</a>';
+					}
+					if (is_access('174')) {
+						$pending_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $show_pending_product_url . '"><i class="fa fa-list-ul" aria-hidden="true"></i> Show Pending Product</a>';
+					}
+					if ($pending_menu != '') {
+						$action = '<div class="btn-group">
+							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+								<i class="mdi mdi-dots-vertical"></i></button>
+							<div class="dropdown-menu">' . $pending_menu . '</div>
+						</div>';
+					}
 
 					$data[] = array(
 						"sr_no"             => ++$start,
@@ -13358,82 +13421,115 @@ class Inventory_model extends CI_Model
 
 				$action = '';
 				if($data_type == 'customer') {
+					$menu = '';
 					if($status == 'moved') {
+						if (is_access('510')) {
+							$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+						}
+						if (is_access('514')) {
+							$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>';
+						}
+					} else {
+						if(in_array($status, ['today', 'upcoming', 'missed'])) {
+							if (is_access('510')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+							}
+							$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $followup_url . '"><i class="fa fa-list-alt" aria-hidden="true"></i> Add Follow-Up</a>';
+							$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $add_call_url . '"><i class="fa fa-phone" aria-hidden="true"></i> Add Call</a>';
+							if (is_access('514')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>';
+							}
+						} else {
+							if (is_access('510')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+							}
+							if (is_access('511')) {
+								$menu .= '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+							}
+							if (is_access('512')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>';
+							}
+							if (is_access('513')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Reassign</a>';
+							}
+							if (is_access('514')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>';
+							}
+							if (is_access('515')) {
+								$menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $share_url . '"><i class="fa fa-share" aria-hidden="true"></i> Share Customer</a>';
+							}
+							if (is_access('516')) {
+								$menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/customer/ledger/' . $id . '"><i class="fa fa-book" aria-hidden="true"></i> Ledger</a>';
+							}
+						}
+					}
+
+					if ($menu != '') {
 						$action = '<div class="btn-group">
 							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
-							<div class="dropdown-menu">
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
-							</div>
+							<div class="dropdown-menu">' . $menu . '</div>
 						</div>';
 					} else {
-						if(in_array($status, ['today', 'upcoming', 'missed'])) {
-							$action = '<div class="btn-group">
-								<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-								<i class="mdi mdi-dots-vertical"></i></button>
-								<div class="dropdown-menu">
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $followup_url . '"><i class="fa fa-list-alt" aria-hidden="true"></i> Add Follow-Up</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $add_call_url . '"><i class="fa fa-phone" aria-hidden="true"></i> Add Call</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
-								</div>
-							</div>';
-						} else {
-							$action ='<div class="btn-group">
-								<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-								<i class="mdi mdi-dots-vertical"></i></button>
-								<div class="dropdown-menu">
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
-									<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Cancel</a>
-									<a class="dropdown-item d-none" href="javascript:void(0)" onclick="' . $replicate_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Replicate</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> ' . (($data_type == 'leads') ? "Assign" : "Reassign") . '</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
-									<a class="dropdown-item" href="javascript:void(0)" onclick="' . $share_url . '"><i class="fa fa-share" aria-hidden="true"></i> Share Customer</a>
-									<a class="dropdown-item" href="' . base_url() . 'inventory/customer/ledger/' . $id . '"><i class="fa fa-book" aria-hidden="true"></i> Ledger</a>
-								</div>
-							</div>';
-						}
+						$action = '-';
 					}
 				} else {
-					$lead_menu_items = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
-
+					// Leads actions by tab status
+					$view_id = $follow_id = $edit_id = $move_id = $timeline_id = $delete_id = $assign_id = '';
 					if ($status == 'all') {
-						$lead_menu_items .= '
-							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Assign</a>
-						';
-					} else {
-						if ($status != 'lost') {
-							$lead_menu_items .= '
-								<a class="dropdown-item" href="javascript:void(0)" onclick="' . $followup_url . '"><i class="fa fa-list-alt" aria-hidden="true"></i> Add Follow-Up</a>
-							';
-
-							if ($status != 'moved') {
-								$lead_menu_items .= '
-									<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-								';
-							}
-
-							$lead_menu_items .= '
-								<a class="dropdown-item" href="' . $move_url . '"><i class="fa fa-chevron-right" aria-hidden="true"></i> Move To Customer</a>
-							';
-						}
-
-						$lead_menu_items .= '
-							<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>
-						';
+						$view_id = '549'; $edit_id = '550'; $delete_id = '551'; $assign_id = '552';
+					} elseif ($status == 'new') {
+						$view_id = '566'; $follow_id = '567'; $edit_id = '568'; $move_id = '569'; $timeline_id = '570';
+					} elseif ($status == 'today') {
+						$view_id = '595'; $follow_id = '596'; $edit_id = '597'; $move_id = '598'; $timeline_id = '599';
+					} elseif ($status == 'upcoming') {
+						$view_id = '612'; $follow_id = '613'; $edit_id = '614'; $move_id = '615'; $timeline_id = '616';
+					} elseif ($status == 'missed') {
+						$view_id = '629'; $follow_id = '630'; $edit_id = '631'; $move_id = '632'; $timeline_id = '633';
+					} elseif ($status == 'lost') {
+						$view_id = '646'; $timeline_id = '647';
+					} elseif ($status == 'moved') {
+						$view_id = '660'; $timeline_id = '661';
 					}
 
-					$action = '<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							' . $lead_menu_items . '
-						</div>
-					</div>';
+					$lead_menu_items = '';
+					if ($view_id != '' && is_access($view_id)) {
+						$lead_menu_items .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+					}
+					if ($status == 'all') {
+						if ($edit_id != '' && is_access($edit_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+						}
+						if ($delete_id != '' && is_access($delete_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+						}
+						if ($assign_id != '' && is_access($assign_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $reassign_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Assign</a>';
+						}
+					} else {
+						if ($follow_id != '' && is_access($follow_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $followup_url . '"><i class="fa fa-list-alt" aria-hidden="true"></i> Add Follow-Up</a>';
+						}
+						if ($edit_id != '' && is_access($edit_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+						}
+						if ($move_id != '' && is_access($move_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="' . $move_url . '"><i class="fa fa-chevron-right" aria-hidden="true"></i> Move To Customer</a>';
+						}
+						if ($timeline_id != '' && is_access($timeline_id)) {
+							$lead_menu_items .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $timeline_url . '"><i class="fa fa-file" aria-hidden="true"></i> Timeline</a>';
+						}
+					}
+
+					if ($lead_menu_items != '') {
+						$action = '<div class="btn-group">
+							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+							<div class="dropdown-menu">' . $lead_menu_items . '</div>
+						</div>';
+					} else {
+						$action = '-';
+					}
 				}
 
 				$salesperson = !empty($item['salesperson_name']) ? $item['salesperson_name'] : (!empty($item['added_by_name']) ? $item['added_by_name'] : '-');
@@ -13464,7 +13560,7 @@ class Inventory_model extends CI_Model
 				}
 
 				$sr_no = ++$start;
-				if ($request_type == 'leads' && $status == 'all') {
+				if ($request_type == 'leads' && $status == 'all' && is_access('548')) {
 					$sr_no = '<div class="justify-content-center"><input type="checkbox" class="form-check-input lead-checkbox" value="' . $id . '"></div>';
 				}
 
@@ -17256,14 +17352,23 @@ class Inventory_model extends CI_Model
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
 				$delete_url = "confirm_modal('" . base_url() . "inventory/company_sales/delete/" . $id . "','Are you sure want to delete!')";
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-					</div>
-				</div>';
+				$menu = '';
+				if (is_access('389')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+				}
+				if (is_access('390')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+				}
+
+				if ($menu != '') {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $menu . '</div>
+					</div>';
+				} else {
+					$action = '-';
+				}
 
 				$qty = 0;
 				$query2 = $this->db->query("SELECT avail_white_qty, avail_black_qty, white_qty, black_qty FROM sales_order_product_batch WHERE (order_id='$id')");
@@ -17473,98 +17578,96 @@ class Inventory_model extends CI_Model
     		// 	 <a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>
     		// 	 ';
 
-				$action = '';
+				$action = '-';
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
 				$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_sales_order_history/" . $id . "', 'Sales Order History')";
-				$history_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+				$so_menu = '';
 
-				$delete_html = '';
-				$cancel_order_html = '';
-				if ($this->session->userdata('super_type_id') != 7) {
-					$cancel_order_html = '<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
-					$delete_html = '<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
-				}
-
-				$edit_order_html = '';
-				if ($this->session->userdata('super_type_id') !== 7) {
-					$edit_order_url = base_url() . 'inventory/sales-order/edit-order/' . $id;
-					$edit_order_html = '<a class="dropdown-item" href="' . $edit_order_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
-				}
-
-				// if($this->session->userdata('super_type_id') != 4 && $item['is_approved'] == 0) {
-				if($status == "all") {
-					$action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							' . $history_html . '
-						</div>
-					</div>';
-				} else if($item['is_approved'] == 0 && $item['is_generated'] == 0) {
-					$edit_url = base_url() . 'inventory/sales-order/edit/' . $id;
-					
-					$approve_html = '';
-					if ($this->session->userdata('super_type_id') != 7) {
-						$approve_url = base_url() . 'inventory/sales-order/approve/' . $id;
-						$approve_html = '<a class="dropdown-item" href="' . $approve_url . '"><i class="fa fa-check" aria-hidden="true"></i> Approve</a>';
+				if ($status == "all") {
+					if (is_access('230') || is_access('248')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
 					}
-
-					$intimation_html = '';
+					if (is_access('238') || is_access('253')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+					}
+				} else if ($item['is_approved'] == 0 && $item['is_generated'] == 0) {
+					if (is_access('230')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+					}
+					if (is_access('231')) {
+						$so_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales-order/approve/' . $id . '"><i class="fa fa-check" aria-hidden="true"></i> Approve</a>';
+					}
+					if (is_access('232')) {
+						$so_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales-order/edit/' . $id . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+					}
 					if (!empty($item['is_intimation'])) {
-						$view_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/view', 'View Intimation')";
-						$edit_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/edit', 'Edit Intimation')";
-						$intimation_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_intimation_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Intimation</a>'
-							. '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_intimation_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Intimation</a>';
-					} else {
+						if (is_access('234')) {
+							$view_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/view', 'View Intimation')";
+							$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_intimation_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Intimation</a>';
+						}
+						if (is_access('235')) {
+							$edit_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/edit', 'Edit Intimation')";
+							$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_intimation_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit Intimation</a>';
+						}
+					} else if (is_access('233')) {
 						$add_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/add', 'Add Intimation')";
-						$intimation_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $add_intimation_url . '"><i class="fa fa-bell" aria-hidden="true"></i> Add Intimation</a>';
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $add_intimation_url . '"><i class="fa fa-bell" aria-hidden="true"></i> Add Intimation</a>';
 					}
+					if (is_access('236')) {
+						$so_menu .= '<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+					}
+					if (is_access('237')) {
+						$so_menu .= '<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+					}
+					if (is_access('238')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+					}
+				} else if ($item['is_generated'] == 0) {
+					if (is_access('248')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+					}
+					if (is_access('249')) {
+						$gen_invoice_modal_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_generate_invoice_modal/" . $customer_id . "/" . $id . "', 'Generate Invoice')";
+						$so_menu .= '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $gen_invoice_modal_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Generate Invoice</a>';
+					}
+					if (is_access('250')) {
+						$so_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales-order/edit-order/' . $id . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+					}
+					if (is_access('251')) {
+						$so_menu .= '<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+					}
+					if (is_access('252')) {
+						$so_menu .= '<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+					}
+					if (is_access('253')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+					}
+				} else if ($item['is_generated'] == 1 && $item['is_approved'] == 1) {
+					if (is_access('265') || is_access('317')) {
+						$so_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+					}
+					if (is_access('319')) {
+						$so_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales_order/invoice/white/' . $id . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View White Invoice</a>';
+					}
+					if (is_access('320') || is_access('266')) {
+						$so_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales_order/invoice/black/' . $id . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>';
+					}
+					if (is_access('268') || is_access('322')) {
+						$so_menu .= '<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+					}
+					if (is_access('269') || is_access('323')) {
+						$so_menu .= '<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+					}
+					if (is_access('267') || is_access('321')) {
+						$so_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales-order/edit-order/' . $id . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+					}
+				}
 
-					$action ='<div class="btn-group">
+				if ($so_menu != '') {
+					$action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						   ' . $approve_html . '
-							<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-							' . $intimation_html . '
-							' . $cancel_order_html . '
-							' . $delete_html . '
-							' . $history_html . '
-						</div>
-					</div>';
-				} else if($item['is_generated'] == 0) {
-					$gen_invoice_modal_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_generate_invoice_modal/" . $customer_id . "/" . $id . "', 'Generate Invoice')";
-					$gen_invoice_html = '<a class="dropdown-item" href="javascript:void(0)" onclick="' . $gen_invoice_modal_url . '"><i class="fa fa-refresh" aria-hidden="true"></i> Generate Invoice</a>';
-
-					$action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							' . $gen_invoice_html . '
-							' . $cancel_order_html . '
-							' . $delete_html . '
-							' . $edit_order_html . '
-							' . $history_html . '
-						</div>
-					</div>';
-				} else if($item['is_generated'] == 1 && $item['is_approved'] == 1) {
-					$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $id;
-					$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $id;
-
-					$action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View White Invoice</a>
-							<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
-							' . $cancel_order_html . '
-							' . $delete_html . '
-							' . $edit_order_html . '
-						</div>
+						<div class="dropdown-menu">' . $so_menu . '</div>
 					</div>';
 				} 
 
@@ -17734,20 +17837,31 @@ class Inventory_model extends CI_Model
 
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
 				$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
-				$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $first_order_id;
 				$edit_url = base_url('inventory/sales-invoice/edit/' . $id);
-
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
-						<a class="dropdown-item" href="' . $edit_url . '"><i class="feather icon-edit" aria-hidden="true"></i> Edit</a>
-						<a href="javascript:void(0)" class="dropdown-item text-warning" onclick="cancelSalesInvoice(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>
-						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="deleteSalesInvoice(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>
-					</div>
-				</div>';
+				$ci_menu = '';
+				if (is_access('265')) {
+					$ci_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+				}
+				if (is_access('266')) {
+					$ci_menu .= '<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>';
+				}
+				if (is_access('267')) {
+					$ci_menu .= '<a class="dropdown-item" href="' . $edit_url . '"><i class="feather icon-edit" aria-hidden="true"></i> Edit</a>';
+				}
+				if (is_access('268')) {
+					$ci_menu .= '<a href="javascript:void(0)" class="dropdown-item text-warning" onclick="cancelSalesInvoice(' . $id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+				}
+				if (is_access('269')) {
+					$ci_menu .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="deleteSalesInvoice(' . $id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+				}
+				$action = '-';
+				if ($ci_menu != '') {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $ci_menu . '</div>
+					</div>';
+				}
 
 				$invoice_no_display = $item['invoice_no'] ? $item['invoice_no'] : '-';
 
@@ -17941,29 +18055,41 @@ class Inventory_model extends CI_Model
 				if ($record_type == 'invoice') {
 					$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/invoice_order_view_modal/" . $id . "','Invoice Order View')";
 					$invoice_bill_url = base_url() . 'inventory/invoice_order_print/' . $id;
-
-					$action = '<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
-						</div>
-					</div>';
+					$cn_menu = '';
+					if (is_access('282')) {
+						$cn_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+					}
+					if (is_access('283')) {
+						$cn_menu .= '<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>';
+					}
+					$action = '-';
+					if ($cn_menu != '') {
+						$action = '<div class="btn-group">
+							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+							<div class="dropdown-menu">' . $cn_menu . '</div>
+						</div>';
+					}
 
 					$type_badge = '<span class="badge bg-danger">Invoice</span>';
 				} else {
 					$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
 					$history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_sales_order_history/" . $id . "', 'Sales Order History')";
-
-					$action = '<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>
-						</div>
-					</div>';
+					$cn_menu = '';
+					if (is_access('282')) {
+						$cn_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+					}
+					if (is_access('284')) {
+						$cn_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+					}
+					$action = '-';
+					if ($cn_menu != '') {
+						$action = '<div class="btn-group">
+							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+							<i class="mdi mdi-dots-vertical"></i></button>
+							<div class="dropdown-menu">' . $cn_menu . '</div>
+						</div>';
+					}
 
 					$type_badge = '<span class="badge bg-warning text-dark">Sales Order</span>';
 				}
@@ -19287,36 +19413,45 @@ class Inventory_model extends CI_Model
 				$added_by_html = !empty($item['added_by_name']) ? htmlspecialchars($item['added_by_name']) : '-';
 
 				// 33. ACTIONS
-				$history_html = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
-				$inv_links = '';
-				if (!empty($item['invoice_no'])) {
-					$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $order_id;
-					$invoice_black_url = base_url() . 'inventory/sales_order/invoice/black/' . $order_id;
-					$inv_links = '<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> White Invoice</a>
-					<a class="dropdown-item" href="' . $invoice_black_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice</a>';
+				$ow_menu = '';
+				if (is_access('317')) {
+					$ow_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
 				}
-				$mgmt_html = '';
+				if (is_access('318')) {
+					$ow_menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $history_url . '"><i class="fa fa-history" aria-hidden="true"></i> History</a>';
+				}
+				if (!empty($item['invoice_no'])) {
+					if (is_access('319')) {
+						$ow_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales_order/invoice/white/' . $order_id . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> White Invoice</a>';
+					}
+					if (is_access('320')) {
+						$ow_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales_order/invoice/black/' . $order_id . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice</a>';
+					}
+				}
 				$batch_invoiced_qty = (float)($item['recieved_qty'] ?? 0) + (float)($item['recieved_black_qty'] ?? 0);
 				$order_invoiced_qty = (float)($item['order_invoiced_qty'] ?? 0);
 				$has_invoice = ($batch_invoiced_qty > 0 || $order_invoiced_qty > 0 || (int)($item['is_generated'] ?? 0) === 1);
 
-				if (!$has_invoice && $this->session->userdata('super_type_id') != 7) {
-					$edit_order_url = base_url() . 'inventory/sales-order/edit-order/' . $order_id;
-					$mgmt_html = '<a class="dropdown-item" href="' . $edit_order_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-					<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $order_id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>
-					<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $order_id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+				if (!$has_invoice) {
+					if (is_access('321')) {
+						$ow_menu .= '<a class="dropdown-item" href="' . base_url() . 'inventory/sales-order/edit-order/' . $order_id . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+					}
+					if (is_access('322')) {
+						$ow_menu .= '<a class="dropdown-item text-warning" href="javascript:void(0)" onclick="cancelSalesOrder(' . $order_id . ')"><i class="feather icon-x-circle" aria-hidden="true"></i> Cancel</a>';
+					}
+					if (is_access('323')) {
+						$ow_menu .= '<a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteSalesOrder(' . $order_id . ')"><i class="feather icon-trash-2" aria-hidden="true"></i> Delete</a>';
+					}
 				}
 
-				$action_html = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						' . $history_html . '
-						' . $inv_links . '
-						' . $mgmt_html . '
-					</div>
-				</div>';
+				$action_html = '-';
+				if ($ow_menu != '') {
+					$action_html = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $ow_menu . '</div>
+					</div>';
+				}
 
 				$data[] = array(
 					"sr_no"              => $sr_no,
@@ -19520,13 +19655,18 @@ class Inventory_model extends CI_Model
 				
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_commission_view_modal/" . $order_id . "','Sales Order View')";
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-					</div>
-				</div>';
+				$view_access_id = ($status == 'complete') ? '441' : '430';
+				if (is_access($view_access_id)) {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">
+							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
+						</div>
+					</div>';
+				} else {
+					$action = '-';
+				}
 				
 				$batch_qty = (float)($item['qty'] ?? 0) - (float)($item['return_qty'] ?? 0) - (float)($item['return_black_qty'] ?? 0);
 				if ($batch_qty < 0) {
@@ -19534,7 +19674,7 @@ class Inventory_model extends CI_Model
 				}
 
 				$sr_no_val = ++$start;
-				if ($status == 'pending') {
+				if ($status == 'pending' && is_access('431')) {
 					$sr_no_val = '<input type="checkbox" class="order-chk" value="' . $sc_id . '" data-amount="' . $comm_amt . '">';
 				}
 
@@ -21011,17 +21151,32 @@ class Inventory_model extends CI_Model
 				$cancel_url = "confirm_modal('" . base_url() . "inventory/conversion_order/cancel/" . $id . "','Are you sure want to cancel!')";
 				$edit_url = site_url('inventory/conversion-order/edit/' . $id);
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						' . (empty($item['is_cancelled']) ? '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>' : '') . '
-						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
-						' . (empty($item['is_cancelled']) ? '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $cancel_url . '"><i class="fa fa-ban" aria-hidden="true"></i> Cancel</a>' : '') . '
-						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-					</div>
-				</div>';
+				$menu = '';
+				if (is_access('373')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+				}
+				if (empty($item['is_cancelled']) && is_access('374')) {
+					$menu .= '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>';
+				}
+				if (is_access('375')) {
+					$menu .= '<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>';
+				}
+				if (empty($item['is_cancelled']) && is_access('376')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $cancel_url . '"><i class="fa fa-ban" aria-hidden="true"></i> Cancel</a>';
+				}
+				if (is_access('377')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+				}
+
+				if ($menu != '') {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $menu . '</div>
+					</div>';
+				} else {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"          => $start + $i + 1,
@@ -21146,25 +21301,19 @@ class Inventory_model extends CI_Model
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_view_modal/" . $id . "','Sales Order View')";
 				$invoice_white_url = base_url() . 'inventory/sales_order/invoice/white/' . $id;
 
-				if($status == 'pending') {
-					// $action .= '
-					// <a href="#" onclick="' . $gen_bill_modal_url . '" data-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Generate Bill"><button type="button" class="btn mr-1 mb-1 btn-outline-primary"><i class="fa fa-file-text-o" aria-hidden="true"></i></button></a>';
-					$action ='<div class="btn-group">
+				$menu = '';
+				if (is_access('403')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+				}
+
+				if ($menu != '') {
+					$action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						</div>
+						<div class="dropdown-menu">' . $menu . '</div>
 					</div>';
 				} else {
-					$action ='<div class="btn-group">
-						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-						<i class="mdi mdi-dots-vertical"></i></button>
-						<div class="dropdown-menu">
-							<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-							<a class="dropdown-item" href="' . $invoice_white_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> View Invoice</a>
-						</div>
-					</div>';
+					$action = '-';
 				}
 
 				$data[] = array(
@@ -21276,17 +21425,32 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/black_order/delete/" . $id . "','Are you sure want to delete!')";
 				$cancel_url = "confirm_modal('" . base_url() . "inventory/black_order/cancel/" . $id . "','Are you sure want to cancel!')";
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>
-						' . (empty($item['is_cancelled']) ? '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit Amount</a>' : '') . '
-						<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>
-						' . (empty($item['is_cancelled']) ? '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $cancel_url . '"><i class="fa fa-ban" aria-hidden="true"></i> Cancel</a>' : '') . '
-						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-					</div>
-				</div>';
+				$menu = '';
+				if (is_access('413')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Order</a>';
+				}
+				if (empty($item['is_cancelled']) && is_access('414')) {
+					$menu .= '<a class="dropdown-item" href="' . $edit_url . '"><i class="fa fa-pencil" aria-hidden="true"></i> Edit Amount</a>';
+				}
+				if (is_access('415')) {
+					$menu .= '<a class="dropdown-item" href="' . $invoice_bill_url . '" target="_blank"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Invoice Bill</a>';
+				}
+				if (empty($item['is_cancelled']) && is_access('416')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $cancel_url . '"><i class="fa fa-ban" aria-hidden="true"></i> Cancel</a>';
+				}
+				if (is_access('417')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+				}
+
+				if ($menu != '') {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $menu . '</div>
+					</div>';
+				} else {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"          => $start + $i + 1,
@@ -24384,7 +24548,11 @@ class Inventory_model extends CI_Model
 
 				$view_url = base_url() . 'inventory/goods-return/view/' . $id;
 				$delete_url = base_url() . 'inventory/goods_return/delete_post/' . $id;
-				$action = '<a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+				if (is_access('451')) {
+					$action = '<a href="' . $view_url . '" data-toggle="tooltip" data-bs-placement="top" title="View"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-eye" aria-hidden="true"></i></button></a>';
+				} else {
+					$action = '-';
+				}
 				// $action .= '<a href="#" onclick="confirm_modal(\'' . $delete_url . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" data-bs-placement="top" title="" data-bs-original-title="Delete" aria-label="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
 
 				$product_qty = 0;
@@ -25647,10 +25815,18 @@ class Inventory_model extends CI_Model
 				$edit_url = base_url() . 'inventory/my-company/edit/' . $id;
 				$ledger_url = base_url() . 'inventory/vendor-ledger/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-             <a href="' . $ledger_url . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 icon-btn-view"><i class="fa fa-list" aria-hidden="true"></i></button></a>
-             <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-             ';
+				if (is_access('669')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('670')) {
+					$action .= '<a href="' . $ledger_url . '" data-toggle="tooltip" data-bs-placement="top" title="Ledger"><button type="button" class="btn mr-1 mb-1 icon-btn-view"><i class="fa fa-list" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('671')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       	=> ++$start,
@@ -25931,8 +26107,15 @@ class Inventory_model extends CI_Model
 			$sr_no = $start;
 			foreach ($query->result_array() as $item) {
 				$actions = '';
-				$actions .= '<a href="' . base_url() . 'inventory/payments/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
-				$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/payments/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				if (is_access('731')) {
+					$actions .= '<a href="' . base_url() . 'inventory/payments/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
+				}
+				if (is_access('732')) {
+					$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/payments/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($actions == '') {
+					$actions = '-';
+				}
 
 				$data[] = array(
 					"sr_no"         	=> ++$sr_no,
@@ -26215,8 +26398,15 @@ class Inventory_model extends CI_Model
 			foreach ($query->result_array() as $item) {
 
 				$actions = '';
-				$actions .= '<a href="' . base_url() . 'inventory/vendor-payments/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
-				$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/vendor-payments/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				if (is_access('743')) {
+					$actions .= '<a href="' . base_url() . 'inventory/vendor-payments/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
+				}
+				if (is_access('744')) {
+					$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/vendor-payments/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($actions == '') {
+					$actions = '-';
+				}
 
 				$data[] = array(
 					"sr_no"         	=> ++$sr_no,
@@ -26692,8 +26882,12 @@ class Inventory_model extends CI_Model
 
 				$actions = '';
 				if (empty($item['is_locked'])) {
-					$actions .= '<a href="' . base_url() . 'inventory/po-expense/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
-					$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/po_expense/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+					if (is_access('162')) {
+						$actions .= '<a href="' . base_url() . 'inventory/po-expense/edit/'. $item['id'] . '" data-toggle="tooltip" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a> ';
+					}
+					if (is_access('163')) {
+						$actions .= '<a href="#" onclick="confirm_modal(\'' . base_url() . 'inventory/po_expense/delete/'. $item['id'] . '\',\'Are you sure want to delete!\')" data-toggle="tooltip" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+					}
 				}
 
 				$data[] = array(
@@ -33089,15 +33283,26 @@ public function get_sales_return_reports()
 				$edit_url = base_url('inventory/manual-payment/edit/' . $id);
 				$delete_url = "confirm_modal('" . base_url() . "inventory/manual_payment/delete/" . $id . "','Are you sure want to delete this manual payment!')";
 
-				$action = '<div class="btn-group">
+				$menu_items = '';
+				if (is_access('769')) {
+					$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
+				}
+				if (is_access('770')) {
+					$menu_items .= '<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>';
+				}
+				if (is_access('771')) {
+					$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+				}
+
+				if ($menu_items != '') {
+					$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>
-						<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>
-						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-					</div>
+					<div class="dropdown-menu">' . $menu_items . '</div>
 				</div>';
+				} else {
+					$action = '-';
+				}
 
 				$type_badge = ($item['payment_type'] == 'official')
 					? '<span class="badge bg-light-primary text-primary">Official</span>'
@@ -33221,17 +33426,28 @@ public function get_sales_return_reports()
 				$edit_url = base_url('inventory/payment-receipt/edit/' . $id);
 				$delete_url = "confirm_modal('" . base_url() . "inventory/payment_receipt/delete/" . $id . "','Are you sure want to delete this payment receipt!')";
 
-				$menu_items = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
+				$menu_items = '';
+				if (is_access('757')) {
+					$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
+				}
 				if (!$is_approved) {
-					$menu_items .= '<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>';
-					$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+					if (is_access('758')) {
+						$menu_items .= '<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-pencil" aria-hidden="true"></i> Edit</a>';
+					}
+					if (is_access('759')) {
+						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+					}
 				}
 
-				$action = '<div class="btn-group">
+				if ($menu_items != '') {
+					$action = '<div class="btn-group">
 					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 					<i class="mdi mdi-dots-vertical"></i></button>
 					<div class="dropdown-menu">' . $menu_items . '</div>
 				</div>';
+				} else {
+					$action = '-';
+				}
 
 				$status_badge = $is_approved
 					? '<span class="badge bg-light-success text-success">Approved</span>'
@@ -33327,18 +33543,30 @@ public function get_sales_return_reports()
 				$view_url = "showLargeModal('" . base_url() . "modal/popup_inventory/payment_receipt_view_modal/" . $id . "','Payment Details - " . htmlspecialchars($item['inv_no'], ENT_QUOTES) . "')";
 				$approve_url = "confirm_modal('" . base_url() . "inventory/payment_reconciliation/approve/" . $id . "','Are you sure want to approve this payment receipt!')";
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
-
-				if (empty($item['is_approved']) || $item['is_approved'] == 0) {
-					$action .= '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
+				$is_approved_row = !empty($item['is_approved']) && $item['is_approved'] == 1;
+				$menu_items = '';
+				if ($is_approved_row) {
+					if (is_access('867')) {
+						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
+					}
+				} else {
+					if (is_access('857')) {
+						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Payment</a>';
+					}
+					if (is_access('858')) {
+						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
+					}
 				}
 
-				$action .= '</div>
+				if ($menu_items != '') {
+					$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">' . $menu_items . '</div>
 				</div>';
+				} else {
+					$action = '-';
+				}
 
 				$type_badge = ($item['payment_type'] == 'official')
 					? '<span class="badge bg-light-primary text-primary">Official</span>'
@@ -33793,28 +34021,28 @@ public function get_sales_return_reports()
 				$edit_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_edit_payment_collection/' . $id) . "', 'Edit Payment Collection')";
 				$delete_url = "confirm_modal('" . base_url('inventory/payment-collection/delete/' . $id) . "', 'Are you sure want to delete!')";
 
-				$action = '';
+				$action = '-';
 				if (empty($item['is_approved']) || $item['is_approved'] == 0) {
+					$menu_items = '';
 					if ($is_reverse) {
-						$action = '<div class="btn-group">
-							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-							<i class="mdi mdi-dots-vertical"></i></button>
-							<div class="dropdown-menu">
-								<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-								<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-							</div>
-						</div>';
+						if (is_access('882')) {
+							$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+						}
+						if (is_access('883')) {
+							$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+						}
 					} else {
+						if (is_access('881')) {
+							$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
+						}
+					}
+					if ($menu_items != '') {
 						$action = '<div class="btn-group">
 							<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 							<i class="mdi mdi-dots-vertical"></i></button>
-							<div class="dropdown-menu">
-								<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>
-							</div>
+							<div class="dropdown-menu">' . $menu_items . '</div>
 						</div>';
 					}
-				} else {
-					$action = '-';
 				}
 
 				$status_badge = (!empty($item['is_approved']) && $item['is_approved'] == 1)
@@ -33918,23 +34146,38 @@ public function get_sales_return_reports()
 					$is_reverse = !empty($item['is_reverse']) && (int)$item['is_reverse'] === 1;
 
 					$view_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_cash_view/' . $id) . "', 'View Transfer')";
-					$menu_items = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+					$menu_items = '';
 
 					if ($tab == 'pending_transfer') {
-						$approve_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_approve_pending_transfer/' . $id) . "', 'Approve Pending Transfer')";
-						$menu_items = '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
-					} elseif (!$is_approved && !$is_reverse) {
-						$edit_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_cash_edit/' . $id) . "', 'Edit Transfer')";
-						$delete_url = "confirm_modal('" . base_url('inventory/petty_cash/delete_transfer/' . $id) . "', 'Are you sure want to delete!')";
-						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
-						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+						if (is_access('797')) {
+							$approve_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_approve_pending_transfer/' . $id) . "', 'Approve Pending Transfer')";
+							$menu_items = '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
+						}
+					} else {
+						if (is_access('806')) {
+							$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+						}
+						if (!$is_approved && !$is_reverse) {
+							if (is_access('807')) {
+								$edit_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_cash_edit/' . $id) . "', 'Edit Transfer')";
+								$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+							}
+							if (is_access('808')) {
+								$delete_url = "confirm_modal('" . base_url('inventory/petty_cash/delete_transfer/' . $id) . "', 'Are you sure want to delete!')";
+								$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+							}
+						}
 					}
 
-					$action = '<div class="btn-group">
+					if ($menu_items != '') {
+						$action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">' . $menu_items . '</div>
 					</div>';
+					} else {
+						$action = '-';
+					}
 
 					$type_val = $item['converted_from'] ?? ($item['payment_type'] ?? '');
 					$ptype = ($type_val === 'unofficial') ? 'Unofficial' : (($type_val === 'official') ? 'Official' : '-');
@@ -34212,14 +34455,20 @@ public function get_sales_return_reports()
 							$id = (int)$item['source_id'];
 							$edit_url   = base_url('inventory/cash-book/edit/' . $id);
 							$delete_url = "confirm_modal('" . base_url('inventory/petty_cash/delete/' . $id) . "', 'Are you sure want to delete!')";
-							$action = '<div class="btn-group">
+							$menu_items = '';
+							if (is_access('787')) {
+								$menu_items .= '<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+							}
+							if (is_access('788')) {
+								$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+							}
+							if ($menu_items != '') {
+								$action = '<div class="btn-group">
 								<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 								<i class="mdi mdi-dots-vertical"></i></button>
-								<div class="dropdown-menu">
-									<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-									<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-								</div>
+								<div class="dropdown-menu">' . $menu_items . '</div>
 							</div>';
+							}
 						}
 
 						$party = !empty($item['party_name']) ? htmlspecialchars($item['party_name']) : '-';
@@ -34705,21 +34954,36 @@ public function get_sales_return_reports()
 					$is_approved = !empty($item['is_approved']) && $item['is_approved'] == 1;
 					$is_reverse = !empty($item['is_reverse']) && (int)$item['is_reverse'] === 1;
 					$view_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_bank_view/' . $id) . "', 'View Bank Transfer')";
-					$menu_items = '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+					$menu_items = '';
 					if ($tab == 'pending_transfer') {
-						$approve_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_approve_pending_transfer/' . $id) . "', 'Approve Pending Transfer')";
-						$menu_items = '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
-					} elseif (!$is_approved && !$is_reverse) {
-						$edit_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_bank_edit/' . $id) . "', 'Edit Bank Transfer')";
-						$delete_url = "confirm_modal('" . base_url('inventory/bank_book/delete_transfer/' . $id) . "', 'Are you sure want to delete!')";
-						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
-						$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+						if (is_access('833')) {
+							$approve_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_approve_pending_transfer/' . $id) . "', 'Approve Pending Transfer')";
+							$menu_items = '<a href="javascript:void(0)" class="dropdown-item text-success" onclick="' . $approve_url . '"><i class="fa fa-check-circle" aria-hidden="true"></i> Approve</a>';
+						}
+					} else {
+						if (is_access('843')) {
+							$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>';
+						}
+						if (!$is_approved && !$is_reverse) {
+							if (is_access('844')) {
+								$edit_url = "showAjaxModal('" . base_url('modal/popup_inventory/modal_transfer_bank_edit/' . $id) . "', 'Edit Bank Transfer')";
+								$menu_items .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $edit_url . '"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+							}
+							if (is_access('845')) {
+								$delete_url = "confirm_modal('" . base_url('inventory/bank_book/delete_transfer/' . $id) . "', 'Are you sure want to delete!')";
+								$menu_items .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+							}
+						}
 					}
-					$action = '<div class="btn-group">
+					if ($menu_items != '') {
+						$action = '<div class="btn-group">
 						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
 						<i class="mdi mdi-dots-vertical"></i></button>
 						<div class="dropdown-menu">' . $menu_items . '</div>
 					</div>';
+					} else {
+						$action = '-';
+					}
 
 					$type_val = $item['converted_from'] ?? '';
 					$ptype = ($type_val === 'unofficial') ? 'Unofficial' : 'Official';
@@ -35823,9 +36087,14 @@ public function get_sales_return_reports()
 				$delete_url = "confirm_modal('" . base_url() . "inventory/product_formula/delete/" . $id . "','Are you sure want to delete this formula!')";
 				$edit_url = base_url() . 'inventory/product-formula/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 
-				$action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
+				if (is_access('83')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+
+				if (is_access('84')) {
+					$action .= '<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				} 
 
 				// Category
 				$category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
@@ -38927,8 +39196,16 @@ public function get_sales_return_reports()
 				$edit_url = base_url() . 'inventory/edit-supplier-adjustment/' . $id;
 				$delete_url = "confirm_modal('" . base_url() . "inventory/supplier-adjustment/delete/" . $id . "','Are you sure want to delete this adjustment!')";
 
-				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
-				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				$action = '';
+				if (is_access('718')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('719')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$deb_usd = (float)$item['deb_usd'];
 				$crd_usd = (float)$item['crd_usd'];
@@ -39881,8 +40158,16 @@ public function get_sales_return_reports()
 				$edit_url = base_url() . 'inventory/edit-vendor-adjustment/' . $id;
 				$delete_url = "confirm_modal('" . base_url() . "inventory/vendor-adjustment/delete/" . $id . "','Are you sure want to delete this adjustment!')";
 
-				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
-				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				$action = '';
+				if (is_access('684')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('685')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$deb_usd = (float)$item['deb_usd'];
 				$crd_usd = (float)$item['crd_usd'];
@@ -40622,8 +40907,16 @@ public function get_sales_return_reports()
 				$edit_url = base_url() . 'inventory/edit-customer-adjustment/' . $id;
 				$delete_url = "confirm_modal('" . base_url() . "inventory/customer-adjustment/delete/" . $id . "','Are you sure want to delete this adjustment!')";
 
-				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
-				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				$action = '';
+				if (is_access('527')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('528')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$deb = (float)$item['deb_inr'];
 				$crd = (float)$item['crd_inr'];
@@ -41044,15 +41337,26 @@ public function get_sales_return_reports()
 				$edit_url = base_url('inventory/customer-quotations/edit/' . $id);
 				$delete_url = "confirm_modal('" . base_url() . "inventory/customer-quotations/delete/" . $id . "','Are you sure want to delete!')";
 
-				$action = '<div class="btn-group">
-					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-					<i class="mdi mdi-dots-vertical"></i></button>
-					<div class="dropdown-menu">
-						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Quotation</a>
-						<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>
-						<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-					</div>
-				</div>';
+				$menu = '';
+				if (is_access('360')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View Quotation</a>';
+				}
+				if (is_access('361')) {
+					$menu .= '<a href="' . $edit_url . '" class="dropdown-item"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a>';
+				}
+				if (is_access('362')) {
+					$menu .= '<a href="javascript:void(0)" class="dropdown-item text-danger" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>';
+				}
+
+				if ($menu != '') {
+					$action = '<div class="btn-group">
+						<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+						<i class="mdi mdi-dots-vertical"></i></button>
+						<div class="dropdown-menu">' . $menu . '</div>
+					</div>';
+				} else {
+					$action = '-';
+				}
 
 				$qty_res = $this->db->query("SELECT SUM(qty) as total_qty, COUNT(id) as total_products FROM customer_quotation_products WHERE parent_id = '$id'")->row_array();
 				$qty = $qty_res['total_qty'] ?? 0;

@@ -1,5 +1,10 @@
 <?php
     $type = (isset($_GET['type']) && $_GET['type'] != '') ? $_GET['type'] : 'order';
+    if ($type == 'order' && !is_access('165') && is_access('166')) {
+        $type = 'product';
+    } elseif ($type == 'product' && !is_access('166') && is_access('165')) {
+        $type = 'order';
+    }
 ?>
 <link rel="stylesheet" type="text/css" href="<?= base_url();?>app-assets/vendors/css/tables/datatable/dataTables.bootstrap5.min.css">
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -27,7 +32,7 @@
 		display: flex;
 		align-items: center;
 	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+	.new-form .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
 		color: #5a79c0;
 		border: 1px solid #5a79c0 !important;
 		background: white;
@@ -47,22 +52,26 @@
 </style>
 
 <div class="row" id="table-bordered">
-    <?php include('filter/ajax_commom_filter.php'); ?>	
+    <?php include('filter/pending_po_filter.php'); ?>	
     <div class="col-md-12 mb-1 mt-1">
-        <div class="fixedElement new-fix" id="fixedElement">
+        <div class="fixedElement new-form" id="fixedElement">
             <ul class="nav nav-pills bg-nav-pills nav-justified">
+                <?php if (is_access('165')) { ?>
                 <li class="nav-item">
                     <a href="<?php echo base_url('inventory/pending-po?type=order'); ?>" class="nav-link <?php echo ($type == 'order') ? 'active' : ''; ?>">
                         <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
                         <span class="d-none d-md-block">Order</span>
                     </a>
                 </li>
+                <?php } ?>
+                <?php if (is_access('166')) { ?>
                 <li class="nav-item">
                     <a href="<?php echo base_url('inventory/pending-po?type=product'); ?>" class="nav-link <?php echo ($type == 'product') ? 'active' : ''; ?>">
                         <i class="mdi mdi-package-variant d-md-none d-block"></i>
                         <span class="d-none d-md-block">Product</span>
                     </a>
                 </li>
+                <?php } ?>
             </ul>
         </div>
     </div>
@@ -86,21 +95,21 @@
                   <?php if ($type == 'product'): ?>
                     <tr>
                       <th>#</th>
-                      <th>Date / Batch No.</th>
-                      <th>Product Name</th>
-                      <th>Total Qty</th>
-                      <th>Received Qty</th>
-                      <th>Remaining Qty</th>
+                      <?php if (is_access('176')) { ?><th>Date / Batch No.</th><?php } ?>
+                      <?php if (is_access('177')) { ?><th>Product Name</th><?php } ?>
+                      <?php if (is_access('178')) { ?><th>Total Qty</th><?php } ?>
+                      <?php if (is_access('179')) { ?><th>Received Qty</th><?php } ?>
+                      <?php if (is_access('180')) { ?><th>Remaining Qty</th><?php } ?>
                     </tr>
                   <?php else: ?>
                     <tr>
                       <th>#</th>
-                      <th>Date / Batch No.</th>
-                      <th>Supplier Name</th>
-                      <th>No of Spare Parts</th>
-                      <th>No of Ready Goods</th>
-                      <th>Loading Date</th>
-                      <th>Actions</th>
+                      <?php if (is_access('167')) { ?><th>Date / Batch No.</th><?php } ?>
+                      <?php if (is_access('168')) { ?><th>Supplier Name</th><?php } ?>
+                      <?php if (is_access('169')) { ?><th>No of Spare Parts</th><?php } ?>
+                      <?php if (is_access('170')) { ?><th>No of Ready Goods</th><?php } ?>
+                      <?php if (is_access('171')) { ?><th>Loading Date</th><?php } ?>
+                      <?php if (is_access('172') || is_access('173') || is_access('174')) { ?><th>Actions</th><?php } ?>
                     </tr>
                   <?php endif; ?>
                </thead>
@@ -148,39 +157,36 @@
                 }
             },   
                      
-            "columns": <?php echo ($type == 'product') ? json_encode([
-                [ "data" => "sr_no" ],
-                [ "data" => "batch_no" ],
-                [ "data" => "product_name" ],
-                [ "data" => "total_qty" ],
-                [ "data" => "received_qty" ],
-                [ "data" => "remaining_qty" ],
-            ]) : json_encode([
-                [ "data" => "sr_no" ],
-                [ "data" => "date" ],
-                [ "data" => "suppliers" ],
-                [ "data" => "spare_parts_count" ],
-                [ "data" => "ready_goods_count" ],
-                [ "data" => "delivery_date" ],
-                [ "data" => "action" ],
-            ]); ?>, 
+            "columns": [
+                { "data": "sr_no" },
+                <?php if ($type == 'product') { ?>
+                    <?php if (is_access('176')) { ?>{ "data": "batch_no" },<?php } ?>
+                    <?php if (is_access('177')) { ?>{ "data": "product_name" },<?php } ?>
+                    <?php if (is_access('178')) { ?>{ "data": "total_qty" },<?php } ?>
+                    <?php if (is_access('179')) { ?>{ "data": "received_qty" },<?php } ?>
+                    <?php if (is_access('180')) { ?>{ "data": "remaining_qty" },<?php } ?>
+                <?php } else { ?>
+                    <?php if (is_access('167')) { ?>{ "data": "date" },<?php } ?>
+                    <?php if (is_access('168')) { ?>{ "data": "suppliers" },<?php } ?>
+                    <?php if (is_access('169')) { ?>{ "data": "spare_parts_count" },<?php } ?>
+                    <?php if (is_access('170')) { ?>{ "data": "ready_goods_count" },<?php } ?>
+                    <?php if (is_access('171')) { ?>{ "data": "delivery_date" },<?php } ?>
+                    <?php if (is_access('172') || is_access('173') || is_access('174')) { ?>{ "data": "action" },<?php } ?>
+                <?php } ?>
+            ], 
            
             "buttons": [
+                <?php if (($type == 'product' && is_access('181')) || ($type != 'product' && is_access('175'))) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -191,7 +197,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 
@@ -202,7 +208,6 @@
     });
 
     function generate_excel(id) {
-        // Direct navigation to trigger file download
         window.location.href = "<?php echo base_url(); ?>inventory/generate_purchase_order_excel/" + id;
     }
 

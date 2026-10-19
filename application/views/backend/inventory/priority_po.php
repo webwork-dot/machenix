@@ -27,7 +27,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -48,8 +48,7 @@
 </style>
 
 <div class="row" id="table-bordered">
-  <?php include('filter/ajax_commom_filter.php'); ?>
-  
+  <?php include('filter/priority_po_filter.php'); ?>
   <?php include('nav/nav_import_po.php'); ?>
 
   <div class="col-12">
@@ -63,24 +62,21 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Date / Batch No.</th>
-              <th>Supplier Name</th>
-              <th>No of Spare Parts</th>
-              <th>No of Ready Goods</th>
-              <th>Loading Date</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <?php if (is_access('106')) { ?><th>Date / Batch No.</th><?php } ?>
+              <?php if (is_access('107')) { ?><th>Supplier Name</th><?php } ?>
+              <?php if (is_access('108')) { ?><th>No of Spare Parts</th><?php } ?>
+              <?php if (is_access('109')) { ?><th>No of Ready Goods</th><?php } ?>
+              <?php if (is_access('110')) { ?><th>Loading Date</th><?php } ?>
+              <?php if (is_access('111')) { ?><th>Status</th><?php } ?>
+              <?php if (is_access('112') || is_access('113') || is_access('114') || is_access('115') || is_access('116')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
-
       </div>
-
     </div>
   </div>
 </div>
@@ -123,46 +119,29 @@ $(document).ready(function($) {
       }
     },
 
-    "columns": [{
-        "data": "sr_no"
-      },
-      {
-        "data": "date"
-      },
-      {
-        "data": "pl_suppliers"
-      },
-      {
-        "data": "pl_spare_parts_count"
-      },
-      {
-        "data": "pl_ready_goods_count"
-      },
-      {
-        "data": "delivery_date"
-      },
-      {
-        "data": "status"
-      },
-      { "data": "priority_list_action" },
-
+    "columns": [
+      { "data": "sr_no" },
+      <?php if (is_access('106')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('107')) { ?>{ "data": "pl_suppliers" },<?php } ?>
+      <?php if (is_access('108')) { ?>{ "data": "pl_spare_parts_count" },<?php } ?>
+      <?php if (is_access('109')) { ?>{ "data": "pl_ready_goods_count" },<?php } ?>
+      <?php if (is_access('110')) { ?>{ "data": "delivery_date" },<?php } ?>
+      <?php if (is_access('111')) { ?>{ "data": "status" },<?php } ?>
+      <?php if (is_access('112') || is_access('113') || is_access('114') || is_access('115') || is_access('116')) { ?>{ "data": "priority_list_action" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('117')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -172,17 +151,15 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
-    }, ]
-
+    }]
   }).on('draw.dt', function() {
     $(".loader").fadeOut("slow");
   });
 });
 
 function generate_excel(id) {
-  // Direct navigation to trigger file download
   window.location.href = "<?php echo base_url(); ?>inventory/generate_priotity_purchase_order_excel/" + id;
 }
 

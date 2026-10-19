@@ -27,7 +27,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -48,7 +48,7 @@
 </style>
 
 <div class="row" id="table-bordered">
-  <?php include('filter/ajax_commom_filter.php'); ?>
+  <?php include('filter/loading_list_po_filter.php'); ?>
   <?php include('nav/nav_import_po.php'); ?>
 
   <div class="col-12">
@@ -62,23 +62,25 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/loading-list-po/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_loading_list');?></span></a> 
+        <?php if (is_access('129')) { ?>
+        <a href="<?php echo site_url('inventory/loading-list-po/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_loading_list');?></span></a>
+        <?php } ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>PO Date / Batch No.</th>
-              <th>Supplier Name</th>
-              <th>No of Spare Parts</th>
-              <th>No of Ready Goods</th>
-              <th>Loading Qty</th>
-              <th>Official Qty</th>
-              <th>Total RMB</th>
-              <th>Total USD</th>
-              <th>Loading Date</th>
-              <th>Expected Date</th>
-              <th>Status</th>
-              <th>Action</th>
+              <?php if (is_access('118')) { ?><th>PO Date / Batch No.</th><?php } ?>
+              <?php if (is_access('119')) { ?><th>Supplier Name</th><?php } ?>
+              <?php if (is_access('120')) { ?><th>No of Spare Parts</th><?php } ?>
+              <?php if (is_access('121')) { ?><th>No of Ready Goods</th><?php } ?>
+              <?php if (is_access('122')) { ?><th>Loading Qty</th><?php } ?>
+              <?php if (is_access('123')) { ?><th>Official Qty</th><?php } ?>
+              <?php if (is_access('124')) { ?><th>Total RMB</th><?php } ?>
+              <?php if (is_access('125')) { ?><th>Total USD</th><?php } ?>
+              <?php if (is_access('126')) { ?><th>Loading Date</th><?php } ?>
+              <?php if (is_access('127')) { ?><th>Expected Date</th><?php } ?>
+              <?php if (is_access('128')) { ?><th>Status</th><?php } ?>
+              <?php if (is_access('130') || is_access('131') || is_access('132') || is_access('133') || is_access('134')) { ?><th>Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -125,63 +127,34 @@ $(document).ready(function($) {
       }
     },
 
-    "columns": [{
-        "data": "sr_no"
-      },
-      {
-        "data": "date"
-      },
-      {
-        "data": "lo_suppliers"
-      },
-      {
-        "data": "ll_ready_goods_count"
-      },
-      {
-        "data": "ll_spare_parts_count"
-      },
-      {
-        "data": "loading_qty"
-      },
-      {
-        "data": "official_qty"
-      },
-      {
-        "data": "total_rmb"
-      },
-      {
-        "data": "total_usd"
-      },
-      {
-        "data": "arrival_date"
-      },
-      {
-        "data": "expected_arrival_date"
-      },
-      {
-        "data": "status"
-      },
-      { 
-        "data": "loading_list_action" 
-      },
-
+    "columns": [
+      { "data": "sr_no" },
+      <?php if (is_access('118')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('119')) { ?>{ "data": "lo_suppliers" },<?php } ?>
+      <?php if (is_access('120')) { ?>{ "data": "ll_ready_goods_count" },<?php } ?>
+      <?php if (is_access('121')) { ?>{ "data": "ll_spare_parts_count" },<?php } ?>
+      <?php if (is_access('122')) { ?>{ "data": "loading_qty" },<?php } ?>
+      <?php if (is_access('123')) { ?>{ "data": "official_qty" },<?php } ?>
+      <?php if (is_access('124')) { ?>{ "data": "total_rmb" },<?php } ?>
+      <?php if (is_access('125')) { ?>{ "data": "total_usd" },<?php } ?>
+      <?php if (is_access('126')) { ?>{ "data": "arrival_date" },<?php } ?>
+      <?php if (is_access('127')) { ?>{ "data": "expected_arrival_date" },<?php } ?>
+      <?php if (is_access('128')) { ?>{ "data": "status" },<?php } ?>
+      <?php if (is_access('130') || is_access('131') || is_access('132') || is_access('133') || is_access('134')) { ?>{ "data": "loading_list_action" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('135')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -191,17 +164,15 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
-    }, ]
-
+    }]
   }).on('draw.dt', function() {
     $(".loader").fadeOut("slow");
   });
 });
 
 function generate_excel(id) {
-  // Direct navigation to trigger file download
   window.location.href = "<?php echo base_url(); ?>inventory/generate_priotity_purchase_order_excel/" + id;
 }
 

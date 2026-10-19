@@ -1084,12 +1084,7 @@ if (!function_exists('array_to_list')) {
 
 if (!function_exists('is_access')) {
     function is_access($id){
-        $user_id = $this->session->userdata('super_user_id');
-        if($user_id == 4) {
-            return true;
-        } else {
-            $ci =& get_instance();
-		    return $ci->common_model->get_access_by_id($id);
-        }
+		$ci =& get_instance();
+		return $ci->common_model->get_access_by_id($id);
     }
 }

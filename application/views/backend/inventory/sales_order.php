@@ -55,11 +55,7 @@
     }
 </style>
 
-<?php
-    include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
-    $export_cols = '[' . implode(',', range(0, 11)) . ']';
-?>
+<?php include('filter/sales_order_filter.php'); ?>
 	
 <div class="row" id="table-bordered">
     <?php include('nav/nav_sales_order.php'); ?>
@@ -72,6 +68,7 @@
                        <b>Total Sales Order <span id="total_count"> (0)</span></b>
 				  </h5>
 
+                <?php if (is_access('217') || is_access('218') || is_access('222') || is_access('226')) { ?>
                 <div class="dropdown stock-filter-dropdown ms-50">
                     <button class="btn-filter-dropdown dropdown-toggle" type="button" id="soFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                         <i class="feather icon-filter"></i>
@@ -84,26 +81,34 @@
                         </div>
                         <div class="filter-menu-body" id="column-filters-container">
                             <div class="filter-menu-label">Columns</div>
+                            <?php if (is_access('217')) { ?>
                             <label class="filter-chip active" for="toggle-booking-date" title="Toggle Booking Date column">
                                 <input type="checkbox" id="toggle-booking-date" class="column-filter-checkbox" checked>
                                 <span class="chip-box"><i class="feather icon-check"></i></span>
                                 <span class="chip-text">Booking Date</span>
                             </label>
+                            <?php } ?>
+                            <?php if (is_access('218')) { ?>
                             <label class="filter-chip active" for="toggle-delivery-date" title="Toggle Delivery Date column">
                                 <input type="checkbox" id="toggle-delivery-date" class="column-filter-checkbox" checked>
                                 <span class="chip-box"><i class="feather icon-check"></i></span>
                                 <span class="chip-text">Delivery Date</span>
                             </label>
+                            <?php } ?>
+                            <?php if (is_access('222')) { ?>
                             <label class="filter-chip" for="toggle-warehouse" title="Toggle Warehouse column">
                                 <input type="checkbox" id="toggle-warehouse" class="column-filter-checkbox">
                                 <span class="chip-box"><i class="feather icon-check"></i></span>
                                 <span class="chip-text">Warehouse</span>
                             </label>
+                            <?php } ?>
+                            <?php if (is_access('226')) { ?>
                             <label class="filter-chip active" for="toggle-sales-person" title="Toggle Sales Person column">
                                 <input type="checkbox" id="toggle-sales-person" class="column-filter-checkbox" checked>
                                 <span class="chip-box"><i class="feather icon-check"></i></span>
                                 <span class="chip-text">Sales Person</span>
                             </label>
+                            <?php } ?>
                         </div>
                         <div class="filter-menu-footer">
                             <button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
@@ -112,12 +117,13 @@
                         </div>
                     </div>
                 </div>
+                <?php } ?>
              </div>
          </div>
         <div class="card-datatable d-report mb-2">
-            <?php if($this->session->userdata('super_type_id') == 7) { ?>
+            <?php if (is_access('228')) { ?>
                 <a href="<?php echo site_url('inventory/sales-order/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary so-add-btn" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
-            <?php } elseif ($staff_access !== 7) { ?>
+            <?php } elseif (is_access('229')) { ?>
                 <a href="<?php echo site_url('inventory/sales-invoice/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary so-add-btn" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_sales_order');?></span></a>   
             <?php } ?>
      
@@ -125,18 +131,18 @@
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Booking Date</th>
-					<th>Delivery Date</th>
-					<th>Booking Days</th>
-					<th>Customer Name</th>
-					<th>Order No</th>
-					<th>Warehouse</th>
-					<th>Tot Qty</th>
-					<th>Tot Product</th>
-					<th>Tot Amt</th>
-					<th>Sales Person</th>
-					<th>Status</th>
-					<th>Actions</th>
+					<?php if (is_access('217')) { ?><th>Booking Date</th><?php } ?>
+					<?php if (is_access('218')) { ?><th>Delivery Date</th><?php } ?>
+					<?php if (is_access('219')) { ?><th>Booking Days</th><?php } ?>
+					<?php if (is_access('220')) { ?><th>Customer Name</th><?php } ?>
+					<?php if (is_access('221')) { ?><th>Order No</th><?php } ?>
+					<?php if (is_access('222')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('223')) { ?><th>Tot Qty</th><?php } ?>
+					<?php if (is_access('224')) { ?><th>Tot Product</th><?php } ?>
+					<?php if (is_access('225')) { ?><th>Tot Amt</th><?php } ?>
+					<?php if (is_access('226')) { ?><th>Sales Person</th><?php } ?>
+					<?php if (is_access('227')) { ?><th>Status</th><?php } ?>
+					<?php if (is_access('230') || is_access('231') || is_access('232') || is_access('233') || is_access('234') || is_access('235') || is_access('236') || is_access('237') || is_access('238')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -190,37 +196,33 @@
             },   
                      
             "columns": [
-                { "data": "sr_no" },
-                { "data": "booking_date" },
-                { "data": "delivery_date" },
-                { "data": "booking_days" },
-                { "data": "customer_name" },
-                { "data": "order_no" },
-                { "data": "warehouse_name", "visible": false },
-                { "data": "qty" },
-                { "data": "total_pro" },
-                { "data": "grand_total" },
-                { "data": "sales_person" },
-                { "data": "status" },
-                { "data": "action" }
+                { "data": "sr_no", "className": "text-center" },
+                <?php if (is_access('217')) { ?>{ "data": "booking_date", "className": "text-center" },<?php } ?>
+                <?php if (is_access('218')) { ?>{ "data": "delivery_date", "className": "text-center" },<?php } ?>
+                <?php if (is_access('219')) { ?>{ "data": "booking_days", "className": "text-center" },<?php } ?>
+                <?php if (is_access('220')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('221')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('222')) { ?>{ "data": "warehouse_name", "visible": false },<?php } ?>
+                <?php if (is_access('223')) { ?>{ "data": "qty", "className": "text-center" },<?php } ?>
+                <?php if (is_access('224')) { ?>{ "data": "total_pro", "className": "text-center" },<?php } ?>
+                <?php if (is_access('225')) { ?>{ "data": "grand_total", "className": "text-center" },<?php } ?>
+                <?php if (is_access('226')) { ?>{ "data": "sales_person" },<?php } ?>
+                <?php if (is_access('227')) { ?>{ "data": "status", "className": "text-center" },<?php } ?>
+                <?php if (is_access('230') || is_access('231') || is_access('232') || is_access('233') || is_access('234') || is_access('235') || is_access('236') || is_access('237') || is_access('238')) { ?>{ "data": "action" },<?php } ?>
              ],
             
              "buttons": [
+                 <?php if (is_access('239')) { ?>
                  {
                      "extend": 'excel',
                      "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  },
                  {
                      "extend": 'pdfHtml5',
                      "orientation": 'landscape',
                      "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  }
+                 <?php } ?>
              ], 
            
              "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -234,27 +236,35 @@
                    }
             },
            
-            'columnDefs': [
-                {
-                    "targets": [0, 1, 2, 3, 7, 8, 9, 11],
-                    "className": "text-center",
-                }
-            ] 
-            
         }).on('draw.dt', function () { 
             $(".loader").fadeOut("slow"); 
         });
 
+        <?php
+            // Column indices for toggles (0 = '#')
+            $ci = 0;
+            $col_booking = $col_delivery = $col_warehouse = $col_sales = 0;
+            if (is_access('217')) { $ci++; $col_booking = $ci; }
+            if (is_access('218')) { $ci++; $col_delivery = $ci; }
+            if (is_access('219')) { $ci++; }
+            if (is_access('220')) { $ci++; }
+            if (is_access('221')) { $ci++; }
+            if (is_access('222')) { $ci++; $col_warehouse = $ci; }
+            if (is_access('223')) { $ci++; }
+            if (is_access('224')) { $ci++; }
+            if (is_access('225')) { $ci++; }
+            if (is_access('226')) { $ci++; $col_sales = $ci; }
+        ?>
         function updateFilterCount() {
             var defaults = {
-                'toggle-booking-date': true,
-                'toggle-delivery-date': true,
-                'toggle-warehouse': false,
-                'toggle-sales-person': true
+                <?php if (is_access('217')) { ?>'toggle-booking-date': true,<?php } ?>
+                <?php if (is_access('218')) { ?>'toggle-delivery-date': true,<?php } ?>
+                <?php if (is_access('222')) { ?>'toggle-warehouse': false,<?php } ?>
+                <?php if (is_access('226')) { ?>'toggle-sales-person': true<?php } ?>
             };
             var count = 0;
             $.each(defaults, function (id, defaultOn) {
-                if ($('#' + id).is(':checked') !== defaultOn) {
+                if ($('#' + id).length && $('#' + id).is(':checked') !== defaultOn) {
                     count++;
                 }
             });
@@ -264,15 +274,10 @@
         }
 
         function applyColumnFilters() {
-            var showBooking = $('#toggle-booking-date').is(':checked');
-            var showDelivery = $('#toggle-delivery-date').is(':checked');
-            var showWarehouse = $('#toggle-warehouse').is(':checked');
-            var showSalesPerson = $('#toggle-sales-person').is(':checked');
-
-            dataTable.column(1).visible(showBooking, false);
-            dataTable.column(2).visible(showDelivery, false);
-            dataTable.column(6).visible(showWarehouse, false);
-            dataTable.column(10).visible(showSalesPerson, false);
+            <?php if (is_access('217')) { ?>dataTable.column(<?php echo $col_booking; ?>).visible($('#toggle-booking-date').is(':checked'), false);<?php } ?>
+            <?php if (is_access('218')) { ?>dataTable.column(<?php echo $col_delivery; ?>).visible($('#toggle-delivery-date').is(':checked'), false);<?php } ?>
+            <?php if (is_access('222')) { ?>dataTable.column(<?php echo $col_warehouse; ?>).visible($('#toggle-warehouse').is(':checked'), false);<?php } ?>
+            <?php if (is_access('226')) { ?>dataTable.column(<?php echo $col_sales; ?>).visible($('#toggle-sales-person').is(':checked'), false);<?php } ?>
             dataTable.columns.adjust();
             updateFilterCount();
         }
@@ -286,10 +291,10 @@
         $('#btn-reset-col-filters').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            $('#toggle-booking-date').prop('checked', true).closest('.filter-chip').addClass('active');
-            $('#toggle-delivery-date').prop('checked', true).closest('.filter-chip').addClass('active');
-            $('#toggle-warehouse').prop('checked', false).closest('.filter-chip').removeClass('active');
-            $('#toggle-sales-person').prop('checked', true).closest('.filter-chip').addClass('active');
+            <?php if (is_access('217')) { ?>$('#toggle-booking-date').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+            <?php if (is_access('218')) { ?>$('#toggle-delivery-date').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+            <?php if (is_access('222')) { ?>$('#toggle-warehouse').prop('checked', false).closest('.filter-chip').removeClass('active');<?php } ?>
+            <?php if (is_access('226')) { ?>$('#toggle-sales-person').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
             applyColumnFilters();
         });
 

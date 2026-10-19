@@ -23,25 +23,25 @@
           </div>
         </div>
         <div class="card-datatable d-report mb-2">
-        <?php if($this->session->userdata('super_type_id') == 7){ ?>
+        <?php if (is_access('565')) { ?>
 		      <a href="<?php echo site_url('inventory/leads/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_leads');?></span></a>
         <?php } ?>
           <table class="table leads-table" id="report-datatable">
             <thead>
               <tr>
                   <th>#</th>
-                  <th>Distributor</th>
-                  <th>Company Name</th>
-                  <th>City</th>
-                  <th>State</th>
-                  <th>Owner Name</th>
-                  <th>Mobile/Whatsapp No</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Staff</th>
-                  <th>Added By</th>
-                  <th>Assigned Date</th>
-                  <th>Actions</th>
+                  <?php if (is_access('554')) { ?><th>Distributor</th><?php } ?>
+                  <?php if (is_access('555')) { ?><th>Company Name</th><?php } ?>
+                  <?php if (is_access('556')) { ?><th>City</th><?php } ?>
+                  <?php if (is_access('557')) { ?><th>State</th><?php } ?>
+                  <?php if (is_access('558')) { ?><th>Owner Name</th><?php } ?>
+                  <?php if (is_access('559')) { ?><th>Mobile/Whatsapp No</th><?php } ?>
+                  <?php if (is_access('560')) { ?><th>Email</th><?php } ?>
+                  <?php if (is_access('561')) { ?><th>Status</th><?php } ?>
+                  <?php if (is_access('562')) { ?><th>Staff</th><?php } ?>
+                  <?php if (is_access('563')) { ?><th>Added By</th><?php } ?>
+                  <?php if (is_access('564')) { ?><th>Assigned Date</th><?php } ?>
+                  <?php if (is_access('566') || is_access('567') || is_access('568') || is_access('569') || is_access('570')) { ?><th>Actions</th><?php } ?>
               </tr>
             </thead>
           </table>
@@ -87,36 +87,32 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "distributor" },
-                { "data": "name" },
-                { "data": "city_name" },
-                { "data": "state_name" },
-                { "data": "owner_name" },
-                { "data": "mobile_whatsapp" },
-                { "data": "owner_email" },
-                { "data": "status" },
-                { "data": "staff" },
-                { "data": "added_by_name" },
-                { "data": "assigned_date" },
-                { "data": "action" },
+                <?php if (is_access('554')) { ?>{ "data": "distributor" },<?php } ?>
+                <?php if (is_access('555')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('556')) { ?>{ "data": "city_name" },<?php } ?>
+                <?php if (is_access('557')) { ?>{ "data": "state_name" },<?php } ?>
+                <?php if (is_access('558')) { ?>{ "data": "owner_name" },<?php } ?>
+                <?php if (is_access('559')) { ?>{ "data": "mobile_whatsapp" },<?php } ?>
+                <?php if (is_access('560')) { ?>{ "data": "owner_email" },<?php } ?>
+                <?php if (is_access('561')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('562')) { ?>{ "data": "staff" },<?php } ?>
+                <?php if (is_access('563')) { ?>{ "data": "added_by_name" },<?php } ?>
+                <?php if (is_access('564')) { ?>{ "data": "assigned_date" },<?php } ?>
+                <?php if (is_access('566') || is_access('567') || is_access('568') || is_access('569') || is_access('570')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('571')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": ":visible:not(:last-child)"
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": ":visible:not(:last-child)"
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

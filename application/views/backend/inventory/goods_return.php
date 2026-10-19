@@ -24,21 +24,21 @@
          </div>
 		 
         <div class="card-datatable d-report mb-2">
-		       
+		   <?php if (is_access('450')) { ?>
 		   <a href="<?php echo site_url('inventory/goods-return/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_goods_return');?></span></a>
-     
+           <?php } ?>
 		
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date</th>
-					<th>Company Name</th>
-					<th>Customer Name</th>
-					<th>Quantity</th>
-					<th>Refrence Order No</th>
-					<th>Reason</th>
-					<th>Action</th>
+					<?php if (is_access('444')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('445')) { ?><th>Company Name</th><?php } ?>
+					<?php if (is_access('446')) { ?><th>Customer Name</th><?php } ?>
+					<?php if (is_access('447')) { ?><th>Quantity</th><?php } ?>
+					<?php if (is_access('448')) { ?><th>Refrence Order No</th><?php } ?>
+					<?php if (is_access('449')) { ?><th>Reason</th><?php } ?>
+					<?php if (is_access('451')) { ?><th>Action</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -83,27 +83,27 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "company_name" },
-                { "data": "customer_name" },
-                { "data": "product_qty" },
-                { "data": "order_no" },
-                { "data": "reason" },
-                { "data": "action" },
+                <?php if (is_access('444')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('445')) { ?>{ "data": "company_name" },<?php } ?>
+                <?php if (is_access('446')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('447')) { ?>{ "data": "product_qty" },<?php } ?>
+                <?php if (is_access('448')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('449')) { ?>{ "data": "reason" },<?php } ?>
+                <?php if (is_access('451')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('452')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -114,7 +114,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 

@@ -22,17 +22,19 @@
       </div>
       <div class="card-datatable d-report mb-2">
 
+        <?php if (is_access('496')) { ?>
         <a href="<?php echo site_url('inventory/warehouse/add'); ?>"
           class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
             <?= get_phrase('add_warehouse');?></span></a>
+        <?php } ?>
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Warehouse Name</th>
-              <th>Actions</th>
+              <?php if (is_access('495')) { ?><th>Warehouse Name</th><?php } ?>
+              <?php if (is_access('497') || is_access('498')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -75,32 +77,24 @@ $(document).ready(function($) {
       }
     },
 
-    "columns": [{
-        "data": "sr_no"
-      },
-      {
-        "data": "name"
-      },
-      {
-        "data": "action"
-      },
+    "columns": [
+      { "data": "sr_no" },
+      <?php if (is_access('495')) { ?>{ "data": "name" },<?php } ?>
+      <?php if (is_access('497') || is_access('498')) { ?>{ "data": "action" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('499')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -110,7 +104,7 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
     }, ]
 

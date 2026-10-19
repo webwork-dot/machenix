@@ -213,21 +213,23 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/payment-receipt/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_payment_receipt');?></span></a>     
+        <?php if (is_access('756')) { ?>
+        <a href="<?php echo site_url('inventory/payment-receipt/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_payment_receipt');?></span></a>
+        <?php } ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Date</th>
-              <th>Inv No</th>
-              <th>Customer Name</th>
-              <th>Amount</th>
-              <th>Mode</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Added By</th>
-              <th class="text-center">Status</th>
-              <th style="width: 80px;" class="text-center">Action</th>
+              <?php if (is_access('747')) { ?><th>Date</th><?php } ?>
+              <?php if (is_access('748')) { ?><th>Inv No</th><?php } ?>
+              <?php if (is_access('749')) { ?><th>Customer Name</th><?php } ?>
+              <?php if (is_access('750')) { ?><th>Amount</th><?php } ?>
+              <?php if (is_access('751')) { ?><th>Mode</th><?php } ?>
+              <?php if (is_access('752')) { ?><th>Type</th><?php } ?>
+              <?php if (is_access('753')) { ?><th>Method</th><?php } ?>
+              <?php if (is_access('754')) { ?><th>Added By</th><?php } ?>
+              <?php if (is_access('755')) { ?><th class="text-center">Status</th><?php } ?>
+              <?php if (is_access('757') || is_access('758') || is_access('759')) { ?><th style="width: 80px;" class="text-center">Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -303,29 +305,30 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "date" },
-      { "data": "inv_no" },
-      { "data": "customer_name" },
-      { "data": "amount" },
-      { "data": "payment_mode" },
-      { "data": "payment_type" },
-      { "data": "payment_method" },
-      { "data": "added_by_name" },
-      { "data": "status", "className": "text-center" },
-      { "data": "actions", "className": "text-center" },
+      <?php if (is_access('747')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('748')) { ?>{ "data": "inv_no" },<?php } ?>
+      <?php if (is_access('749')) { ?>{ "data": "customer_name" },<?php } ?>
+      <?php if (is_access('750')) { ?>{ "data": "amount" },<?php } ?>
+      <?php if (is_access('751')) { ?>{ "data": "payment_mode" },<?php } ?>
+      <?php if (is_access('752')) { ?>{ "data": "payment_type" },<?php } ?>
+      <?php if (is_access('753')) { ?>{ "data": "payment_method" },<?php } ?>
+      <?php if (is_access('754')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php if (is_access('755')) { ?>{ "data": "status", "className": "text-center" },<?php } ?>
+      <?php if (is_access('757') || is_access('758') || is_access('759')) { ?>{ "data": "actions", "className": "text-center" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('760')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

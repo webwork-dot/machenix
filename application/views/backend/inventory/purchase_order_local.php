@@ -42,18 +42,20 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-		  <a href="<?php echo site_url('inventory/purchase-order/add-local'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_purchase_in');?></span></a>          
+		  <?php if (is_access('191')) { ?>
+		  <a href="<?php echo site_url('inventory/purchase-order/add-local'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> <?= get_phrase('add_purchase_in');?></span></a>
+		  <?php } ?>
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date / PO No.</th>
-					<th>Supplier Name</th>
-					<th>Source</th>
-					<th>Total Product</th>
-					<th>Total Quantity</th>
-					<th>Date</th>
-					<th>Actions</th>
+					<?php if (is_access('185')) { ?><th>Date / PO No.</th><?php } ?>
+					<?php if (is_access('186')) { ?><th>Supplier Name</th><?php } ?>
+					<?php if (is_access('187')) { ?><th>Source</th><?php } ?>
+					<?php if (is_access('188')) { ?><th>Total Product</th><?php } ?>
+					<?php if (is_access('189')) { ?><th>Total Quantity</th><?php } ?>
+					<?php if (is_access('190')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('192') || is_access('193') || is_access('194') || is_access('195')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -99,31 +101,27 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "suppliers" },
-                { "data": "source" },
-                { "data": "total_products" },
-                { "data": "total_quantity" },
-                { "data": "po_date" },
-                { "data": "action" },
+                <?php if (is_access('185')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('186')) { ?>{ "data": "suppliers" },<?php } ?>
+                <?php if (is_access('187')) { ?>{ "data": "source" },<?php } ?>
+                <?php if (is_access('188')) { ?>{ "data": "total_products" },<?php } ?>
+                <?php if (is_access('189')) { ?>{ "data": "total_quantity" },<?php } ?>
+                <?php if (is_access('190')) { ?>{ "data": "po_date" },<?php } ?>
+                <?php if (is_access('192') || is_access('193') || is_access('194') || is_access('195')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('196')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

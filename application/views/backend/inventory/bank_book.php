@@ -56,7 +56,6 @@
     margin-bottom: 0;
   }
 
-  /* Ledger label badges (theme only ships bg-light-primary) */
   #report-datatable .badge {
     font-weight: 600;
     padding: 0.35em 0.65em;
@@ -91,12 +90,36 @@
 <?php
   $tab_get = isset($_GET['tab']) ? $_GET['tab'] : 'bank';
   $tab = in_array($tab_get, ['bank', 'pending_transfer', 'transferred'], true) ? $tab_get : 'bank';
+  if ($tab == 'bank' && !is_access('811')) {
+    if (is_access('812')) { $tab = 'pending_transfer'; }
+    elseif (is_access('813')) { $tab = 'transferred'; }
+  } elseif ($tab == 'pending_transfer' && !is_access('812')) {
+    if (is_access('811')) { $tab = 'bank'; }
+    elseif (is_access('813')) { $tab = 'transferred'; }
+  } elseif ($tab == 'transferred' && !is_access('813')) {
+    if (is_access('811')) { $tab = 'bank'; }
+    elseif (is_access('812')) { $tab = 'pending_transfer'; }
+  }
   $date_range_param = (isset($_GET['date_range']) && $_GET['date_range'] != '') ? '&date_range=' . urlencode($_GET['date_range']) : '';
   $company_id = $this->session->userdata('company_id');
   $bank_summary = $this->inventory_model->get_bank_in_hand_summary($company_id);
   $official_balance   = (float)($bank_summary['official']['bank_in_hand'] ?? 0);
   $unofficial_balance = (float)($bank_summary['unofficial']['bank_in_hand'] ?? 0);
   $actual_on_bank     = $official_balance + $unofficial_balance;
+  $is_transfer_tab = in_array($tab, ['transferred', 'pending_transfer'], true);
+  $tab_title = ($tab == 'pending_transfer') ? 'Pending Transfer' : (($tab == 'transferred') ? 'Total Transferred' : 'Bank Ledger');
+  $show_actions = false;
+  $show_export = false;
+  if ($tab == 'bank') {
+    $show_actions = false;
+    $show_export = is_access('824');
+  } elseif ($tab == 'pending_transfer') {
+    $show_actions = is_access('833');
+    $show_export = is_access('834');
+  } elseif ($tab == 'transferred') {
+    $show_actions = is_access('843') || is_access('844') || is_access('845');
+    $show_export = is_access('846');
+  }
 ?>
 
 <div class="row" id="table-bordered">
@@ -141,15 +164,17 @@
   </div>
 
   <div class="col-12 d-flex">
+    <?php if (is_access('811')) { ?>
     <a href="<?php echo base_url('inventory/bank-book?tab=bank' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'bank') ? 'active' : ''; ?>">Bank</a>
+    <?php } ?>
+    <?php if (is_access('812')) { ?>
     <a href="<?php echo base_url('inventory/bank-book?tab=pending_transfer' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'pending_transfer') ? 'active' : ''; ?>">Pending Transfer</a>
+    <?php } ?>
+    <?php if (is_access('813')) { ?>
     <a href="<?php echo base_url('inventory/bank-book?tab=transferred' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'transferred') ? 'active' : ''; ?>">Transferred</a>
+    <?php } ?>
   </div>
 
-  <?php
-    $is_transfer_tab = in_array($tab, ['transferred', 'pending_transfer'], true);
-    $tab_title = ($tab == 'pending_transfer') ? 'Pending Transfer' : (($tab == 'transferred') ? 'Total Transferred' : 'Bank Ledger');
-  ?>
   <div class="col-12">
     <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
@@ -160,28 +185,43 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <?php if ($tab == 'bank'): ?>
+        <?php if ($tab == 'bank' && is_access('823')): ?>
         <a href="javascript:void(0);" onclick="showAjaxModal('<?php echo base_url('modal/popup_inventory/modal_transfer_bank'); ?>', 'Transfer Bank');" class="dt-button add-new desktop-tab add-btn btn btn-success" style="margin-right: 8px;"><span><i class="feather icon-arrow-right-circle"></i> Transfer</span></a>
         <?php endif; ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th style="width: 50px;" class="text-center">#</th>
-              <th>Date</th>
-              <th><?= $is_transfer_tab ? 'Company' : 'Particular'; ?></th>
-              <?php if (!$is_transfer_tab): ?>
-              <th>Source</th>
-              <th>In/Out</th>
-              <?php endif; ?>
-              <th>Type</th>
-              <th>Bank Account</th>
-              <th>Amount</th>
-              <th>Remark / Narration</th>
-              <?php if ($is_transfer_tab): ?>
-              <th>Status</th>
-              <?php endif; ?>
-              <th>Added By</th>
-              <th style="width: 80px;" class="text-center">Action</th>
+              <?php if ($tab == 'bank') { ?>
+                <?php if (is_access('814')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('815')) { ?><th>Particular</th><?php } ?>
+                <?php if (is_access('816')) { ?><th>Source</th><?php } ?>
+                <?php if (is_access('817')) { ?><th>In/Out</th><?php } ?>
+                <?php if (is_access('818')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('819')) { ?><th>Bank Account</th><?php } ?>
+                <?php if (is_access('820')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('821')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('822')) { ?><th>Added By</th><?php } ?>
+              <?php } elseif ($tab == 'pending_transfer') { ?>
+                <?php if (is_access('825')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('826')) { ?><th>Company</th><?php } ?>
+                <?php if (is_access('827')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('828')) { ?><th>Bank Account</th><?php } ?>
+                <?php if (is_access('829')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('830')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('831')) { ?><th>Status</th><?php } ?>
+                <?php if (is_access('832')) { ?><th>Added By</th><?php } ?>
+              <?php } else { ?>
+                <?php if (is_access('835')) { ?><th>Date</th><?php } ?>
+                <?php if (is_access('836')) { ?><th>Company</th><?php } ?>
+                <?php if (is_access('837')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('838')) { ?><th>Bank Account</th><?php } ?>
+                <?php if (is_access('839')) { ?><th>Amount</th><?php } ?>
+                <?php if (is_access('840')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('841')) { ?><th>Status</th><?php } ?>
+                <?php if (is_access('842')) { ?><th>Added By</th><?php } ?>
+              <?php } ?>
+              <?php if ($show_actions) { ?><th style="width: 80px;" class="text-center">Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -219,32 +259,49 @@ $(document).ready(function($) {
     },
     "columns": [
       { "data": "sr_no", "className": "text-center" },
-      { "data": "date" },
-      { "data": "supplier_name" },
-      <?php if (!$is_transfer_tab): ?>
-      { "data": "source" },
-      { "data": "direction" },
-      <?php endif; ?>
-      { "data": "payment_type" },
-      { "data": "bank_account" },
-      { "data": "amount" },
-      { "data": "remark" },
-      <?php if ($is_transfer_tab): ?>
-      { "data": "status" },
-      <?php endif; ?>
-      { "data": "added_by_name" },
-      { "data": "actions", "className": "text-center" },
+      <?php if ($tab == 'bank') { ?>
+        <?php if (is_access('814')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('815')) { ?>{ "data": "supplier_name" },<?php } ?>
+        <?php if (is_access('816')) { ?>{ "data": "source" },<?php } ?>
+        <?php if (is_access('817')) { ?>{ "data": "direction" },<?php } ?>
+        <?php if (is_access('818')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('819')) { ?>{ "data": "bank_account" },<?php } ?>
+        <?php if (is_access('820')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('821')) { ?>{ "data": "remark" },<?php } ?>
+        <?php if (is_access('822')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } elseif ($tab == 'pending_transfer') { ?>
+        <?php if (is_access('825')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('826')) { ?>{ "data": "supplier_name" },<?php } ?>
+        <?php if (is_access('827')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('828')) { ?>{ "data": "bank_account" },<?php } ?>
+        <?php if (is_access('829')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('830')) { ?>{ "data": "remark" },<?php } ?>
+        <?php if (is_access('831')) { ?>{ "data": "status" },<?php } ?>
+        <?php if (is_access('832')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } else { ?>
+        <?php if (is_access('835')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('836')) { ?>{ "data": "supplier_name" },<?php } ?>
+        <?php if (is_access('837')) { ?>{ "data": "payment_type" },<?php } ?>
+        <?php if (is_access('838')) { ?>{ "data": "bank_account" },<?php } ?>
+        <?php if (is_access('839')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('840')) { ?>{ "data": "remark" },<?php } ?>
+        <?php if (is_access('841')) { ?>{ "data": "status" },<?php } ?>
+        <?php if (is_access('842')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php } ?>
+      <?php if ($show_actions) { ?>{ "data": "actions", "className": "text-center" },<?php } ?>
     ],
-    "buttons": [{
+    "buttons": [
+      <?php if ($show_export) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success"><i class="fa fa-file-excel-o"></i> Excel</button>',
-        "exportOptions": { "columns": <?php echo $is_transfer_tab ? '[0,1,2,3,4,5,6,7,8]' : '[0,1,2,3,4,5,6,7,8,9]'; ?> }
-      }, {
+      },
+      {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": <?php echo $is_transfer_tab ? '[0,1,2,3,4,5,6,7,8]' : '[0,1,2,3,4,5,6,7,8,9]'; ?> }
       }
+      <?php } ?>
     ],
     "infoCallback": function(settings, start, end, max, total, pre) {
       $('#total_count').html('(' + total + ')');

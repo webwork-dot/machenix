@@ -27,7 +27,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -47,9 +47,8 @@
   }
 </style>
 
-
 <div class="row" id="table-bordered">
-  <?php include('filter/ajax_commom_filter.php'); ?>
+  <?php include('filter/po_expense_filter.php'); ?>
   <?php include('nav/nav_import_po.php'); ?>
 
   <div class="col-12">
@@ -63,20 +62,22 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/po-expense/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_expense');?></span></a>     
+        <?php if (is_access('161')) { ?>
+        <a href="<?php echo site_url('inventory/po-expense/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_expense');?></span></a>
+        <?php } ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Batch No.</th>
-              <th>Vendor Name</th>
-              <th>Type</th>
-              <th>Expense Type</th>
-              <th>Net Amount Total</th>
-              <th>GST Amount Total</th>
-              <th>Final Amount Total</th>
-              <th>Expense Date</th>
-              <th>Action</th>
+              <?php if (is_access('153')) { ?><th>Batch No.</th><?php } ?>
+              <?php if (is_access('154')) { ?><th>Vendor Name</th><?php } ?>
+              <?php if (is_access('155')) { ?><th>Type</th><?php } ?>
+              <?php if (is_access('156')) { ?><th>Expense Type</th><?php } ?>
+              <?php if (is_access('157')) { ?><th>Net Amount Total</th><?php } ?>
+              <?php if (is_access('158')) { ?><th>GST Amount Total</th><?php } ?>
+              <?php if (is_access('159')) { ?><th>Final Amount Total</th><?php } ?>
+              <?php if (is_access('160')) { ?><th>Expense Date</th><?php } ?>
+              <?php if (is_access('162') || is_access('163')) { ?><th>Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -124,28 +125,29 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "batch_no" },
-      { "data": "company_name" },
-      { "data": "type" },
-      { "data": "expense_type" },
-      { "data": "sub_total" },
-      { "data": "gst_total" },
-      { "data": "amount" },
-      { "data": "date" },
-      { "data": "action" }
+      <?php if (is_access('153')) { ?>{ "data": "batch_no" },<?php } ?>
+      <?php if (is_access('154')) { ?>{ "data": "company_name" },<?php } ?>
+      <?php if (is_access('155')) { ?>{ "data": "type" },<?php } ?>
+      <?php if (is_access('156')) { ?>{ "data": "expense_type" },<?php } ?>
+      <?php if (is_access('157')) { ?>{ "data": "sub_total" },<?php } ?>
+      <?php if (is_access('158')) { ?>{ "data": "gst_total" },<?php } ?>
+      <?php if (is_access('159')) { ?>{ "data": "amount" },<?php } ?>
+      <?php if (is_access('160')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('162') || is_access('163')) { ?>{ "data": "action" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('164')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6, 7, 8] }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -157,13 +159,11 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
-    }, ]
-
+    }]
   }).on('draw.dt', function() {
     $(".loader").fadeOut("slow");
   });
 });
-
 </script>

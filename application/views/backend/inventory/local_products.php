@@ -20,27 +20,29 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
+            <?php if (is_access('72')) { ?>
             <a href="<?php echo site_url('inventory/local-products/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" >
                 <span><i class="feather icon-plus"></i> <?= get_phrase('add_products');?></span>
             </a>
+            <?php } ?>
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Image</th>
-					<th>Product Name</th>
-					<th>Alias Name</th>
-					<th>Category</th>
-					<th>Model No</th>
-					<th>HSN Code</th>
-					<th>Tax Rate</th>
-					<th>Commission</th>
-					<th>Min Billing Price</th>
-					<th>Min Selling Price</th>
-					<th>Stock Intimation</th>
-					<th>Off Sale Amt</th>
-					<th>Status</th>
-					<th>Actions</th>
+					<?php if (is_access('59')) { ?><th>Image</th><?php } ?>
+					<?php if (is_access('60')) { ?><th>Product Name</th><?php } ?>
+					<?php if (is_access('61')) { ?><th>Alias Name</th><?php } ?>
+					<?php if (is_access('62')) { ?><th>Category</th><?php } ?>
+					<?php if (is_access('63')) { ?><th>Model No</th><?php } ?>
+					<?php if (is_access('64')) { ?><th>HSN Code</th><?php } ?>
+					<?php if (is_access('65')) { ?><th>Tax Rate</th><?php } ?>
+					<?php if (is_access('66')) { ?><th>Commission</th><?php } ?>
+					<?php if (is_access('67')) { ?><th>Min Billing Price</th><?php } ?>
+					<?php if (is_access('68')) { ?><th>Min Selling Price</th><?php } ?>
+					<?php if (is_access('69')) { ?><th>Stock Intimation</th><?php } ?>
+					<?php if (is_access('70')) { ?><th>Off Sale Amt</th><?php } ?>
+					<?php if (is_access('71')) { ?><th>Status</th><?php } ?>
+					<?php if (is_access('73') || is_access('74') || is_access('75')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -90,39 +92,34 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "image" },
-                { "data": "name" },
-                { "data": "alias" },
-                { "data": "category_name" },
-                { "data": "item_code" },
-                { "data": "hsn_code" },
-                { "data": "gst" },
-                { "data": "commission_id" },
-                { "data": "product_mrp" },
-                { "data": "costing_price" },
-                { "data": "intimation" },
-                { "data": "off_sale_price" },
-                { "data": "status" },
-                { "data": "action" },
+                <?php if (is_access('59')) { ?>{ "data": "image" },<?php } ?>
+                <?php if (is_access('60')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('61')) { ?>{ "data": "alias" },<?php } ?>
+                <?php if (is_access('62')) { ?>{ "data": "category_name" },<?php } ?>
+                <?php if (is_access('63')) { ?>{ "data": "item_code" },<?php } ?>
+                <?php if (is_access('64')) { ?>{ "data": "hsn_code" },<?php } ?>
+                <?php if (is_access('65')) { ?>{ "data": "gst" },<?php } ?>
+                <?php if (is_access('66')) { ?>{ "data": "commission_id" },<?php } ?>
+                <?php if (is_access('67')) { ?>{ "data": "product_mrp" },<?php } ?>
+                <?php if (is_access('68')) { ?>{ "data": "costing_price" },<?php } ?>
+                <?php if (is_access('69')) { ?>{ "data": "intimation" },<?php } ?>
+                <?php if (is_access('70')) { ?>{ "data": "off_sale_price" },<?php } ?>
+                <?php if (is_access('71')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('73') || is_access('74') || is_access('75')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('76')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0, 2, 4],
-                       
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0, 2, 4]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

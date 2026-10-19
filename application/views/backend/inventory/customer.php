@@ -20,22 +20,23 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-		       
-		   <a href="<?php echo site_url('inventory/customer/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_customer');?></span></a>          
+		   <?php if (is_access('509')) { ?>
+		   <a href="<?php echo site_url('inventory/customer/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_customer');?></span></a>
+           <?php } ?>
      
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Company Name</th>
-					<th>Distributor</th>
-					<th>GST Name</th>
-					<th>GST No</th>
-					<th>City</th>
-					<th>State</th>
-					<th>Salesperson</th>
-					<th>Added By</th>
-					<th>Actions</th>
+					<?php if (is_access('501')) { ?><th>Company Name</th><?php } ?>
+					<?php if (is_access('502')) { ?><th>Distributor</th><?php } ?>
+					<?php if (is_access('503')) { ?><th>GST Name</th><?php } ?>
+					<?php if (is_access('504')) { ?><th>GST No</th><?php } ?>
+					<?php if (is_access('505')) { ?><th>City</th><?php } ?>
+					<?php if (is_access('506')) { ?><th>State</th><?php } ?>
+					<?php if (is_access('507')) { ?><th>Salesperson</th><?php } ?>
+					<?php if (is_access('508')) { ?><th>Added By</th><?php } ?>
+					<?php if (is_access('510') || is_access('511') || is_access('512') || is_access('513') || is_access('514') || is_access('515') || is_access('516')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -82,33 +83,29 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "name" },
-                { "data": "distributor" },
-                { "data": "gst_name" },
-                { "data": "gst_no" },
-                { "data": "city_name" },
-                { "data": "state_name" },
-                { "data": "salesperson" },
-                { "data": "added_by_name" },
-                { "data": "action" },
+                <?php if (is_access('501')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('502')) { ?>{ "data": "distributor" },<?php } ?>
+                <?php if (is_access('503')) { ?>{ "data": "gst_name" },<?php } ?>
+                <?php if (is_access('504')) { ?>{ "data": "gst_no" },<?php } ?>
+                <?php if (is_access('505')) { ?>{ "data": "city_name" },<?php } ?>
+                <?php if (is_access('506')) { ?>{ "data": "state_name" },<?php } ?>
+                <?php if (is_access('507')) { ?>{ "data": "salesperson" },<?php } ?>
+                <?php if (is_access('508')) { ?>{ "data": "added_by_name" },<?php } ?>
+                <?php if (is_access('510') || is_access('511') || is_access('512') || is_access('513') || is_access('514') || is_access('515') || is_access('516')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('517')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7,8]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -119,7 +116,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 

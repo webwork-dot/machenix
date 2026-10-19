@@ -26,17 +26,17 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Staff</th>
-                <th>Distributor</th>
-                <th>Company Name</th>
-                <th>Customer Name</th>
-                <th>Mobile/Whatsapp No</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Remark</th>
-                <th>Follow Up Date</th>
-                <th>Added Date</th>
-                <th>Added By</th>
+                <?php if (is_access('572')) { ?><th>Staff</th><?php } ?>
+                <?php if (is_access('573')) { ?><th>Distributor</th><?php } ?>
+                <?php if (is_access('574')) { ?><th>Company Name</th><?php } ?>
+                <?php if (is_access('575')) { ?><th>Customer Name</th><?php } ?>
+                <?php if (is_access('576')) { ?><th>Mobile/Whatsapp No</th><?php } ?>
+                <?php if (is_access('577')) { ?><th>Type</th><?php } ?>
+                <?php if (is_access('578')) { ?><th>Status</th><?php } ?>
+                <?php if (is_access('579')) { ?><th>Remark</th><?php } ?>
+                <?php if (is_access('580')) { ?><th>Follow Up Date</th><?php } ?>
+                <?php if (is_access('581')) { ?><th>Added Date</th><?php } ?>
+                <?php if (is_access('582')) { ?><th>Added By</th><?php } ?>
               </tr>
             </thead>
           </table>
@@ -81,35 +81,31 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "staff" },
-                { "data": "distributor" },
-                { "data": "name" },
-                { "data": "owner_name" },
-                { "data": "mobile_whatsapp" },
-                { "data": "type" },
-                { "data": "status" },
-                { "data": "remark" },
-                { "data": "follow_up_date" },
-                { "data": "created_at" },
-                { "data": "added_by_name" }
+                <?php if (is_access('572')) { ?>{ "data": "staff" },<?php } ?>
+                <?php if (is_access('573')) { ?>{ "data": "distributor" },<?php } ?>
+                <?php if (is_access('574')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('575')) { ?>{ "data": "owner_name" },<?php } ?>
+                <?php if (is_access('576')) { ?>{ "data": "mobile_whatsapp" },<?php } ?>
+                <?php if (is_access('577')) { ?>{ "data": "type" },<?php } ?>
+                <?php if (is_access('578')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('579')) { ?>{ "data": "remark" },<?php } ?>
+                <?php if (is_access('580')) { ?>{ "data": "follow_up_date" },<?php } ?>
+                <?php if (is_access('581')) { ?>{ "data": "created_at" },<?php } ?>
+                <?php if (is_access('582')) { ?>{ "data": "added_by_name" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('583')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-                    "exportOptions": {
-                       "columns": ":visible"
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": ":visible"
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

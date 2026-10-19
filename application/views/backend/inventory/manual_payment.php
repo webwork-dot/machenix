@@ -190,20 +190,22 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
+        <?php if (is_access('768')) { ?>
         <a href="<?php echo site_url('inventory/manual-payment/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0">
           <span><i class="feather icon-plus"></i> Add Manual Payment</span>
-        </a>     
+        </a>
+        <?php } ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Mode</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Added By</th>
-              <th style="width: 80px;" class="text-center">Action</th>
+              <?php if (is_access('762')) { ?><th>Date</th><?php } ?>
+              <?php if (is_access('763')) { ?><th>Amount</th><?php } ?>
+              <?php if (is_access('764')) { ?><th>Mode</th><?php } ?>
+              <?php if (is_access('765')) { ?><th>Type</th><?php } ?>
+              <?php if (is_access('766')) { ?><th>Method</th><?php } ?>
+              <?php if (is_access('767')) { ?><th>Added By</th><?php } ?>
+              <?php if (is_access('769') || is_access('770') || is_access('771')) { ?><th style="width: 80px;" class="text-center">Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -277,26 +279,27 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "date" },
-      { "data": "amount" },
-      { "data": "payment_mode" },
-      { "data": "payment_type" },
-      { "data": "payment_method" },
-      { "data": "added_by_name" },
-      { "data": "actions", "className": "text-center" },
+      <?php if (is_access('762')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('763')) { ?>{ "data": "amount" },<?php } ?>
+      <?php if (is_access('764')) { ?>{ "data": "payment_mode" },<?php } ?>
+      <?php if (is_access('765')) { ?>{ "data": "payment_type" },<?php } ?>
+      <?php if (is_access('766')) { ?>{ "data": "payment_method" },<?php } ?>
+      <?php if (is_access('767')) { ?>{ "data": "added_by_name" },<?php } ?>
+      <?php if (is_access('769') || is_access('770') || is_access('771')) { ?>{ "data": "actions", "className": "text-center" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('772')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5, 6] }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

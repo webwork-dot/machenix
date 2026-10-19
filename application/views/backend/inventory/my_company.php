@@ -21,19 +21,19 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-		       
-		   <a href="<?php echo site_url('inventory/my-company/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_vendor');?></span></a>          
-     
+		   <?php if (is_access('668')) { ?>
+		   <a href="<?php echo site_url('inventory/my-company/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_vendor');?></span></a>
+           <?php } ?>
 		
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Vendor Name</th>
-					<th>Contact Person Name</th>
-					<th>Contact Person Number</th>
-					<th>Email</th>
-					<th>Actions</th>
+					<?php if (is_access('664')) { ?><th>Vendor Name</th><?php } ?>
+					<?php if (is_access('665')) { ?><th>Contact Person Name</th><?php } ?>
+					<?php if (is_access('666')) { ?><th>Contact Person Number</th><?php } ?>
+					<?php if (is_access('667')) { ?><th>Email</th><?php } ?>
+					<?php if (is_access('669') || is_access('670') || is_access('671')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -78,29 +78,25 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "name" },
-                { "data": "contact_name" },
-                { "data": "contact_no" },
-                { "data": "email" },
-                { "data": "action" },
+                <?php if (is_access('664')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('665')) { ?>{ "data": "contact_name" },<?php } ?>
+                <?php if (is_access('666')) { ?>{ "data": "contact_no" },<?php } ?>
+                <?php if (is_access('667')) { ?>{ "data": "email" },<?php } ?>
+                <?php if (is_access('669') || is_access('670') || is_access('671')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('672')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -121,4 +117,3 @@
         });
     });
 </script>
-

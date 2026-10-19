@@ -24,7 +24,7 @@
 		display: flex;
 		align-items: center;
 	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+	.new-form .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
 		color: #1e652e;
 		border: 1px solid #1e652e !important;
 		background: white;
@@ -44,7 +44,7 @@
 </style>
 
 <div class="row" id="table-bordered">
-    <?php include('filter/ajax_commom_filter.php'); ?>	
+    <?php include('filter/purchase_order_filter.php'); ?>	
     <?php include('nav/nav_import_po.php'); ?>
     
    <div class="col-12">
@@ -58,18 +58,20 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-		  <a href="<?php echo site_url('inventory/purchase-order/add-import'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_purchase_order');?></span></a>          
+		  <?php if (is_access('99')) { ?>
+		  <a href="<?php echo site_url('inventory/purchase-order/add-import'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_purchase_order');?></span></a>
+		  <?php } ?>
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date / Batch No.</th>
-					<th>Supplier Name</th>
-					<th>No of Spare Parts</th>
-					<th>No of Ready Goods</th>
-					<th>Loading Date</th>
-					<th>Status</th>
-					<th>Actions</th>
+					<?php if (is_access('93')) { ?><th>Date / Batch No.</th><?php } ?>
+					<?php if (is_access('94')) { ?><th>Supplier Name</th><?php } ?>
+					<?php if (is_access('95')) { ?><th>No of Spare Parts</th><?php } ?>
+					<?php if (is_access('96')) { ?><th>No of Ready Goods</th><?php } ?>
+					<?php if (is_access('97')) { ?><th>Loading Date</th><?php } ?>
+					<?php if (is_access('98')) { ?><th>Status</th><?php } ?>
+					<?php if (is_access('100') || is_access('101') || is_access('102') || is_access('103') || is_access('104')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -92,7 +94,7 @@
             "language" : {
                 sLengthMenu: "_MENU_",
                 'processing': $('.loader').show()
-            },	
+            },
             "drawCallback": function (settings, json) {
                 $('[data-toggle="tooltip"]').tooltip('update');
             },
@@ -118,31 +120,27 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "suppliers" },
-                { "data": "spare_parts_count" },
-                { "data": "ready_goods_count" },
-                { "data": "delivery_date" },
-                { "data": "status" },
-                { "data": "action" },
+                <?php if (is_access('93')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('94')) { ?>{ "data": "suppliers" },<?php } ?>
+                <?php if (is_access('95')) { ?>{ "data": "spare_parts_count" },<?php } ?>
+                <?php if (is_access('96')) { ?>{ "data": "ready_goods_count" },<?php } ?>
+                <?php if (is_access('97')) { ?>{ "data": "delivery_date" },<?php } ?>
+                <?php if (is_access('98')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('100') || is_access('101') || is_access('102') || is_access('103') || is_access('104')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('105')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -153,7 +151,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // your case first column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 
@@ -164,7 +162,6 @@
     });
 
     function generate_excel(id) {
-        // Direct navigation to trigger file download
         window.location.href = "<?php echo base_url(); ?>inventory/generate_purchase_order_excel/" + id;
     }
 

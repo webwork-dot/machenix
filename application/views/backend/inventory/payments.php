@@ -27,7 +27,7 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
@@ -62,20 +62,22 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-        <a href="<?php echo site_url('inventory/payments/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_payments');?></span></a>     
+        <?php if (is_access('730')) { ?>
+        <a href="<?php echo site_url('inventory/payments/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" ><span><i class="feather icon-plus"></i> <?= get_phrase('add_payments');?></span></a>
+        <?php } ?>
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Batch No.</th>
-              <th>Supplier Name</th>
-              <th>Invoice No</th>
-              <th>Payment Type</th>
-              <th>Amount (Dollar)</th>
-              <th>Amount (INR)</th>
-              <th>Amount (RMB)</th>
-              <th>Date</th>
-              <th>Action</th>
+              <?php if (is_access('722')) { ?><th>Batch No.</th><?php } ?>
+              <?php if (is_access('723')) { ?><th>Supplier Name</th><?php } ?>
+              <?php if (is_access('724')) { ?><th>Invoice No</th><?php } ?>
+              <?php if (is_access('725')) { ?><th>Payment Type</th><?php } ?>
+              <?php if (is_access('726')) { ?><th>Amount (Dollar)</th><?php } ?>
+              <?php if (is_access('727')) { ?><th>Amount (INR)</th><?php } ?>
+              <?php if (is_access('728')) { ?><th>Amount (RMB)</th><?php } ?>
+              <?php if (is_access('729')) { ?><th>Date</th><?php } ?>
+              <?php if (is_access('731') || is_access('732')) { ?><th>Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -120,28 +122,29 @@ $(document).ready(function($) {
 
     "columns": [
       { "data": "sr_no" },
-      { "data": "batch_no" },
-      { "data": "supplier_name" },
-      { "data": "invoice_no" },
-      { "data": "type" },
-      { "data": "amount_dollar" },
-      { "data": "amount_inr" },
-      { "data": "amount_rmb" },
-      { "data": "date" },
-      { "data": "actions" },
+      <?php if (is_access('722')) { ?>{ "data": "batch_no" },<?php } ?>
+      <?php if (is_access('723')) { ?>{ "data": "supplier_name" },<?php } ?>
+      <?php if (is_access('724')) { ?>{ "data": "invoice_no" },<?php } ?>
+      <?php if (is_access('725')) { ?>{ "data": "type" },<?php } ?>
+      <?php if (is_access('726')) { ?>{ "data": "amount_dollar" },<?php } ?>
+      <?php if (is_access('727')) { ?>{ "data": "amount_inr" },<?php } ?>
+      <?php if (is_access('728')) { ?>{ "data": "amount_rmb" },<?php } ?>
+      <?php if (is_access('729')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('731') || is_access('732')) { ?>{ "data": "actions" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('733')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -151,7 +154,7 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
     }, ]
 

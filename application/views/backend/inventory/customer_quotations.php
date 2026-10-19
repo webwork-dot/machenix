@@ -25,10 +25,7 @@
 	}
 </style>
 
-<?php
-    include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
-?>
+<?php include('filter/date_range.php'); ?>
 	
 <div class="row" id="table-bordered">
    <div class="col-12">
@@ -41,25 +38,25 @@
              </div>
          </div>
         <div class="card-datatable d-report mb-2">
-            <a href="<?php echo site_url('inventory/customer-quotations/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Quotation</span></a>   
+            <?php if (is_access('359')) { ?>
+            <a href="<?php echo site_url('inventory/customer-quotations/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Quotation</span></a>
+            <?php } ?>
      
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date</th>
-					<th>Quotation No</th>
-					<th>Customer Name</th>
-					<th>Total Products</th>
-					<th>Total Qty</th>
-					<th>Basic Value</th>
-					<th>Total Black Amt</th>
-					<th>Grand Total</th>
-					<th>Remark</th>
-                    <?php if ($staff_access !== 7) { ?>
-                        <th>Added By</th>
-                    <?php } ?>
-                    <th>Actions</th>
+					<?php if (is_access('349')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('350')) { ?><th>Quotation No</th><?php } ?>
+					<?php if (is_access('351')) { ?><th>Customer Name</th><?php } ?>
+					<?php if (is_access('352')) { ?><th>Total Products</th><?php } ?>
+					<?php if (is_access('353')) { ?><th>Total Qty</th><?php } ?>
+					<?php if (is_access('354')) { ?><th>Basic Value</th><?php } ?>
+					<?php if (is_access('355')) { ?><th>Total Black Amt</th><?php } ?>
+					<?php if (is_access('356')) { ?><th>Grand Total</th><?php } ?>
+					<?php if (is_access('357')) { ?><th>Remark</th><?php } ?>
+					<?php if (is_access('358')) { ?><th>Added By</th><?php } ?>
+					<?php if (is_access('360') || is_access('361') || is_access('362')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -69,13 +66,6 @@
 </div>
 
 <script type="text/javascript">
-<?php
-$num_cols = 10;
-if ($staff_access !== 7) {
-    $num_cols += 1;
-}
-$export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
-?>
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -112,37 +102,31 @@ $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "order_no" },
-                { "data": "customer_name" },
-                { "data": "total_pro" },
-                { "data": "qty" },
-                { "data": "basic_value" },
-                { "data": "total_black_amt" },
-                { "data": "grand_total" },
-                { "data": "remark" },
-                <?php if ($staff_access !== 7) { ?>
-                { "data": "added_by" },
-                <?php } ?>
-                { "data": "action" },
+                <?php if (is_access('349')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('350')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('351')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('352')) { ?>{ "data": "total_pro" },<?php } ?>
+                <?php if (is_access('353')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('354')) { ?>{ "data": "basic_value" },<?php } ?>
+                <?php if (is_access('355')) { ?>{ "data": "total_black_amt" },<?php } ?>
+                <?php if (is_access('356')) { ?>{ "data": "grand_total" },<?php } ?>
+                <?php if (is_access('357')) { ?>{ "data": "remark" },<?php } ?>
+                <?php if (is_access('358')) { ?>{ "data": "added_by" },<?php } ?>
+                <?php if (is_access('360') || is_access('361') || is_access('362')) { ?>{ "data": "action" },<?php } ?>
             ],
             
             "buttons": [
+                <?php if (is_access('363')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-                    "exportOptions": {
-                       "columns": <?php echo $export_cols; ?>
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": <?php echo $export_cols; ?>
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

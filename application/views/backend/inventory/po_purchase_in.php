@@ -27,13 +27,12 @@
     align-items: center;
   }
 
-  .new-fix .nav-pills .nav-link.active,
+  .new-form .nav-pills .nav-link.active,
   .nav-pills .show>.nav-link {
     color: #1e652e;
     border: 1px solid #1e652e !important;
     background: white;
     box-shadow: initial;
-    font-weight: 600;
   }
 
   .small-img {
@@ -47,9 +46,8 @@
   }
 </style>
 
-
 <div class="row" id="table-bordered">
-  <?php include('filter/ajax_commom_filter.php'); ?>
+  <?php include('filter/po_purchase_in_filter.php'); ?>
   <?php include('nav/nav_import_po.php'); ?>
 
   <div class="col-12">
@@ -63,24 +61,23 @@
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
-
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Date / Batch No.</th>
-              <th>BOE No.</th>
-              <th>BOE Date.</th>
-              <th>Supplier Name</th>
-              <th>No of Spare Parts</th>
-              <th>No of Ready Goods</th>
-              <th>Loading Qty</th>
-              <th>Official Qty</th>
-              <th>Total RMB</th>
-              <th>Total USD</th>
-              <th>Loading Date</th>
-              <th>Status</th>
-              <th>Action</th>
+              <?php if (is_access('136')) { ?><th>Date / Batch No.</th><?php } ?>
+              <?php if (is_access('137')) { ?><th>BOE No.</th><?php } ?>
+              <?php if (is_access('138')) { ?><th>BOE Date.</th><?php } ?>
+              <?php if (is_access('139')) { ?><th>Supplier Name</th><?php } ?>
+              <?php if (is_access('140')) { ?><th>No of Spare Parts</th><?php } ?>
+              <?php if (is_access('141')) { ?><th>No of Ready Goods</th><?php } ?>
+              <?php if (is_access('142')) { ?><th>Loading Qty</th><?php } ?>
+              <?php if (is_access('143')) { ?><th>Official Qty</th><?php } ?>
+              <?php if (is_access('144')) { ?><th>Total RMB</th><?php } ?>
+              <?php if (is_access('145')) { ?><th>Total USD</th><?php } ?>
+              <?php if (is_access('146')) { ?><th>Loading Date</th><?php } ?>
+              <?php if (is_access('147')) { ?><th>Status</th><?php } ?>
+              <?php if (is_access('148') || is_access('149') || is_access('150') || is_access('151')) { ?><th>Action</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -127,64 +124,35 @@ $(document).ready(function($) {
       }
     },
 
-    "columns": [{
-        "data": "sr_no"
-      },
-      {
-        "data": "date"
-      },
-      {
-        "data": "boe_no"
-      },
-      {
-        "data": "boe_date"
-      },
-      {
-        "data": "lo_suppliers"
-      },
-      {
-        "data": "ll_ready_goods_count"
-      },
-      {
-        "data": "ll_spare_parts_count"
-      },
-      {
-        "data": "loading_qty"
-      },
-      {
-        "data": "official_qty"
-      },
-      {
-        "data": "total_rmb"
-      },
-      {
-        "data": "total_usd"
-      },
-      {
-        "data": "delivery_date"
-      },
-      {
-        "data": "status"
-      },
-      { "data": "purchase_in_action" },
-
+    "columns": [
+      { "data": "sr_no" },
+      <?php if (is_access('136')) { ?>{ "data": "date" },<?php } ?>
+      <?php if (is_access('137')) { ?>{ "data": "boe_no" },<?php } ?>
+      <?php if (is_access('138')) { ?>{ "data": "boe_date" },<?php } ?>
+      <?php if (is_access('139')) { ?>{ "data": "lo_suppliers" },<?php } ?>
+      <?php if (is_access('140')) { ?>{ "data": "ll_ready_goods_count" },<?php } ?>
+      <?php if (is_access('141')) { ?>{ "data": "ll_spare_parts_count" },<?php } ?>
+      <?php if (is_access('142')) { ?>{ "data": "loading_qty" },<?php } ?>
+      <?php if (is_access('143')) { ?>{ "data": "official_qty" },<?php } ?>
+      <?php if (is_access('144')) { ?>{ "data": "total_rmb" },<?php } ?>
+      <?php if (is_access('145')) { ?>{ "data": "total_usd" },<?php } ?>
+      <?php if (is_access('146')) { ?>{ "data": "delivery_date" },<?php } ?>
+      <?php if (is_access('147')) { ?>{ "data": "status" },<?php } ?>
+      <?php if (is_access('148') || is_access('149') || is_access('150') || is_access('151')) { ?>{ "data": "purchase_in_action" },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('152')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": {
-          "columns": [0, 1, 2, 3, 4, 5, 6]
-        }
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
@@ -194,17 +162,15 @@ $(document).ready(function($) {
     },
 
     'columnDefs': [{
-      "targets": 0, // your case first column
+      "targets": 0,
       "className": "text-center",
-    }, ]
-
+    }]
   }).on('draw.dt', function() {
     $(".loader").fadeOut("slow");
   });
 });
 
 function generate_excel(id) {
-  // Direct navigation to trigger file download
   window.location.href = "<?php echo base_url(); ?>inventory/generate_priotity_purchase_order_excel/" + id;
 }
 

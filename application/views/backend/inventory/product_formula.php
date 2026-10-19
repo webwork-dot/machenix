@@ -19,18 +19,20 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
+            <?php if (is_access('82')) { ?>
             <a href="<?php echo site_url('inventory/product-formula/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" >
                 <span><i class="feather icon-plus"></i> Add Product Formula</span>
             </a>
+            <?php } ?>
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Product Name</th>
-					<th>SKU Code</th>
-					<th>Category</th>
-					<th>Formula</th>
-					<th>Actions</th>
+					<?php if (is_access('78')) { ?><th>Product Name</th><?php } ?>
+					<?php if (is_access('79')) { ?><th>SKU Code</th><?php } ?>
+					<?php if (is_access('80')) { ?><th>Category</th><?php } ?>
+					<?php if (is_access('81')) { ?><th>Formula</th><?php } ?>
+					<?php if (is_access('83') || is_access('84')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -78,29 +80,25 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "name" },
-                { "data": "item_code" },
-                { "data": "category_name" },
-                { "data": "formula" },
-                { "data": "action" },
+                <?php if (is_access('78')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('79')) { ?>{ "data": "item_code" },<?php } ?>
+                <?php if (is_access('80')) { ?>{ "data": "category_name" },<?php } ?>
+                <?php if (is_access('81')) { ?>{ "data": "formula" },<?php } ?>
+                <?php if (is_access('83') || is_access('84')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('85')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-                    "exportOptions": {
-                       "columns": [0, 1, 2, 3, 4],
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0, 1, 2, 3, 4]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

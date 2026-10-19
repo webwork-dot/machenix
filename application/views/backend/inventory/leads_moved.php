@@ -27,18 +27,18 @@
             <thead>
               <tr>
                   <th>#</th>
-                  <th>Distributor</th>
-                  <th>Company Name</th>
-                  <th>City</th>
-                  <th>State</th>
-                  <th>Owner Name</th>
-                  <th>Mobile/Whatsapp No</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Staff</th>
-                  <th>Added By</th>
-                  <th>Assigned Date</th>
-                  <th>Actions</th>
+                  <?php if (is_access('649')) { ?><th>Distributor</th><?php } ?>
+                  <?php if (is_access('650')) { ?><th>Company Name</th><?php } ?>
+                  <?php if (is_access('651')) { ?><th>City</th><?php } ?>
+                  <?php if (is_access('652')) { ?><th>State</th><?php } ?>
+                  <?php if (is_access('653')) { ?><th>Owner Name</th><?php } ?>
+                  <?php if (is_access('654')) { ?><th>Mobile/Whatsapp No</th><?php } ?>
+                  <?php if (is_access('655')) { ?><th>Email</th><?php } ?>
+                  <?php if (is_access('656')) { ?><th>Status</th><?php } ?>
+                  <?php if (is_access('657')) { ?><th>Staff</th><?php } ?>
+                  <?php if (is_access('658')) { ?><th>Added By</th><?php } ?>
+                  <?php if (is_access('659')) { ?><th>Assigned Date</th><?php } ?>
+                  <?php if (is_access('660') || is_access('661')) { ?><th>Actions</th><?php } ?>
               </tr>
             </thead>
           </table>
@@ -84,36 +84,32 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "distributor" },
-                { "data": "name" },
-                { "data": "city_name" },
-                { "data": "state_name" },
-                { "data": "owner_name" },
-                { "data": "mobile_whatsapp" },
-                { "data": "owner_email" },
-                { "data": "status" },
-                { "data": "staff" },
-                { "data": "added_by_name" },
-                { "data": "assigned_date" },
-                { "data": "action" },
+                <?php if (is_access('649')) { ?>{ "data": "distributor" },<?php } ?>
+                <?php if (is_access('650')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('651')) { ?>{ "data": "city_name" },<?php } ?>
+                <?php if (is_access('652')) { ?>{ "data": "state_name" },<?php } ?>
+                <?php if (is_access('653')) { ?>{ "data": "owner_name" },<?php } ?>
+                <?php if (is_access('654')) { ?>{ "data": "mobile_whatsapp" },<?php } ?>
+                <?php if (is_access('655')) { ?>{ "data": "owner_email" },<?php } ?>
+                <?php if (is_access('656')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('657')) { ?>{ "data": "staff" },<?php } ?>
+                <?php if (is_access('658')) { ?>{ "data": "added_by_name" },<?php } ?>
+                <?php if (is_access('659')) { ?>{ "data": "assigned_date" },<?php } ?>
+                <?php if (is_access('660') || is_access('661')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('662')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": ":visible:not(:last-child)"
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": ":visible:not(:last-child)"
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

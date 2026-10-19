@@ -65,39 +65,67 @@ class Local_products_model extends CI_Model
                 $edit_url = base_url() . 'inventory/local-products/edit/' . $id;
                 $history_url = "showAjaxModal('" . base_url() . "modal/popup_inventory/modal_raw_product_history/" . $id . "', 'Product History')";
                 $action = '';
-                $action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
 
-                $action .= '<a href="javascript:void(0);" onclick="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="History"><button type="button" class="btn mr-1 mb-1 icon-btn-history" style="background-color: #7367f0; color: #fff; border-color: #7367f0;"><i class="fa fa-history" aria-hidden="true"></i></button></a>';
+                if (is_access('73')) {
+                    $action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+                }
 
-                $action .='<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>'; 
+                if (is_access('74')) {
+                    $action .= '<a href="javascript:void(0);" onclick="' . $history_url . '" data-toggle="tooltip" data-bs-placement="top" title="History"><button type="button" class="btn mr-1 mb-1 icon-btn-history" style="background-color: #7367f0; color: #fff; border-color: #7367f0;"><i class="fa fa-history" aria-hidden="true"></i></button></a>';
+                }
+
+                if (is_access('75')) {
+                    $action .= '<a href="#" onclick="'.$delete_url.'" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+                }
 
                 // Category
                 $category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
                 $category_name = $category['name'] ?? '-';
 
-                $alias_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $item_code_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $hsn_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $gst_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="gst" value="' . htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $mrp_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="product_mrp" value="' . htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $costing_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="costing_price" value="' . htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $intimation_input = '<input type="number" step="1" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="intimation" value="' . htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
-                $off_sale_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="off_sale_price" value="' . htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                if (is_access('73')) {
+                    $alias_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $item_code_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $hsn_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $gst_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="gst" value="' . htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $mrp_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="product_mrp" value="' . htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $costing_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="costing_price" value="' . htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $intimation_input = '<input type="number" step="1" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="intimation" value="' . htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
+                    $off_sale_input = '<input type="number" step="any" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="off_sale_price" value="' . htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
 
-                $commission_select = '<select class="form-select form-select-sm local-prod-field" data-id="' . $id . '" data-field="commission_id" onchange="updateLocalProductField(this)">';
-                $commission_select .= '<option value="">Select</option>';
-                foreach ($commissions as $comm) {
-                    $selected = ((int)$item['commission_id'] === (int)$comm['id']) ? ' selected' : '';
-                    $commission_select .= '<option value="' . (int)$comm['id'] . '"' . $selected . '>' . htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES) . '</option>';
+                    $commission_select = '<select class="form-select form-select-sm local-prod-field" data-id="' . $id . '" data-field="commission_id" onchange="updateLocalProductField(this)">';
+                    $commission_select .= '<option value="">Select</option>';
+                    foreach ($commissions as $comm) {
+                        $selected = ((int)$item['commission_id'] === (int)$comm['id']) ? ' selected' : '';
+                        $commission_select .= '<option value="' . (int)$comm['id'] . '"' . $selected . '>' . htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES) . '</option>';
+                    }
+                    $commission_select .= '</select>';
+
+                    $status_selected_1 = ((int)$item['status'] === 1) ? ' selected' : '';
+                    $status_selected_0 = ((int)$item['status'] === 0) ? ' selected' : '';
+                    $status_select = '<select class="form-select form-select-sm local-prod-field" data-id="' . $id . '" data-field="status" onchange="updateLocalProductField(this)">';
+                    $status_select .= '<option value="1"' . $status_selected_1 . '>Active</option>';
+                    $status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
+                    $status_select .= '</select>';
+                } else {
+                    $alias_input = htmlspecialchars($item['alias'] ?? '-', ENT_QUOTES);
+                    $item_code_input = htmlspecialchars($item['item_code'] ?? '-', ENT_QUOTES);
+                    $hsn_input = htmlspecialchars($item['hsn_code'] ?? '-', ENT_QUOTES);
+                    $gst_input = htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES);
+                    $mrp_input = htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES);
+                    $costing_input = htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES);
+                    $intimation_input = htmlspecialchars((string)(int)($item['intimation'] ?? 0), ENT_QUOTES);
+                    $off_sale_input = htmlspecialchars(clean_number($item['off_sale_price'] ?? 0), ENT_QUOTES);
+
+                    $commission_label = '-';
+                    foreach ($commissions as $comm) {
+                        if ((int)$item['commission_id'] === (int)$comm['id']) {
+                            $commission_label = htmlspecialchars($comm['name'] . ' (' . $comm['commission'] . '%)', ENT_QUOTES);
+                            break;
+                        }
+                    }
+                    $commission_select = $commission_label;
+                    $status_select = ((int)$item['status'] === 1) ? 'Active' : 'Inactive';
                 }
-                $commission_select .= '</select>';
-
-                $status_selected_1 = ((int)$item['status'] === 1) ? ' selected' : '';
-                $status_selected_0 = ((int)$item['status'] === 0) ? ' selected' : '';
-                $status_select = '<select class="form-select form-select-sm local-prod-field" data-id="' . $id . '" data-field="status" onchange="updateLocalProductField(this)">';
-                $status_select .= '<option value="1"' . $status_selected_1 . '>Active</option>';
-                $status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
-                $status_select .= '</select>';
 
                 $image_src = !empty($item['product_image']) ? $item['product_image'] : (!empty($item['image']) ? $item['image'] : '');
                 if (!empty($image_src)) {
@@ -387,6 +415,7 @@ class Local_products_model extends CI_Model
                 $data['listed_7']       = 1;
                 $data['is_other_sku']   = 0;
                 $data['product_type']   = 'local';
+                $data['added_by']       = $this->session->userdata('super_user_id');
                 $data['added_date']     = date("Y-m-d H:i:s");
                 $opening_stock = $this->input->post('opening_stock');
                 $data['opening_stock']  = (!empty($opening_stock)) ? intval($opening_stock) : 0;

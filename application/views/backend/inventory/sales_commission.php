@@ -23,7 +23,7 @@
 		display: flex;
 		align-items: center;
 	}
-	.new-fix .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+	.new-form .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
 		color: #1e652e;
 		border: 1px solid #1e652e !important;
 		background: white;
@@ -44,9 +44,14 @@
 
 <?php
     include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
 
     $status = (isset($_GET['status']) && $_GET['status'] != '') ? $_GET['status'] : 'pending';
+    if ($status != 'complete' && !is_access('420') && is_access('421')) {
+        $status = 'complete';
+    } elseif ($status == 'complete' && !is_access('421') && is_access('420')) {
+        $status = 'pending';
+    }
+    $is_complete = ($status == 'complete');
 ?>
 	
 <div class="row" id="table-bordered">
@@ -54,20 +59,22 @@
         <div class="col-md-12 mb-1">
             <div class="fixedElement" id="fixedElement">
                 <ul class="nav nav-pills bg-nav-pills nav-justified ">
-                    
+                    <?php if (is_access('420')) { ?>
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-commission?status=pending" class="nav-link <?php echo ($status == 'pending') ? 'active' : ''; ?>">
+                        <a href="<?php echo base_url();?>inventory/sales-commission?status=pending" class="nav-link <?php echo (!$is_complete) ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">Pending</span>
                         </a>
                     </li>
+                    <?php } ?>
+                    <?php if (is_access('421')) { ?>
                     <li class="nav-item">
-                        <a href="<?php echo base_url();?>inventory/sales-commission?status=complete" class="nav-link <?php echo ($status == 'complete') ? 'active' : ''; ?>">
+                        <a href="<?php echo base_url();?>inventory/sales-commission?status=complete" class="nav-link <?php echo ($is_complete) ? 'active' : ''; ?>">
                             <i class="mdi mdi-home-variant d-md-none d-block"></i>
                             <span class="d-none d-md-block">Complete</span>
                         </a>
                     </li>
-                    
+                    <?php } ?>
                 </ul>
             </div>
         </div>
@@ -78,30 +85,44 @@
              <div class="row align-items-center">
                 <div class="col-md-8 mt-10">
                    <h5 class="mb-0"><b>Total Sales Commission <span id="total_count"> (0)</span></b>
-                      &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount"><?php echo number_format(($status == 'complete') ? $complete_commission_total : $pending_commission_total, 2, '.', ','); ?></span></b>
+                      <?php if ((!$is_complete && is_access('427')) || ($is_complete && is_access('438'))) { ?>
+                      &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount"><?php echo number_format(($is_complete) ? $complete_commission_total : $pending_commission_total, 2, '.', ','); ?></span></b>
+                      <?php } ?>
 				  </h5>
                 </div>
-                <?php if ($status == 'pending'): ?>
+                <?php if (!$is_complete && is_access('431')) { ?>
                 <div class="col-md-4 text-end mt-10">
                    <button type="button" id="pay-btn" class="btn btn-primary waves-effect waves-float waves-light" style="display:none;" onclick="openPaymentModal()">Make Payment</button>
                 </div>
-                <?php endif; ?>
+                <?php } ?>
               </div>
           </div>
         <div class="card-datatable d-report mb-2">
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
-					<th><?php if ($status == 'pending') { echo '<input type="checkbox" id="select-all" class="form-check-input">'; } else { echo '#'; } ?></th>
-					<th>Batch No</th>
-					<th>Product Name</th>
-					<th>Order No</th>
-					<th>Warehouse</th>
-					<th>Quantity</th>
-					<th>Total Commission</th>
-					<th>Commission</th>
-					<th>Shared Commission</th>
-                    <th>Actions</th>
+					<th><?php if (!$is_complete && is_access('431')) { echo '<input type="checkbox" id="select-all" class="form-check-input">'; } else { echo '#'; } ?></th>
+                    <?php if (!$is_complete) { ?>
+					<?php if (is_access('422')) { ?><th>Batch No</th><?php } ?>
+					<?php if (is_access('423')) { ?><th>Product Name</th><?php } ?>
+					<?php if (is_access('424')) { ?><th>Order No</th><?php } ?>
+					<?php if (is_access('425')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('426')) { ?><th>Quantity</th><?php } ?>
+					<?php if (is_access('427')) { ?><th>Total Commission</th><?php } ?>
+					<?php if (is_access('428')) { ?><th>Commission</th><?php } ?>
+					<?php if (is_access('429')) { ?><th>Shared Commission</th><?php } ?>
+					<?php if (is_access('430')) { ?><th>Actions</th><?php } ?>
+                    <?php } else { ?>
+					<?php if (is_access('433')) { ?><th>Batch No</th><?php } ?>
+					<?php if (is_access('434')) { ?><th>Product Name</th><?php } ?>
+					<?php if (is_access('435')) { ?><th>Order No</th><?php } ?>
+					<?php if (is_access('436')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('437')) { ?><th>Quantity</th><?php } ?>
+					<?php if (is_access('438')) { ?><th>Total Commission</th><?php } ?>
+					<?php if (is_access('439')) { ?><th>Commission</th><?php } ?>
+					<?php if (is_access('440')) { ?><th>Shared Commission</th><?php } ?>
+					<?php if (is_access('441')) { ?><th>Actions</th><?php } ?>
+                    <?php } ?>
                   </tr>
                </thead>
             </table>
@@ -111,9 +132,6 @@
 </div>
 
 <script type="text/javascript">
-<?php
-$export_cols = '[0,1,2,3,4,5,6,7,8]';
-?>
     $(document).ready(function($) {
     	var dataTable = $('#report-datatable').DataTable({ 
     	    "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -139,7 +157,7 @@ $export_cols = '[0,1,2,3,4,5,6,7,8]';
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = '<?php echo (isset($_GET['status'])) ? $_GET['status']: 'pending'; ?>';	
+                    data.status = '<?php echo $status; ?>';	
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -151,33 +169,41 @@ $export_cols = '[0,1,2,3,4,5,6,7,8]';
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "batch_no" },
-                { "data": "product_name" },
-                { "data": "order_no" },
-                { "data": "warehouse_name" },
-                { "data": "qty" },
-                { "data": "total_commission" },
-                { "data": "my_commission" },
-                { "data": "shared_commission" },
-                { "data": "action" },
+                <?php if (!$is_complete) { ?>
+                <?php if (is_access('422')) { ?>{ "data": "batch_no" },<?php } ?>
+                <?php if (is_access('423')) { ?>{ "data": "product_name" },<?php } ?>
+                <?php if (is_access('424')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('425')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                <?php if (is_access('426')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('427')) { ?>{ "data": "total_commission" },<?php } ?>
+                <?php if (is_access('428')) { ?>{ "data": "my_commission" },<?php } ?>
+                <?php if (is_access('429')) { ?>{ "data": "shared_commission" },<?php } ?>
+                <?php if (is_access('430')) { ?>{ "data": "action" },<?php } ?>
+                <?php } else { ?>
+                <?php if (is_access('433')) { ?>{ "data": "batch_no" },<?php } ?>
+                <?php if (is_access('434')) { ?>{ "data": "product_name" },<?php } ?>
+                <?php if (is_access('435')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('436')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                <?php if (is_access('437')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('438')) { ?>{ "data": "total_commission" },<?php } ?>
+                <?php if (is_access('439')) { ?>{ "data": "my_commission" },<?php } ?>
+                <?php if (is_access('440')) { ?>{ "data": "shared_commission" },<?php } ?>
+                <?php if (is_access('441')) { ?>{ "data": "action" },<?php } ?>
+                <?php } ?>
              ],
             
              "buttons": [
+                 <?php if ((!$is_complete && is_access('432')) || ($is_complete && is_access('442'))) { ?>
                  {
                      "extend": 'excel',
                      "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  },
                  {
                      "extend": 'pdfHtml5',
                      "orientation": 'landscape',
                      "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  }
+                 <?php } ?>
              ], 
            
              "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -197,7 +223,7 @@ $export_cols = '[0,1,2,3,4,5,6,7,8]';
             
             'columnDefs': [
                 {
-                    "targets": [0, 1, 3, 4, 5, 6, 7, 8, 9],
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 

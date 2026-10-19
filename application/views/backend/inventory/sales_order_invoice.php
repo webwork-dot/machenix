@@ -20,15 +20,7 @@
     }
 </style>
 
-<?php
-    include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
-    $num_cols = 8;
-    if ($staff_access !== 7) {
-        $num_cols += 1;
-    }
-    $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
-?>
+<?php include('filter/sales_order_invoice_filter.php'); ?>
 	
 <div class="row" id="table-bordered">
     <?php include('nav/nav_sales_order.php'); ?>
@@ -47,17 +39,15 @@
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date</th>
-					<th>Customer Name</th>
-					<th>Order NO</th>
-					<th>Warehouse</th>
-					<th>Total Qty</th>
-					<th>Total Products</th>
-					<th>Total Amount</th>
-                    <?php if ($staff_access !== 7) { ?>
-                        <th>Added By</th>
-                    <?php } ?>
-                    <th>Actions</th>
+					<?php if (is_access('240')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('241')) { ?><th>Customer Name</th><?php } ?>
+					<?php if (is_access('242')) { ?><th>Order NO</th><?php } ?>
+					<?php if (is_access('243')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('244')) { ?><th>Total Qty</th><?php } ?>
+					<?php if (is_access('245')) { ?><th>Total Products</th><?php } ?>
+					<?php if (is_access('246')) { ?><th>Total Amount</th><?php } ?>
+					<?php if (is_access('247')) { ?><th>Added By</th><?php } ?>
+					<?php if (is_access('248') || is_access('249') || is_access('250') || is_access('251') || is_access('252') || is_access('253')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -105,35 +95,29 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "customer_name" },
-                { "data": "order_no" },
-                { "data": "warehouse_name" },
-                { "data": "qty" },
-                { "data": "total_pro" },
-                { "data": "grand_total" },
-                 <?php if ($staff_access !== 7) { ?>
-                 { "data": "added_by" },
-                 <?php } ?>
-                 { "data": "action" }
+                <?php if (is_access('240')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('241')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('242')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('243')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                <?php if (is_access('244')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('245')) { ?>{ "data": "total_pro" },<?php } ?>
+                <?php if (is_access('246')) { ?>{ "data": "grand_total" },<?php } ?>
+                <?php if (is_access('247')) { ?>{ "data": "added_by" },<?php } ?>
+                <?php if (is_access('248') || is_access('249') || is_access('250') || is_access('251') || is_access('252') || is_access('253')) { ?>{ "data": "action" },<?php } ?>
              ],
             
              "buttons": [
+                 <?php if (is_access('254')) { ?>
                  {
                      "extend": 'excel',
                      "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  },
                  {
                      "extend": 'pdfHtml5',
                      "orientation": 'landscape',
                      "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  }
+                 <?php } ?>
              ], 
            
              "infoCallback": function( settings, start, end, max, total, pre ) {

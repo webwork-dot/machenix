@@ -25,10 +25,7 @@
 	}
 </style>
 
-<?php
-    include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
-?>
+<?php include('filter/date_range.php'); ?>
 	
 <div class="row" id="table-bordered">
    <div class="col-12">
@@ -41,22 +38,22 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
-            <a href="<?php echo site_url('inventory/company-sales/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Sale</span></a>   
+            <?php if (is_access('388')) { ?>
+            <a href="<?php echo site_url('inventory/company-sales/add'); ?>" class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i> Add Sale</span></a>
+            <?php } ?>
           <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date</th>
-					<th>Company Name</th>
-					<th>Order NO</th>
-					<th>Warehouse</th>
-					<th>Total Qty</th>
-					<th>Total Products</th>
-					<th>Total Amount</th>
-                    <?php if ($staff_access !== 7) { ?>
-                        <th>Added By</th>
-                    <?php } ?>
-                    <th>Actions</th>
+					<?php if (is_access('380')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('381')) { ?><th>Company Name</th><?php } ?>
+					<?php if (is_access('382')) { ?><th>Order NO</th><?php } ?>
+					<?php if (is_access('383')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('384')) { ?><th>Total Qty</th><?php } ?>
+					<?php if (is_access('385')) { ?><th>Total Products</th><?php } ?>
+					<?php if (is_access('386')) { ?><th>Total Amount</th><?php } ?>
+					<?php if (is_access('387')) { ?><th>Added By</th><?php } ?>
+					<?php if (is_access('389') || is_access('390')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -102,35 +99,29 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "customer_name" },
-                { "data": "order_no" },
-                { "data": "warehouse_name" },
-                { "data": "qty" },
-                { "data": "total_pro" },
-                { "data": "grand_total" },
-                <?php if ($staff_access !== 7) { ?>
-                   { "data": "added_by" },
-                <?php } ?>
-                { "data": "action" },
+                <?php if (is_access('380')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('381')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('382')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('383')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                <?php if (is_access('384')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('385')) { ?>{ "data": "total_pro" },<?php } ?>
+                <?php if (is_access('386')) { ?>{ "data": "grand_total" },<?php } ?>
+                <?php if (is_access('387')) { ?>{ "data": "added_by" },<?php } ?>
+                <?php if (is_access('389') || is_access('390')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('391')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i> Excel</button>',
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7]
-                    }
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0,1,2,3,4,5,6,7]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -146,7 +137,7 @@
            
             'columnDefs': [
                 {
-                    "targets": 0, // serial number column
+                    "targets": 0,
                     "className": "text-center",
                 },
             ] 

@@ -20,30 +20,32 @@
             </div>
          </div>
         <div class="card-datatable d-report mb-2">
+            <?php if (is_access('53')) { ?>
             <a href="<?php echo site_url('inventory/raw-products/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" >
                 <span><i class="feather icon-plus"></i> <?= get_phrase('add_products');?></span>
             </a>
+            <?php } ?>
             <table class="table leads-table" id="report-datatable">
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Image</th>
-					<th>Product Name</th>
-					<th>Alias Name</th>
-					<th>Category</th>
-					<th>Model No</th>
-					<th>HSN Code</th>
-					<th>Duty Charge</th>
-					<th>Tax Rate</th>
-					<th>Unit</th>
-					<th>Commission</th>
-					<th>Min Billing Price</th>
-					<th>Min Selling Price</th>
-					<th>Stock Intimation</th>
-					<th>Opening Stock</th>
-					<th>Off Sale Amt</th>
-					<th>Status</th>
-					<th>Actions</th>
+					<?php if (is_access('37')) { ?><th>Image</th><?php } ?>
+					<?php if (is_access('38')) { ?><th>Product Name</th><?php } ?>
+					<?php if (is_access('39')) { ?><th>Alias Name</th><?php } ?>
+					<?php if (is_access('40')) { ?><th>Category</th><?php } ?>
+					<?php if (is_access('41')) { ?><th>Model No</th><?php } ?>
+					<?php if (is_access('42')) { ?><th>HSN Code</th><?php } ?>
+					<?php if (is_access('43')) { ?><th>Duty Charge</th><?php } ?>
+					<?php if (is_access('44')) { ?><th>Tax Rate</th><?php } ?>
+					<?php if (is_access('45')) { ?><th>Unit</th><?php } ?>
+					<?php if (is_access('46')) { ?><th>Commission</th><?php } ?>
+					<?php if (is_access('47')) { ?><th>Min Billing Price</th><?php } ?>
+					<?php if (is_access('48')) { ?><th>Min Selling Price</th><?php } ?>
+					<?php if (is_access('49')) { ?><th>Stock Intimation</th><?php } ?>
+					<?php if (is_access('50')) { ?><th>Opening Stock</th><?php } ?>
+					<?php if (is_access('51')) { ?><th>Off Sale Amt</th><?php } ?>
+					<?php if (is_access('52')) { ?><th>Status</th><?php } ?>
+					<?php if (is_access('54') || is_access('55') || is_access('56')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -93,42 +95,38 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "image" },
-                { "data": "name" },
-                { "data": "alias" },
-                { "data": "category_name" },
-                { "data": "item_code" },
-                { "data": "hsn_code" },
-                { "data": "duty_charge" },
-                { "data": "gst" },
-                { "data": "unit" },
-                { "data": "commission_id" },
-                { "data": "product_mrp" },
-                { "data": "costing_price" },
-                { "data": "intimation" },
-                { "data": "opening_stock" },
-                { "data": "off_sale_price" },
-                { "data": "status" },
-                { "data": "action" },
+                <?php if (is_access('37')) { ?>{ "data": "image" },<?php } ?>
+                <?php if (is_access('38')) { ?>{ "data": "name" },<?php } ?>
+                <?php if (is_access('39')) { ?>{ "data": "alias" },<?php } ?>
+                <?php if (is_access('40')) { ?>{ "data": "category_name" },<?php } ?>
+                <?php if (is_access('41')) { ?>{ "data": "item_code" },<?php } ?>
+                <?php if (is_access('42')) { ?>{ "data": "hsn_code" },<?php } ?>
+                <?php if (is_access('43')) { ?>{ "data": "duty_charge" },<?php } ?>
+                <?php if (is_access('44')) { ?>{ "data": "gst" },<?php } ?>
+                <?php if (is_access('45')) { ?>{ "data": "unit" },<?php } ?>
+                <?php if (is_access('46')) { ?>{ "data": "commission_id" },<?php } ?>
+                <?php if (is_access('47')) { ?>{ "data": "product_mrp" },<?php } ?>
+                <?php if (is_access('48')) { ?>{ "data": "costing_price" },<?php } ?>
+                <?php if (is_access('49')) { ?>{ "data": "intimation" },<?php } ?>
+                <?php if (is_access('50')) { ?>{ "data": "opening_stock" },<?php } ?>
+                <?php if (is_access('51')) { ?>{ "data": "off_sale_price" },<?php } ?>
+                <?php if (is_access('52')) { ?>{ "data": "status" },<?php } ?>
+                <?php if (is_access('54') || is_access('55') || is_access('56')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [
+                <?php if (is_access('57')) { ?>
                 {
                     "extend": 'excel',
                     "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                    "exportOptions": {
-                       "columns": [0, 2, 4],
-
-                    }
+                    
                 },
                 {
                     "extend": 'pdfHtml5',
                     "orientation": 'landscape',
                     "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                    "exportOptions": {
-                       "columns": [0, 2, 4]
-                    }
                 }
+                <?php } ?>
             ], 
            
             "infoCallback": function( settings, start, end, max, total, pre ) {

@@ -20,15 +20,7 @@
     }
 </style>
 
-<?php
-    include('filter/date_range.php');
-    $staff_access = (int)$this->session->userdata('super_type_id');
-    $num_cols = 11;
-    if ($staff_access !== 7) {
-        $num_cols += 1;
-    }
-    $export_cols = '[' . implode(',', range(0, $num_cols - 1)) . ']';
-?>
+<?php include('filter/sales_order_cancelled_filter.php'); ?>
 	
 <div class="row" id="table-bordered">
     <?php include('nav/nav_sales_order.php'); ?>
@@ -39,7 +31,7 @@
              <div class="d-flex align-items-center flex-wrap gap-1 so-table-title-row">
                    <h5 class="mb-0">
                        <b>Total Cancelled <span id="total_count"> (0)</span></b>
-                   <?php if ($staff_access !== 7) { ?>
+                   <?php if (is_access('280')) { ?>
                       &nbsp;|&nbsp; <b>Total Amount: ₹<span id="total_sales_amount">0.00</span></b>
                    <?php } ?>
 				  </h5>
@@ -50,20 +42,18 @@
                <thead>
                   <tr>
 					<th>#</th>
-					<th>Date</th>
-					<th>Type</th>
-					<th>Invoice No</th>
-					<th>Invoice Date</th>
-					<th>Customer Name</th>
-					<th>Order NO</th>
-					<th>Warehouse</th>
-					<th>Total Qty</th>
-					<th>Total Products</th>
-					<th>Total Amount</th>
-                    <?php if ($staff_access !== 7) { ?>
-                        <th>Added By</th>
-                    <?php } ?>
-                    <th>Actions</th>
+					<?php if (is_access('271')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('272')) { ?><th>Type</th><?php } ?>
+					<?php if (is_access('273')) { ?><th>Invoice No</th><?php } ?>
+					<?php if (is_access('274')) { ?><th>Invoice Date</th><?php } ?>
+					<?php if (is_access('275')) { ?><th>Customer Name</th><?php } ?>
+					<?php if (is_access('276')) { ?><th>Order NO</th><?php } ?>
+					<?php if (is_access('277')) { ?><th>Warehouse</th><?php } ?>
+					<?php if (is_access('278')) { ?><th>Total Qty</th><?php } ?>
+					<?php if (is_access('279')) { ?><th>Total Products</th><?php } ?>
+					<?php if (is_access('280')) { ?><th>Total Amount</th><?php } ?>
+					<?php if (is_access('281')) { ?><th>Added By</th><?php } ?>
+					<?php if (is_access('282') || is_access('283') || is_access('284')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -111,38 +101,32 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                { "data": "date" },
-                { "data": "type" },
-                { "data": "invoice_no" },
-                { "data": "invoice_date" },
-                { "data": "customer_name" },
-                { "data": "order_no" },
-                { "data": "warehouse_name" },
-                { "data": "qty" },
-                { "data": "total_pro" },
-                { "data": "grand_total" },
-                 <?php if ($staff_access !== 7) { ?>
-                 { "data": "added_by" },
-                 <?php } ?>
-                 { "data": "action" }
+                <?php if (is_access('271')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('272')) { ?>{ "data": "type", "className": "text-center" },<?php } ?>
+                <?php if (is_access('273')) { ?>{ "data": "invoice_no" },<?php } ?>
+                <?php if (is_access('274')) { ?>{ "data": "invoice_date" },<?php } ?>
+                <?php if (is_access('275')) { ?>{ "data": "customer_name" },<?php } ?>
+                <?php if (is_access('276')) { ?>{ "data": "order_no" },<?php } ?>
+                <?php if (is_access('277')) { ?>{ "data": "warehouse_name" },<?php } ?>
+                <?php if (is_access('278')) { ?>{ "data": "qty" },<?php } ?>
+                <?php if (is_access('279')) { ?>{ "data": "total_pro" },<?php } ?>
+                <?php if (is_access('280')) { ?>{ "data": "grand_total" },<?php } ?>
+                <?php if (is_access('281')) { ?>{ "data": "added_by" },<?php } ?>
+                <?php if (is_access('282') || is_access('283') || is_access('284')) { ?>{ "data": "action" },<?php } ?>
              ],
             
              "buttons": [
+                 <?php if (is_access('285')) { ?>
                  {
                      "extend": 'excel',
                      "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  },
                  {
                      "extend": 'pdfHtml5',
                      "orientation": 'landscape',
                      "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',  
-                     "exportOptions": {
-                        "columns": <?php echo $export_cols; ?>
-                     }
                  }
+                 <?php } ?>
              ], 
            
              "infoCallback": function( settings, start, end, max, total, pre ) {
@@ -164,7 +148,7 @@
            
             'columnDefs': [
                 {
-                    "targets": [0, 2],
+                    "targets": 0,
                     "className": "text-center",
                 }
             ] 
