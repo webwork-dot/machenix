@@ -114,6 +114,7 @@ $(document).ready(function($) {
         data.date_range = $('#filter_date_range').val() || '';
         data.type = $('#filter_type').val() || '';
         data.keywords = $('#filter_keywords').val() || '';
+        data.datatype = <?php echo is_access('182') ? '1' : '0'; ?>;
       },
       "beforeSend": function() {
         $('.loader').show();

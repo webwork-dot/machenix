@@ -148,6 +148,7 @@
                     data.search.value = $('#filter_keywords').val() || '';
                     data.status = $('#filter_status').val() || '';
                     data.type = '<?php echo $type; ?>';
+                    data.datatype = <?php echo is_access('904') ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();

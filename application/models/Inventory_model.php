@@ -6231,7 +6231,7 @@ class Inventory_model extends CI_Model
 			$keyword_filter .= " AND (delivery_status NOT IN ('" . implode("','", $delivery_status) . "'))";
 		}
 
-		$keyword_filter .= " AND (company_id = '$company_id')";
+		
 		// echo $keyword_filter; exit();
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
 			$added_date = explode(' - ', $_REQUEST['date_range']);
@@ -6266,6 +6266,12 @@ class Inventory_model extends CI_Model
 			}
 		}
 
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (company_id = '$company_id')";
+		}
+		
 		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id ASC")->num_rows();
 		$query = $this->db->query("SELECT id,delivery_status, voucher_no,date,delivery_date,warehouse_name,company_name, boe_no, boe_date, arrival_date, expected_date, is_locked FROM purchase_order WHERE (is_deleted='0') AND method = 'import' $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
@@ -6605,7 +6611,11 @@ class Inventory_model extends CI_Model
 			endif;
 
 			$keyword_filter .= " AND (po.delivery_status = 'purchase_in')";
-			$keyword_filter .= " AND (po.company_id = '$company_id')";
+			if (isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+				$keyword_filter .= " AND (po.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			} else {
+				$keyword_filter .= " AND (po.company_id = '$company_id')";
+			}
 
 			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
 				$added_date = explode(' - ', $_REQUEST['date_range']);
@@ -6692,7 +6702,11 @@ class Inventory_model extends CI_Model
 			endif;
 
 			$keyword_filter .= " AND (delivery_status = 'purchase_in')";
-			$keyword_filter .= " AND (company_id = '$company_id')";
+			if (isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+				$keyword_filter .= " AND (added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+			} else {
+				$keyword_filter .= " AND (company_id = '$company_id')";
+			}
 
 			if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
 				$added_date = explode(' - ', $_REQUEST['date_range']);
@@ -17322,11 +17336,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
 		}
 
 		$total_count = $this->db->query("
@@ -17486,11 +17499,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
 		}
 		$keyword_filter .= " AND (so.type != 'company')";
 		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
@@ -17804,11 +17816,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (io.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (io.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (io.company_id = '$company_id')";
 		}
 		$keyword_filter .= " AND (io.is_cancelled = 0 OR io.is_cancelled IS NULL)";
 
@@ -17951,13 +17962,12 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$io_filter .= " AND (io.company_id='" . $company_id . "')";
-			$so_filter .= " AND (so.company_id='" . $company_id . "')";
-			if ($this->session->userdata('super_type_id') == 7) {
-				$io_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-				$so_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$io_filter .= " AND (io.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+			$so_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$io_filter .= " AND (io.company_id = '$company_id')";
+			$so_filter .= " AND (so.company_id = '$company_id')";
 		}
 
 		$total_count_query = $this->db->query("
@@ -18782,11 +18792,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
-			if ($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
 		}
 		$keyword_filter .= " AND (so.type != 'company')";
 		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
@@ -19111,11 +19120,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
-			if ($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
 		}
 		$keyword_filter .= " AND (so.type != 'company')";
 		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
@@ -19505,12 +19513,10 @@ class Inventory_model extends CI_Model
 	{
 		$company_id = $this->session->userdata('company_id');
 		$company_filter = "";
-		if ($company_id) {
-			$company_filter .= " AND (so.company_id='" . $company_id . "')";
-			if ($this->session->userdata('super_type_id') == 7) {
-				$user_id = $this->session->userdata('super_user_id');
-				$company_filter .= " AND (so.added_by_id = '$user_id' OR sc.staff_id = '$user_id' OR sc.share_staff_id = '$user_id')";
-			}
+		if (is_access('934')) {
+			$company_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+		} else {
+			$company_filter .= " AND (so.company_id = '$company_id')";
 		}
 
 		$pending_total = 0.00;
@@ -19588,12 +19594,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$user_id = $this->session->userdata('super_user_id');
-				$keyword_filter .= " AND (so.added_by_id = '$user_id' OR sc.staff_id = '$user_id' OR sc.share_staff_id = '$user_id')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
 		}
 
 		$total_count = $this->db->query("
@@ -21115,11 +21119,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (io.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (io.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (io.company_id = '$company_id')";
 		}
 
 		$total_count = $this->db->query("
@@ -21256,11 +21259,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (so.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (so.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (so.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
 		}
 
 		$total_count = $this->db->query("
@@ -21389,11 +21391,10 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (io.company_id='" . $company_id . "')";
-			if($this->session->userdata('super_type_id') == 7) {
-				$keyword_filter .= " AND (io.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
-			}
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (io.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (io.company_id = '$company_id')";
 		}
 
 		$total_count = $this->db->query("
@@ -24536,7 +24537,13 @@ class Inventory_model extends CI_Model
 				$keyword_filter .= " AND (DATE(date) BETWEEN '$from' AND '$to')";
 			}
 		}
-		//echo $keyword_filter;exit();
+
+		$company_id = $this->session->userdata('company_id');
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (company_id = '$company_id')";
+		}
 
 		$total_count = $this->db->query("SELECT id FROM goods_return WHERE (is_deleted='0') $keyword_filter ORDER BY id ASC")->num_rows();
 		$query = $this->db->query("SELECT id,warehouse_name,company_id,customer_name,company_name,reason,added_date,order_no,date FROM goods_return WHERE (is_deleted='0') $keyword_filter ORDER BY date DESC LIMIT $start, $length");
@@ -26857,13 +26864,18 @@ class Inventory_model extends CI_Model
 		}
 
 		$company_id = $this->session->userdata('company_id');
+		if (isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (e.added_by_id = '" . $this->session->userdata('super_user_id') . "')";
+		} else {
+			$keyword_filter .= " AND (e.company_id = '$company_id')";
+		}
 
-		$total_count = $this->db->query("SELECT e.id FROM po_expense e WHERE e.company_id='" . $company_id . "' AND e.is_delete = '0' " . $keyword_filter)->num_rows();
+		$total_count = $this->db->query("SELECT e.id FROM po_expense e WHERE e.is_delete = '0' " . $keyword_filter)->num_rows();
 		
 		$is_filtered = (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != "") || (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") || (isset($_REQUEST['type']) && $_REQUEST['type'] != "");
 		$limit_clause = $is_filtered ? "" : " LIMIT $start, $length";
 
-		$query = $this->db->query("SELECT e.id, e.batch_no, e.type, e.expense_type, e.vendor_id, e.sub_total, e.gst_total, e.grand_total, e.expense_date, po.is_locked FROM po_expense e LEFT JOIN purchase_order po ON po.voucher_no = e.batch_no AND po.company_id = e.company_id AND po.is_deleted = '0' WHERE e.company_id='" . $company_id . "' AND e.is_delete = '0' " . $keyword_filter . " ORDER BY e.id DESC" . $limit_clause);
+		$query = $this->db->query("SELECT e.id, e.batch_no, e.type, e.expense_type, e.vendor_id, e.sub_total, e.gst_total, e.grand_total, e.expense_date, po.is_locked FROM po_expense e LEFT JOIN purchase_order po ON po.voucher_no = e.batch_no AND po.company_id = e.company_id AND po.is_deleted = '0' WHERE e.is_delete = '0' " . $keyword_filter . " ORDER BY e.id DESC" . $limit_clause);
 
 		if (!empty($query)) {
 			$sr_no = $start;
@@ -37301,6 +37313,13 @@ public function get_sales_return_reports()
             OR su.first_name LIKE '%" . $keyword . "%')";
 		endif;
 
+		$company_id = $this->session->userdata('company_id');
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (rp.added_by = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (so.company_id = '$company_id')";
+		}
+
 		$total_count = $this->db->query("
 			SELECT rp.id 
 			FROM replace_products AS rp
@@ -41309,8 +41328,10 @@ public function get_sales_return_reports()
 		}
 
 		$company_id = $this->session->userdata('company_id');
-		if ($company_id) {
-			$keyword_filter .= " AND (cq.company_id='" . $company_id . "')";
+		if(isset($_REQUEST['datatype']) && $_REQUEST['datatype'] != 0) {
+			$keyword_filter .= " AND (cq.added_by_id = '". $this->session->userdata('super_user_id') ."')";
+		} else {
+			$keyword_filter .= " AND (cq.company_id = '$company_id')";
 		}
 
 		$total_count = $this->db->query("

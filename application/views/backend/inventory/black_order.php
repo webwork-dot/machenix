@@ -201,7 +201,8 @@
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = '<?php echo $status; ?>';	
+                    data.status = '<?php echo $status; ?>';
+                    data.datatype = <?php echo is_access($is_completed ? '932' : '930') ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();

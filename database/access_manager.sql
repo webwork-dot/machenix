@@ -1012,7 +1012,63 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (892, 871, 'columns', 'Approved By', 'approved_by', 8, 0, '2026-10-17 19:07:00'),
 (893, 871, 'columns', 'Approval Date', 'approval_date', 9, 0, '2026-10-17 19:07:00'),
 (894, 871, 'columns', 'Status', 'status', 10, 0, '2026-10-17 19:07:00'),
-(895, 871, 'actions', 'Excel / PDF Export', '', 1, 0, '2026-10-17 19:07:00');
+(895, 871, 'actions', 'Excel / PDF Export', '', 1, 0, '2026-10-17 19:07:00'),
+
+-- Import PO datatype: Company / Added By (Expense 182–183 already exists)
+(896, 87, 'datatype', 'Company', '', 1, 0, '2026-10-21 11:43:00'),
+(897, 87, 'datatype', 'Added By', '', 2, 0, '2026-10-21 11:43:00'),
+(898, 88, 'datatype', 'Company', '', 1, 0, '2026-10-21 11:43:00'),
+(899, 88, 'datatype', 'Added By', '', 2, 0, '2026-10-21 11:43:00'),
+(900, 89, 'datatype', 'Company', '', 1, 0, '2026-10-21 11:43:00'),
+(901, 89, 'datatype', 'Added By', '', 2, 0, '2026-10-21 11:43:00'),
+(902, 90, 'datatype', 'Company', '', 1, 0, '2026-10-21 11:43:00'),
+(903, 90, 'datatype', 'Added By', '', 2, 0, '2026-10-21 11:43:00'),
+(904, 92, 'datatype', 'Company', '', 1, 0, '2026-10-21 11:43:00'),
+(905, 92, 'datatype', 'Added By', '', 2, 0, '2026-10-21 11:43:00'),
+
+-- Local Purchase In / Formula Product In datatype: Company / Added By
+(906, 184, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:47:00'),
+(907, 184, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:47:00'),
+(908, 197, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:47:00'),
+(909, 197, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:47:00'),
+
+-- Sales datatype: Company / Added By
+(910, 210, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(911, 210, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(912, 211, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(913, 211, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(914, 212, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(915, 212, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(916, 213, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(917, 213, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(918, 214, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(919, 214, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(920, 215, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(921, 215, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(922, 216, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(923, 216, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(924, 348, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(925, 348, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(926, 364, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(927, 364, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(928, 379, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(929, 379, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(930, 393, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(931, 393, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(932, 394, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(933, 394, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(934, 419, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(935, 419, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(936, 443, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(937, 443, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(938, 454, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(939, 454, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(940, 455, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(941, 455, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(942, 456, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(943, 456, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+(944, 457, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
+(945, 457, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00');
 --
 -- Indexes for dumped tables
 --
@@ -1031,7 +1087,7 @@ ALTER TABLE `access_manager`
 -- AUTO_INCREMENT for table `access_manager`
 --
 ALTER TABLE `access_manager`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=946;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

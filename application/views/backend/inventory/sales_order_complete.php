@@ -88,7 +88,8 @@
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.delivery_date_range = '<?php echo (isset($_GET['delivery_date_range'])) ? $_GET['delivery_date_range']:'' ?>';
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = 'complete';	
+                    data.status = 'complete';
+                    data.datatype = <?php echo is_access('914') ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();

@@ -45,6 +45,10 @@
         elseif (is_access('455')) { $status = 'po'; }
         elseif (is_access('456')) { $status = 'loading'; }
     }
+    $datatype_access = '938';
+    if ($status == 'po') { $datatype_access = '940'; }
+    elseif ($status == 'loading') { $datatype_access = '942'; }
+    elseif ($status == 'received') { $datatype_access = '944'; }
 
     // Column / export access ids per tab
     if ($status == 'po') {
@@ -132,6 +136,7 @@
                 "type": "POST",
                 "data": function(data){
                     data.status = '<?php echo $status; ?>';
+                    data.datatype = <?php echo is_access($datatype_access) ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();

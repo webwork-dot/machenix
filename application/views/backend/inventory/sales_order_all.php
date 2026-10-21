@@ -520,7 +520,8 @@
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
                     data.delivery_date_range = '<?php echo (isset($_GET['delivery_date_range'])) ? $_GET['delivery_date_range']:'' ?>';
                     data.customer_id = '<?php echo (isset($_GET['customer_id'])) ? $_GET['customer_id']:'' ?>';	
-                    data.status = 'all';	
+                    data.status = 'all';
+                    data.datatype = <?php echo is_access($sub_tab == 'product' ? '922' : '920') ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();

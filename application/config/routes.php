@@ -17,6 +17,11 @@ include_once "route_hrm.php";
 
 $route[$r_inventory . '/system-password/(:num)'] = 'inventory/system_password/$1';
 
+/* Sales Dashboard */
+$route['sales-dashboard']                  = 'sales_dashboard/index';
+$route['sales-dashboard/get_data_ajax']    = 'sales_dashboard/get_data_ajax';
+$route[$r_inventory . '/sales-dashboard']  = 'sales_dashboard/index';
+
 $route[$r_admin . '/staff'] = 'admin/staff';
 $route[$r_admin . '/staff/add']    = 'admin/staff_form/staff_add';
 $route[$r_admin . '/staff/edit/(:num)'] = 'admin/staff_form/staff_edit/$1';

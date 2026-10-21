@@ -22,6 +22,13 @@
             </a>
         </li>  
         
+        <li class="nav-item <?php if ($page_name == 'sales_dashboard') echo 'active';?>">
+        	<a class="d-flex align-items-center" href="<?php echo site_url('sales-dashboard'); ?>">
+        	    <i data-feather="trending-up"></i>
+        	    <span class="menu-title text-truncate fw-bolder" data-i18n="Sales Dashboard">Sales Dashboard</span>
+            </a>
+        </li>
+        
         <?php if($user_id == 4) { ?>
             <li class="nav-item <?php if($navigation == 'manage_access') echo 'active'; ?>">
                 <a class="d-flex align-items-center " href="<?php echo site_url('inventory/manage-access'); ?>">

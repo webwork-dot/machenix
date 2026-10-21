@@ -71,7 +71,8 @@
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
-                       data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';     		
+                       data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';
+                       data.datatype = <?php echo is_access('936') ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();

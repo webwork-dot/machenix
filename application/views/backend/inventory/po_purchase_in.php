@@ -115,6 +115,7 @@ $(document).ready(function($) {
         data.expected_date_range = $('#filter_expected_date_range').val() || '';
         data.search.value = $('#filter_keywords').val() || '';
         data.status = $('#filter_status').val() || '';
+        data.datatype = <?php echo is_access('902') ? '1' : '0'; ?>;
       },
       "beforeSend": function() {
         $('.loader').show();

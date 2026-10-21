@@ -87,7 +87,8 @@
                 "type": "POST",
                 "data": function(data){
                     data.date_range = '<?php echo (isset($_GET['date_range'])) ? $_GET['date_range']:'' ?>';	
-                    data.company_customer_id = '<?php echo (isset($_GET['company_customer_id'])) ? $_GET['company_customer_id']:'' ?>';	
+                    data.company_customer_id = '<?php echo (isset($_GET['company_customer_id'])) ? $_GET['company_customer_id']:'' ?>';
+                    data.datatype = <?php echo is_access('928') ? '1' : '0'; ?>;
                 },
                 "beforeSend": function() {
                     $('.loader').show();
