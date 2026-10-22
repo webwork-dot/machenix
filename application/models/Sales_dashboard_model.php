@@ -144,6 +144,76 @@ class Sales_dashboard_model extends CI_Model
     }
 
     /**
+     * Get Cash Book Expenses Summary (White & Black Breakdown for Active Company)
+     */
+    public function get_expense_summary($company_id, $from_date, $to_date)
+    {
+        $company_id = (int)$company_id;
+        $comp_filter = !empty($company_id) ? " AND company_id = '{$company_id}'" : "";
+
+        // Cash Book Expenses (payments table WHERE type = 'expense')
+        // payment_type: 'official' (White), 'unofficial' (Black)
+        $p_sql = "SELECT 
+                    COUNT(id) as total_count,
+                    IFNULL(SUM(CASE WHEN payment_type = 'official' THEN amount_rs ELSE 0 END), 0) as white_expense_amount,
+                    IFNULL(SUM(CASE WHEN payment_type = 'unofficial' THEN amount_rs ELSE 0 END), 0) as black_expense_amount,
+                    IFNULL(SUM(amount_rs), 0) as gross_expense_amount
+                  FROM payments
+                  WHERE is_delete = 0
+                    AND type = 'expense'
+                    AND (LOWER(payment_method) = 'cash' OR payment_method = '' OR payment_method IS NULL)
+                    {$comp_filter}
+                    AND (DATE(payment_date) BETWEEN '{$from_date}' AND '{$to_date}')";
+
+        $res = $this->db->query($p_sql)->row_array();
+
+        $white = (float)($res['white_expense_amount'] ?? 0);
+        $black = (float)($res['black_expense_amount'] ?? 0);
+        $gross = (float)($res['gross_expense_amount'] ?? 0);
+        $count = (int)($res['total_count'] ?? 0);
+
+        return [
+            'total_count'          => $count,
+            'white_expense_amount' => $white,
+            'black_expense_amount' => $black,
+            'gross_expense_amount' => $gross,
+        ];
+    }
+
+    /**
+     * Get Sales Returns Summary (White & Black Breakdown for Active Company)
+     */
+    public function get_sales_return_summary($company_id, $from_date, $to_date)
+    {
+        $company_id = (int)$company_id;
+        $comp_filter = !empty($company_id) ? " AND company_id = '{$company_id}'" : "";
+
+        $sql = "SELECT 
+                    COUNT(id) as total_returns,
+                    IFNULL(SUM(white_total + gst_total_amt), 0) as white_return_amount,
+                    IFNULL(SUM(black_total), 0) as black_return_amount,
+                    IFNULL(SUM(grand_total), 0) as total_return_amount
+                FROM goods_return
+                WHERE is_deleted = 0
+                  {$comp_filter}
+                  AND (DATE(date) BETWEEN '{$from_date}' AND '{$to_date}')";
+
+        $res = $this->db->query($sql)->row_array();
+
+        $white = (float)($res['white_return_amount'] ?? 0);
+        $black = (float)($res['black_return_amount'] ?? 0);
+        $total = (float)($res['total_return_amount'] ?? 0);
+        $count = (int)($res['total_returns'] ?? 0);
+
+        return [
+            'total_count'         => $count,
+            'white_return_amount' => $white,
+            'black_return_amount' => $black,
+            'total_return_amount' => $total,
+        ];
+    }
+
+    /**
      * Get Payment Collection Summary (4-Way Matrix: White/Black x Cash/Bank)
      */
     public function get_payment_collection_summary($company_id, $from_date, $to_date)

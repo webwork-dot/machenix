@@ -519,6 +519,35 @@
 </style>
 
 <div class="dashboard-wrapper">
+
+  <!-- ========================================== -->
+  <!-- DASHBOARD TOP HEADER & SWITCHER            -->
+  <!-- ========================================== -->
+  <div class="card mb-2" style="border-radius: 10px;">
+    <div class="card-body py-1 px-2">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="section-icon-badge" style="background: #ede9fe; color: #7367f0; width: 42px; height: 42px; font-size: 18px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+            <i class="feather icon-home"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bolder text-dark" style="font-size: 18px;">Leads & Customers Dashboard</h4>
+            <div class="text-muted small d-flex flex-wrap align-items-center gap-2 mt-25">
+              <span><i class="feather icon-users text-primary me-25"></i> CRM Analytics</span>
+              <span class="text-secondary">•</span>
+              <span><i class="feather icon-activity text-info me-25"></i> Customer Retention, Follow-ups & Staff Lead Performance</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboards Switcher Dropdown -->
+        <div class="d-flex align-items-center ms-auto">
+          <?php include(__DIR__ . '/partials/dashboard_switcher.php'); ?>
+        </div>
+      </div>
+    </div>
+  </div>
+
     <!-- Section 1: Orders -->
     <div class="dashboard-section-card">
         <div class="section-header">

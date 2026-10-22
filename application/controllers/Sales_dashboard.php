@@ -181,19 +181,25 @@ class Sales_dashboard extends CI_Controller
         // 3. Stock Summary
         $stock_summary = $this->sales_dashboard_model->get_sales_stock_summary($company_id, $filters['from_date'], $filters['to_date']);
 
-        // 4. Payment Collection Matrix
+        // 4. Company Expenses (White & Black)
+        $expense_summary = $this->sales_dashboard_model->get_expense_summary($company_id, $filters['from_date'], $filters['to_date']);
+
+        // 5. Sales Returns (White & Black)
+        $return_summary = $this->sales_dashboard_model->get_sales_return_summary($company_id, $filters['from_date'], $filters['to_date']);
+
+        // 6. Payment Collection Matrix
         $collection_summary = $this->sales_dashboard_model->get_payment_collection_summary($company_id, $filters['from_date'], $filters['to_date']);
 
-        // 5. Daily Trend for Charts
+        // 7. Daily Trend for Charts
         $daily_trend = $this->sales_dashboard_model->get_daily_trend($company_id, $filters['from_date'], $filters['to_date']);
 
-        // 6. Top Selling Products
+        // 8. Top Selling Products
         $top_products = $this->sales_dashboard_model->get_top_products($company_id, $filters['from_date'], $filters['to_date'], 5);
 
-        // 7. Top Customers
+        // 9. Top Customers
         $top_customers = $this->sales_dashboard_model->get_top_customers($company_id, $filters['from_date'], $filters['to_date'], 5);
 
-        // 8. Recent Activities
+        // 10. Recent Activities
         $recent_sales       = $this->sales_dashboard_model->get_recent_sales_orders($company_id, 8);
         $recent_collections = $this->sales_dashboard_model->get_recent_collections($company_id, 8);
 
@@ -210,6 +216,8 @@ class Sales_dashboard extends CI_Controller
             'funds_summary'      => $funds_summary,
             'sales_summary'      => $sales_summary,
             'stock_summary'      => $stock_summary,
+            'expense_summary'    => $expense_summary,
+            'return_summary'     => $return_summary,
             'collection_summary' => $collection_summary,
             'daily_trend'        => $daily_trend,
             'top_products'       => $top_products,
@@ -233,6 +241,8 @@ class Sales_dashboard extends CI_Controller
 
         $sales_summary      = $this->sales_dashboard_model->get_sales_amount_summary($company_id, $filters['from_date'], $filters['to_date']);
         $stock_summary      = $this->sales_dashboard_model->get_sales_stock_summary($company_id, $filters['from_date'], $filters['to_date']);
+        $expense_summary    = $this->sales_dashboard_model->get_expense_summary($company_id, $filters['from_date'], $filters['to_date']);
+        $return_summary     = $this->sales_dashboard_model->get_sales_return_summary($company_id, $filters['from_date'], $filters['to_date']);
         $collection_summary = $this->sales_dashboard_model->get_payment_collection_summary($company_id, $filters['from_date'], $filters['to_date']);
         $daily_trend        = $this->sales_dashboard_model->get_daily_trend($company_id, $filters['from_date'], $filters['to_date']);
         $top_products       = $this->sales_dashboard_model->get_top_products($company_id, $filters['from_date'], $filters['to_date'], 5);
@@ -244,6 +254,8 @@ class Sales_dashboard extends CI_Controller
             'filters'            => $filters,
             'sales_summary'      => $sales_summary,
             'stock_summary'      => $stock_summary,
+            'expense_summary'    => $expense_summary,
+            'return_summary'     => $return_summary,
             'collection_summary' => $collection_summary,
             'daily_trend'        => $daily_trend,
             'top_products'       => $top_products,

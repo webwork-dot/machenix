@@ -22,6 +22,11 @@ $route['sales-dashboard']                  = 'sales_dashboard/index';
 $route['sales-dashboard/get_data_ajax']    = 'sales_dashboard/get_data_ajax';
 $route[$r_inventory . '/sales-dashboard']  = 'sales_dashboard/index';
 
+/* Purchase Dashboard */
+$route['purchase-dashboard']                  = 'purchase_dashboard/index';
+$route['purchase-dashboard/get_data_ajax']    = 'purchase_dashboard/get_data_ajax';
+$route[$r_inventory . '/purchase-dashboard']  = 'purchase_dashboard/index';
+
 $route[$r_admin . '/staff'] = 'admin/staff';
 $route[$r_admin . '/staff/add']    = 'admin/staff_form/staff_add';
 $route[$r_admin . '/staff/edit/(:num)'] = 'admin/staff_form/staff_edit/$1';

@@ -294,6 +294,11 @@
             </div>
           </div>
         </div>
+
+        <!-- Dashboards Switcher Dropdown -->
+        <div class="d-flex align-items-center ms-auto">
+          <?php include(__DIR__ . '/partials/dashboard_switcher.php'); ?>
+        </div>
       </div>
     </div>
   </div>
@@ -382,7 +387,7 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- 3. SALES PERFORMANCE (AMOUNT & STOCK)      -->
+  <!-- 3. SALES, STOCK, EXPENSES & RETURNS        -->
   <!-- ========================================== -->
   <div class="dashboard-section-card">
     <div class="section-header">
@@ -391,15 +396,15 @@
           <i class="feather icon-shopping-cart"></i>
         </div>
         <h2 class="section-title">
-          Sales Performance
-          <span class="badge badge-light-primary small font-weight-normal" style="font-size: 11px;">Amount & Stock Volume</span>
+          Sales, Stock, Expenses & Returns
+          <span class="badge badge-light-primary small font-weight-normal" style="font-size: 11px;">Revenue • Stock • Expenses • Returns</span>
         </h2>
       </div>
     </div>
 
     <div class="row g-2">
       <!-- PANEL 1: SALES REVENUE (AMOUNT) -->
-      <div class="col-12 col-lg-6">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="sales-panel">
           <div>
             <div class="d-flex align-items-center justify-content-between">
@@ -413,47 +418,39 @@
             <div class="panel-sub-desc">
               Gross Sales across all orders in this period
             </div>
-
-            <?php 
-              $s_gross = (float)$sales_summary['gross_sales_amount'];
-              $s_white = (float)$sales_summary['white_sales_amount'];
-              $s_black = (float)$sales_summary['black_sales_amount'];
-            ?>
-
-            <!-- 2-Col Stat Boxes -->
-            <div class="row g-2 mt-1">
-              <div class="col-6 mt-0">
-                <div class="stat-col-box box-white">
-                  <div class="mb-25">
-                    <span class="tag-official">White Sales</span>
-                  </div>
-                  <h5 class="mb-0 fw-bolder text-primary" id="val_sales_white">₹ <?= number_format($s_white, 2); ?></h5>
-                  <small class="text-muted" style="font-size: 11px;">Basic: ₹ <?= number_format($sales_summary['total_basic_value'], 2); ?> | GST: ₹ <?= number_format($sales_summary['total_gst'], 2); ?></small>
-                </div>
-              </div>
-
-              <div class="col-6 mt-0">
-                <div class="stat-col-box box-black">
-                  <div class="mb-25">
-                    <span class="tag-unofficial">Black Sales</span>
-                  </div>
-                  <h5 class="mb-0 fw-bolder text-dark" id="val_sales_black">₹ <?= number_format($s_black, 2); ?></h5>
-                  <small class="text-muted" style="font-size: 11px;">Challan / Unofficial</small>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <!-- Returns Footer -->
-          <div class="d-flex align-items-center justify-content-between pt-2 mt-2" style="border-top: 1px dashed #ebe9f1; font-size: 12.5px;">
-            <span class="text-muted">Returns: <strong class="text-danger">- ₹ <?= number_format($sales_summary['total_return_amount'], 2); ?></strong></span>
-            <span>Net Realized: <strong class="text-success" id="val_sales_net">₹ <?= number_format($sales_summary['net_sales_amount'], 2); ?></strong></span>
+          <?php 
+            $s_gross = (float)$sales_summary['gross_sales_amount'];
+            $s_white = (float)$sales_summary['white_sales_amount'];
+            $s_black = (float)$sales_summary['black_sales_amount'];
+          ?>
+
+          <!-- 2-Col Stat Boxes -->
+          <div class="row g-2 mt-1">
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-white">
+                <div class="mb-25">
+                  <span class="tag-official">White Sales</span>
+                </div>
+                <h5 class="mb-0 fw-bolder text-primary" id="val_sales_white">₹ <?= number_format($s_white, 2); ?></h5>
+              </div>
+            </div>
+
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-black">
+                <div class="mb-25">
+                  <span class="tag-unofficial">Black Sales</span>
+                </div>
+                <h5 class="mb-0 fw-bolder text-dark" id="val_sales_black">₹ <?= number_format($s_black, 2); ?></h5>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- PANEL 2: SALES STOCK (QUANTITY) -->
-      <div class="col-12 col-lg-6">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="sales-panel">
           <div>
             <div class="d-flex align-items-center justify-content-between">
@@ -470,41 +467,125 @@
             <div class="panel-sub-desc">
               Gross physical stock dispatched across batches
             </div>
+          </div>
 
-            <?php 
-              $q_tot = (float)$stock_summary['total_stock_qty'];
-              $q_white = (float)$stock_summary['white_stock_qty'];
-              $q_black = (float)$stock_summary['black_stock_qty'];
-            ?>
+          <?php 
+            $q_tot = (float)$stock_summary['total_stock_qty'];
+            $q_white = (float)$stock_summary['white_stock_qty'];
+            $q_black = (float)$stock_summary['black_stock_qty'];
+          ?>
 
-            <!-- 2-Col Stat Boxes -->
-            <div class="row g-2 mt-1">
-              <div class="col-6 mt-0">
-                <div class="stat-col-box box-white">
-                  <div class="mb-25">
-                    <span class="tag-official">White Stock</span>
-                  </div>
-                  <h5 class="mb-0 fw-bolder text-primary" id="val_stock_white"><?= number_format($q_white); ?> <small style="font-size: 11px;">Units</small></h5>
-                  <small class="text-muted" style="font-size: 11px;">Returns: <?= number_format($stock_summary['white_return_qty']); ?> | Net: <strong><?= number_format($stock_summary['net_white_stock']); ?></strong></small>
+          <!-- 2-Col Stat Boxes -->
+          <div class="row g-2 mt-1">
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-white">
+                <div class="mb-25">
+                  <span class="tag-official">White Stock</span>
                 </div>
+                <h5 class="mb-0 fw-bolder text-primary" id="val_stock_white"><?= number_format($q_white); ?> <small style="font-size: 11px;">Units</small></h5>
               </div>
+            </div>
 
-              <div class="col-6 mt-0">
-                <div class="stat-col-box box-black">
-                  <div class="mb-25">
-                    <span class="tag-unofficial">Black Stock</span>
-                  </div>
-                  <h5 class="mb-0 fw-bolder text-dark" id="val_stock_black"><?= number_format($q_black); ?> <small style="font-size: 11px;">Units</small></h5>
-                  <small class="text-muted" style="font-size: 11px;">Returns: <?= number_format($stock_summary['black_return_qty']); ?> | Net: <strong><?= number_format($stock_summary['net_black_stock']); ?></strong></small>
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-black">
+                <div class="mb-25">
+                  <span class="tag-unofficial">Black Stock</span>
                 </div>
+                <h5 class="mb-0 fw-bolder text-dark" id="val_stock_black"><?= number_format($q_black); ?> <small style="font-size: 11px;">Units</small></h5>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Returns Footer -->
-          <div class="d-flex align-items-center justify-content-between pt-2 mt-2" style="border-top: 1px dashed #ebe9f1; font-size: 12.5px;">
-            <span class="text-muted">Returned Stock: <strong class="text-danger">- <?= number_format($stock_summary['total_return_qty']); ?> Units</strong></span>
-            <span>Net Dispatched: <strong class="text-info" id="val_stock_net"><?= number_format($stock_summary['net_total_stock']); ?> Units</strong></span>
+      <!-- PANEL 3: CASH BOOK EXPENSES (BLACK & WHITE) -->
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="sales-panel">
+          <div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="panel-header-title"><i class="feather icon-trending-down text-danger me-25"></i> Cash Book Expenses</span>
+              <span class="badge badge-light-danger" id="val_expense_count"><?= number_format($expense_summary['total_count'] ?? 0); ?> Records</span>
+            </div>
+
+            <?php 
+              $e_gross = (float)($expense_summary['gross_expense_amount'] ?? 0);
+              $e_white = (float)($expense_summary['white_expense_amount'] ?? 0);
+              $e_black = (float)($expense_summary['black_expense_amount'] ?? 0);
+            ?>
+
+            <div class="panel-main-val text-danger" id="val_expense_gross">
+              ₹ <?= number_format($e_gross, 2); ?>
+            </div>
+            <div class="panel-sub-desc">
+              Cash book expenses for <?= htmlspecialchars($company_info['name'] ?? 'current company'); ?>
+            </div>
+          </div>
+
+          <!-- 2-Col Stat Boxes -->
+          <div class="row g-2 mt-1">
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-white">
+                <div class="mb-25">
+                  <span class="tag-official">White Expense</span>
+                </div>
+                <h5 class="mb-0 fw-bolder text-primary" id="val_expense_white">₹ <?= number_format($e_white, 2); ?></h5>
+              </div>
+            </div>
+
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-black">
+                <div class="mb-25">
+                  <span class="tag-unofficial">Black Expense</span>
+                </div>
+                <h5 class="mb-0 fw-bolder text-dark" id="val_expense_black">₹ <?= number_format($e_black, 2); ?></h5>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 4: SALES RETURNS (BLACK & WHITE) -->
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="sales-panel">
+          <div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="panel-header-title"><i class="feather icon-rotate-ccw text-warning me-25"></i> Sales Returns</span>
+              <span class="badge badge-light-warning" id="val_returns_count"><?= number_format($return_summary['total_count'] ?? ($sales_summary['total_returns'] ?? 0)); ?> Returns</span>
+            </div>
+
+            <?php 
+              $r_gross = (float)($return_summary['total_return_amount'] ?? ($sales_summary['total_return_amount'] ?? 0));
+              $r_white = (float)($return_summary['white_return_amount'] ?? ($sales_summary['white_return_amount'] ?? 0));
+              $r_black = (float)($return_summary['black_return_amount'] ?? ($sales_summary['black_return_amount'] ?? 0));
+            ?>
+
+            <div class="panel-main-val text-warning" id="val_returns_total">
+              ₹ <?= number_format($r_gross, 2); ?>
+            </div>
+            <div class="panel-sub-desc">
+              Sales returns for <?= htmlspecialchars($company_info['name'] ?? 'current company'); ?>
+            </div>
+          </div>
+
+          <!-- 2-Col Stat Boxes -->
+          <div class="row g-2 mt-1">
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-white">
+                <div class="mb-25">
+                  <span class="tag-official">White Return</span>
+                </div>
+                <h5 class="mb-0 fw-bolder text-primary" id="val_returns_white">₹ <?= number_format($r_white, 2); ?></h5>
+              </div>
+            </div>
+
+            <div class="col-6 mt-0">
+              <div class="stat-col-box box-black">
+                <div class="mb-25">
+                  <span class="tag-unofficial">Black Return</span>
+                </div>
+                <h5 class="mb-0 fw-bolder text-dark" id="val_returns_black">₹ <?= number_format($r_black, 2); ?></h5>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -880,6 +961,8 @@
 
   var dailyData = <?= json_encode($daily_trend); ?>;
   var salesSummary = <?= json_encode($sales_summary); ?>;
+  var expenseSummary = <?= json_encode($expense_summary ?? []); ?>;
+  var returnSummary = <?= json_encode($return_summary ?? []); ?>;
 
   function initSalesCharts() {
     // 1. Sales vs Collection Timeline Chart
