@@ -306,88 +306,7 @@
   <?php include('filter/sales_dashboard_filter.php'); ?>
 
   <!-- ========================================== -->
-  <!-- 2. CURRENT FUNDS ON HAND                   -->
-  <!-- ========================================== -->
-  <div class="dashboard-section-card">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon-badge" style="background-color: #dcfce7; color: #16a34a;">
-          <i class="feather icon-dollar-sign"></i>
-        </div>
-        <h2 class="section-title">
-          Current Funds on Hand
-          <span class="badge badge-light-success small font-weight-normal" style="font-size: 11px;">Real-time Ledger</span>
-        </h2>
-      </div>
-    </div>
-
-    <div class="row g-2">
-      <!-- 1. Cash in Hand -->
-      <div class="col-12 col-md-4">
-        <div class="cash-stat-card card-success-top">
-          <div class="stat-header">
-            <span class="stat-title"><i class="feather icon-inbox text-success me-50"></i> Cash on Hand</span>
-            <span class="badge badge-light-success">Cash</span>
-          </div>
-          <?php $cash_tot = (float)$funds_summary['cash']['total']; ?>
-          <div class="stat-value <?= ($cash_tot < 0) ? 'text-danger' : 'text-success'; ?>" id="val_cash_total">
-            <?= ($cash_tot < 0 ? '- ₹ ' : '₹ ') . number_format(abs($cash_tot), 2); ?>
-          </div>
-          <div class="stat-detail">
-            <?php 
-              $c_off = (float)$funds_summary['cash']['official']; 
-              $c_unoff = (float)$funds_summary['cash']['unofficial'];
-            ?>
-            <span>Official (White): <b class="text-primary"><?= ($c_off < 0 ? '- ₹ ' : '₹ ') . number_format(abs($c_off), 2); ?></b></span>
-            <span>Unofficial (Black): <b class="text-secondary"><?= ($c_unoff < 0 ? '- ₹ ' : '₹ ') . number_format(abs($c_unoff), 2); ?></b></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. Bank in Hand -->
-      <div class="col-12 col-md-4">
-        <div class="cash-stat-card card-official">
-          <div class="stat-header">
-            <span class="stat-title"><i class="feather icon-credit-card text-primary me-50"></i> Bank Balance</span>
-            <span class="badge badge-light-primary">Accounts</span>
-          </div>
-          <?php $bank_tot = (float)$funds_summary['bank']['total']; ?>
-          <div class="stat-value" style="color: #7367f0;" id="val_bank_total">
-            <?= ($bank_tot < 0 ? '- ₹ ' : '₹ ') . number_format(abs($bank_tot), 2); ?>
-          </div>
-          <div class="stat-detail">
-            <?php 
-              $b_off = (float)$funds_summary['bank']['official']; 
-              $b_unoff = (float)$funds_summary['bank']['unofficial'];
-            ?>
-            <span>Official (White): <b class="text-primary"><?= ($b_off < 0 ? '- ₹ ' : '₹ ') . number_format(abs($b_off), 2); ?></b></span>
-            <span>Unofficial (Black): <b class="text-secondary"><?= ($b_unoff < 0 ? '- ₹ ' : '₹ ') . number_format(abs($b_unoff), 2); ?></b></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Total Amount -->
-      <div class="col-12 col-md-4">
-        <div class="cash-stat-card card-warning-top">
-          <div class="stat-header">
-            <span class="stat-title"><i class="feather icon-award text-warning me-50"></i> Total Amount</span>
-            <span class="badge badge-light-warning">Cash + Bank</span>
-          </div>
-          <?php $tot_funds = (float)($funds_summary['total_amount'] ?? ($cash_tot + $bank_tot)); ?>
-          <div class="stat-value <?= ($tot_funds < 0) ? 'text-danger' : 'text-dark'; ?>" id="val_funds_total">
-            <?= ($tot_funds < 0 ? '- ₹ ' : '₹ ') . number_format(abs($tot_funds), 2); ?>
-          </div>
-          <div class="stat-detail">
-            <span>Cash Share: <b class="text-success">₹ <?= number_format($cash_tot, 2); ?></b></span>
-            <span>Bank Share: <b style="color: #7367f0;">₹ <?= number_format($bank_tot, 2); ?></b></span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================== -->
-  <!-- 3. SALES, STOCK, EXPENSES & RETURNS        -->
+  <!-- 2. SALES, STOCK, EXPENSES & RETURNS        -->
   <!-- ========================================== -->
   <div class="dashboard-section-card">
     <div class="section-header">
@@ -586,6 +505,87 @@
                 <h5 class="mb-0 fw-bolder text-dark" id="val_returns_black">₹ <?= number_format($r_black, 2); ?></h5>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. CURRENT FUNDS ON HAND                   -->
+  <!-- ========================================== -->
+  <div class="dashboard-section-card">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon-badge" style="background-color: #dcfce7; color: #16a34a;">
+          <i class="feather icon-dollar-sign"></i>
+        </div>
+        <h2 class="section-title">
+          Current Funds on Hand
+          <span class="badge badge-light-success small font-weight-normal" style="font-size: 11px;">Real-time Ledger</span>
+        </h2>
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <!-- 1. Cash in Hand -->
+      <div class="col-12 col-md-4">
+        <div class="cash-stat-card card-success-top">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-inbox text-success me-50"></i> Cash on Hand</span>
+            <span class="badge badge-light-success">Cash</span>
+          </div>
+          <?php $cash_tot = (float)$funds_summary['cash']['total']; ?>
+          <div class="stat-value <?= ($cash_tot < 0) ? 'text-danger' : 'text-success'; ?>" id="val_cash_total">
+            <?= ($cash_tot < 0 ? '- ₹ ' : '₹ ') . number_format(abs($cash_tot), 2); ?>
+          </div>
+          <div class="stat-detail">
+            <?php 
+              $c_off = (float)$funds_summary['cash']['official']; 
+              $c_unoff = (float)$funds_summary['cash']['unofficial'];
+            ?>
+            <span>Official (White): <b class="text-primary"><?= ($c_off < 0 ? '- ₹ ' : '₹ ') . number_format(abs($c_off), 2); ?></b></span>
+            <span>Unofficial (Black): <b class="text-secondary"><?= ($c_unoff < 0 ? '- ₹ ' : '₹ ') . number_format(abs($c_unoff), 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Bank in Hand -->
+      <div class="col-12 col-md-4">
+        <div class="cash-stat-card card-official">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-credit-card text-primary me-50"></i> Bank Balance</span>
+            <span class="badge badge-light-primary">Accounts</span>
+          </div>
+          <?php $bank_tot = (float)$funds_summary['bank']['total']; ?>
+          <div class="stat-value" style="color: #7367f0;" id="val_bank_total">
+            <?= ($bank_tot < 0 ? '- ₹ ' : '₹ ') . number_format(abs($bank_tot), 2); ?>
+          </div>
+          <div class="stat-detail">
+            <?php 
+              $b_off = (float)$funds_summary['bank']['official']; 
+              $b_unoff = (float)$funds_summary['bank']['unofficial'];
+            ?>
+            <span>Official (White): <b class="text-primary"><?= ($b_off < 0 ? '- ₹ ' : '₹ ') . number_format(abs($b_off), 2); ?></b></span>
+            <span>Unofficial (Black): <b class="text-secondary"><?= ($b_unoff < 0 ? '- ₹ ' : '₹ ') . number_format(abs($b_unoff), 2); ?></b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Total Amount -->
+      <div class="col-12 col-md-4">
+        <div class="cash-stat-card card-warning-top">
+          <div class="stat-header">
+            <span class="stat-title"><i class="feather icon-award text-warning me-50"></i> Total Amount</span>
+            <span class="badge badge-light-warning">Cash + Bank</span>
+          </div>
+          <?php $tot_funds = (float)($funds_summary['total_amount'] ?? ($cash_tot + $bank_tot)); ?>
+          <div class="stat-value <?= ($tot_funds < 0) ? 'text-danger' : 'text-dark'; ?>" id="val_funds_total">
+            <?= ($tot_funds < 0 ? '- ₹ ' : '₹ ') . number_format(abs($tot_funds), 2); ?>
+          </div>
+          <div class="stat-detail">
+            <span>Cash Share: <b class="text-success">₹ <?= number_format($cash_tot, 2); ?></b></span>
+            <span>Bank Share: <b style="color: #7367f0;">₹ <?= number_format($bank_tot, 2); ?></b></span>
           </div>
         </div>
       </div>
