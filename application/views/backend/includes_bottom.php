@@ -1,25 +1,25 @@
+<?php
+$__page = isset($page_name) ? $page_name : '';
+$__load_charts = in_array($__page, array('dashboard', 'sales_dashboard', 'purchase_dashboard'), true);
+?>
 <script src="<?php echo base_url('app-assets/vendors/js/forms/select/select2.full.min.js');?> "></script>
 <script src="<?php echo base_url('app-assets/js/core/app-menu.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/js/core/app.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/js/scripts/customizer.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/vendors/js/forms/validation/jquery.validate.min.js');?>"></script>
-<script src="<?php echo base_url('app-assets/js/scripts/pages/auth-login.js');?>"></script>
+<?php if ($__load_charts): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="<?php echo base_url('app-assets/js/scripts/charts/chart-apex.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/js/scripts/charts/chart-chartjs.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/vendors/js/charts/apexcharts.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/vendors/js/charts/chart.min.js');?>"></script>
+<?php endif; ?>
 
 <script src="<?php echo base_url('app-assets/vendors/js/pickers/pickadate/picker.js');?>"></script>
 <script src="<?php echo base_url('app-assets/vendors/js/pickers/pickadate/picker.date.js');?>"></script>
 <script src="<?php echo base_url('app-assets/vendors/js/pickers/flatpickr/flatpickr.min.js');?>"></script>
-<!--<script src="<?php echo base_url('app-assets/js/scripts/forms/pickers/form-pickers.min.js');?>"></script>-->
 <script src="<?php echo base_url('app-assets/js/scripts/forms/form-select2.min.js');?>"></script>
 <script src="<?php echo base_url('app-assets/js/scripts/jquery-ui.js');?>"></script>
-
-
-<!--<script src="<?php echo base_url('app-assets/vendors/js/calendar/fullcalendar.min.js');?>  "></script>-->
-<!--<script src="<?php echo base_url('app-assets/js/scripts/pages/app-calendar-events.min.js');?> "></script>-->
-<!--<script src="<?php echo base_url('app-assets/js/scripts/pages/app-calendar.min.js');?> "></script>-->
 
 <script src="<?php echo base_url('app-assets/js/scripts/extensions/ext-component-toastr.min.js');?>"></script>
 
@@ -42,39 +42,36 @@ var phoneConfigs = {
     nationalMode: true,
     numberType: "MOBILE",
     //onlyCountries: ['us', 'gb', 'ch', 'ca', 'do'],
-    preferredCountries: ['sa', 'ae', 'qa','om','bh','kw','ma'],
+    preferredCountries: ['in', 'sa', 'ae', 'qa','om','bh','kw','ma'],
     preventInvalidNumbers: true,
-    separateDialCode: true,   
-    initialCountry: "auto",
-    geoIpLookup: function(callback) {
-        $.get("https://ipinfo.io", function() {}, "jsonp").always(function(resp) {
-            var countryCode = (resp && resp.country) ? resp.country : "";
-            callback(countryCode);
-            $(".country-code").val(countryCode);
-        });
-    },
+    separateDialCode: true,
+    // Default India immediately — avoid blocking UI on ipinfo.io latency/failures
+    initialCountry: "in",
     utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/11.0.9/js/utils.js"
 }
 
-phInput.each(function() {
-    var $this = $(this);
-    $this.intlTelInput(phoneConfigs);
-    var code = $this.data('code');
-    var val = $this.val();
-    if (code && val) {
-        $this.intlTelInput("setNumber", "+" + code + val);
-    }
-});
+if (phInput.length || telInput.length) {
+    $(".country-code").val("in");
+    phInput.each(function() {
+        var $this = $(this);
+        $this.intlTelInput(phoneConfigs);
+        var code = $this.data('code');
+        var val = $this.val();
+        if (code && val) {
+            $this.intlTelInput("setNumber", "+" + code + val);
+        }
+    });
 
-telInput.each(function() {
-    var $this = $(this);
-    $this.intlTelInput(phoneConfigs);
-    var code = $this.data('code');
-    var val = $this.val();
-    if (code && val) {
-        $this.intlTelInput("setNumber", "+" + code + val);
-    }
-});
+    telInput.each(function() {
+        var $this = $(this);
+        $this.intlTelInput(phoneConfigs);
+        var code = $this.data('code');
+        var val = $this.val();
+        if (code && val) {
+            $this.intlTelInput("setNumber", "+" + code + val);
+        }
+    });
+}
 
 function clearValue(input) {
   if (input.value === '0') {

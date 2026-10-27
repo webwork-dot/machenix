@@ -1,5 +1,7 @@
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<?php
+$__page = isset($page_name) ? $page_name : '';
+$__load_charts = in_array($__page, array('dashboard', 'sales_dashboard', 'purchase_dashboard'), true);
+?>
       <link rel="apple-touch-icon" href="<?php echo base_url()?>app-assets/images/logo/logo.svg">
       
        <link href="<?php echo base_url('assets/css/icons.min.css');?>" rel="stylesheet" type="text/css" />
@@ -7,7 +9,9 @@
       <link rel="shortcut icon" type="image/x-icon" href="<?php echo base_url()?>app-assets/images/logo/fav.png">
       <link href="<?php echo base_url('assets/css/css2.css?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500;1,600');?>" rel="stylesheet">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/vendors.min.css')?>">
+      <?php if ($__load_charts): ?>
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/charts/apexcharts.css')?>">
+      <?php endif; ?>
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/extensions/sweetalert2.min.css')?>">
        <script src="<?php echo base_url('app-assets/vendors/js/extensions/sweetalert2.all.min.js');?>"></script>
       
@@ -19,8 +23,10 @@
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/themes/bordered-layout.min.css')?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/themes/semi-dark-layout.min.css')?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/core/menu/menu-types/vertical-menu.min.css')?>">
+      <?php if ($__load_charts): ?>
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/pages/dashboard-ecommerce.min.css')?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/plugins/charts/chart-apex.min.css')?>">
+      <?php endif; ?>
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/plugins/forms/form-validation.css');?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/pages/authentication.css');?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/core/colors/palette-noui.css');?>">
@@ -31,8 +37,6 @@
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/custom.css')?>">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/jquery-ui.css')?>">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.css">
-      <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/css/pages/app-calendar.min.css')?>">
-      <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/calendars/fullcalendar.min.css')?> ">
       <link rel="stylesheet" type="text/css" href="<?php echo base_url('app-assets/vendors/css/pickers/pickadate/pickadate.css');?>">
       <link href="<?php echo base_url();?>assets/zoom-plugins/zoomplus.css" rel="stylesheet" type="text/css" media="screen"/>
      <script src="<?php echo base_url();?>assets/zoom-plugins/zoomplus.js" type="text/javascript"></script>
@@ -49,12 +53,10 @@
     <!-- ************ Table ********** -->  
     <script src="<?php echo base_url('app-assets/vendors/js/vendors.min.js');?>"></script>
     <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
-    <!-- <link rel="stylesheet" type="text/css" href="<?php echo base_url();?>assets/css/intlTelInput.css" />
-    <script type="text/javascript" src="<?php echo base_url();?>assets/js/intlTelInput-jquery.min.js"></script> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/16.0.8/css/intlTelInput.css" />
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/16.0.8/js/intlTelInput-jquery.min.js"></script>
     <script src="<?php echo base_url();?>app-assets/vendors/js/extensions/toastr.min.js"></script>
 
-    <!-- breadcrumb-area-end --><!-- Fancybox CSS -->
+    <!-- Fancybox -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" />
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script>

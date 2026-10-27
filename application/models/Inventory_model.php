@@ -27522,6 +27522,9 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 		$keyword_filter = "";
 
 		$user_id = $this->session->userdata('super_user_id');
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
 			$keyword        = $filter_data['keywords'];
@@ -27672,6 +27675,12 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 		$data = array();
 		$keyword_filter = "";
 
+		$tab = $this->input->post('tab') ?: ($this->input->get('tab') ?: ($_REQUEST['tab'] ?? 'my'));
+		$company_id = $this->session->userdata('company_id');
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
+
 		if (isset($_REQUEST['keywords']) && $_REQUEST['keywords'] != ""):
 			$keyword        = $_REQUEST['keywords'];
 			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($keyword) . "%' OR last_name like '%" . $this->db->escape_like_str($keyword) . "%' OR CONCAT(first_name, ' ', last_name) like '%" . $this->db->escape_like_str($keyword) . "%' OR email like '%" . $this->db->escape_like_str($keyword) . "%' OR phone like '%" . $this->db->escape_like_str($keyword) . "%' OR EXISTS (SELECT 1 FROM company WHERE FIND_IN_SET(company.id, sys_users.company_id) AND company.name like '%" . $this->db->escape_like_str($keyword) . "%') OR EXISTS (SELECT 1 FROM access WHERE access.id = sys_users.staff_access AND access.name like '%" . $this->db->escape_like_str($keyword) . "%'))";
@@ -27682,9 +27691,7 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 			$keyword_filter .= " AND (first_name like '%" . $this->db->escape_like_str($search_val) . "%' OR last_name like '%" . $this->db->escape_like_str($search_val) . "%' OR CONCAT(first_name, ' ', last_name) like '%" . $this->db->escape_like_str($search_val) . "%' OR email like '%" . $this->db->escape_like_str($search_val) . "%' OR phone like '%" . $this->db->escape_like_str($search_val) . "%' OR EXISTS (SELECT 1 FROM company WHERE FIND_IN_SET(company.id, sys_users.company_id) AND company.name like '%" . $this->db->escape_like_str($search_val) . "%') OR EXISTS (SELECT 1 FROM access WHERE access.id = sys_users.staff_access AND access.name like '%" . $this->db->escape_like_str($search_val) . "%'))";
 		endif;
 
-		$tab = $this->input->post('tab') ?: ($this->input->get('tab') ?: ($_REQUEST['tab'] ?? 'my'));
 		if ($tab == 'my') {
-			$company_id = $this->session->userdata('company_id');
 			if (!empty($company_id)) {
 				$keyword_filter .= " AND FIND_IN_SET('" . $this->db->escape_str($company_id) . "', company_id)";
 			}
