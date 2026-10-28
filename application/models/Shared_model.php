@@ -273,6 +273,10 @@ class Shared_model extends CI_Model
 	public function get_ajax_reminder_list(){ 
 		$data= array();
 		$added_by_id = $this->session->userdata('super_user_id');
+		// Release session lock so parallel DataTables AJAX is not blocked
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
 		$curr_date=date("Y-m-d H:i:s");
         $query = $this->db->query("SELECT id,title,description,reminder_date FROM reminder WHERE added_by_id='$added_by_id' AND status='pending' AND  reminder_date<='$curr_date'  ORDER BY reminder_date ASC LIMIT 10");
 		//echo $this->db->last_query();exit();
