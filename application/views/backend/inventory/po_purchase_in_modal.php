@@ -1109,6 +1109,64 @@ function recalcOfficialAndTotals($row) {
 function calculateActual(el) {
   var $row = getRow(el);
 
+  if ($(el).hasClass('actual-rmb')) {
+    var rawRmb = $(el).val();
+    if (rawRmb === '' || rawRmb === null) {
+      $row.find('.actual-usd').val('');
+      $row.find('.actual-inr').val('');
+    } else {
+      var $section = $row.closest('.supplier-section');
+      var type = $section.find('.supplier-currency-type').val() || 'usd';
+      var conRate = toNum($section.find('.supplier-con-rate').val());
+      var inrRate = toNum($section.find('.supplier-local-inr-rate').val());
+      var unitRmb = toNum(rawRmb);
+
+      if (type === 'rmb') {
+        if (conRate > 0) {
+          $row.find('.actual-usd').val(fmtUsd(unitRmb / conRate));
+        }
+        if (inrRate > 0) {
+          $row.find('.actual-inr').val((unitRmb * inrRate).toFixed(2));
+        }
+      } else {
+        if (conRate > 0) {
+          $row.find('.actual-usd').val(fmtUsd(unitRmb / conRate));
+        }
+        if (inrRate > 0) {
+          $row.find('.actual-inr').val(((unitRmb / conRate) * inrRate).toFixed(2));
+        }
+      }
+    }
+  } else if ($(el).hasClass('actual-usd')) {
+    var rawUsd = $(el).val();
+    if (rawUsd === '' || rawUsd === null) {
+      $row.find('.actual-rmb').val('');
+      $row.find('.actual-inr').val('');
+    } else {
+      var $section = $row.closest('.supplier-section');
+      var type = $section.find('.supplier-currency-type').val() || 'usd';
+      var conRate = toNum($section.find('.supplier-con-rate').val());
+      var inrRate = toNum($section.find('.supplier-local-inr-rate').val());
+      var unitUsd = toNum(rawUsd);
+
+      if (type === 'usd') {
+        if (conRate > 0) {
+          $row.find('.actual-rmb').val((unitUsd * conRate).toFixed(5));
+        }
+        if (inrRate > 0) {
+          $row.find('.actual-inr').val((unitUsd * inrRate).toFixed(2));
+        }
+      } else {
+        if (conRate > 0) {
+          $row.find('.actual-rmb').val((unitUsd * conRate).toFixed(5));
+        }
+        if (inrRate > 0) {
+          $row.find('.actual-inr').val(((unitUsd * conRate) * inrRate).toFixed(2));
+        }
+      }
+    }
+  }
+
   var qty = toNum($row.find('.actual-qty').val());
   
   // RMB
@@ -1167,7 +1225,7 @@ function applySupplierConversionRates($section) {
     } else {
       var unitRmb = toNum($row.find('.actual-rmb').val());
       if (conRate > 0) {
-        $row.find('.actual-usd').val(fmtUsd(unitRmb * conRate));
+        $row.find('.actual-usd').val(fmtUsd(unitRmb / conRate));
       }
       if (inrRate > 0) {
         $row.find('.actual-inr').val((unitRmb * inrRate).toFixed(2));
@@ -1231,7 +1289,7 @@ function handleExpenseExtraConversion(inputEl) {
       rmb = (conRate > 0) ? (usd * conRate) : 0;
       inr = (inrRate > 0) ? (usd * inrRate) : 0;
     } else {
-      rmb = (conRate > 0) ? (usd / conRate) : 0;
+      rmb = (conRate > 0) ? (usd * conRate) : 0;
       inr = (inrRate > 0) ? (rmb * inrRate) : 0;
     }
     $rmbInput.val(rmb > 0 ? rmb.toFixed(2) : '');
@@ -1244,7 +1302,7 @@ function handleExpenseExtraConversion(inputEl) {
       usd = (conRate > 0) ? (rmb / conRate) : 0;
       inr = (inrRate > 0) ? (usd * inrRate) : 0;
     } else {
-      usd = (conRate > 0) ? (rmb * conRate) : 0;
+      usd = (conRate > 0) ? (rmb / conRate) : 0;
       inr = (inrRate > 0) ? (rmb * inrRate) : 0;
     }
     $usdInput.val(usd > 0 ? fmtUsd(usd) : '');
@@ -1258,7 +1316,7 @@ function handleExpenseExtraConversion(inputEl) {
       rmb = (conRate > 0) ? (usd * conRate) : 0;
     } else {
       rmb = (inrRate > 0) ? (inr / inrRate) : 0;
-      usd = (conRate > 0) ? (rmb * conRate) : 0;
+      usd = (conRate > 0) ? (rmb / conRate) : 0;
     }
     $usdInput.val(usd > 0 ? fmtUsd(usd) : '');
     $rmbInput.val(rmb > 0 ? rmb.toFixed(2) : '');
@@ -1349,6 +1407,10 @@ $(document).ready(function () {
 
   $(document).on('keyup change', '.supplier-con-rate, .supplier-local-inr-rate', function () {
     applySupplierConversionRates($(this).closest('.supplier-section'));
+  });
+
+  $(document).on('change', '.actual-rmb, .actual-usd', function () {
+    calculateActual(this);
   });
 
   $(document).on('click', '#add_supplier_btn', function() {

@@ -8,6 +8,15 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.html5.min.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
     
+<style>
+.local-prod-field {
+    min-width: 90px;
+}
+select.local-prod-field {
+    min-width: 110px;
+}
+</style>
+     
 <div class="row" id="table-bordered">
    <div class="col-12">
       <div class="card">
@@ -24,6 +33,11 @@
             <a href="<?php echo site_url('inventory/local-products/add'); ?>" class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0" aria-controls="DataTables_Table_0" >
                 <span><i class="feather icon-plus"></i> <?= get_phrase('add_products');?></span>
             </a>
+            <?php } ?>
+            <?php if (is_access('73')) { ?>
+            <button type="button" id="btn-toggle-edit-mode" class="dt-button add-new desktop-tab add-btn btn btn-outline-primary" style="margin-right: 10px;" tabindex="0">
+                <span><i class="feather icon-edit-2" id="mode-icon"></i> <span id="mode-text">Edit Mode</span></span>
+            </button>
             <?php } ?>
             <table class="table leads-table" id="report-datatable">
                <thead>
@@ -53,9 +67,34 @@
 
 <script type="text/javascript">   
 	var dataTable;
+	var isEditMode = false;
 	var localProductFieldTimers = {};
 
     $(document).ready(function($) {
+		$('#btn-toggle-edit-mode').on('click', function(e) {
+			e.preventDefault();
+
+			// If an input is currently being edited, flush it immediately
+			$(':focus.local-prod-field').each(function() {
+				updateLocalProductField(this, true);
+			});
+
+			isEditMode = !isEditMode;
+			if (isEditMode) {
+				$(this).removeClass('btn-outline-primary').addClass('btn-primary');
+				$('#mode-icon').removeClass('icon-edit-2').addClass('icon-eye');
+				$('#mode-text').text('View Mode');
+			} else {
+				$(this).removeClass('btn-primary').addClass('btn-outline-primary');
+				$('#mode-icon').removeClass('icon-eye').addClass('icon-edit-2');
+				$('#mode-text').text('Edit Mode');
+			}
+
+			if (dataTable) {
+				dataTable.ajax.reload(null, false);
+			}
+		});
+
     	dataTable = $('#report-datatable').DataTable({ 
         "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             "ordering": false,
@@ -80,7 +119,8 @@
                 "dataType": "json",
                 "type": "POST",
                 "data": function(data){
-                       var date_range="";			
+                       var date_range="";
+                       data.edit_mode = isEditMode ? 1 : 0;
                 },
                 "beforeSend": function() {
                     $('.loader').show();
@@ -140,7 +180,7 @@
         });
     });
 
-	function updateLocalProductField(elemt) {
+	function updateLocalProductField(elemt, immediate) {
 		var $el = $(elemt);
 		var id = $el.data('id');
 		var field = $el.data('field');
@@ -152,7 +192,7 @@
 			clearTimeout(localProductFieldTimers[key]);
 		}
 
-		var delay = isSelect ? 0 : 500;
+		var delay = (immediate || isSelect) ? 0 : 500;
 		localProductFieldTimers[key] = setTimeout(function() {
 			$.ajax({
 				type: "POST",

@@ -57,6 +57,7 @@ class Local_products_model extends CI_Model
         }
 
         if (!empty($query)) {
+            $can_edit = is_access('73') && !empty($this->input->post_get('edit_mode')) && ((int)$this->input->post_get('edit_mode') === 1);
             foreach ($query->result_array() as $item) {
                 $id = $item['id'];
                 $is_variation = $item['is_variation'];
@@ -82,7 +83,7 @@ class Local_products_model extends CI_Model
                 $category = $this->common_model->getRowById('categories', '*', ['id' => $item['categories']]);
                 $category_name = $category['name'] ?? '-';
 
-                if (is_access('73')) {
+                if ($can_edit) {
                     $alias_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="alias" value="' . htmlspecialchars($item['alias'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
                     $item_code_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="item_code" value="' . htmlspecialchars($item['item_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
                     $hsn_input = '<input type="text" class="form-control form-control-sm local-prod-field" data-id="' . $id . '" data-field="hsn_code" value="' . htmlspecialchars($item['hsn_code'] ?? '', ENT_QUOTES) . '" onkeyup="updateLocalProductField(this)">';
@@ -107,9 +108,9 @@ class Local_products_model extends CI_Model
                     $status_select .= '<option value="0"' . $status_selected_0 . '>Inactive</option>';
                     $status_select .= '</select>';
                 } else {
-                    $alias_input = htmlspecialchars($item['alias'] ?? '-', ENT_QUOTES);
-                    $item_code_input = htmlspecialchars($item['item_code'] ?? '-', ENT_QUOTES);
-                    $hsn_input = htmlspecialchars($item['hsn_code'] ?? '-', ENT_QUOTES);
+                    $alias_input = !empty($item['alias']) ? htmlspecialchars($item['alias'], ENT_QUOTES) : '-';
+                    $item_code_input = !empty($item['item_code']) ? htmlspecialchars($item['item_code'], ENT_QUOTES) : '-';
+                    $hsn_input = !empty($item['hsn_code']) ? htmlspecialchars($item['hsn_code'], ENT_QUOTES) : '-';
                     $gst_input = htmlspecialchars(clean_number($item['gst'] ?? 0), ENT_QUOTES);
                     $mrp_input = htmlspecialchars(clean_number($item['product_mrp'] ?? 0), ENT_QUOTES);
                     $costing_input = htmlspecialchars(clean_number($item['costing_price'] ?? 0), ENT_QUOTES);
@@ -124,7 +125,7 @@ class Local_products_model extends CI_Model
                         }
                     }
                     $commission_select = $commission_label;
-                    $status_select = ((int)$item['status'] === 1) ? 'Active' : 'Inactive';
+                    $status_select = ((int)$item['status'] === 1) ? '<span class="badge rounded-pill bg-light-success text-success">Active</span>' : '<span class="badge rounded-pill bg-light-danger text-danger">Inactive</span>';
                 }
 
                 $image_src = !empty($item['product_image']) ? $item['product_image'] : (!empty($item['image']) ? $item['image'] : '');

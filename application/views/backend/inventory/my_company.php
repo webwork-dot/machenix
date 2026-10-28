@@ -8,7 +8,7 @@
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.html5.min.js"></script>
 <script src="<?= base_url();?>app-assets/vendors/js/tables/datatable/buttons.print.min.js"></script>
 
-<?php include('nav/nav_settings.php'); ?>
+<?php // include('nav/nav_settings.php'); ?>
 <div class="row" id="table-bordered">
    <div class="col-12">
       <div class="card">

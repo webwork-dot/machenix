@@ -1068,8 +1068,76 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (942, 456, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
 (943, 456, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
 (944, 457, 'datatype', 'Company', '', 1, 0, '2026-10-21 12:53:00'),
-(945, 457, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00');
---
+(945, 457, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
+
+-- =========================================================
+-- Settings (tabs: Categories / Product Unit / Expense Type / Charges / Commissions / Profit Commission Slab / Bank Accounts / Settings)
+-- =========================================================
+(946, 0, 'module', 'Settings', 'inventory/settings', 33, 0, '2026-10-28 17:40:00'),
+(947, 946, 'tabs', 'Categories', 'inventory/category', 1, 0, '2026-10-28 17:40:00'),
+(948, 946, 'tabs', 'Product Unit', 'inventory/product-unit', 2, 0, '2026-10-28 17:40:00'),
+(949, 946, 'tabs', 'Expense Type', 'inventory/expense-type', 3, 0, '2026-10-28 17:40:00'),
+(950, 946, 'tabs', 'Charges', 'inventory/charges', 4, 0, '2026-10-28 17:40:00'),
+(951, 946, 'tabs', 'Commissions', 'inventory/commission-slab', 5, 0, '2026-10-28 17:40:00'),
+(952, 946, 'tabs', 'Profit Commission Slab', 'inventory/profit-commission-slab', 6, 0, '2026-10-28 17:40:00'),
+(953, 946, 'tabs', 'Bank Accounts', 'inventory/bank-accounts', 7, 0, '2026-10-28 17:40:00'),
+(954, 946, 'tabs', 'Settings', 'inventory/settings', 8, 0, '2026-10-28 17:40:00'),
+
+-- Categories (947)
+(955, 947, 'columns', 'Category Name', 'name', 1, 0, '2026-10-28 17:40:00'),
+(956, 947, 'actions', 'Add', 'inventory/category/add', 1, 0, '2026-10-28 17:40:00'),
+(957, 947, 'actions', 'Edit', 'inventory/category/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(958, 947, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+
+-- Product Unit (948)
+(959, 948, 'columns', 'Name', 'name', 1, 0, '2026-10-28 17:40:00'),
+(960, 948, 'actions', 'Add', 'inventory/product-unit/add', 1, 0, '2026-10-28 17:40:00'),
+(961, 948, 'actions', 'Edit', 'inventory/product-unit/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(962, 948, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+(963, 948, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
+
+-- Expense Type (949)
+(964, 949, 'columns', 'Name', 'name', 1, 0, '2026-10-28 17:40:00'),
+(965, 949, 'actions', 'Add', 'inventory/expense-type/add', 1, 0, '2026-10-28 17:40:00'),
+(966, 949, 'actions', 'Edit', 'inventory/expense-type/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(967, 949, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+(968, 949, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
+
+-- Charges (950)
+(969, 950, 'columns', 'Name', 'name', 1, 0, '2026-10-28 17:40:00'),
+(970, 950, 'columns', 'GST (%)', 'gst', 2, 0, '2026-10-28 17:40:00'),
+(971, 950, 'actions', 'Add', 'inventory/charges/add', 1, 0, '2026-10-28 17:40:00'),
+(972, 950, 'actions', 'Edit', 'inventory/charges/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(973, 950, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+(974, 950, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
+
+-- Commissions (951)
+(975, 951, 'columns', 'Name', 'name', 1, 0, '2026-10-28 17:40:00'),
+(976, 951, 'columns', 'Commission (%)', 'commission', 2, 0, '2026-10-28 17:40:00'),
+(977, 951, 'actions', 'Add', 'inventory/commission-slab/add', 1, 0, '2026-10-28 17:40:00'),
+(978, 951, 'actions', 'Edit', 'inventory/commission-slab/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(979, 951, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+(980, 951, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
+
+-- Profit Commission Slab (952)
+(981, 952, 'columns', 'Range (Name)', 'name', 1, 0, '2026-10-28 17:40:00'),
+(982, 952, 'columns', 'Commission From', 'comm_from', 2, 0, '2026-10-28 17:40:00'),
+(983, 952, 'columns', 'Commission To', 'comm_to', 3, 0, '2026-10-28 17:40:00'),
+(984, 952, 'actions', 'Add', 'inventory/profit-commission-slab/add', 1, 0, '2026-10-28 17:40:00'),
+(985, 952, 'actions', 'Edit', 'inventory/profit-commission-slab/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(986, 952, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+(987, 952, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
+
+-- Bank Accounts (953)
+(988, 953, 'columns', 'Name', 'name', 1, 0, '2026-10-28 17:40:00'),
+(989, 953, 'columns', 'IFSC Code', 'ifsc_code', 2, 0, '2026-10-28 17:40:00'),
+(990, 953, 'columns', 'Bank Name', 'bank_name', 3, 0, '2026-10-28 17:40:00'),
+(991, 953, 'columns', 'Account No', 'account_no', 4, 0, '2026-10-28 17:40:00'),
+(992, 953, 'actions', 'Add', 'inventory/bank-accounts/add', 1, 0, '2026-10-28 17:40:00'),
+(993, 953, 'actions', 'Edit', 'inventory/bank-accounts/edit/[:id]', 2, 0, '2026-10-28 17:40:00'),
+(994, 953, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
+(995, 953, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
+
 -- Indexes for dumped tables
 --
 
@@ -1087,7 +1155,7 @@ ALTER TABLE `access_manager`
 -- AUTO_INCREMENT for table `access_manager`
 --
 ALTER TABLE `access_manager`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=946;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=996;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
