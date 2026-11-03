@@ -24,19 +24,21 @@
 
       <div class="card-datatable d-report mb-2">
 
+        <?php if (is_access('984')) { ?>
         <a href="<?php echo site_url('inventory/profit-commission-slab/add'); ?>"
           class="dt-button add-new desktop-tab add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
             Add Profit Commission Slab</span></a>
+        <?php } ?>
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Range (Name)</th>
-              <th>Commission From</th>
-              <th>Commission To</th>
-              <th>Actions</th>
+              <?php if (is_access('981')) { ?><th>Range (Name)</th><?php } ?>
+              <?php if (is_access('982')) { ?><th>Commission From</th><?php } ?>
+              <?php if (is_access('983')) { ?><th>Commission To</th><?php } ?>
+              <?php if (is_access('985') || is_access('986')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -79,24 +81,17 @@ $(document).ready(function($) {
       }
     },
 
-    "columns": [{
-        data: 'sr_no'
-      },
-      {
-        data: 'name'
-      },
-      {
-        data: 'comm_from'
-      },
-      {
-        data: 'comm_to'
-      },
-      {
-        data: 'action'
-      }
+    "columns": [
+      { data: 'sr_no' },
+      <?php if (is_access('981')) { ?>{ data: 'name' },<?php } ?>
+      <?php if (is_access('982')) { ?>{ data: 'comm_from' },<?php } ?>
+      <?php if (is_access('983')) { ?>{ data: 'comm_to' },<?php } ?>
+      <?php if (is_access('985') || is_access('986')) { ?>{ data: 'action' },<?php } ?>
     ],
 
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('987')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
 
@@ -107,6 +102,7 @@ $(document).ready(function($) {
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
 
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

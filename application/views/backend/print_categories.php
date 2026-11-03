@@ -9,14 +9,17 @@ function print_sub_categories($parent_id)
              $delete_url=base_url().'inventory/category/delete/'.$category->id;
              $url=base_url().'inventory/category/edit/'.$category->id;
              $action='';
-             $action='<a href="'.$url.'" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"><button type="button" class="btn icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-             
-                 <a href="#" onclick="showDeleteConfirmation(\''.$delete_url.'\')"
+             if (is_access('957')) {
+                 $action.='<a href="'.$url.'" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"><button type="button" class="btn icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+             }
+             if (is_access('958')) {
+                 $action.='<a href="#" onclick="showDeleteConfirmation(\''.$delete_url.'\')"
                    data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete">
                   <button type="button" class="btn icon-btn-del">
                     <i class="fa fa-trash" aria-hidden="true"></i>
                   </button>
                 </a>';
+             }
             
             $i = 0;
             if ($i == 0) {
@@ -37,7 +40,9 @@ function print_sub_categories($parent_id)
                 } else {
                     $div_content .= '<i class="fa fa-circle" style="font-size: 8px;"></i>';
                 }
-                $div_content .= category_name($category);
+                if (is_access('955')) {
+                    $div_content .= category_name($category);
+                }
                 $div_content .= '</div>';
                 $div_content .= '<div class="right">';
                 $div_content .= '<div class="btn-groups btn-group-option">';
@@ -48,7 +53,8 @@ function print_sub_categories($parent_id)
                 echo $div_content;
                 echo '<div id="collapse_' . $category->id . '" class="panel-collapse collapse"><div class="panel-body nested-sortable" data-parent-id="' . $category->id . '">';
             } else {
-                echo '<div id="collapse_' . $category->id . '" class="list-group-item" data-item-id="' . $category->id . '">' . category_name($category) . '<span class="id">(' . trans("id") . ': ' . $category->id . ')</span>' . '</div>';
+                $name_html = is_access('955') ? category_name($category) : '';
+                echo '<div id="collapse_' . $category->id . '" class="list-group-item" data-item-id="' . $category->id . '">' . $name_html . '<span class="id">(' . trans("id") . ': ' . $category->id . ')</span>' . '</div>';
             }
             print_sub_categories($category->id);
             $i++;

@@ -29,7 +29,9 @@
                   </div>
                </div>
                <div class="col-lg-3 col-md-4 col-12 text-md-end text-start">
+                  <?php if (is_access('956')) { ?>
                   <a href="<?php echo site_url('inventory/category/add'); ?>" class="btn btn-primary waves-effect waves-float waves-light" aria-controls="DataTables_Table_0"><span><i data-feather='plus'></i><?= get_phrase('add_new_category');?></span></a>
+                  <?php } ?>
                </div>
             </div>
          </div>
@@ -50,17 +52,21 @@
                                  <?php else: ?>
                                  <i class="fa fa-circle" style="font-size: 8px;"></i>
                                  <?php endif; ?>
-                                 <?= category_name($parent_category); ?> 
+                                 <?php if (is_access('955')) { ?><?= category_name($parent_category); ?><?php } ?>
                               </div>
                               <div class="right">
                                  <div class="btn-groups">
+                                    <?php if (is_access('957')) { ?>
                                     <a href="<?= base_url(); ?>inventory/category/edit/<?= $parent_category->id; ?>" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"><button type="button" class="btn  icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
+                                    <?php } ?>
+                                    <?php if (is_access('958')) { ?>
                                     <a href="#" onclick="showDeleteConfirmation('<?= base_url(); ?>inventory/category/delete/<?= $parent_category->id; ?>')"
                                        data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete">
                                         <button type="button" class="btn icon-btn-del">
                                             <i class="fa fa-trash" aria-hidden="true"></i>
                                         </button>
                                     </a>
+                                    <?php } ?>
                                  </div>
                               </div>
                            </div>

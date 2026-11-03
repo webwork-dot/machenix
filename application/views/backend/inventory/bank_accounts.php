@@ -24,20 +24,22 @@
       </div>
       <div class="card-datatable d-report mb-2">
 
+        <?php if (is_access('992')) { ?>
         <a href="<?php echo site_url('inventory/bank-accounts/add'); ?>"
           class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
             <?= get_phrase('add_bank_account');?></span></a>
+        <?php } ?>
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Name</th>
-              <th>IFSC Code</th>
-              <th>Bank Name</th>
-              <th>Account No</th>
-              <th>Actions</th>
+              <?php if (is_access('988')) { ?><th>Name</th><?php } ?>
+              <?php if (is_access('989')) { ?><th>IFSC Code</th><?php } ?>
+              <?php if (is_access('990')) { ?><th>Bank Name</th><?php } ?>
+              <?php if (is_access('991')) { ?><th>Account No</th><?php } ?>
+              <?php if (is_access('993') || is_access('994')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -81,27 +83,27 @@ $(document).ready(function($) {
     },
     columns: [
       { data: 'sr_no' },
-      { data: 'name' },
-      { data: 'ifsc_code' },
-      { data: 'bank_name' },
-      { data: 'account_no' },
-      { data: 'action' }
+      <?php if (is_access('988')) { ?>{ data: 'name' },<?php } ?>
+      <?php if (is_access('989')) { ?>{ data: 'ifsc_code' },<?php } ?>
+      <?php if (is_access('990')) { ?>{ data: 'bank_name' },<?php } ?>
+      <?php if (is_access('991')) { ?>{ data: 'account_no' },<?php } ?>
+      <?php if (is_access('993') || is_access('994')) { ?>{ data: 'action' },<?php } ?>
     ],
     "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
     "pageLength": 10,
-    "buttons": [{
+    "buttons": [
+      <?php if (is_access('995')) { ?>
+      {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
       },
       {
         "extend": 'pdfHtml5',
         "orientation": 'landscape',
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
-        "exportOptions": { "columns": [0, 1, 2, 3, 4, 5] }
       }
+      <?php } ?>
     ],
   });
 });
 </script>
-

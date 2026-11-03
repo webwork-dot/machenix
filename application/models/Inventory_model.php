@@ -976,9 +976,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/expense_type/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/expense-type/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-				';
+				if (is_access('966')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('967')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -1117,9 +1123,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/product_unit/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/product-unit/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-				';
+				if (is_access('961')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('962')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -1286,9 +1298,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/charges/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/charges/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-				';
+				if (is_access('972')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('973')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -1452,9 +1470,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/commission-slab/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/commission-slab/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-				';
+				if (is_access('978')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('979')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -1652,9 +1676,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/profit_commission_slab/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/profit-commission-slab/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-				<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-				';
+				if (is_access('985')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('986')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -1894,9 +1924,15 @@ class Inventory_model extends CI_Model
 				$delete_url = "confirm_modal('" . base_url() . "inventory/bank-accounts/delete/" . $id . "','Are you sure want to delete!')";
 				$edit_url = base_url() . 'inventory/bank-accounts/edit/' . $id;
 				$action = '';
-				$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>
-                         <a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>
-                         ';
+				if (is_access('993')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('994')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"       => ++$start,
@@ -5729,7 +5765,7 @@ class Inventory_model extends CI_Model
 		$keyword_filter = "";
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
+			$keyword        = $this->db->escape_str(trim($filter_data['keywords']));
 			$keyword_filter .= " AND (
 				voucher_no LIKE '%" . $keyword . "%' 
 				OR supplier_name LIKE '%" . $keyword . "%' 
@@ -5738,7 +5774,14 @@ class Inventory_model extends CI_Model
 				OR supplier_id IN (SELECT s.id FROM supplier s WHERE s.name LIKE '%" . $keyword . "%')
 				OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN company c ON pop.supplier_id = c.id WHERE c.name LIKE '%" . $keyword . "%')
 				OR id IN (SELECT pop.parent_id FROM purchase_order_product pop JOIN supplier s ON pop.supplier_id = s.id WHERE s.name LIKE '%" . $keyword . "%')
-				OR id IN (SELECT pop2.parent_id FROM purchase_order_product pop2 WHERE pop2.product_name LIKE '%" . $keyword . "%' OR pop2.fix_code LIKE '%" . $keyword . "%')
+				OR id IN (
+					SELECT pop2.parent_id
+					FROM purchase_order_product pop2
+					LEFT JOIN raw_products rp ON rp.id = pop2.product_id
+					WHERE pop2.product_name LIKE '%" . $keyword . "%'
+					   OR rp.item_code LIKE '%" . $keyword . "%'
+					   OR rp.name LIKE '%" . $keyword . "%'
+				)
 			)";
 		endif;
 
@@ -5760,7 +5803,8 @@ class Inventory_model extends CI_Model
 		}
 
 		$method_filter = " AND method IN ('local', 'company')";
-		$total_count = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') $method_filter $keyword_filter ORDER BY id ASC")->num_rows();
+		$total_count_query = $this->db->query("SELECT id FROM purchase_order WHERE (is_deleted='0') $method_filter $keyword_filter ORDER BY id ASC");
+		$total_count = $total_count_query ? $total_count_query->num_rows() : 0;
 		$query = $this->db->query("SELECT id, method, supplier_id, supplier_name, warehouse_id, company_id, delivery_status, voucher_no, date, warehouse_name, company_name FROM purchase_order WHERE (is_deleted='0') $method_filter $keyword_filter ORDER BY id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
@@ -29410,6 +29454,7 @@ public function get_sales_return_reports()
 					SELECT p.id 
 					FROM raw_products p
 					JOIN inventory i ON p.id = i.product_id
+					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
 					WHERE p.is_deleted = '0' $keyword_filter 
 					GROUP BY p.id 
 					$having_clause

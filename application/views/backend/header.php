@@ -116,7 +116,28 @@
           <?php if($this->session->userdata('super_type') == 'Inventory') {?>
             <a style="padding: 10px" class="dropdown-item" href="<?php echo site_url('inventory/company'); ?>"><i class="feather icon-briefcase"></i> <?php echo get_phrase('company'); ?></a>
 
-            <a style="padding: 10px" class="dropdown-item" href="<?php echo site_url('inventory/category'); ?>"><i class="feather icon-settings"></i> <?php echo get_phrase('settings'); ?></a>
+            <?php if(is_access('946')) {
+                $settings_url = site_url('inventory/settings');
+                if(is_access('947')) {
+                    $settings_url = site_url('inventory/category');
+                } elseif (is_access('948')) {
+                    $settings_url = site_url('inventory/product-unit');
+                } elseif (is_access('949')) {
+                    $settings_url = site_url('inventory/expense-type');
+                } elseif (is_access('950')) {
+                    $settings_url = site_url('inventory/charges');
+                } elseif (is_access('951')) {
+                    $settings_url = site_url('inventory/commission-slab');
+                } elseif (is_access('952')) {
+                    $settings_url = site_url('inventory/profit-commission-slab');
+                } elseif (is_access('953')) {
+                    $settings_url = site_url('inventory/bank-accounts');
+                } elseif (is_access('954')) {
+                    $settings_url = site_url('inventory/settings');
+                }
+            ?>
+            <a style="padding: 10px" class="dropdown-item" href="<?php echo $settings_url; ?>"><i class="feather icon-settings"></i> <?php echo get_phrase('settings'); ?></a>
+            <?php } ?>
           <?php } ?>
 
           <div class="dropdown-divider"></div>

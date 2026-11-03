@@ -759,8 +759,10 @@ class Inventory extends CI_Controller
                 } else {
                     $html_content .= '        <i class="fa fa-circle" style="font-size: 8px;"></i>';
                 }
-                $html_content .= '        ' . category_name($category);
-                if (!empty($path_text)) {
+                if (is_access('955')) {
+                    $html_content .= '        ' . category_name($category);
+                }
+                if (!empty($path_text) && is_access('955')) {
                     $html_content .= '        <span class="badge bg-light-primary text-primary ms-1" style="font-size: 11px; font-weight: normal; vertical-align: middle;">';
                     $html_content .= '          <i class="fa fa-folder-open-o me-25"></i>' . $path_text;
                     $html_content .= '        </span>';
@@ -768,8 +770,12 @@ class Inventory extends CI_Controller
                 $html_content .= '      </div>';
                 $html_content .= '      <div class="right">';
                 $html_content .= '        <div class="btn-groups">';
-                $html_content .= '          <a href="' . $edit_url . '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"><button type="button" class="btn icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
-                $html_content .= '          <a href="#" onclick="showDeleteConfirmation(\'' . $delete_url . '\')" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete"><button type="button" class="btn icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+                if (is_access('957')) {
+                    $html_content .= '          <a href="' . $edit_url . '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"><button type="button" class="btn icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+                }
+                if (is_access('958')) {
+                    $html_content .= '          <a href="#" onclick="showDeleteConfirmation(\'' . $delete_url . '\')" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete"><button type="button" class="btn icon-btn-del"><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+                }
                 $html_content .= '        </div>';
                 $html_content .= '      </div>';
                 $html_content .= '    </div>';
