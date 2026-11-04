@@ -13397,12 +13397,15 @@ class Inventory_model extends CI_Model
 		$user_id = $this->session->userdata('super_user_id');
 		$type = $this->session->userdata('super_type');
 		$company_id = $this->session->userdata('company_id');
-		if($company_id && $type == 'staff') {
-				if($data_type == 'leads') {
-					$keyword_filter .= " AND added_by_id = '" . $user_id . "'";
-				} else {
-					$keyword_filter .= " AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "'";
-				}
+		if ($company_id && $type == 'staff') {
+			if ($data_type == 'leads') {
+				$keyword_filter .= " AND added_by_id = '" . $user_id . "'";
+			} else {
+				$keyword_filter .= " AND FIND_IN_SET('" . $company_id . "', company_id) AND added_by_id = '" . $user_id . "'";
+			}
+		} elseif ($company_id && $type != 'staff' && $data_type != 'leads') {
+			// Admin / non-staff: only customers linked to the selected company
+			$keyword_filter .= " AND FIND_IN_SET('" . $this->db->escape_str($company_id) . "', company_id)";
 		}
 
 		if (!empty($data_type)) {
