@@ -89,6 +89,39 @@ foreach ($products_raw as $product) {
 // Get supplier list for the "Add Supplier" modal
 $company_id = $this->session->userdata('company_id');
 $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0' AND company_id = '$company_id' AND type='import' ORDER BY name ASC")->result_array();
+
+$storage_list = $this->db->query(
+    "SELECT id, name, type FROM storage
+     WHERE company_id = ? AND is_deleted = 0 AND type IN ('rack','room','draw')
+     ORDER BY name ASC",
+    array($company_id)
+)->result_array();
+
+$storage_racks = [];
+$storage_rooms = [];
+$storage_draws = [];
+foreach ($storage_list as $st) {
+    if ($st['type'] === 'rack') {
+        $storage_racks[] = $st;
+    } elseif ($st['type'] === 'room') {
+        $storage_rooms[] = $st;
+    } elseif ($st['type'] === 'draw') {
+        $storage_draws[] = $st;
+    }
+}
+
+$storage_rack_options_js = '<option value="">Select</option>';
+foreach ($storage_racks as $st) {
+    $storage_rack_options_js .= '<option value="' . (int)$st['id'] . '">' . htmlspecialchars($st['name'], ENT_QUOTES) . '</option>';
+}
+$storage_room_options_js = '<option value="">Select</option>';
+foreach ($storage_rooms as $st) {
+    $storage_room_options_js .= '<option value="' . (int)$st['id'] . '">' . htmlspecialchars($st['name'], ENT_QUOTES) . '</option>';
+}
+$storage_draw_options_js = '<option value="">Select</option>';
+foreach ($storage_draws as $st) {
+    $storage_draw_options_js .= '<option value="' . (int)$st['id'] . '">' . htmlspecialchars($st['name'], ENT_QUOTES) . '</option>';
+}
 ?>
 
 <style>
@@ -233,12 +266,15 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                             </div>
                         </div>
                         <div class="table-responsive supplier-table-container">
-                            <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
+                            <table class="table table-bordered table-striped table-sm" style="min-width: 2870px;">
                                 <thead>
                                     <tr>
                                         <th style="width: 50px;">Sr No.</th>
                                         <th style="width: 250px;">Product Name</th>
                                         <th style="width: 150px;">Model No.</th>
+                                        <th style="width: 130px;">Rack</th>
+                                        <th style="width: 130px;">Room</th>
+                                        <th style="width: 130px;">Draw</th>
                                         <th style="width: 100px;">Actual Qty</th>
                                         <th style="width: 100px;">Received Qty</th>
                                         <th style="width: 120px;">Qty to Receive</th>
@@ -429,6 +465,37 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                             name="item_code[]"
                                             value="<?php echo htmlspecialchars($item_code); ?>"
                                             readonly>
+                                        </td>
+
+                                        <td>
+                                            <select class="form-control form-control-sm" name="rack_id[]">
+                                                <option value="">Select</option>
+                                                <?php foreach ($storage_racks as $st): ?>
+                                                <option value="<?php echo (int)$st['id']; ?>" <?php echo (!empty($product['rack_id']) && (int)$product['rack_id'] === (int)$st['id']) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($st['name']); ?>
+                                                </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-control form-control-sm" name="room_id[]">
+                                                <option value="">Select</option>
+                                                <?php foreach ($storage_rooms as $st): ?>
+                                                <option value="<?php echo (int)$st['id']; ?>" <?php echo (!empty($product['room_id']) && (int)$product['room_id'] === (int)$st['id']) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($st['name']); ?>
+                                                </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-control form-control-sm" name="draw_id[]">
+                                                <option value="">Select</option>
+                                                <?php foreach ($storage_draws as $st): ?>
+                                                <option value="<?php echo (int)$st['id']; ?>" <?php echo (!empty($product['draw_id']) && (int)$product['draw_id'] === (int)$st['id']) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($st['name']); ?>
+                                                </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </td>
 
                                         <td>
@@ -636,7 +703,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                 </tbody>
                                 <tfoot>
                                      <tr class="expense-row-tfoot">
-                                          <td colspan="3" class="text-right font-weight-bold">Expense</td>
+                                          <td colspan="6" class="text-right font-weight-bold">Expense</td>
                                           <td class="text-right">-</td>
                                           <td class="text-right">-</td>
                                           <td class="text-right">-</td>
@@ -665,7 +732,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                           <td class="text-right">-</td>
                                      </tr>
                                      <tr class="extra-row-tfoot">
-                                          <td colspan="3" class="text-right font-weight-bold">Extra Amount</td>
+                                          <td colspan="6" class="text-right font-weight-bold">Extra Amount</td>
                                           <td class="text-right">-</td>
                                           <td class="text-right">-</td>
                                           <td class="text-right">-</td>
@@ -694,7 +761,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                                           <td class="text-right">-</td>
                                      </tr>
                                     <tr class="font-weight-bold js-totals-row">
-                                         <td colspan="3" class="text-right">TOTAL</td>
+                                         <td colspan="6" class="text-right">TOTAL</td>
                                          <td class="text-right"><span class="js-sum-actual-qty"><?php echo number_format($t_actual_qty, 0); ?></span></td>
                                          <td class="text-right">-</td>
                                          <td class="text-right">-</td>
@@ -731,10 +798,10 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                 <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                     <h5>Grand Total</h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
+                        <table class="table table-bordered table-striped table-sm" style="min-width: 2870px;">
                             <thead>
                                 <tr>
-                                    <th colspan="3" style="width: 450px;">#</th>
+                                    <th colspan="6" style="width: 840px;">#</th>
                                     <th style="width: 100px;">Actual Qty</th>
                                     <th style="width: 100px;">Received Qty</th>
                                     <th style="width: 120px;">Qty to Receive</th>
@@ -758,7 +825,7 @@ $supplier_list = $this->db->query("SELECT * FROM supplier WHERE is_deleted = '0'
                             </thead>
                             <tfoot>
                                 <tr class="font-weight-bold js-totals-row">
-                                    <td colspan="3" class="text-right fw-bold">Total</td>
+                                    <td colspan="6" class="text-right fw-bold">Total</td>
                                     <td class="text-right"><span id="grand-sum-actual-qty"><?php echo number_format($g_actual_qty, 0); ?></span></td>
                                     <td class="text-right">-</td>
                                     <td class="text-right">-</td>
@@ -1500,12 +1567,15 @@ function createSupplierSection(supplierId, supplierName) {
             </div>
         </div>
         <div class="table-responsive supplier-table-container">
-            <table class="table table-bordered table-striped table-sm" style="min-width: 2470px;">
+            <table class="table table-bordered table-striped table-sm" style="min-width: 2870px;">
                 <thead>
                     <tr>
                         <th style="width: 50px;">Sr No.</th>
                         <th style="width: 250px;">Product Name</th>
                         <th style="width: 150px;">Model No.</th>
+                        <th style="width: 130px;">Rack</th>
+                        <th style="width: 130px;">Room</th>
+                        <th style="width: 130px;">Draw</th>
                         <th style="width: 100px;">Actual Qty</th>
                         <th style="width: 100px;">Received Qty</th>
                         <th style="width: 120px;">Qty to Receive</th>
@@ -1532,7 +1602,7 @@ function createSupplierSection(supplierId, supplierName) {
                 </tbody>
                 <tfoot>
                     <tr class="expense-row-tfoot">
-                        <td colspan="3" class="text-right font-weight-bold">Expense</td>
+                        <td colspan="6" class="text-right font-weight-bold">Expense</td>
                         <td class="text-right">-</td>
                         <td class="text-right">-</td>
                         <td class="text-right">-</td>
@@ -1555,7 +1625,7 @@ function createSupplierSection(supplierId, supplierName) {
                         <td class="text-right">-</td>
                     </tr>
                     <tr class="extra-row-tfoot">
-                        <td colspan="3" class="text-right font-weight-bold">Extra Amount</td>
+                        <td colspan="6" class="text-right font-weight-bold">Extra Amount</td>
                         <td class="text-right">-</td>
                         <td class="text-right">-</td>
                         <td class="text-right">-</td>
@@ -1578,7 +1648,7 @@ function createSupplierSection(supplierId, supplierName) {
                         <td class="text-right">-</td>
                     </tr>
                     <tr class="font-weight-bold js-totals-row">
-                        <td colspan="3" class="text-right">TOTAL</td>
+                        <td colspan="6" class="text-right">TOTAL</td>
                         <td class="text-right"><span class="js-sum-actual-qty">0</span></td>
                         <td class="text-right">-</td>
                         <td class="text-right">-</td>
@@ -1665,6 +1735,9 @@ $(document).ready(function() {
 });
 
 var purchaseInRowCounter = 0;
+var storageRackOptionsHtml = <?php echo json_encode($storage_rack_options_js); ?>;
+var storageRoomOptionsHtml = <?php echo json_encode($storage_room_options_js); ?>;
+var storageDrawOptionsHtml = <?php echo json_encode($storage_draw_options_js); ?>;
 
 function reloadSupplierProducts(buttonEl, loadProducts = []) {
     var $btn = $(buttonEl);
@@ -1828,6 +1901,9 @@ function appendPurchaseInProductRow($section, p) {
         </td>
         <td><input type="text" class="form-control form-control-sm" name="product_name[]" value="${p.name}" readonly></td>
         <td><input type="text" class="form-control form-control-sm" name="item_code[]" value="${p.item_code}" readonly></td>
+        <td><select class="form-control form-control-sm" name="rack_id[]">${storageRackOptionsHtml}</select></td>
+        <td><select class="form-control form-control-sm" name="room_id[]">${storageRoomOptionsHtml}</select></td>
+        <td><select class="form-control form-control-sm" name="draw_id[]">${storageDrawOptionsHtml}</select></td>
         <td><input type="text" class="form-control form-control-sm text-right actual-qty" name="actual_qty[]" value="0" onkeyup="calculateActual(this)"></td>
         <td><input type="hidden" name="replace_qty[]" value="0"></td>
         <td><input type="hidden" name="replace_recv_qty[]" value="0"></td>

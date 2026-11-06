@@ -27,19 +27,21 @@
 
       <div class="card-datatable d-report mb-2">
 
+        <?php if (is_access('999')) { ?>
         <a href="<?php echo site_url('inventory/storage/add'); ?>"
           class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
             Add Storage</span></a>
+        <?php } ?>
 
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Type</th>
-              <th>Name</th>
-              <th>Actions</th>
+              <?php if (is_access('997')) { ?><th>Type</th><?php } ?>
+              <?php if (is_access('998')) { ?><th>Name</th><?php } ?>
+              <?php if (is_access('1000') || is_access('1001')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -84,12 +86,13 @@ $(document).ready(function($) {
 
     "columns": [
       { data: 'sr_no' },
-      { data: 'type' },
-      { data: 'name' },
-      { data: 'action' },
+      <?php if (is_access('997')) { ?>{ data: 'type' },<?php } ?>
+      <?php if (is_access('998')) { ?>{ data: 'name' },<?php } ?>
+      <?php if (is_access('1000') || is_access('1001')) { ?>{ data: 'action' },<?php } ?>
     ],
 
     "buttons": [
+      <?php if (is_access('1002')) { ?>
       {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
@@ -101,6 +104,7 @@ $(document).ready(function($) {
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
 
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {

@@ -1171,8 +1171,16 @@ class Inventory_model extends CI_Model
 				$type_key = $item['type'];
 				$type_label = isset($type_labels[$type_key]) ? $type_labels[$type_key] : ucfirst($type_key);
 
-				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
-				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				$action = '';
+				if (is_access('1000')) {
+					$action .= '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				}
+				if (is_access('1001')) {
+					$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+				}
+				if ($action == '') {
+					$action = '-';
+				}
 
 				$data[] = array(
 					"sr_no"  => ++$start,
@@ -8416,6 +8424,19 @@ class Inventory_model extends CI_Model
 
 		$replace_qty       = $this->input->post('replace_qty');
 		$replace_recv_qty  = $this->input->post('replace_recv_qty');
+		$rack_ids          = $this->input->post('rack_id');
+		$room_ids          = $this->input->post('room_id');
+		$draw_ids          = $this->input->post('draw_id');
+
+		$storage_map = [];
+		$storage_rows = $this->db->query(
+			"SELECT id, name, type FROM storage
+			 WHERE company_id = ? AND is_deleted = 0 AND type IN ('rack','room','draw')",
+			array((int) $po_row['company_id'])
+		)->result_array();
+		foreach ($storage_rows as $st_row) {
+			$storage_map[(int) $st_row['id']] = $st_row;
+		}
 
 		$rows = [];
 		$reverted_products = [];
@@ -8491,6 +8512,29 @@ class Inventory_model extends CI_Model
 							? (float) $supplier_inr_con_rate[$row_supplier_id]
 							: 0;
 
+						$rack_id = (int) ($rack_ids[$i] ?? 0);
+						$room_id = (int) ($room_ids[$i] ?? 0);
+						$draw_id = (int) ($draw_ids[$i] ?? 0);
+						$rack_name = '';
+						$room_name = '';
+						$draw_name = '';
+
+						if ($rack_id > 0 && isset($storage_map[$rack_id]) && $storage_map[$rack_id]['type'] === 'rack') {
+							$rack_name = $storage_map[$rack_id]['name'];
+						} else {
+							$rack_id = null;
+						}
+						if ($room_id > 0 && isset($storage_map[$room_id]) && $storage_map[$room_id]['type'] === 'room') {
+							$room_name = $storage_map[$room_id]['name'];
+						} else {
+							$room_id = null;
+						}
+						if ($draw_id > 0 && isset($storage_map[$draw_id]) && $storage_map[$draw_id]['type'] === 'draw') {
+							$draw_name = $storage_map[$draw_id]['name'];
+						} else {
+							$draw_id = null;
+						}
+
 						// PO Prod Update
 						$po_prods = [
 								'actual_qty'        => $act_q,
@@ -8514,6 +8558,12 @@ class Inventory_model extends CI_Model
 								'receivable_qty'    => $rep_q,
 								'received_qty'      => $rep_recv_q,
 								'is_replace'        => ($rep_q > 0) ? 1 : 0,
+								'rack_id'           => $rack_id,
+								'rack_name'         => $rack_name !== '' ? $rack_name : null,
+								'room_id'           => $room_id,
+								'room_name'         => $room_name !== '' ? $room_name : null,
+								'draw_id'           => $draw_id,
+								'draw_name'         => $draw_name !== '' ? $draw_name : null,
 						];
 
 						if ($is_edit && $row_id != 0) {
@@ -8580,6 +8630,12 @@ class Inventory_model extends CI_Model
 							'item_code'					=> $item_code[$i]         ?? '',
 							'sku'         			=> $item_code[$i]         ?? '',
 							'quantity'        	=> (int) ($actual_qty[$i] ?? 0),
+							'rack_id'           => $rack_id,
+							'rack_name'         => $rack_name !== '' ? $rack_name : null,
+							'room_id'           => $room_id,
+							'room_name'         => $room_name !== '' ? $room_name : null,
+							'draw_id'           => $draw_id,
+							'draw_name'         => $draw_name !== '' ? $draw_name : null,
 
 							'actual_rmb'        => (float) ($actual_rmb[$i] ?? 0),
 							'total_rmb'         => (float) ($total_rmb[$i] ?? 0),
@@ -8599,10 +8655,11 @@ class Inventory_model extends CI_Model
 
 						// Usage Check for Edit Mode
 						$skip_inventory_update = false;
+						$check_inv = "";
 						if ($is_edit) {
-							$current_inv_row = $this->db->get_where('inventory', ['po_row_id' => $pip_id])->row_array();
-							if (!$current_inv_row) {
-								$current_inv_row = $this->db->get_where('inventory', [
+							$check_inv = $this->db->get_where('inventory', ['po_row_id' => $pip_id])->row_array();
+							if (!$check_inv) {
+								$check_inv = $this->db->get_where('inventory', [
 									'product_id' => $po_prod_row["product_id"],
 									'warehouse_id' => $po_row["warehouse_id"],
 									'company_id' => $po_row["company_id"],
@@ -8610,13 +8667,22 @@ class Inventory_model extends CI_Model
 								])->row_array();
 							}
 
-							if ($current_inv_row && (int)$current_inv_row['quantity'] != (int)$po_prod_row['actual_qty']) {
+							if ($check_inv && (int)$check_inv['quantity'] != (int)$po_prod_row['actual_qty']) {
 								$skip_inventory_update = true;
 							}
 						}
 
+						$storage_inv_data = [
+							'rack_id'   => $rack_id,
+							'rack_name' => $rack_name !== '' ? $rack_name : null,
+							'room_id'   => $room_id,
+							'room_name' => $room_name !== '' ? $room_name : null,
+							'draw_id'   => $draw_id,
+							'draw_name' => $draw_name !== '' ? $draw_name : null,
+						];
+
 						if (!$skip_inventory_update) {
-							if ($is_edit) {
+							if ($is_edit && empty($check_inv)) {
 								$check_inv = $this->db->get_where('inventory', ['po_row_id' => $pip_id])->row_array();
 								if (!$check_inv) {
 									$check_inv = $this->db->get_where('inventory', [
@@ -8626,8 +8692,6 @@ class Inventory_model extends CI_Model
 										'batch_no' => $po_row["voucher_no"]
 									])->row_array();
 								}
-							} else {
-								$check_inv = "";
 							}
 
 							if(empty($check_inv)) {
@@ -8719,6 +8783,9 @@ class Inventory_model extends CI_Model
 
 								$this->db->where('parent_id', $check_inv['id'])->update('inventory_history', $inv_his);
 							}
+						} elseif ($is_edit && !empty($check_inv)) {
+							// Stock qty/cost locked, but still sync rack/room/draw to inventory
+							$this->db->where('id', $check_inv['id'])->update('inventory', $storage_inv_data);
 						}
 				}
 		}

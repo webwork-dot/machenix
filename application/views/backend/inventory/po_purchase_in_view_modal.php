@@ -108,7 +108,7 @@
   }
 
   .compact-table {
-    min-width: 2400px;
+    min-width: 2800px;
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 0;
@@ -244,6 +244,9 @@
                                 <th style="width: 50px;">Sr No.</th>
                                 <th style="width: 220px;">Product Name</th>
                                 <th style="width: 130px;">Model No.</th>
+                                <th style="width: 110px;">Rack</th>
+                                <th style="width: 110px;">Room</th>
+                                <th style="width: 110px;">Draw</th>
                                 <th style="width: 80px;">Actual Qty</th>
                                 <th style="width: 90px;">Received Qty</th>
                                 <th style="width: 100px;">Qty to Receive</th>
@@ -351,6 +354,9 @@
                                 <td class="text-center"><?php echo $sr_no++; ?></td>
                                 <td><?php echo html_entity_decode($product['product_name'] ?? 'N/A'); ?></td>
                                 <td><?php echo html_entity_decode($product['item_code'] ?? 'N/A'); ?></td>
+                                <td class="text-center"><?php echo !empty($product['rack_name']) ? html_entity_decode($product['rack_name']) : '-'; ?></td>
+                                <td class="text-center"><?php echo !empty($product['room_name']) ? html_entity_decode($product['room_name']) : '-'; ?></td>
+                                <td class="text-center"><?php echo !empty($product['draw_name']) ? html_entity_decode($product['draw_name']) : '-'; ?></td>
                                 <td class="text-center"><?php echo number_format($actual_qty, 0); ?></td>
                                 <td class="text-center"><?php echo $show_rp ? number_format($rep_recv, 0) : '-'; ?></td>
                                 <td class="text-center"><?php echo $show_rp ? number_format($rep_total, 0) : '-'; ?></td>
@@ -373,7 +379,7 @@
                             </tr>
                             <?php endforeach; ?>
                             <tr class="totals-row-bg">
-                                <td colspan="3" class="text-right">Total:</td>
+                                <td colspan="6" class="text-right">Total:</td>
                                 <td class="text-center"><?php echo number_format($t_actual_qty, 0); ?></td>
                                 <td class="text-center">-</td>
                                 <td class="text-center">-</td>

@@ -1071,7 +1071,7 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (945, 457, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
 
 -- =========================================================
--- Settings (tabs: Categories / Product Unit / Expense Type / Charges / Commissions / Profit Commission Slab / Bank Accounts / Settings)
+-- Settings (tabs: Categories / Product Unit / Expense Type / Charges / Commissions / Profit Commission Slab / Bank Accounts / Storage / Settings)
 -- =========================================================
 (946, 0, 'module', 'Settings', 'inventory/settings', 33, 0, '2026-10-28 17:40:00'),
 (947, 946, 'tabs', 'Categories', 'inventory/category', 1, 0, '2026-10-28 17:40:00'),
@@ -1081,7 +1081,8 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (951, 946, 'tabs', 'Commissions', 'inventory/commission-slab', 5, 0, '2026-10-28 17:40:00'),
 (952, 946, 'tabs', 'Profit Commission Slab', 'inventory/profit-commission-slab', 6, 0, '2026-10-28 17:40:00'),
 (953, 946, 'tabs', 'Bank Accounts', 'inventory/bank-accounts', 7, 0, '2026-10-28 17:40:00'),
-(954, 946, 'tabs', 'Settings', 'inventory/settings', 8, 0, '2026-10-28 17:40:00'),
+(996, 946, 'tabs', 'Storage', 'inventory/storage', 8, 0, '2026-11-06 17:40:00'),
+(954, 946, 'tabs', 'Settings', 'inventory/settings', 9, 0, '2026-10-28 17:40:00'),
 
 -- Categories (947)
 (955, 947, 'columns', 'Category Name', 'name', 1, 0, '2026-10-28 17:40:00'),
@@ -1138,6 +1139,14 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (994, 953, 'actions', 'Delete', '', 3, 0, '2026-10-28 17:40:00'),
 (995, 953, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-10-28 17:40:00'),
 
+-- Storage (996)
+(997, 996, 'columns', 'Type', 'type', 1, 0, '2026-11-06 17:40:00'),
+(998, 996, 'columns', 'Name', 'name', 2, 0, '2026-11-06 17:40:00'),
+(999, 996, 'actions', 'Add', 'inventory/storage/add', 1, 0, '2026-11-06 17:40:00'),
+(1000, 996, 'actions', 'Edit', 'inventory/storage/edit/[:id]', 2, 0, '2026-11-06 17:40:00'),
+(1001, 996, 'actions', 'Delete', '', 3, 0, '2026-11-06 17:40:00'),
+(1002, 996, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-11-06 17:40:00'),
+
 -- Indexes for dumped tables
 --
 
@@ -1155,7 +1164,7 @@ ALTER TABLE `access_manager`
 -- AUTO_INCREMENT for table `access_manager`
 --
 ALTER TABLE `access_manager`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=996;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1003;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

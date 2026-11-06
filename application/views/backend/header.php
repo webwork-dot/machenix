@@ -132,6 +132,8 @@
                     $settings_url = site_url('inventory/profit-commission-slab');
                 } elseif (is_access('953')) {
                     $settings_url = site_url('inventory/bank-accounts');
+                } elseif (is_access('996')) {
+                    $settings_url = site_url('inventory/storage');
                 } elseif (is_access('954')) {
                     $settings_url = site_url('inventory/settings');
                 }

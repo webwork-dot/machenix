@@ -1,5 +1,34 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.0
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Nov 06, 2026 at 12:11 PM
+-- Server version: 10.4.27-MariaDB
+-- PHP Version: 7.4.33
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `machenix_dbc`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_in_product`
+--
+
 CREATE TABLE `purchase_in_product` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `parent_id` int(11) NOT NULL,
   `supplier_id` int(11) NOT NULL,
   `is_replace` tinyint(1) NOT NULL DEFAULT 0,
@@ -14,6 +43,12 @@ CREATE TABLE `purchase_in_product` (
   `hsn_code` varchar(250) DEFAULT NULL,
   `item_code` varchar(250) DEFAULT NULL,
   `unit` varchar(20) DEFAULT NULL,
+  `rack_id` int(11) DEFAULT NULL,
+  `rack_name` varchar(355) DEFAULT NULL,
+  `room_id` int(11) DEFAULT NULL,
+  `room_name` varchar(355) DEFAULT NULL,
+  `draw_id` int(11) DEFAULT NULL,
+  `draw_name` varchar(355) DEFAULT NULL,
   `quantity` int(11) NOT NULL,
   `receivable_qty` int(11) NOT NULL DEFAULT 0,
   `received_qty` int(11) NOT NULL DEFAULT 0,
@@ -82,6 +117,30 @@ CREATE TABLE `purchase_in_product` (
   `is_priority` tinyint(1) NOT NULL DEFAULT 0,
   `is_complete` tinyint(1) NOT NULL DEFAULT 0,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
-  `sort` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=351 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `sort` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `purchase_in_product`
+--
+ALTER TABLE `purchase_in_product`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `purchase_in_product`
+--
+ALTER TABLE `purchase_in_product`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

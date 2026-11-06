@@ -37,7 +37,9 @@
     <?php if (is_access('953')) { ?>
     <a href="<?php echo site_url('inventory/bank-accounts'); ?>" class="sub-link <?php echo ($navigation == 'bank_accounts') ? 'active' : ''; ?>">Bank Accounts</a>
     <?php } ?>
+    <?php if (is_access('996')) { ?>
     <a href="<?php echo site_url('inventory/storage'); ?>" class="sub-link <?php echo ($navigation == 'storage') ? 'active' : ''; ?>">Storage</a>
+    <?php } ?>
     <?php if (is_access('954')) { ?>
     <a href="<?php echo site_url('inventory/settings'); ?>" class="sub-link <?php echo ($navigation == 'settings') ? 'active' : ''; ?>">Settings</a>
     <?php } ?>
