@@ -1004,6 +1004,195 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function add_storage()
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Storage added successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$type       = clean_and_escape($this->input->post('type'));
+		$name       = clean_and_escape($this->input->post('name'));
+		$company_id = (int) $this->session->userdata('company_id');
+		$allowed    = array('rack', 'room', 'draw');
+
+		if ($name == '' || !in_array($type, $allowed, true)) {
+			$this->session->set_flashdata('error_message', 'Invalid type or name');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Invalid type or name",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$check = $this->db->query(
+			"SELECT id FROM storage
+			WHERE company_id = ? AND type = ? AND name = ? AND is_deleted = 0
+			LIMIT 1",
+			array($company_id, $type, $name)
+		);
+
+		if ($check->num_rows() > 0) {
+			$this->session->set_flashdata('error_message', 'Duplicate or invalid name');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Duplicate or invalid name",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$data = array(
+			'company_id'    => $company_id,
+			'type'          => $type,
+			'name'          => $name,
+			'added_by'      => (int) $this->session->userdata('super_user_id'),
+			'added_by_name' => $this->session->userdata('super_name'),
+			'created_at'    => date("Y-m-d H:i:s"),
+		);
+
+		$this->db->insert('storage', $data);
+		$this->session->set_flashdata('flash_message', 'Storage added successfully');
+
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_storage($id = "")
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Storage updated successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$type       = clean_and_escape($this->input->post('type'));
+		$name       = clean_and_escape($this->input->post('name'));
+		$company_id = (int) $this->session->userdata('company_id');
+		$id         = (int) $id;
+		$allowed    = array('rack', 'room', 'draw');
+
+		if ($name == '' || !in_array($type, $allowed, true)) {
+			$this->session->set_flashdata('error_message', 'Invalid type or name');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Invalid type or name",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$check = $this->db->query(
+			"SELECT id FROM storage
+			WHERE company_id = ? AND type = ? AND name = ? AND is_deleted = 0 AND id != ?
+			LIMIT 1",
+			array($company_id, $type, $name, $id)
+		);
+
+		if ($check->num_rows() > 0) {
+			$this->session->set_flashdata('error_message', 'Duplicate or invalid name');
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Duplicate or invalid name",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$data = array(
+			'type'       => $type,
+			'name'       => $name,
+			'updated_at' => date("Y-m-d H:i:s"),
+		);
+
+		$this->db->where('id', $id);
+		$this->db->where('company_id', $company_id);
+		$this->db->update('storage', $data);
+
+		$this->session->set_flashdata('flash_message', 'Storage updated successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function delete_storage($id)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Storage deleted successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$company_id = (int) $this->session->userdata('company_id');
+
+		$data = array('is_deleted' => 1);
+		$this->db->where('id', (int) $id);
+		$this->db->where('company_id', $company_id);
+		$this->db->update('storage', $data);
+
+		return simple_json_output($resultpost);
+	}
+
+	public function get_storage_by_id($id)
+	{
+		$company_id = (int) $this->session->userdata('company_id');
+		$this->db->where('id', (int) $id);
+		$this->db->where('company_id', $company_id);
+		$this->db->where('is_deleted', 0);
+		return $this->db->get('storage');
+	}
+
+	public function get_storage()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (name like '%" . $keyword . "%' OR type like '%" . $keyword . "%')";
+		endif;
+
+		$company_id = $this->session->userdata('company_id');
+
+		$total_count = $this->db->query("SELECT id FROM storage WHERE (is_deleted=0 AND company_id = '$company_id') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, type, name FROM storage WHERE (is_deleted=0 AND company_id = '$company_id') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		$type_labels = array(
+			'rack' => 'Rack',
+			'room' => 'Room',
+			'draw' => 'Draw',
+		);
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delete_url = "confirm_modal('" . base_url() . "inventory/storage/delete/" . $id . "','Are you sure want to delete!')";
+				$edit_url = base_url() . 'inventory/storage/edit/' . $id;
+				$type_key = $item['type'];
+				$type_label = isset($type_labels[$type_key]) ? $type_labels[$type_key] : ucfirst($type_key);
+
+				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+
+				$data[] = array(
+					"sr_no"  => ++$start,
+					"id"     => $item['id'],
+					"type"   => $type_label,
+					"name"   => $item['name'],
+					"action" => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
 	public function add_product_unit()
 	{
 			$resultpost = array(

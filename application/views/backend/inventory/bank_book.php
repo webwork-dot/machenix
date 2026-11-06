@@ -120,6 +120,19 @@
     $show_actions = is_access('843') || is_access('844') || is_access('845');
     $show_export = is_access('846');
   }
+
+  $pending_transfer_count = 0;
+  if (is_access('812') && !empty($company_id)) {
+    $pending_transfer_count = (int) $this->db->query(
+      "SELECT COUNT(id) AS cnt FROM transferred_cash
+       WHERE company_id = ?
+         AND is_deleted = 0
+         AND LOWER(method_from) = 'cheque'
+         AND IFNULL(is_reverse, 0) = 1
+         AND (is_approved = 0 OR is_approved IS NULL)",
+      [(int) $company_id]
+    )->row()->cnt;
+  }
 ?>
 
 <div class="row" id="table-bordered">
@@ -168,7 +181,7 @@
     <a href="<?php echo base_url('inventory/bank-book?tab=bank' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'bank') ? 'active' : ''; ?>">Bank</a>
     <?php } ?>
     <?php if (is_access('812')) { ?>
-    <a href="<?php echo base_url('inventory/bank-book?tab=pending_transfer' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'pending_transfer') ? 'active' : ''; ?>">Pending Transfer</a>
+    <a href="<?php echo base_url('inventory/bank-book?tab=pending_transfer' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'pending_transfer') ? 'active' : ''; ?>">Pending Transfer <?php if ($pending_transfer_count > 0) { ?><span class="badge bg-danger rounded-pill"><?= $pending_transfer_count; ?></span><?php } ?></a>
     <?php } ?>
     <?php if (is_access('813')) { ?>
     <a href="<?php echo base_url('inventory/bank-book?tab=transferred' . $date_range_param); ?>" class="sub-link <?php echo ($tab == 'transferred') ? 'active' : ''; ?>">Transferred</a>

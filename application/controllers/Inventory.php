@@ -5818,6 +5818,56 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function storage($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_storage($param2);
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_storage($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_storage($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'storage';
+            $page_data['page_name']  = 'storage';
+            $page_data['page_title'] = 'Storage';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function storage_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['navigation']  = 'storage';
+        if ($param1 == 'storage_add') {
+            $page_data['page_name']  = 'storage_add';
+            $page_data['page_title'] = 'Add Storage';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'storage_edit') {
+            $data                    = $this->inventory_model->get_storage_by_id($param2)->row_array();
+            $page_data['data']       = $data;
+            $page_data['page_name']  = 'storage_edit';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit Storage';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_storage()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_storage();
+        }
+    }
+
     public function product_unit($param1 = "", $param2 = "")
     {
         if ($this->session->userdata('inventory_login') != true) {

@@ -123,6 +123,10 @@ $route[$r_inventory . '/bank-accounts'] = 'inventory/bank_accounts';
 $route[$r_inventory . '/bank-accounts/add']    = 'inventory/bank_accounts_form/bank_accounts_add';
 $route[$r_inventory . '/bank-accounts/edit/(:num)'] = 'inventory/bank_accounts_form/bank_accounts_edit/$1';
 
+$route[$r_inventory . '/storage'] = 'inventory/storage';
+$route[$r_inventory . '/storage/add'] = 'inventory/storage_form/storage_add';
+$route[$r_inventory . '/storage/edit/(:num)'] = 'inventory/storage_form/storage_edit/$1';
+
 $route[$r_inventory . '/settings']              = 'inventory/settings';
 $route[$r_inventory . '/settings/update_post']  = 'inventory/settings/update_post';
 
