@@ -1201,6 +1201,262 @@ class Inventory_model extends CI_Model
 		echo json_encode($json_data);
 	}
 
+	public function add_vc_manager()
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "VC added successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$company_id   = $this->session->userdata('company_id');
+		$company_name = trim(clean_and_escape($this->input->post('company_name')));
+
+		if ($company_name === '') {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Company name is required",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$country_id = $this->input->post('country_id');
+		if ($country_id != '') {
+			$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+		} else {
+			$country_name = '';
+		}
+
+		$state_id = $this->input->post('state_id');
+		if ($state_id != '') {
+			$state_name = $this->common_model->get_state_name($state_id);
+		} else {
+			$state_name = '';
+		}
+
+		$city_id = $this->input->post('city_id');
+		if ($city_id != '') {
+			$city_name = $this->common_model->get_city_name($city_id);
+		} else {
+			$city_name = '';
+		}
+
+		if (!empty($_FILES['document']['name'])) {
+			$fileName        = $_FILES['document']['name'];
+			$tmp             = explode('.', $fileName);
+			$fileExtension   = end($tmp);
+			$uploadable_file = md5(uniqid(rand(), true)) . '.' . $fileExtension;
+
+			$year      = date("Y");
+			$month     = date("m");
+			$day       = date("d");
+			$directory = "uploads/vc_manager/" . "$year/$month/$day/";
+			if (!is_dir($directory)) {
+				mkdir($directory, 0755, true);
+			}
+
+			$data['document'] = $directory . $uploadable_file;
+			move_uploaded_file($_FILES['document']['tmp_name'], $directory . $uploadable_file);
+		}
+
+		$data['company_id']    = $company_id;
+		$data['company_name']  = $company_name;
+		$data['address']       = clean_and_escape($this->input->post('address'));
+		$data['address_2']     = clean_and_escape($this->input->post('address_2'));
+		$data['country_id']    = $country_id;
+		$data['country_name']  = $country_name;
+		$data['state_id']      = $state_id;
+		$data['state_name']    = $state_name;
+		$data['city_id']       = $city_id;
+		$data['city_name']     = $city_name;
+		$data['pincode']       = clean_and_escape($this->input->post('pincode'));
+		$data['gst_name']      = clean_and_escape($this->input->post('gst_name'));
+		$data['gst_no']        = clean_and_escape($this->input->post('gst_no'));
+		$data['name']          = clean_and_escape($this->input->post('name'));
+		$data['email']         = clean_and_escape($this->input->post('email'));
+		$data['mobile']        = clean_and_escape($this->input->post('mobile'));
+		$data['mobile_2']      = clean_and_escape($this->input->post('mobile_2'));
+		$data['mobile_3']      = clean_and_escape($this->input->post('mobile_3'));
+		$data['desc']          = clean_and_escape($this->input->post('desc'));
+		$data['added_by']      = (int) $this->session->userdata('super_user_id');
+		$data['added_by_name'] = $this->session->userdata('super_name');
+		$data['created_at']    = date("Y-m-d H:i:s");
+		$data['is_deleted']    = 0;
+
+		$this->db->insert('vc_manager', $data);
+		$this->session->set_flashdata('flash_message', 'VC added successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function edit_vc_manager($id = "")
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "VC updated successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$company_id   = $this->session->userdata('company_id');
+		$id           = (int) $id;
+		$company_name = trim(clean_and_escape($this->input->post('company_name')));
+
+		if ($company_name === '') {
+			$resultpost = array(
+				"status"  => 400,
+				"message" => "Company name is required",
+			);
+			return simple_json_output($resultpost);
+		}
+
+		$country_id = $this->input->post('country_id');
+		if ($country_id != '') {
+			$country_name = $this->common_model->selectByidParam($country_id, 'countries', 'name');
+		} else {
+			$country_name = '';
+		}
+
+		$state_id = $this->input->post('state_id');
+		if ($state_id != '') {
+			$state_name = $this->common_model->get_state_name($state_id);
+		} else {
+			$state_name = '';
+		}
+
+		$city_id = $this->input->post('city_id');
+		if ($city_id != '') {
+			$city_name = $this->common_model->get_city_name($city_id);
+		} else {
+			$city_name = '';
+		}
+
+		if (!empty($_FILES['document']['name'])) {
+			$fileName        = $_FILES['document']['name'];
+			$tmp             = explode('.', $fileName);
+			$fileExtension   = end($tmp);
+			$uploadable_file = md5(uniqid(rand(), true)) . '.' . $fileExtension;
+
+			$year      = date("Y");
+			$month     = date("m");
+			$day       = date("d");
+			$directory = "uploads/vc_manager/" . "$year/$month/$day/";
+			if (!is_dir($directory)) {
+				mkdir($directory, 0755, true);
+			}
+
+			$data['document'] = $directory . $uploadable_file;
+			move_uploaded_file($_FILES['document']['tmp_name'], $directory . $uploadable_file);
+		}
+
+		$data['company_name'] = $company_name;
+		$data['address']      = clean_and_escape($this->input->post('address'));
+		$data['address_2']    = clean_and_escape($this->input->post('address_2'));
+		$data['country_id']   = $country_id;
+		$data['country_name'] = $country_name;
+		$data['state_id']     = $state_id;
+		$data['state_name']   = $state_name;
+		$data['city_id']      = $city_id;
+		$data['city_name']    = $city_name;
+		$data['pincode']      = clean_and_escape($this->input->post('pincode'));
+		$data['gst_name']     = clean_and_escape($this->input->post('gst_name'));
+		$data['gst_no']       = clean_and_escape($this->input->post('gst_no'));
+		$data['name']         = clean_and_escape($this->input->post('name'));
+		$data['email']        = clean_and_escape($this->input->post('email'));
+		$data['mobile']       = clean_and_escape($this->input->post('mobile'));
+		$data['mobile_2']     = clean_and_escape($this->input->post('mobile_2'));
+		$data['mobile_3']     = clean_and_escape($this->input->post('mobile_3'));
+		$data['desc']         = clean_and_escape($this->input->post('desc'));
+
+		$this->db->where('id', $id);
+		$this->db->where('company_id', $company_id);
+		$this->db->update('vc_manager', $data);
+
+		$this->session->set_flashdata('flash_message', 'VC updated successfully');
+		return simple_json_output($resultpost);
+	}
+
+	public function delete_vc_manager($id)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "VC deleted successfully",
+			"url"     => $this->session->userdata('previous_url'),
+		);
+
+		$company_id = $this->session->userdata('company_id');
+		$data = array('is_deleted' => 1);
+		$this->db->where('id', (int) $id);
+		$this->db->where('company_id', $company_id);
+		$this->db->update('vc_manager', $data);
+
+		return simple_json_output($resultpost);
+	}
+
+	public function get_vc_manager_by_id($id)
+	{
+		$company_id = $this->session->userdata('company_id');
+		$this->db->where('id', (int) $id);
+		$this->db->where('company_id', $company_id);
+		$this->db->where('is_deleted', 0);
+		return $this->db->get('vc_manager');
+	}
+
+	public function get_vc_manager()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $filter_data['keywords'];
+			$keyword_filter .= " AND (company_name like '%" . $keyword . "%' OR name like '%" . $keyword . "%' OR mobile like '%" . $keyword . "%' OR email like '%" . $keyword . "%' OR gst_no like '%" . $keyword . "%')";
+		endif;
+
+		$company_id = $this->session->userdata('company_id');
+
+		$total_count = $this->db->query("SELECT id FROM vc_manager WHERE (is_deleted=0 AND company_id = '$company_id') $keyword_filter ORDER BY id ASC")->num_rows();
+		$query = $this->db->query("SELECT id, company_name, name, mobile, email, gst_no, document FROM vc_manager WHERE (is_deleted=0 AND company_id = '$company_id') $keyword_filter ORDER BY id DESC LIMIT $start, $length");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$delete_url = "confirm_modal('" . base_url() . "inventory/vc_manager/delete/" . $id . "','Are you sure want to delete!')";
+				$edit_url = base_url() . 'inventory/vc-manage/edit/' . $id;
+
+				$document = '-';
+				if (!empty($item['document'])) {
+					$document = '<a href="' . base_url($item['document']) . '" target="_blank">View</a>';
+				}
+
+				$action = '<a href="' . $edit_url . '" data-toggle="tooltip" data-bs-placement="top" title="Edit"><button type="button" class="btn mr-1 mb-1 icon-btn-edit"><i class="fa fa-pencil" aria-hidden="true"></i></button></a>';
+				$action .= '<a href="#" onclick="' . $delete_url . '" data-toggle="tooltip" data-bs-placement="top" title="Delete"><button type="button" class="btn mr-1 mb-1 icon-btn-del" ><i class="fa fa-trash" aria-hidden="true"></i></button></a>';
+
+				$data[] = array(
+					"sr_no"        => ++$start,
+					"id"           => $item['id'],
+					"company_name" => $item['company_name'],
+					"name"         => $item['name'] ?: '-',
+					"mobile"       => $item['mobile'] ?: '-',
+					"email"        => $item['email'] ?: '-',
+					"gst_no"       => $item['gst_no'] ?: '-',
+					"document"     => $document,
+					"action"       => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
 	public function add_product_unit()
 	{
 			$resultpost = array(
@@ -37136,7 +37392,7 @@ public function get_sales_return_reports()
 			$keyword_filter .= " AND (batch_no like '%" . $keyword . "%' OR name like '%" . $keyword . "%')";
 		endif;
 
-		$keyword_filter .= " AND (company_id = '$company_id')";
+		$keyword_filter .= " AND (company_id = '$company_id' AND is_deleted = 0)";
 
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
 			$added_date = explode(' - ', $_REQUEST['date_range']);
@@ -37156,17 +37412,13 @@ public function get_sales_return_reports()
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 
-				// Actions
-				$action ='-';
-				// $delete_url = "confirm_modal('" . base_url() . "inventory/formula-product-order/delete/" . $id . "','Are you sure want to delete!')";
-				
-				// $action = '<div class="btn-group">
-				// 	<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
-				// 		<i class="mdi mdi-dots-vertical"></i></button>
-				// 	<div class="dropdown-menu">
-				// 		<a class="dropdown-item" href="javascript:void(0)" onclick="' . $delete_url . '"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
-				// 	</div>
-				// </div>';
+				$action = '-';
+				if (empty($item['is_approve'])) {
+					$approve_url = "confirm_modal('" . base_url() . "inventory/formula_product_order/approve/" . $id . "','Are you sure want to approve this formula product in?')";
+					$action = '<a href="#" onclick="' . $approve_url . '" data-toggle="tooltip" data-bs-placement="top" title="Approve"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-check" aria-hidden="true"></i></button></a>';
+				} else {
+					$action = '<span class="badge bg-light-success text-success">Approved</span>';
+				}
 
 				$data[] = array(
 					"sr_no"             => ++$start,
@@ -37262,6 +37514,19 @@ public function get_sales_return_reports()
 			return simple_json_output(array(
 				"status" => 400,
 				"message" => "Batch number '" . htmlspecialchars($batch_no) . "' already exists in inventory for this product."
+			));
+		}
+
+		$existing_formula_batch = $this->db->where(array(
+			'product_id' => $parent_id,
+			'batch_no' => $batch_no,
+			'company_id' => $company_id,
+			'is_deleted' => 0
+		))->get('formula_product_in')->row_array();
+		if (!empty($existing_formula_batch)) {
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Batch number '" . htmlspecialchars($batch_no) . "' already exists in formula product in for this product."
 			));
 		}
 
@@ -37418,6 +37683,9 @@ public function get_sales_return_reports()
 		// 6. Insert master record into formula_product_in
 		$master_data = array(
 			'company_id'        => $company_id,
+			'warehouse_id'      => $warehouse_id,
+			'warehouse_name'    => $warehouse['name'],
+			'type'              => $type,
 			'batch_no'          => $batch_no,
 			'date'              => $date,
 			'product_id'        => $parent_id,
@@ -37431,6 +37699,7 @@ public function get_sales_return_reports()
 			'actual_cost_pc'    => $actual_cost_pc,
 			'total_expense'     => $total_expense,
 			'final_total'       => $final_total,
+			'is_approve'        => 0,
 			'added_by'          => $this->session->userdata('super_user_id'),
 			'added_by_name'     => $this->session->userdata('super_name'),
 			'added_date'        => date("Y-m-d H:i:s"),
@@ -37534,13 +37803,108 @@ public function get_sales_return_reports()
 			}
 		}
 
-		// 9. Add stock of produced formula product in inventory
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			return simple_json_output(array(
+				"status" => 400,
+				"message" => "Transaction failed. Please try again."
+			));
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', 'Formula Product In submitted successfully. Pending approval.');
+		return simple_json_output(array(
+			"status" => 200,
+			"message" => "Formula Product In submitted successfully. Pending approval.",
+			"url" => base_url('inventory/formula-product-order')
+		));
+	}
+
+	public function approve_formula_product_order($id)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Formula Product In approved successfully.",
+			"url"     => $this->session->userdata('previous_url') ? $this->session->userdata('previous_url') : base_url('inventory/formula-product-order'),
+		);
+
+		$id = (int) $id;
+		$company_id = (int) $this->session->userdata('company_id');
+
+		$order = $this->db->where(array(
+			'id' => $id,
+			'company_id' => $company_id,
+			'is_deleted' => 0
+		))->get('formula_product_in')->row_array();
+
+		if (empty($order)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Formula Product In not found.";
+			return simple_json_output($resultpost);
+		}
+
+		if (!empty($order['is_approve'])) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Formula Product In is already approved.";
+			return simple_json_output($resultpost);
+		}
+
+		$warehouse_id = (int) ($order['warehouse_id'] ?? 0);
+		$warehouse_name = $order['warehouse_name'] ?? '';
+		$type = !empty($order['type']) ? $order['type'] : 'white';
+
+		if ($warehouse_id <= 0) {
+			$hist = $this->db->where(array(
+				'order_id' => $id,
+				'status' => 'out',
+				'company_id' => $company_id
+			))->get('inventory_history')->row_array();
+			if (!empty($hist)) {
+				$warehouse_id = (int) $hist['warehouse_id'];
+				$warehouse_name = $hist['warehouse_name'];
+			}
+		}
+
+		if ($warehouse_id <= 0) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Warehouse details missing for this formula product in.";
+			return simple_json_output($resultpost);
+		}
+
+		$parent_product = $this->db->where(array('id' => $order['product_id'], 'is_deleted' => 0))->get('raw_products')->row_array();
+		if (empty($parent_product)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Formula product not found.";
+			return simple_json_output($resultpost);
+		}
+
+		$existing_batch = $this->db->where(array(
+			'product_id' => $order['product_id'],
+			'batch_no' => $order['batch_no'],
+			'company_id' => $company_id
+		))->get('inventory')->row_array();
+		if (!empty($existing_batch)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Batch number '" . htmlspecialchars($order['batch_no']) . "' already exists in inventory for this product.";
+			return simple_json_output($resultpost);
+		}
+
+		$qty = (int) $order['qty'];
+		$off_cost_pc = floatval($order['off_cost_pc']);
+		$total_off_cost = floatval($order['total_off_cost']);
+		$actual_cost_pc = floatval($order['actual_cost_pc']);
+		$black_cost_pc = floatval($order['black_cost_pc']);
+		$total_black_cost = floatval($order['total_black_cost']);
+		$final_total = floatval($order['final_total']);
+
+		$this->db->trans_begin();
+
 		$parent_inv = array(
 			'supplier_id'       => NULL,
 			'company_id'        => $company_id,
 			'warehouse_id'      => $warehouse_id,
-			'warehouse_name'    => $warehouse['name'],
-			'product_id'        => $parent_id,
+			'warehouse_name'    => $warehouse_name,
+			'product_id'        => $order['product_id'],
 			'product_name'      => $parent_product['name'],
 			'categories'        => $parent_product['categories'],
 			'sku'               => $parent_product['item_code'],
@@ -37552,24 +37916,23 @@ public function get_sales_return_reports()
 			'actual_inr'        => $actual_cost_pc,
 			'black_qty'         => ($type == 'black') ? $qty : 0,
 			'total_amt'         => $final_total,
-			'batch_no'          => $batch_no
+			'batch_no'          => $order['batch_no']
 		);
 		$this->db->insert('inventory', $parent_inv);
 		$parent_inv_id = $this->db->insert_id();
 
-		// 10. Save stock in history for parent product
 		$parent_history = array(
 			'supplier_id'       => NULL,
 			'company_id'        => $company_id,
 			'parent_id'         => $parent_inv_id,
 			'warehouse_id'      => $warehouse_id,
-			'warehouse_name'    => $warehouse['name'],
-			'product_id'        => $parent_id,
+			'warehouse_name'    => $warehouse_name,
+			'product_id'        => $order['product_id'],
 			'product_name'      => $parent_product['name'],
 			'categories'        => $parent_product['categories'],
 			'sku'               => $parent_product['item_code'],
 			'item_code'         => $parent_product['item_code'],
-			'order_id'          => $parent_order_id,
+			'order_id'          => $id,
 			'status'            => 'in',
 			'quantity'          => $qty,
 			'official_qty'      => ($type == 'white') ? $qty : 0,
@@ -37580,8 +37943,8 @@ public function get_sales_return_reports()
 			'black_total_rs'    => $total_black_cost,
 			'total_amt'         => $final_total,
 			'received_date'     => date("Y-m-d"),
-			'batch_no'          => $batch_no,
-			'invoice_no'        => $batch_no,
+			'batch_no'          => $order['batch_no'],
+			'invoice_no'        => $order['batch_no'],
 			'is_deleted'        => 0,
 			'added_date'        => date("Y-m-d H:i:s"),
 			'added_by_id'       => $this->session->userdata('super_user_id'),
@@ -37589,21 +37952,23 @@ public function get_sales_return_reports()
 		);
 		$this->db->insert('inventory_history', $parent_history);
 
+		$this->db->where('id', $id)->update('formula_product_in', array(
+			'is_approve'        => 1,
+			'approval_date'     => date("Y-m-d H:i:s"),
+			'approval_by'       => (int) $this->session->userdata('super_user_id'),
+			'approval_by_name'  => $this->session->userdata('super_name'),
+		));
+
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
-			return simple_json_output(array(
-				"status" => 400,
-				"message" => "Transaction failed. Please try again."
-			));
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Transaction failed. Please try again.";
+			return simple_json_output($resultpost);
 		}
 
 		$this->db->trans_commit();
-		$this->session->set_flashdata('flash_message', 'Formula Product stock added successfully.');
-		return simple_json_output(array(
-			"status" => 200,
-			"message" => "Formula Product stock added successfully.",
-			"url" => base_url('inventory/formula-product-order')
-		));
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
 	}
 
 	public function get_replace_products()

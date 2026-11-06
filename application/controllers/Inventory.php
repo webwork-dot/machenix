@@ -2191,6 +2191,8 @@ class Inventory extends CI_Controller
     {
         if ($this->session->userdata('inventory_login') != true) {
             redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "approve") {
+            $this->inventory_model->approve_formula_product_order($param2);
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
             $page_data['navigation']  = 'formula_product_order';
@@ -5865,6 +5867,61 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_storage();
+        }
+    }
+
+    public function vc_manager($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } elseif ($param1 == "add_post") {
+            $this->inventory_model->add_vc_manager($param2);
+        } elseif ($param1 == "edit_post") {
+            $this->inventory_model->edit_vc_manager($param2);
+        } elseif ($param1 == "delete") {
+            $this->inventory_model->delete_vc_manager($param2);
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'vc_manager';
+            $page_data['page_name']  = 'vc_manager';
+            $page_data['page_title'] = 'VC Manage';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function vc_manager_form($param1 = "", $param2 = "")
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['countries']  = $this->crud_model->get_countries();
+        $page_data['navigation'] = 'vc_manager';
+
+        if ($param1 == 'vc_manager_add') {
+            $page_data['states']     = array();
+            $page_data['page_name']  = 'vc_manager_add';
+            $page_data['page_title'] = 'Add VC';
+            $this->load->view('backend/index', $page_data);
+        } elseif ($param1 == 'vc_manager_edit') {
+            $data                    = $this->inventory_model->get_vc_manager_by_id($param2)->row_array();
+            $page_data['data']       = $data;
+            $page_data['states']     = !empty($data['country_id']) ? $this->crud_model->get_states_by_country($data['country_id']) : array();
+            $page_data['citys']      = !empty($data['state_id']) ? $this->crud_model->get_city_by_state($data['state_id']) : array();
+            $page_data['page_name']  = 'vc_manager_edit';
+            $page_data['id']         = $param2;
+            $page_data['page_title'] = 'Edit VC';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
+    public function get_vc_manager()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_vc_manager();
         }
     }
 

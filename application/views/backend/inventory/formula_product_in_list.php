@@ -44,6 +44,7 @@
 					<?php if (is_access('203')) { ?><th>Total Actual Cost</th><?php } ?>
 					<?php if (is_access('204')) { ?><th>Total Expense</th><?php } ?>
 					<?php if (is_access('205')) { ?><th>Final Total</th><?php } ?>
+					<th>Actions</th>
                   </tr>
                </thead>
             </table>
@@ -96,6 +97,7 @@
                 <?php if (is_access('203')) { ?>{ "data": "total_actual_cost" },<?php } ?>
                 <?php if (is_access('204')) { ?>{ "data": "total_expense" },<?php } ?>
                 <?php if (is_access('205')) { ?>{ "data": "final_total" },<?php } ?>
+                { "data": "action" },
             ], 
            
             "buttons": [
