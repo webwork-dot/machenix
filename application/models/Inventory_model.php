@@ -29787,6 +29787,46 @@ public function get_sales_return_reports()
 				unset($pdf);
 			}
 
+			/* ================= LOADING CHECKLIST (PER SUPPLIER) ================= */
+			$checklist_by_supplier = $this->_get_loading_checklist_by_supplier($id);
+			foreach ($checklist_by_supplier as $supplier_id => $supplier_block) {
+				$products = isset($supplier_block['products']) ? $supplier_block['products'] : [];
+				if (empty($products)) {
+					continue;
+				}
+
+				$safe_supplier = preg_replace('/[^A-Za-z0-9_\-]/', '_', $supplier_block['supplier_name']);
+				$safe_supplier = trim($safe_supplier, '_');
+				if ($safe_supplier === '') {
+					$safe_supplier = 'Supplier_' . $supplier_id;
+				}
+				$receipt_no = sprintf('%02d', $supplier_id) . rand(100, 999);
+
+				/* Excel */
+				$excel_name = 'LL_Check_' . $safe_supplier . '_' . $receipt_no . '.xlsx';
+				$excel_path = $path . $excel_name;
+				$this->_generate_loading_checklist_excel($products, $excel_path);
+				if (file_exists($excel_path)) {
+					$path_info[] = 'uploads/invoices/' . $excel_name;
+				}
+
+				/* PDF */
+				ob_clean();
+				$page_data = [
+					'products' => $products,
+					'supplier_name' => $supplier_block['supplier_name'],
+				];
+				$html = $this->load->view('invoice/po/loading_checklist', $page_data, true);
+				$pdf = $this->pdf->create();
+				$pdf->setPaper('A4', 'portrait');
+				$pdf->loadHtml($html);
+				$pdf->render();
+				$pdf_name = 'LL_Check_' . $safe_supplier . '_' . $receipt_no . '.pdf';
+				file_put_contents($path . $pdf_name, $pdf->output());
+				$path_info[] = 'uploads/invoices/' . $pdf_name;
+				unset($pdf);
+			}
+
 			/* ================= CREATE ZIP ================= */
 			$this->load->library('zip');
 			$zip_name = 'invoices_' . date('Ymd_His') . '_' . rand(1000,9999) . '.zip';
@@ -29830,6 +29870,138 @@ public function get_sales_return_reports()
 			redirect(site_url('inventory/loading_list_po'));
 			return;
 		}
+	}
+
+	/**
+	 * Group loading list products by supplier for checklist export.
+	 *
+	 * @param int $po_id
+	 * @return array
+	 */
+	private function _get_loading_checklist_by_supplier($po_id)
+	{
+		$po_id = (int) $po_id;
+		$rows = $this->db->query("
+			SELECT
+				pop.id,
+				pop.supplier_id,
+				pop.product_name,
+				pop.item_code,
+				pop.loading_qty,
+				s.name AS supplier_name
+			FROM loading_po_product pop
+			LEFT JOIN supplier s ON s.id = pop.supplier_id
+			WHERE pop.parent_id = '{$po_id}'
+				AND pop.loading_qty > 0
+			ORDER BY pop.supplier_id ASC, pop.id ASC
+		")->result_array();
+
+		$grouped = [];
+		foreach ($rows as $row) {
+			$supplier_id = isset($row['supplier_id']) ? (int) $row['supplier_id'] : 0;
+			if (!isset($grouped[$supplier_id])) {
+				$grouped[$supplier_id] = [
+					'supplier_id' => $supplier_id,
+					'supplier_name' => !empty($row['supplier_name']) ? $row['supplier_name'] : ('Supplier_' . $supplier_id),
+					'products' => [],
+				];
+			}
+			$grouped[$supplier_id]['products'][] = $row;
+		}
+
+		return $grouped;
+	}
+
+	/**
+	 * Generate loading checklist Excel with 10-cell qty grid per product.
+	 *
+	 * @param array $products
+	 * @param string $filePath Absolute path to save the xlsx file
+	 * @return void
+	 */
+	private function _generate_loading_checklist_excel($products, $filePath)
+	{
+		$spreadsheet = new Spreadsheet();
+		$sheet = $spreadsheet->getActiveSheet();
+		$sheet->setTitle('Loading Checklist');
+
+		$alignCenter = Alignment::HORIZONTAL_CENTER;
+		$alignVerticalCenter = Alignment::VERTICAL_CENTER;
+		$borderThin = Border::BORDER_THIN;
+		$gridCols = 10;
+		$gridLetters = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
+
+		$headerStyle = [
+			'font' => ['bold' => true, 'size' => 11],
+			'alignment' => ['horizontal' => $alignCenter, 'vertical' => $alignVerticalCenter],
+			'borders' => ['allBorders' => ['borderStyle' => $borderThin]],
+		];
+		$infoStyle = [
+			'alignment' => ['horizontal' => $alignCenter, 'vertical' => $alignVerticalCenter, 'wrapText' => true],
+			'borders' => ['allBorders' => ['borderStyle' => $borderThin]],
+		];
+		$gridCellStyle = [
+			'borders' => ['allBorders' => ['borderStyle' => $borderThin]],
+			'alignment' => ['horizontal' => $alignCenter, 'vertical' => $alignVerticalCenter],
+		];
+
+		$sheet->setCellValue('A1', 'Products Name');
+		$sheet->setCellValue('B1', 'Model No');
+		$sheet->setCellValue('C1', 'Qty');
+		$sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+
+		$sheet->getColumnDimension('A')->setWidth(40);
+		$sheet->getColumnDimension('B')->setWidth(18);
+		$sheet->getColumnDimension('C')->setWidth(8);
+		foreach ($gridLetters as $col) {
+			$sheet->getColumnDimension($col)->setWidth(3.5);
+		}
+
+		$currentRow = 2;
+		foreach ($products as $product) {
+			$qty = isset($product['loading_qty']) ? (int) $product['loading_qty'] : 0;
+			if ($qty <= 0) {
+				continue;
+			}
+
+			$productName = isset($product['product_name']) ? html_entity_decode($product['product_name']) : '';
+			$modelNo = isset($product['item_code']) ? html_entity_decode($product['item_code']) : '';
+			$rowsNeeded = (int) max(1, ceil($qty / $gridCols));
+			$startRow = $currentRow;
+			$endRow = $currentRow + $rowsNeeded - 1;
+
+			$sheet->setCellValue('A' . $startRow, $productName);
+			$sheet->setCellValue('B' . $startRow, $modelNo);
+			$sheet->setCellValue('C' . $startRow, $qty);
+
+			if ($rowsNeeded > 1) {
+				$sheet->mergeCells('A' . $startRow . ':A' . $endRow);
+				$sheet->mergeCells('B' . $startRow . ':B' . $endRow);
+				$sheet->mergeCells('C' . $startRow . ':C' . $endRow);
+			}
+			$sheet->getStyle('A' . $startRow . ':C' . $endRow)->applyFromArray($infoStyle);
+
+			$remaining = $qty;
+			for ($r = 0; $r < $rowsNeeded; $r++) {
+				$row = $startRow + $r;
+				$cellsThisRow = min($gridCols, $remaining);
+				$sheet->getRowDimension($row)->setRowHeight(18);
+
+				for ($c = 0; $c < $cellsThisRow; $c++) {
+					$cellRef = $gridLetters[$c] . $row;
+					$sheet->setCellValue($cellRef, '');
+					$sheet->getStyle($cellRef)->applyFromArray($gridCellStyle);
+				}
+				$remaining -= $cellsThisRow;
+			}
+
+			$currentRow = $endRow + 1;
+		}
+
+		$writer = new Xlsx($spreadsheet);
+		$writer->save($filePath);
+		$spreadsheet->disconnectWorksheets();
+		unset($spreadsheet);
 	}
 
 	public function create_sales_invoice($id) {
@@ -37413,17 +37585,31 @@ public function get_sales_return_reports()
 				$id = $item['id'];
 
 				$action = '-';
-				if (empty($item['is_approve'])) {
-					$approve_url = "confirm_modal('" . base_url() . "inventory/formula_product_order/approve/" . $id . "','Are you sure want to approve this formula product in?')";
-					$action = '<a href="#" onclick="' . $approve_url . '" data-toggle="tooltip" data-bs-placement="top" title="Approve"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-check" aria-hidden="true"></i></button></a>';
+				$is_produced = !empty($item['is_approve']);
+				if (!$is_produced) {
+					if (is_access('1005')) {
+						$approve_url = "confirm_modal('" . base_url() . "inventory/formula_product_order/approve/" . $id . "','Are you sure want to approve this formula product in?')";
+						$action = '<a href="#" onclick="' . $approve_url . '" data-toggle="tooltip" data-bs-placement="top" title="Approve"><button type="button" class="btn mr-1 mb-1 btn-outline-success" style="padding: 4px 8px;"><i class="fa fa-check" aria-hidden="true"></i></button></a>';
+					}
+					$status = '<span class="badge bg-light-warning text-warning">Pending</span>';
+					$complete_date = '-';
 				} else {
-					$action = '<span class="badge bg-light-success text-success">Approved</span>';
+					if (is_access('1005')) {
+						$action = '<span class="badge bg-light-success text-success">Approved</span>';
+					}
+					$status = '<span class="badge bg-light-success text-success">Produced</span>';
+					$complete_date = !empty($item['approval_date']) ? date('d M, Y', strtotime($item['approval_date'])) : '-';
 				}
+
+				$start_date_raw = !empty($item['date']) ? $item['date'] : $item['added_date'];
+				$start_date = !empty($start_date_raw) ? date('d M, Y', strtotime($start_date_raw)) : '-';
 
 				$data[] = array(
 					"sr_no"             => ++$start,
 					"id"                => $item['id'],
-					"date"              => date('d M, Y', strtotime($item['added_date'])),
+					"start_date"        => $start_date,
+					"complete_date"     => $complete_date,
+					"status"            => $status,
 					"batch_no"          => $item['batch_no'],
 					"product_name"      => $item['name'],
 					"qty"               => $item['qty'],

@@ -209,14 +209,14 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (195, 184, 'actions', 'Delete', '', 5, 0, '2026-10-16 16:54:00'),
 (196, 184, 'actions', 'Excel / PDF Export', '', 6, 0, '2026-10-16 16:54:00'),
 (197, 0, 'module', 'Formula Product In', 'inventory/formula-product-order', 6, 0, '2026-10-16 16:58:00'),
-(198, 197, 'columns', 'Date', 'date', 1, 0, '2026-10-16 16:58:00'),
-(199, 197, 'columns', 'Batch No', 'batch_no', 2, 0, '2026-10-16 16:58:00'),
-(200, 197, 'columns', 'Formula Product', 'product_name', 3, 0, '2026-10-16 16:58:00'),
-(201, 197, 'columns', 'Qty', 'qty', 4, 0, '2026-10-16 16:58:00'),
-(202, 197, 'columns', 'Total Off Cost', 'total_off_cost', 5, 0, '2026-10-16 16:58:00'),
-(203, 197, 'columns', 'Total Actual Cost', 'total_actual_cost', 6, 0, '2026-10-16 16:58:00'),
-(204, 197, 'columns', 'Total Expense', 'total_expense', 7, 0, '2026-10-16 16:58:00'),
-(205, 197, 'columns', 'Final Total', 'final_total', 8, 0, '2026-10-16 16:58:00'),
+(198, 197, 'columns', 'Start Date', 'start_date', 1, 0, '2026-10-16 16:58:00'),
+(199, 197, 'columns', 'Batch No', 'batch_no', 4, 0, '2026-10-16 16:58:00'),
+(200, 197, 'columns', 'Formula Product', 'product_name', 5, 0, '2026-10-16 16:58:00'),
+(201, 197, 'columns', 'Qty', 'qty', 6, 0, '2026-10-16 16:58:00'),
+(202, 197, 'columns', 'Total Off Cost', 'total_off_cost', 7, 0, '2026-10-16 16:58:00'),
+(203, 197, 'columns', 'Total Actual Cost', 'total_actual_cost', 8, 0, '2026-10-16 16:58:00'),
+(204, 197, 'columns', 'Total Expense', 'total_expense', 9, 0, '2026-10-16 16:58:00'),
+(205, 197, 'columns', 'Final Total', 'final_total', 10, 0, '2026-10-16 16:58:00'),
 (206, 197, 'actions', 'Add', 'inventory/formula-product-order/add', 1, 0, '2026-10-16 16:58:00'),
 (207, 197, 'actions', 'Excel / PDF Export', '', 2, 0, '2026-10-16 16:58:00'),
 (208, 0, 'module', 'Batch Detail', 'inventory/batch-detail', 7, 0, '2026-10-17 10:58:00'),
@@ -1147,6 +1147,11 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (1001, 996, 'actions', 'Delete', '', 3, 0, '2026-11-06 17:40:00'),
 (1002, 996, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-11-06 17:40:00'),
 
+-- Formula Product In - Complete Date / Status / Approve
+(1003, 197, 'columns', 'Complete Date', 'complete_date', 2, 0, '2026-11-10 19:00:00'),
+(1004, 197, 'columns', 'Status', 'status', 3, 0, '2026-11-10 19:00:00'),
+(1005, 197, 'actions', 'Approve', 'inventory/formula_product_order/approve/[:id]', 3, 0, '2026-11-10 19:00:00');
+
 -- Indexes for dumped tables
 --
 
@@ -1164,7 +1169,7 @@ ALTER TABLE `access_manager`
 -- AUTO_INCREMENT for table `access_manager`
 --
 ALTER TABLE `access_manager`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1003;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1006;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

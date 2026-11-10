@@ -36,7 +36,9 @@
                <thead>
                   <tr>
 					<th>#</th>
-					<?php if (is_access('198')) { ?><th>Date</th><?php } ?>
+					<?php if (is_access('198')) { ?><th>Start Date</th><?php } ?>
+					<?php if (is_access('1003')) { ?><th>Complete Date</th><?php } ?>
+					<?php if (is_access('1004')) { ?><th>Status</th><?php } ?>
 					<?php if (is_access('199')) { ?><th>Batch No</th><?php } ?>
 					<?php if (is_access('200')) { ?><th>Formula Product</th><?php } ?>
 					<?php if (is_access('201')) { ?><th>Qty</th><?php } ?>
@@ -44,7 +46,7 @@
 					<?php if (is_access('203')) { ?><th>Total Actual Cost</th><?php } ?>
 					<?php if (is_access('204')) { ?><th>Total Expense</th><?php } ?>
 					<?php if (is_access('205')) { ?><th>Final Total</th><?php } ?>
-					<th>Actions</th>
+					<?php if (is_access('1005')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
             </table>
@@ -89,7 +91,9 @@
                      
             "columns": [
                 { "data": "sr_no" },
-                <?php if (is_access('198')) { ?>{ "data": "date" },<?php } ?>
+                <?php if (is_access('198')) { ?>{ "data": "start_date" },<?php } ?>
+                <?php if (is_access('1003')) { ?>{ "data": "complete_date" },<?php } ?>
+                <?php if (is_access('1004')) { ?>{ "data": "status" },<?php } ?>
                 <?php if (is_access('199')) { ?>{ "data": "batch_no" },<?php } ?>
                 <?php if (is_access('200')) { ?>{ "data": "product_name" },<?php } ?>
                 <?php if (is_access('201')) { ?>{ "data": "qty" },<?php } ?>
@@ -97,7 +101,7 @@
                 <?php if (is_access('203')) { ?>{ "data": "total_actual_cost" },<?php } ?>
                 <?php if (is_access('204')) { ?>{ "data": "total_expense" },<?php } ?>
                 <?php if (is_access('205')) { ?>{ "data": "final_total" },<?php } ?>
-                { "data": "action" },
+                <?php if (is_access('1005')) { ?>{ "data": "action" },<?php } ?>
             ], 
            
             "buttons": [

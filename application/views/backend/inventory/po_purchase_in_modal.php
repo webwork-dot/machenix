@@ -251,10 +251,13 @@ foreach ($storage_draws as $st) {
                         <div class="supplier-rate-controls row align-items-end mb-1">
                             <div class="col-md-3 col-sm-4 mb-50">
                                 <label class="mb-25">Currency</label>
-                                <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[<?php echo $supplier_id; ?>]">
-                                    <option value="usd" <?php echo ($sup_currency_type === 'usd') ? 'selected' : ''; ?>>USD to RMB</option>
-                                    <option value="rmb" <?php echo ($sup_currency_type === 'rmb') ? 'selected' : ''; ?>>RMB to USD</option>
-                                </select>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[<?php echo $supplier_id; ?>]">
+                                        <option value="usd" <?php echo ($sup_currency_type === 'usd') ? 'selected' : ''; ?>>USD to RMB</option>
+                                        <option value="rmb" <?php echo ($sup_currency_type === 'rmb') ? 'selected' : ''; ?>>RMB to USD</option>
+                                    </select>
+                                    <button type="button" class="btn btn-primary btn-sm ml-50 supplier-apply-rates-btn" onclick="applySupplierRates(this)">Apply</button>
+                                </div>
                             </div>
                             <div class="col-md-3 col-sm-4 mb-50">
                                 <label class="mb-25 supplier-con-rate-label"><?php echo $sup_con_rate_label; ?></label>
@@ -1270,8 +1273,15 @@ function updateSupplierConRateLabel($section) {
   $section.find('.supplier-con-rate-label').text(type === 'rmb' ? 'USD Rate' : 'RMB Rate');
 }
 
+function applySupplierRates(btn) {
+  var $section = $(btn).closest('.supplier-section');
+  applySupplierConversionRates($section);
+}
+
 function applySupplierConversionRates($section) {
   if (!$section || !$section.length) return;
+
+  updateSupplierConRateLabel($section);
 
   var type = $section.find('.supplier-currency-type').val() || 'usd';
   var conRate = toNum($section.find('.supplier-con-rate').val());
@@ -1467,13 +1477,7 @@ $(document).ready(function () {
   });
 
   $(document).on('change', '.supplier-currency-type', function () {
-    var $section = $(this).closest('.supplier-section');
-    updateSupplierConRateLabel($section);
-    applySupplierConversionRates($section);
-  });
-
-  $(document).on('keyup change', '.supplier-con-rate, .supplier-local-inr-rate', function () {
-    applySupplierConversionRates($(this).closest('.supplier-section'));
+    updateSupplierConRateLabel($(this).closest('.supplier-section'));
   });
 
   $(document).on('change', '.actual-rmb, .actual-usd', function () {
@@ -1552,10 +1556,13 @@ function createSupplierSection(supplierId, supplierName) {
         <div class="supplier-rate-controls row align-items-end mb-1">
             <div class="col-md-3 col-sm-4 mb-50">
                 <label class="mb-25">Currency</label>
-                <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[${supplierId}]">
-                    <option value="usd" selected>USD to RMB</option>
-                    <option value="rmb">RMB to USD</option>
-                </select>
+                <div class="d-flex align-items-center">
+                    <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[${supplierId}]">
+                        <option value="usd" selected>USD to RMB</option>
+                        <option value="rmb">RMB to USD</option>
+                    </select>
+                    <button type="button" class="btn btn-primary btn-sm ml-50 supplier-apply-rates-btn" onclick="applySupplierRates(this)">Apply</button>
+                </div>
             </div>
             <div class="col-md-3 col-sm-4 mb-50">
                 <label class="mb-25 supplier-con-rate-label">RMB Rate</label>
