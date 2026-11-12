@@ -251,13 +251,10 @@ foreach ($storage_draws as $st) {
                         <div class="supplier-rate-controls row align-items-end mb-1">
                             <div class="col-md-3 col-sm-4 mb-50">
                                 <label class="mb-25">Currency</label>
-                                <div class="d-flex align-items-center">
-                                    <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[<?php echo $supplier_id; ?>]">
-                                        <option value="usd" <?php echo ($sup_currency_type === 'usd') ? 'selected' : ''; ?>>USD to RMB</option>
-                                        <option value="rmb" <?php echo ($sup_currency_type === 'rmb') ? 'selected' : ''; ?>>RMB to USD</option>
-                                    </select>
-                                    <button type="button" class="btn btn-primary btn-sm ml-50 supplier-apply-rates-btn" onclick="applySupplierRates(this)">Apply</button>
-                                </div>
+                                <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[<?php echo $supplier_id; ?>]">
+                                    <option value="usd" <?php echo ($sup_currency_type === 'usd') ? 'selected' : ''; ?>>USD to RMB</option>
+                                    <option value="rmb" <?php echo ($sup_currency_type === 'rmb') ? 'selected' : ''; ?>>RMB to USD</option>
+                                </select>
                             </div>
                             <div class="col-md-3 col-sm-4 mb-50">
                                 <label class="mb-25 supplier-con-rate-label"><?php echo $sup_con_rate_label; ?></label>
@@ -265,7 +262,10 @@ foreach ($storage_draws as $st) {
                             </div>
                             <div class="col-md-3 col-sm-4 mb-50">
                                 <label class="mb-25">INR Rate</label>
-                                <input type="number" step="any" class="form-control form-control-sm text-right supplier-local-inr-rate" name="supplier_inr_con_rate[<?php echo $supplier_id; ?>]" value="<?php echo number_format($sup_inr_con_rate, 5, '.', ''); ?>" placeholder="0">
+                                <div class="d-flex align-items-center">
+                                    <input type="number" step="any" class="form-control form-control-sm text-right supplier-local-inr-rate" name="supplier_inr_con_rate[<?php echo $supplier_id; ?>]" value="<?php echo number_format($sup_inr_con_rate, 5, '.', ''); ?>" placeholder="0">
+                                    <button type="button" class="btn btn-primary btn-sm supplier-apply-rates-btn" style="margin-left: 6px;" onclick="applySupplierRates(this)">Apply</button>
+                                </div>
                             </div>
                         </div>
                         <div class="table-responsive supplier-table-container">
@@ -1556,13 +1556,10 @@ function createSupplierSection(supplierId, supplierName) {
         <div class="supplier-rate-controls row align-items-end mb-1">
             <div class="col-md-3 col-sm-4 mb-50">
                 <label class="mb-25">Currency</label>
-                <div class="d-flex align-items-center">
-                    <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[${supplierId}]">
-                        <option value="usd" selected>USD to RMB</option>
-                        <option value="rmb">RMB to USD</option>
-                    </select>
-                    <button type="button" class="btn btn-primary btn-sm ml-50 supplier-apply-rates-btn" onclick="applySupplierRates(this)">Apply</button>
-                </div>
+                <select class="form-control form-control-sm supplier-currency-type" name="supplier_currency_type[${supplierId}]">
+                    <option value="usd" selected>USD to RMB</option>
+                    <option value="rmb">RMB to USD</option>
+                </select>
             </div>
             <div class="col-md-3 col-sm-4 mb-50">
                 <label class="mb-25 supplier-con-rate-label">RMB Rate</label>
@@ -1570,7 +1567,10 @@ function createSupplierSection(supplierId, supplierName) {
             </div>
             <div class="col-md-3 col-sm-4 mb-50">
                 <label class="mb-25">INR Rate</label>
-                <input type="number" step="any" class="form-control form-control-sm text-right supplier-local-inr-rate" name="supplier_inr_con_rate[${supplierId}]" value="0" placeholder="0">
+                <div class="d-flex align-items-center">
+                    <input type="number" step="any" class="form-control form-control-sm text-right supplier-local-inr-rate" name="supplier_inr_con_rate[${supplierId}]" value="0" placeholder="0">
+                    <button type="button" class="btn btn-primary btn-sm supplier-apply-rates-btn" style="margin-left: 6px;" onclick="applySupplierRates(this)">Apply</button>
+                </div>
             </div>
         </div>
         <div class="table-responsive supplier-table-container">

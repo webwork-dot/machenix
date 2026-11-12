@@ -1071,7 +1071,7 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (945, 457, 'datatype', 'Added By', '', 2, 0, '2026-10-21 12:53:00'),
 
 -- =========================================================
--- Settings (tabs: Categories / Product Unit / Expense Type / Charges / Commissions / Profit Commission Slab / Bank Accounts / Storage / Settings)
+-- Settings (tabs: Categories / Product Unit / Expense Type / Charges / Commissions / Profit Commission Slab / Bank Accounts / Storage / VC Manage / Settings)
 -- =========================================================
 (946, 0, 'module', 'Settings', 'inventory/settings', 33, 0, '2026-10-28 17:40:00'),
 (947, 946, 'tabs', 'Categories', 'inventory/category', 1, 0, '2026-10-28 17:40:00'),
@@ -1082,7 +1082,8 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (952, 946, 'tabs', 'Profit Commission Slab', 'inventory/profit-commission-slab', 6, 0, '2026-10-28 17:40:00'),
 (953, 946, 'tabs', 'Bank Accounts', 'inventory/bank-accounts', 7, 0, '2026-10-28 17:40:00'),
 (996, 946, 'tabs', 'Storage', 'inventory/storage', 8, 0, '2026-11-06 17:40:00'),
-(954, 946, 'tabs', 'Settings', 'inventory/settings', 9, 0, '2026-10-28 17:40:00'),
+(1006, 946, 'tabs', 'VC Manage', 'inventory/vc-manage', 9, 0, '2026-11-12 11:45:00'),
+(954, 946, 'tabs', 'Settings', 'inventory/settings', 10, 0, '2026-10-28 17:40:00'),
 
 -- Categories (947)
 (955, 947, 'columns', 'Category Name', 'name', 1, 0, '2026-10-28 17:40:00'),
@@ -1150,7 +1151,19 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 -- Formula Product In - Complete Date / Status / Approve
 (1003, 197, 'columns', 'Complete Date', 'complete_date', 2, 0, '2026-11-10 19:00:00'),
 (1004, 197, 'columns', 'Status', 'status', 3, 0, '2026-11-10 19:00:00'),
-(1005, 197, 'actions', 'Approve', 'inventory/formula_product_order/approve/[:id]', 3, 0, '2026-11-10 19:00:00');
+(1005, 197, 'actions', 'Approve', 'inventory/formula_product_order/approve/[:id]', 3, 0, '2026-11-10 19:00:00'),
+
+-- VC Manage (1006)
+(1007, 1006, 'columns', 'Company Name', 'company_name', 1, 0, '2026-11-12 11:45:00'),
+(1008, 1006, 'columns', 'Contact Name', 'name', 2, 0, '2026-11-12 11:45:00'),
+(1009, 1006, 'columns', 'Mobile', 'mobile', 3, 0, '2026-11-12 11:45:00'),
+(1010, 1006, 'columns', 'Email', 'email', 4, 0, '2026-11-12 11:45:00'),
+(1011, 1006, 'columns', 'GST No', 'gst_no', 5, 0, '2026-11-12 11:45:00'),
+(1012, 1006, 'columns', 'Document', 'document', 6, 0, '2026-11-12 11:45:00'),
+(1013, 1006, 'actions', 'Add', 'inventory/vc-manage/add', 1, 0, '2026-11-12 11:45:00'),
+(1014, 1006, 'actions', 'Edit', 'inventory/vc-manage/edit/[:id]', 2, 0, '2026-11-12 11:45:00'),
+(1015, 1006, 'actions', 'Delete', '', 3, 0, '2026-11-12 11:45:00'),
+(1016, 1006, 'actions', 'Excel / PDF Export', '', 4, 0, '2026-11-12 11:45:00');
 
 -- Indexes for dumped tables
 --
@@ -1169,7 +1182,7 @@ ALTER TABLE `access_manager`
 -- AUTO_INCREMENT for table `access_manager`
 --
 ALTER TABLE `access_manager`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1006;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1017;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

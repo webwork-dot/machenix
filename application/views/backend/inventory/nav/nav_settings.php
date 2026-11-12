@@ -40,7 +40,9 @@
     <?php if (is_access('996')) { ?>
     <a href="<?php echo site_url('inventory/storage'); ?>" class="sub-link <?php echo ($navigation == 'storage') ? 'active' : ''; ?>">Storage</a>
     <?php } ?>
+    <?php if (is_access('1006')) { ?>
     <a href="<?php echo site_url('inventory/vc-manage'); ?>" class="sub-link <?php echo ($navigation == 'vc_manager') ? 'active' : ''; ?>">VC Manage</a>
+    <?php } ?>
     <?php if (is_access('954')) { ?>
     <a href="<?php echo site_url('inventory/settings'); ?>" class="sub-link <?php echo ($navigation == 'settings') ? 'active' : ''; ?>">Settings</a>
     <?php } ?>

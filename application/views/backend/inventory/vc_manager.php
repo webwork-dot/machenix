@@ -27,23 +27,25 @@
 
       <div class="card-datatable d-report mb-2">
 
+        <?php if (is_access('1013')) { ?>
         <a href="<?php echo site_url('inventory/vc-manage/add'); ?>"
           class="dt-button add-new desktop-tab  add-btn btn btn-primary" tabindex="0"
           aria-controls="DataTables_Table_0"><span><i class="feather icon-plus"></i>
             Add VC</span></a>
+        <?php } ?>
 
 
         <table class="table leads-table" id="report-datatable">
           <thead>
             <tr>
               <th>#</th>
-              <th>Company Name</th>
-              <th>Contact Name</th>
-              <th>Mobile</th>
-              <th>Email</th>
-              <th>GST No</th>
-              <th>Document</th>
-              <th>Actions</th>
+              <?php if (is_access('1007')) { ?><th>Company Name</th><?php } ?>
+              <?php if (is_access('1008')) { ?><th>Contact Name</th><?php } ?>
+              <?php if (is_access('1009')) { ?><th>Mobile</th><?php } ?>
+              <?php if (is_access('1010')) { ?><th>Email</th><?php } ?>
+              <?php if (is_access('1011')) { ?><th>GST No</th><?php } ?>
+              <?php if (is_access('1012')) { ?><th>Document</th><?php } ?>
+              <?php if (is_access('1014') || is_access('1015')) { ?><th>Actions</th><?php } ?>
             </tr>
           </thead>
         </table>
@@ -88,16 +90,17 @@ $(document).ready(function($) {
 
     "columns": [
       { data: 'sr_no' },
-      { data: 'company_name' },
-      { data: 'name' },
-      { data: 'mobile' },
-      { data: 'email' },
-      { data: 'gst_no' },
-      { data: 'document' },
-      { data: 'action' },
+      <?php if (is_access('1007')) { ?>{ data: 'company_name' },<?php } ?>
+      <?php if (is_access('1008')) { ?>{ data: 'name' },<?php } ?>
+      <?php if (is_access('1009')) { ?>{ data: 'mobile' },<?php } ?>
+      <?php if (is_access('1010')) { ?>{ data: 'email' },<?php } ?>
+      <?php if (is_access('1011')) { ?>{ data: 'gst_no' },<?php } ?>
+      <?php if (is_access('1012')) { ?>{ data: 'document' },<?php } ?>
+      <?php if (is_access('1014') || is_access('1015')) { ?>{ data: 'action' },<?php } ?>
     ],
 
     "buttons": [
+      <?php if (is_access('1016')) { ?>
       {
         "extend": 'excel',
         "text": '<button class="btn btn-success waves-effect waves-float waves-light"><i class="fa fa-file-excel-o"></i>  Excel</button>',
@@ -109,6 +112,7 @@ $(document).ready(function($) {
         "text": '<button class="btn btn-danger waves-effect waves-float waves-light"><i class="fa fa-file-pdf-o"></i> PDF</button>',
 
       }
+      <?php } ?>
     ],
 
     "infoCallback": function(settings, start, end, max, total, pre) {
