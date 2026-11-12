@@ -48,6 +48,13 @@
                           <input type="password" class="form-control" placeholder="Password" name="password" required>
                       </div>
                   </div>
+
+                  <div class="col-md-4">
+                      <div class="form-group">
+                         <label>Salary</label>
+                         <input type="text" class="form-control" placeholder="Salary" name="salery" onkeyup="this.value=this.value.replace(/[^0-9.]/g,'');">
+                      </div>
+                  </div>
                    
                   <div class="col-md-4">
                     <div class="form-group">

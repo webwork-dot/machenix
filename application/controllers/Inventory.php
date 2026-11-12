@@ -3433,6 +3433,33 @@ class Inventory extends CI_Controller
     public function update_inventory_product(){
         $this->inventory_model->update_inventory_product();
     }
+
+    public function get_stock_adjustment_batches()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $this->inventory_model->get_stock_adjustment_batches();
+    }
+
+    public function get_stock_adjustment_batch_products()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode([]);
+            return;
+        }
+        $this->inventory_model->get_stock_adjustment_batch_products();
+    }
+
+    public function stock_adjustment_post()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(array('status' => 400, 'message' => 'Unauthorized'));
+            return;
+        }
+        $this->inventory_model->stock_adjustment_post();
+    }
     
     public function get_my_stock_batch()
     {

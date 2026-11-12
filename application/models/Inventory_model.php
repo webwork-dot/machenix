@@ -10306,6 +10306,441 @@ class Inventory_model extends CI_Model
 		$this->db->insert('inventory_history', $history);
 		return simple_json_output($resultpost);
 	}
+
+	public function get_stock_adjustment_batches()
+	{
+		$warehouse_id = (int) $this->input->post('warehouse_id');
+		$company_id = (int) $this->session->userdata('company_id');
+
+		if ($warehouse_id <= 0 || $company_id <= 0) {
+			echo json_encode([]);
+			return;
+		}
+
+		$rows = $this->db->query("
+			SELECT batch_no
+			FROM inventory
+			WHERE company_id = ?
+				AND warehouse_id = ?
+				AND batch_no IS NOT NULL
+				AND batch_no != ''
+				AND (quantity > 0 OR official_qty > 0 OR black_qty > 0)
+			GROUP BY batch_no
+			ORDER BY batch_no ASC
+		", array($company_id, $warehouse_id))->result_array();
+
+		echo json_encode($rows);
+	}
+
+	public function get_stock_adjustment_batch_products()
+	{
+		$warehouse_id = (int) $this->input->post('warehouse_id');
+		$batch_no = trim((string) $this->input->post('batch_no'));
+		$company_id = (int) $this->session->userdata('company_id');
+
+		if ($warehouse_id <= 0 || $company_id <= 0 || $batch_no === '') {
+			echo json_encode([]);
+			return;
+		}
+
+		$rows = $this->db->query("
+			SELECT
+				id,
+				product_id,
+				product_name,
+				item_code,
+				sku,
+				categories,
+				quantity,
+				official_qty,
+				black_qty,
+				official_rate_rs,
+				actual_inr,
+				batch_no,
+				warehouse_id,
+				warehouse_name
+			FROM inventory
+			WHERE company_id = ?
+				AND warehouse_id = ?
+				AND batch_no = ?
+				AND (quantity > 0 OR official_qty > 0 OR black_qty > 0)
+			ORDER BY product_name ASC, id ASC
+		", array($company_id, $warehouse_id, $batch_no))->result_array();
+
+		$data = array();
+		foreach ($rows as $row) {
+			$data[] = array(
+				'id' => (int) $row['id'],
+				'product_id' => (int) $row['product_id'],
+				'product_name' => $row['product_name'],
+				'item_code' => $row['item_code'],
+				'label' => trim(($row['item_code'] ? $row['item_code'] . ' - ' : '') . $row['product_name']),
+				'sku' => $row['sku'],
+				'categories' => $row['categories'],
+				'quantity' => (int) $row['quantity'],
+				'official_qty' => (int) $row['official_qty'],
+				'black_qty' => (int) $row['black_qty'],
+				'official_rate_rs' => (float) $row['official_rate_rs'],
+				'actual_inr' => (float) $row['actual_inr'],
+				'batch_no' => $row['batch_no'],
+				'warehouse_id' => (int) $row['warehouse_id'],
+				'warehouse_name' => $row['warehouse_name'],
+			);
+		}
+
+		echo json_encode($data);
+	}
+
+	public function stock_adjustment_post()
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Stock adjusted successfully",
+		);
+
+		$mode = strtolower(trim((string) $this->input->post('mode')));
+		$warehouse_id = (int) $this->input->post('warehouse_id');
+		$batch_no = trim((string) $this->input->post('batch_no'));
+		$company_id = (int) $this->session->userdata('company_id');
+
+		if (!in_array($mode, array('add', 'deduct'), true)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Invalid adjustment mode.";
+			return simple_json_output($resultpost);
+		}
+
+		if ($warehouse_id <= 0 || $company_id <= 0) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Please select a valid warehouse.";
+			return simple_json_output($resultpost);
+		}
+
+		if ($batch_no === '') {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Batch number is required.";
+			return simple_json_output($resultpost);
+		}
+
+		$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
+		if (empty($warehouse_name)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Warehouse not found.";
+			return simple_json_output($resultpost);
+		}
+
+		if ($mode === 'deduct') {
+			return $this->_stock_adjustment_deduct($company_id, $warehouse_id, $warehouse_name, $batch_no);
+		}
+
+		return $this->_stock_adjustment_add($company_id, $warehouse_id, $warehouse_name, $batch_no);
+	}
+
+	private function _stock_adjustment_deduct($company_id, $warehouse_id, $warehouse_name, $batch_no)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Stock deducted successfully",
+		);
+
+		$inventory_ids = $this->input->post('inventory_id');
+		$white_qtys = $this->input->post('white_qty');
+		$black_qtys = $this->input->post('black_qty');
+		$official_rates = $this->input->post('official_rate_rs');
+		$actual_inrs = $this->input->post('actual_inr');
+
+		if (!is_array($inventory_ids) || empty($inventory_ids)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Please add at least one product to deduct.";
+			return simple_json_output($resultpost);
+		}
+
+		$seen = array();
+		$lines = array();
+		foreach ($inventory_ids as $idx => $inv_id) {
+			$inv_id = (int) $inv_id;
+			$white_qty = isset($white_qtys[$idx]) ? (int) $white_qtys[$idx] : 0;
+			$black_qty = isset($black_qtys[$idx]) ? (int) $black_qtys[$idx] : 0;
+			$official_rate = isset($official_rates[$idx]) ? (float) $official_rates[$idx] : 0;
+			$actual_inr = isset($actual_inrs[$idx]) ? (float) $actual_inrs[$idx] : 0;
+
+			if ($inv_id <= 0) {
+				continue;
+			}
+			if ($white_qty < 0 || $black_qty < 0) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Quantity cannot be negative.";
+				return simple_json_output($resultpost);
+			}
+			if ($white_qty <= 0 && $black_qty <= 0) {
+				continue;
+			}
+			if (isset($seen[$inv_id])) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Same batch product selected more than once.";
+				return simple_json_output($resultpost);
+			}
+			$seen[$inv_id] = true;
+
+			$inv = $this->db->where(array(
+				'id' => $inv_id,
+				'company_id' => $company_id,
+				'warehouse_id' => $warehouse_id,
+				'batch_no' => $batch_no,
+			))->get('inventory')->row_array();
+
+			if (empty($inv)) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Selected product does not belong to this batch/warehouse.";
+				return simple_json_output($resultpost);
+			}
+
+			$avail_white = (int) $inv['official_qty'];
+			$avail_black = (int) $inv['black_qty'];
+			if ($white_qty > $avail_white) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "White qty exceeds available for " . $inv['product_name'] . ".";
+				return simple_json_output($resultpost);
+			}
+			if ($black_qty > $avail_black) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Black qty exceeds available for " . $inv['product_name'] . ".";
+				return simple_json_output($resultpost);
+			}
+
+			$lines[] = array(
+				'inv' => $inv,
+				'white_qty' => $white_qty,
+				'black_qty' => $black_qty,
+				'official_rate_rs' => $official_rate,
+				'actual_inr' => $actual_inr,
+			);
+		}
+
+		if (empty($lines)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Please enter white or black quantity for at least one product.";
+			return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_begin();
+
+		foreach ($lines as $line) {
+			$inv = $line['inv'];
+			$white_qty = $line['white_qty'];
+			$black_qty = $line['black_qty'];
+			$total_qty = $white_qty + $black_qty;
+
+			$new_white = (int) $inv['official_qty'] - $white_qty;
+			$new_black = (int) $inv['black_qty'] - $black_qty;
+			$new_qty = max(0, $new_white + $new_black);
+
+			$this->db->where('id', $inv['id'])->update('inventory', array(
+				'official_qty' => $new_white,
+				'black_qty' => $new_black,
+				'quantity' => $new_qty,
+			));
+
+			$history = array(
+				'supplier_id'       => isset($inv['supplier_id']) ? $inv['supplier_id'] : null,
+				'company_id'        => $company_id,
+				'parent_id'         => $inv['id'],
+				'warehouse_id'      => $warehouse_id,
+				'warehouse_name'    => !empty($inv['warehouse_name']) ? $inv['warehouse_name'] : $warehouse_name,
+				'product_id'        => $inv['product_id'],
+				'product_name'      => $inv['product_name'],
+				'categories'        => $inv['categories'],
+				'sku'               => $inv['sku'],
+				'item_code'         => $inv['item_code'],
+				'order_id'          => null,
+				'status'            => 'manual_out',
+				'quantity'          => $total_qty,
+				'official_qty'      => $white_qty,
+				'official_rate_rs'  => $line['official_rate_rs'],
+				'official_total_rs' => $white_qty * $line['official_rate_rs'],
+				'black_qty'         => $black_qty,
+				'black_rate_rs'     => $line['actual_inr'],
+				'black_total_rs'    => $black_qty * $line['actual_inr'],
+				'actual_inr'        => $line['actual_inr'],
+				'total_amt'         => ($white_qty * $line['official_rate_rs']) + ($black_qty * $line['actual_inr']),
+				'received_date'     => date('Y-m-d'),
+				'batch_no'          => $batch_no,
+				'invoice_no'        => $batch_no,
+				'is_deleted'        => 0,
+				'added_date'        => date('Y-m-d H:i:s'),
+				'added_by_id'       => $this->session->userdata('super_user_id'),
+				'added_by_name'     => $this->session->userdata('super_name'),
+			);
+			$this->db->insert('inventory_history', $history);
+		}
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Transaction failed. Please try again.";
+			return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
+
+	private function _stock_adjustment_add($company_id, $warehouse_id, $warehouse_name, $batch_no)
+	{
+		$resultpost = array(
+			"status"  => 200,
+			"message" => "Stock added successfully",
+		);
+
+		$product_ids = $this->input->post('product_id');
+		$white_qtys = $this->input->post('white_qty');
+		$black_qtys = $this->input->post('black_qty');
+		$official_rates = $this->input->post('official_rate_rs');
+		$actual_inrs = $this->input->post('actual_inr');
+
+		if (!is_array($product_ids) || empty($product_ids)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Please add at least one product.";
+			return simple_json_output($resultpost);
+		}
+
+		$seen = array();
+		$lines = array();
+		foreach ($product_ids as $idx => $product_id) {
+			$product_id = (int) $product_id;
+			$white_qty = isset($white_qtys[$idx]) ? (int) $white_qtys[$idx] : 0;
+			$black_qty = isset($black_qtys[$idx]) ? (int) $black_qtys[$idx] : 0;
+			$official_rate = isset($official_rates[$idx]) ? (float) $official_rates[$idx] : 0;
+			$actual_inr = isset($actual_inrs[$idx]) ? (float) $actual_inrs[$idx] : 0;
+
+			if ($product_id <= 0) {
+				continue;
+			}
+			if ($white_qty < 0 || $black_qty < 0) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Quantity cannot be negative.";
+				return simple_json_output($resultpost);
+			}
+			if ($white_qty <= 0 && $black_qty <= 0) {
+				continue;
+			}
+			if (isset($seen[$product_id])) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Same product selected more than once.";
+				return simple_json_output($resultpost);
+			}
+			$seen[$product_id] = true;
+
+			$product = $this->db->where(array('id' => $product_id, 'is_deleted' => 0))->get('raw_products')->row_array();
+			if (empty($product)) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Product not found.";
+				return simple_json_output($resultpost);
+			}
+
+			$exists = $this->db->where(array(
+				'product_id' => $product_id,
+				'batch_no' => $batch_no,
+				'warehouse_id' => $warehouse_id,
+				'company_id' => $company_id,
+			))->get('inventory')->row_array();
+			if (!empty($exists)) {
+				$resultpost['status'] = 400;
+				$resultpost['message'] = "Batch '" . htmlspecialchars($batch_no) . "' already exists for product " . $product['name'] . ".";
+				return simple_json_output($resultpost);
+			}
+
+			$lines[] = array(
+				'product' => $product,
+				'white_qty' => $white_qty,
+				'black_qty' => $black_qty,
+				'official_rate_rs' => $official_rate,
+				'actual_inr' => $actual_inr,
+			);
+		}
+
+		if (empty($lines)) {
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Please enter white or black quantity for at least one product.";
+			return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_begin();
+
+		foreach ($lines as $line) {
+			$product = $line['product'];
+			$white_qty = $line['white_qty'];
+			$black_qty = $line['black_qty'];
+			$total_qty = $white_qty + $black_qty;
+			$official_total = $white_qty * $line['official_rate_rs'];
+			$total_amt = ($white_qty * $line['official_rate_rs']) + ($black_qty * $line['actual_inr']);
+
+			$inv = array(
+				'supplier_id'       => null,
+				'company_id'        => $company_id,
+				'warehouse_id'      => $warehouse_id,
+				'warehouse_name'    => $warehouse_name,
+				'product_id'        => $product['id'],
+				'product_name'      => $product['name'],
+				'categories'        => isset($product['categories']) ? $product['categories'] : null,
+				'sku'               => $product['item_code'],
+				'item_code'         => $product['item_code'],
+				'quantity'          => $total_qty,
+				'official_qty'      => $white_qty,
+				'official_rate_rs'  => $line['official_rate_rs'],
+				'official_total_rs' => $official_total,
+				'actual_inr'        => $line['actual_inr'],
+				'black_qty'         => $black_qty,
+				'total_amt'         => $total_amt,
+				'batch_no'          => $batch_no,
+			);
+			$this->db->insert('inventory', $inv);
+			$inventory_id = $this->db->insert_id();
+
+			$history = array(
+				'supplier_id'       => null,
+				'company_id'        => $company_id,
+				'parent_id'         => $inventory_id,
+				'warehouse_id'      => $warehouse_id,
+				'warehouse_name'    => $warehouse_name,
+				'product_id'        => $product['id'],
+				'product_name'      => $product['name'],
+				'categories'        => isset($product['categories']) ? $product['categories'] : null,
+				'sku'               => $product['item_code'],
+				'item_code'         => $product['item_code'],
+				'order_id'          => null,
+				'status'            => 'manual_in',
+				'quantity'          => $total_qty,
+				'official_qty'      => $white_qty,
+				'official_rate_rs'  => $line['official_rate_rs'],
+				'official_total_rs' => $official_total,
+				'black_qty'         => $black_qty,
+				'black_rate_rs'     => $line['actual_inr'],
+				'black_total_rs'    => $black_qty * $line['actual_inr'],
+				'actual_inr'        => $line['actual_inr'],
+				'total_amt'         => $total_amt,
+				'received_date'     => date('Y-m-d'),
+				'batch_no'          => $batch_no,
+				'invoice_no'        => $batch_no,
+				'is_deleted'        => 0,
+				'added_date'        => date('Y-m-d H:i:s'),
+				'added_by_id'       => $this->session->userdata('super_user_id'),
+				'added_by_name'     => $this->session->userdata('super_name'),
+			);
+			$this->db->insert('inventory_history', $history);
+		}
+
+		if ($this->db->trans_status() === FALSE) {
+			$this->db->trans_rollback();
+			$resultpost['status'] = 400;
+			$resultpost['message'] = "Transaction failed. Please try again.";
+			return simple_json_output($resultpost);
+		}
+
+		$this->db->trans_commit();
+		$this->session->set_flashdata('flash_message', $resultpost['message']);
+		return simple_json_output($resultpost);
+	}
 	
 	public function get_my_stock_batch()
 	{
@@ -28422,6 +28857,7 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 			$data['email']            = html_escape($this->input->post('email'));
 			$data['phone']            = html_escape($this->input->post('phone'));
 			$data['password']         = sha1(html_escape($this->input->post('password')));
+			$data['salery']           = html_escape($this->input->post('salery'));
 			$data['status']           = 1;
 			$data['staff_access']			= $this->input->post('staff_access');
 			$data['type']							= 'staff';
@@ -28544,6 +28980,7 @@ Where gr.id = '$id' and gr.is_deleted='0' $keyword_filter ORDER BY gr.date DESC 
 			$data['first_name'] = html_escape($this->input->post('first_name'));
 			$data['email']      = html_escape($this->input->post('email'));
 			$data['phone']      = html_escape($this->input->post('phone'));
+			$data['salery']     = html_escape($this->input->post('salery'));
 			$data['staff_access'] = $this->input->post('staff_access');
 			$data['company_id'] = is_array($company_id) ? implode(',', $company_id) : $company_id;
 			$data['address']    = $this->input->post('address');

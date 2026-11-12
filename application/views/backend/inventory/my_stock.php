@@ -802,7 +802,12 @@
 						<span class="pill-dot dot-black"></span> Black
 					</button>
 				</div>
-				<div class="dropdown stock-filter-dropdown ms-auto">
+				<div class="d-flex align-items-center ms-auto gap-1">
+				<button type="button" class="btn-filter-dropdown" id="btnStockAdjustment" title="Stock Adjustment">
+					<i class="feather icon-sliders"></i>
+					<span>Stock Adjustment</span>
+				</button>
+				<div class="dropdown stock-filter-dropdown">
 					<button class="btn-filter-dropdown dropdown-toggle" type="button" id="stockFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
 						<i class="feather icon-filter"></i>
 						<span>Filters</span>
@@ -873,6 +878,7 @@
 							</button>
 						</div>
 					</div>
+				</div>
 				</div>
 			</div>
 
@@ -948,6 +954,392 @@
         </div>
     </div>
 </div>
+
+<?php
+$sa_products = $this->db->query("
+	SELECT id, name, item_code
+	FROM raw_products
+	WHERE is_deleted = 0
+	ORDER BY name ASC
+")->result_array();
+$sa_warehouse_name = '';
+if (!empty($warehouse_list)) {
+	foreach ($warehouse_list as $wh) {
+		if ((string)$wh['id'] === (string)$warehouse_id) {
+			$sa_warehouse_name = $wh['name'];
+			break;
+		}
+	}
+}
+?>
+
+<!-- Stock Adjustment Modal -->
+<div class="modal fade" id="stockAdjustmentModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+		<div class="modal-content border-0 shadow">
+			<div class="modal-header border-bottom py-2">
+				<h5 class="modal-title fw-bolder text-dark">
+					<i class="feather icon-sliders me-1"></i>Stock Adjustment
+					<small class="text-muted fw-normal ms-1"><?php echo htmlspecialchars($sa_warehouse_name); ?></small>
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<form id="stockAdjustmentForm">
+				<input type="hidden" name="warehouse_id" value="<?php echo htmlspecialchars($warehouse_id); ?>">
+				<div class="modal-body p-3">
+					<div class="d-flex flex-wrap align-items-end mb-2" style="gap: 10px;">
+						<div class="btn-group" role="group">
+							<input type="radio" class="btn-check" name="mode" id="sa_mode_add" value="add" checked>
+							<label class="btn btn-outline-success btn-sm" for="sa_mode_add">Add Stock</label>
+							<input type="radio" class="btn-check" name="mode" id="sa_mode_deduct" value="deduct">
+							<label class="btn btn-outline-danger btn-sm" for="sa_mode_deduct">Deduct Stock</label>
+						</div>
+
+						<div id="sa_batch_input_wrap" style="width: 240px; max-width: 100%; flex: 0 0 240px;">
+							<label class="form-label mb-25">Batch No <span class="text-danger">*</span></label>
+							<input type="text" class="form-control form-control-sm" name="batch_no" id="sa_batch_no_input" placeholder="Enter new batch number">
+						</div>
+						<div class="d-none" id="sa_batch_select_wrap" style="width: 240px; max-width: 100%; flex: 0 0 240px;">
+							<label class="form-label mb-25">Batch No <span class="text-danger">*</span></label>
+							<select class="form-control form-control-sm" id="sa_batch_no_select">
+								<option value="">Select Batch</option>
+							</select>
+						</div>
+
+						<button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="sa_add_row_btn">
+							<i class="feather icon-plus"></i> Add Row
+						</button>
+					</div>
+
+					<div class="mb-1">
+						<strong class="font-small-3">Products</strong>
+					</div>
+					<div class="table-responsive">
+						<table class="table table-bordered table-sm mb-0" id="sa_products_table">
+							<thead class="table-light text-center">
+								<tr>
+									<th style="min-width:220px;">Product</th>
+									<th style="width:110px;">Avail White</th>
+									<th style="width:110px;">Avail Black</th>
+									<th style="width:110px;">White Qty</th>
+									<th style="width:110px;">Black Qty</th>
+									<th style="width:120px;">Official Rate</th>
+									<th style="width:120px;">Actual INR</th>
+									<th style="width:50px;"></th>
+								</tr>
+							</thead>
+							<tbody id="sa_products_tbody"></tbody>
+						</table>
+					</div>
+					<small class="text-muted" id="sa_help_text">Add mode creates a new batch. Enter white and/or black qty with rates.</small>
+				</div>
+				<div class="modal-footer py-2">
+					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-primary btn-sm" id="sa_submit_btn">Submit</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+var saAddProducts = <?php echo json_encode(array_map(function ($p) {
+	return array(
+		'id' => (int)$p['id'],
+		'label' => trim(($p['item_code'] ? $p['item_code'] . ' - ' : '') . $p['name']),
+	);
+}, $sa_products)); ?>;
+var saDeductProducts = [];
+var saWarehouseId = '<?php echo htmlspecialchars($warehouse_id); ?>';
+
+function saGetMode() {
+	return $('#stockAdjustmentForm input[name="mode"]:checked').val() || 'add';
+}
+
+function saEsc(str) {
+	return String(str == null ? '' : str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/"/g, '&quot;');
+}
+
+function saBuildProductOptions(list, selectedId) {
+	var html = '<option value="">Select Product</option>';
+	(list || []).forEach(function (p) {
+		var id = p.id;
+		var selected = String(selectedId) === String(id) ? ' selected' : '';
+		html += '<option value="' + id + '"' + selected + '>' + saEsc(p.label) + '</option>';
+	});
+	return html;
+}
+
+function saToggleModeUI() {
+	var mode = saGetMode();
+	$('#sa_products_tbody').empty();
+	saDeductProducts = [];
+
+	if (mode === 'deduct') {
+		$('#sa_batch_input_wrap').addClass('d-none');
+		$('#sa_batch_select_wrap').removeClass('d-none');
+		$('#sa_batch_no_input').prop('disabled', true).val('');
+		$('#sa_batch_no_select').prop('disabled', false);
+		$('#sa_add_row_btn').addClass('d-none');
+		$('#sa_help_text').text('Select a batch to load all products. Enter qty only on products you want to deduct.');
+		$('#sa_products_table thead th').eq(1).show();
+		$('#sa_products_table thead th').eq(2).show();
+		saLoadBatches();
+	} else {
+		$('#sa_batch_select_wrap').addClass('d-none');
+		$('#sa_batch_input_wrap').removeClass('d-none');
+		$('#sa_batch_no_select').prop('disabled', true).val('');
+		$('#sa_batch_no_input').prop('disabled', false);
+		$('#sa_add_row_btn').removeClass('d-none');
+		$('#sa_help_text').text('Add mode creates a new batch. Enter white and/or black qty with rates.');
+		$('#sa_products_table thead th').eq(1).hide();
+		$('#sa_products_table thead th').eq(2).hide();
+		saAddProductRow();
+	}
+}
+
+function saLoadBatches() {
+	var $select = $('#sa_batch_no_select');
+	$select.html('<option value="">Loading...</option>');
+	$.post('<?php echo base_url('inventory/get_stock_adjustment_batches'); ?>', {
+		warehouse_id: saWarehouseId
+	}, function (res) {
+		var rows = [];
+		try { rows = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { rows = []; }
+		var html = '<option value="">Select Batch</option>';
+		(rows || []).forEach(function (r) {
+			if (!r.batch_no) return;
+			html += '<option value="' + saEsc(r.batch_no) + '">' + saEsc(r.batch_no) + '</option>';
+		});
+		$select.html(html);
+	}).fail(function () {
+		$select.html('<option value="">Failed to load batches</option>');
+	});
+}
+
+function saRenderDeductRows(list) {
+	$('#sa_products_tbody').empty();
+	(list || []).forEach(function (item) {
+		var row = `
+			<tr class="sa-product-row">
+				<td>
+					<input type="hidden" name="inventory_id[]" class="sa-product-select" value="${item.id}">
+					<span class="font-small-3">${saEsc(item.label || item.product_name || '')}</span>
+				</td>
+				<td class="text-center sa-avail-white">${item.official_qty || 0}</td>
+				<td class="text-center sa-avail-black">${item.black_qty || 0}</td>
+				<td><input type="number" min="0" max="${item.official_qty || 0}" step="1" class="form-control form-control-sm text-right sa-white-qty" name="white_qty[]" value="0"></td>
+				<td><input type="number" min="0" max="${item.black_qty || 0}" step="1" class="form-control form-control-sm text-right sa-black-qty" name="black_qty[]" value="0"></td>
+				<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-official-rate" name="official_rate_rs[]" value="${parseFloat(item.official_rate_rs || 0).toFixed(2)}"></td>
+				<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-actual-inr" name="actual_inr[]" value="${parseFloat(item.actual_inr || 0).toFixed(2)}"></td>
+				<td class="text-center">-</td>
+			</tr>
+		`;
+		$('#sa_products_tbody').append(row);
+	});
+}
+
+function saLoadBatchProducts(batchNo) {
+	saDeductProducts = [];
+	$('#sa_products_tbody').empty();
+	if (!batchNo) return;
+
+	$.post('<?php echo base_url('inventory/get_stock_adjustment_batch_products'); ?>', {
+		warehouse_id: saWarehouseId,
+		batch_no: batchNo
+	}, function (res) {
+		try { saDeductProducts = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { saDeductProducts = []; }
+		if (!saDeductProducts.length) {
+			Swal.fire({ icon: 'info', title: 'No Products', text: 'No products with available qty found in this batch.' });
+			return;
+		}
+		saRenderDeductRows(saDeductProducts);
+	}).fail(function () {
+		Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load batch products.' });
+	});
+}
+
+function saAddProductRow() {
+	var mode = saGetMode();
+	if (mode === 'deduct') {
+		return;
+	}
+
+	var list = saAddProducts;
+	var row = `
+		<tr class="sa-product-row">
+			<td>
+				<select class="form-control form-control-sm sa-product-select" name="product_id[]" required>
+					${saBuildProductOptions(list, '')}
+				</select>
+			</td>
+			<td class="text-center sa-avail-white d-none">-</td>
+			<td class="text-center sa-avail-black d-none">-</td>
+			<td><input type="number" min="0" step="1" class="form-control form-control-sm text-right sa-white-qty" name="white_qty[]" value="0"></td>
+			<td><input type="number" min="0" step="1" class="form-control form-control-sm text-right sa-black-qty" name="black_qty[]" value="0"></td>
+			<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-official-rate" name="official_rate_rs[]" value="0"></td>
+			<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-actual-inr" name="actual_inr[]" value="0"></td>
+			<td class="text-center">
+				<button type="button" class="btn btn-sm btn-outline-danger sa-remove-row" title="Remove">&times;</button>
+			</td>
+		</tr>
+	`;
+	$('#sa_products_tbody').append(row);
+	var $row = $('#sa_products_tbody tr.sa-product-row').last();
+	if ($.fn.select2) {
+		$row.find('.sa-product-select').select2({
+			dropdownParent: $('#stockAdjustmentModal'),
+			width: '100%'
+		});
+	}
+}
+
+$(document).on('click', '#btnStockAdjustment', function () {
+	if (!saWarehouseId || saWarehouseId === 'All') {
+		Swal.fire({ icon: 'warning', title: 'Select Warehouse', text: 'Please select a warehouse tab first.' });
+		return;
+	}
+	$('#stockAdjustmentForm')[0].reset();
+	$('#sa_mode_add').prop('checked', true);
+	saToggleModeUI();
+	$('#stockAdjustmentModal').modal('show');
+});
+
+$(document).on('change', '#stockAdjustmentForm input[name="mode"]', function () {
+	saToggleModeUI();
+});
+
+$(document).on('change', '#sa_batch_no_select', function () {
+	saLoadBatchProducts($(this).val());
+});
+
+$(document).on('click', '#sa_add_row_btn', function () {
+	if (saGetMode() === 'add') {
+		saAddProductRow();
+	}
+});
+
+$(document).on('click', '.sa-remove-row', function () {
+	$(this).closest('tr').remove();
+});
+
+$(document).on('submit', '#stockAdjustmentForm', function (e) {
+	e.preventDefault();
+	var mode = saGetMode();
+	var batchNo = mode === 'deduct' ? $('#sa_batch_no_select').val() : $('#sa_batch_no_input').val();
+	batchNo = $.trim(batchNo || '');
+
+	if (!batchNo) {
+		Swal.fire({ icon: 'warning', title: 'Batch Required', text: 'Please enter/select a batch number.' });
+		return;
+	}
+	if (!$('#sa_products_tbody tr.sa-product-row').length) {
+		Swal.fire({ icon: 'warning', title: 'No Products', text: mode === 'deduct' ? 'Select a batch to load products.' : 'Please add at least one product row.' });
+		return;
+	}
+
+	var hasQty = false;
+	var invalid = false;
+	var selectedIds = [];
+	$('#sa_products_tbody tr.sa-product-row').each(function () {
+		var $row = $(this);
+		var id = $row.find('.sa-product-select').val();
+		var whiteQty = parseInt($row.find('.sa-white-qty').val(), 10) || 0;
+		var blackQty = parseInt($row.find('.sa-black-qty').val(), 10) || 0;
+
+		if (mode === 'add') {
+			if (!id) {
+				invalid = true;
+				Swal.fire({ icon: 'warning', title: 'Product Required', text: 'Please select product in every row.' });
+				return false;
+			}
+			if (selectedIds.indexOf(String(id)) !== -1) {
+				invalid = true;
+				Swal.fire({ icon: 'warning', title: 'Duplicate', text: 'Same product selected more than once.' });
+				return false;
+			}
+			selectedIds.push(String(id));
+		}
+
+		if (whiteQty < 0 || blackQty < 0) {
+			invalid = true;
+			Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'Quantity cannot be negative.' });
+			return false;
+		}
+		if (mode === 'deduct' && (whiteQty > 0 || blackQty > 0)) {
+			var maxW = parseInt($row.find('.sa-white-qty').attr('max'), 10) || 0;
+			var maxB = parseInt($row.find('.sa-black-qty').attr('max'), 10) || 0;
+			if (whiteQty > maxW || blackQty > maxB) {
+				invalid = true;
+				Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'Deduct qty cannot exceed available stock.' });
+				return false;
+			}
+		}
+		if (whiteQty > 0 || blackQty > 0) hasQty = true;
+	});
+	if (invalid) {
+		return;
+	}
+	if (!hasQty) {
+		Swal.fire({ icon: 'warning', title: 'Quantity Required', text: 'Enter white or black quantity for at least one product.' });
+		return;
+	}
+
+	var formData = [];
+	formData.push({ name: 'warehouse_id', value: saWarehouseId });
+	formData.push({ name: 'batch_no', value: batchNo });
+	formData.push({ name: 'mode', value: mode });
+
+	$('#sa_products_tbody tr.sa-product-row').each(function () {
+		var $row = $(this);
+		var id = $row.find('.sa-product-select').val();
+		var whiteQty = parseInt($row.find('.sa-white-qty').val(), 10) || 0;
+		var blackQty = parseInt($row.find('.sa-black-qty').val(), 10) || 0;
+		if (!id || (whiteQty <= 0 && blackQty <= 0)) {
+			return;
+		}
+		if (mode === 'deduct') {
+			formData.push({ name: 'inventory_id[]', value: id });
+		} else {
+			formData.push({ name: 'product_id[]', value: id });
+		}
+		formData.push({ name: 'white_qty[]', value: whiteQty });
+		formData.push({ name: 'black_qty[]', value: blackQty });
+		formData.push({ name: 'official_rate_rs[]', value: $row.find('.sa-official-rate').val() || 0 });
+		formData.push({ name: 'actual_inr[]', value: $row.find('.sa-actual-inr').val() || 0 });
+	});
+
+	var $btn = $('#sa_submit_btn');
+	$btn.prop('disabled', true).text('Saving...');
+	$.ajax({
+		url: '<?php echo base_url('inventory/stock_adjustment_post'); ?>',
+		type: 'POST',
+		dataType: 'json',
+		data: $.param(formData),
+		success: function (res) {
+			$btn.prop('disabled', false).text('Submit');
+			if (res && res.status == 200) {
+				$('#stockAdjustmentModal').modal('hide');
+				Swal.fire({ icon: 'success', title: 'Success', text: res.message || 'Stock adjusted successfully' });
+				if (typeof dataTable !== 'undefined') {
+					dataTable.ajax.reload(null, false);
+				} else if ($('#report-datatable').length) {
+					$('#report-datatable').DataTable().ajax.reload(null, false);
+				}
+			} else {
+				Swal.fire({ icon: 'error', title: 'Error', text: (res && res.message) ? res.message : 'Failed to adjust stock' });
+			}
+		},
+		error: function () {
+			$btn.prop('disabled', false).text('Submit');
+			Swal.fire({ icon: 'error', title: 'Error', text: 'Request failed. Please try again.' });
+		}
+	});
+});
+</script>
 
 <script type="text/javascript">       
     function showProductPOList(productId, companyId, status, warehouseId = '') {

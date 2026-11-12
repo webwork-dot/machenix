@@ -39,7 +39,14 @@ $company_ids = explode(',', $data['company_id']);
                         <label><?php echo get_phrase('email'); ?><span class="required">*</span></label>
                         <input type="text" class="form-control" placeholder="Email" name="email" value="<?php echo $data['email']; ?>" required>
                      </div>
-                  </div> 
+                  </div>
+
+                  <div class="col-md-4">
+                     <div class="form-group">
+                        <label>Salary</label>
+                        <input type="text" class="form-control" placeholder="Salary" name="salery" value="<?php echo isset($data['salery']) ? $data['salery'] : ''; ?>" onkeyup="this.value=this.value.replace(/[^0-9.]/g,'');">
+                     </div>
+                  </div>
                    
                   <div class="col-md-4">
                     <div class="form-group">

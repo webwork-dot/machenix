@@ -58,6 +58,10 @@ $company_names_str = !empty($company_names) ? implode(', ', $company_names) : '-
             <td><?php echo htmlspecialchars($access_name); ?></td>
           </tr>
           <tr>
+            <th><strong>Salary:</strong></th>
+            <td><?php echo htmlspecialchars(!empty($staff['salery']) ? $staff['salery'] : '-'); ?></td>
+          </tr>
+          <tr>
             <th><strong>Company:</strong></th>
             <td><?php echo htmlspecialchars($company_names_str); ?></td>
           </tr>
