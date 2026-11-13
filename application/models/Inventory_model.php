@@ -10345,26 +10345,28 @@ class Inventory_model extends CI_Model
 
 		$rows = $this->db->query("
 			SELECT
-				id,
-				product_id,
-				product_name,
-				item_code,
-				sku,
-				categories,
-				quantity,
-				official_qty,
-				black_qty,
-				official_rate_rs,
-				actual_inr,
-				batch_no,
-				warehouse_id,
-				warehouse_name
-			FROM inventory
-			WHERE company_id = ?
-				AND warehouse_id = ?
-				AND batch_no = ?
-				AND (quantity > 0 OR official_qty > 0 OR black_qty > 0)
-			ORDER BY product_name ASC, id ASC
+				i.id,
+				i.product_id,
+				i.product_name,
+				i.item_code,
+				i.sku,
+				i.categories,
+				i.quantity,
+				i.official_qty,
+				i.black_qty,
+				i.official_rate_rs,
+				i.actual_inr,
+				i.batch_no,
+				i.warehouse_id,
+				i.warehouse_name,
+				COALESCE(rp.gst, 0) AS gst
+			FROM inventory i
+			LEFT JOIN raw_products rp ON rp.id = i.product_id AND rp.is_deleted = 0
+			WHERE i.company_id = ?
+				AND i.warehouse_id = ?
+				AND i.batch_no = ?
+				AND (i.quantity > 0 OR i.official_qty > 0 OR i.black_qty > 0)
+			ORDER BY i.product_name ASC, i.id ASC
 		", array($company_id, $warehouse_id, $batch_no))->result_array();
 
 		$data = array();
@@ -10382,6 +10384,7 @@ class Inventory_model extends CI_Model
 				'black_qty' => (int) $row['black_qty'],
 				'official_rate_rs' => (float) $row['official_rate_rs'],
 				'actual_inr' => (float) $row['actual_inr'],
+				'gst' => (float) $row['gst'],
 				'batch_no' => $row['batch_no'],
 				'warehouse_id' => (int) $row['warehouse_id'],
 				'warehouse_name' => $row['warehouse_name'],
@@ -10421,18 +10424,51 @@ class Inventory_model extends CI_Model
 			return simple_json_output($resultpost);
 		}
 
-		$warehouse_name = $this->common_model->selectByidParam($warehouse_id, 'warehouse', 'name');
-		if (empty($warehouse_name)) {
+		$warehouse = $this->db->where(array(
+			'id' => $warehouse_id,
+			'company_id' => $company_id,
+			'is_deleted' => '0',
+		))->get('warehouse')->row_array();
+		if (empty($warehouse) || empty($warehouse['name'])) {
 			$resultpost['status'] = 400;
-			$resultpost['message'] = "Warehouse not found.";
+			$resultpost['message'] = "Warehouse not found for this company.";
 			return simple_json_output($resultpost);
 		}
+		$warehouse_name = $warehouse['name'];
 
 		if ($mode === 'deduct') {
 			return $this->_stock_adjustment_deduct($company_id, $warehouse_id, $warehouse_name, $batch_no);
 		}
 
 		return $this->_stock_adjustment_add($company_id, $warehouse_id, $warehouse_name, $batch_no);
+	}
+
+	private function _sa_line_amounts($white_qty, $black_qty, $rate, $per_qty_bill_amt, $gst_rate)
+	{
+		$white_qty = (float) $white_qty;
+		$black_qty = (float) $black_qty;
+		$rate = (float) $rate;
+		$per_qty_bill_amt = (float) $per_qty_bill_amt;
+		$gst_rate = (float) $gst_rate;
+
+		$total_bill_amt = $per_qty_bill_amt * $white_qty;
+		$gst_amt = ($total_bill_amt * $gst_rate) / 100;
+		$total_bill_gst_amt = $total_bill_amt + $gst_amt;
+		$per_qty_black_amt = $rate - $per_qty_bill_amt;
+		$total_black_amt = ($rate * $black_qty) + (($rate - $per_qty_bill_amt) * $white_qty);
+		$final_amt = $total_bill_gst_amt + $total_black_amt;
+
+		return array(
+			'rate' => $rate,
+			'per_qty_bill_amt' => $per_qty_bill_amt,
+			'total_bill_amt' => $total_bill_amt,
+			'gst_rate' => $gst_rate,
+			'gst_amt' => $gst_amt,
+			'total_bill_gst_amt' => $total_bill_gst_amt,
+			'per_qty_black_amt' => $per_qty_black_amt,
+			'total_black_amt' => $total_black_amt,
+			'final_amt' => $final_amt,
+		);
 	}
 
 	private function _stock_adjustment_deduct($company_id, $warehouse_id, $warehouse_name, $batch_no)
@@ -10445,8 +10481,9 @@ class Inventory_model extends CI_Model
 		$inventory_ids = $this->input->post('inventory_id');
 		$white_qtys = $this->input->post('white_qty');
 		$black_qtys = $this->input->post('black_qty');
-		$official_rates = $this->input->post('official_rate_rs');
-		$actual_inrs = $this->input->post('actual_inr');
+		$rates = $this->input->post('rate');
+		$per_qty_bills = $this->input->post('per_qty_bill_amt');
+		$gst_rates = $this->input->post('gst_rate');
 
 		if (!is_array($inventory_ids) || empty($inventory_ids)) {
 			$resultpost['status'] = 400;
@@ -10460,8 +10497,9 @@ class Inventory_model extends CI_Model
 			$inv_id = (int) $inv_id;
 			$white_qty = isset($white_qtys[$idx]) ? (int) $white_qtys[$idx] : 0;
 			$black_qty = isset($black_qtys[$idx]) ? (int) $black_qtys[$idx] : 0;
-			$official_rate = isset($official_rates[$idx]) ? (float) $official_rates[$idx] : 0;
-			$actual_inr = isset($actual_inrs[$idx]) ? (float) $actual_inrs[$idx] : 0;
+			$rate = isset($rates[$idx]) ? (float) $rates[$idx] : 0;
+			$per_qty_bill_amt = isset($per_qty_bills[$idx]) ? (float) $per_qty_bills[$idx] : 0;
+			$gst_rate = isset($gst_rates[$idx]) ? (float) $gst_rates[$idx] : 0;
 
 			if ($inv_id <= 0) {
 				continue;
@@ -10507,12 +10545,12 @@ class Inventory_model extends CI_Model
 				return simple_json_output($resultpost);
 			}
 
+			$amounts = $this->_sa_line_amounts($white_qty, $black_qty, $rate, $per_qty_bill_amt, $gst_rate);
 			$lines[] = array(
 				'inv' => $inv,
 				'white_qty' => $white_qty,
 				'black_qty' => $black_qty,
-				'official_rate_rs' => $official_rate,
-				'actual_inr' => $actual_inr,
+				'amounts' => $amounts,
 			);
 		}
 
@@ -10528,6 +10566,7 @@ class Inventory_model extends CI_Model
 			$inv = $line['inv'];
 			$white_qty = $line['white_qty'];
 			$black_qty = $line['black_qty'];
+			$amounts = $line['amounts'];
 			$total_qty = $white_qty + $black_qty;
 
 			$new_white = (int) $inv['official_qty'] - $white_qty;
@@ -10555,13 +10594,15 @@ class Inventory_model extends CI_Model
 				'status'            => 'manual_out',
 				'quantity'          => $total_qty,
 				'official_qty'      => $white_qty,
-				'official_rate_rs'  => $line['official_rate_rs'],
-				'official_total_rs' => $white_qty * $line['official_rate_rs'],
+				'official_rate_rs'  => $amounts['per_qty_bill_amt'],
+				'official_total_rs' => $amounts['total_bill_amt'],
 				'black_qty'         => $black_qty,
-				'black_rate_rs'     => $line['actual_inr'],
-				'black_total_rs'    => $black_qty * $line['actual_inr'],
-				'actual_inr'        => $line['actual_inr'],
-				'total_amt'         => ($white_qty * $line['official_rate_rs']) + ($black_qty * $line['actual_inr']),
+				'black_rate_rs'     => $amounts['per_qty_black_amt'],
+				'black_total_rs'    => $amounts['total_black_amt'],
+				'actual_inr'        => $amounts['rate'],
+				'taxable_value'     => $amounts['total_bill_amt'],
+				'gst_amt'           => $amounts['gst_amt'],
+				'total_amt'         => $amounts['final_amt'],
 				'received_date'     => date('Y-m-d'),
 				'batch_no'          => $batch_no,
 				'invoice_no'        => $batch_no,
@@ -10595,8 +10636,9 @@ class Inventory_model extends CI_Model
 		$product_ids = $this->input->post('product_id');
 		$white_qtys = $this->input->post('white_qty');
 		$black_qtys = $this->input->post('black_qty');
-		$official_rates = $this->input->post('official_rate_rs');
-		$actual_inrs = $this->input->post('actual_inr');
+		$rates = $this->input->post('rate');
+		$per_qty_bills = $this->input->post('per_qty_bill_amt');
+		$gst_rates = $this->input->post('gst_rate');
 
 		if (!is_array($product_ids) || empty($product_ids)) {
 			$resultpost['status'] = 400;
@@ -10610,8 +10652,9 @@ class Inventory_model extends CI_Model
 			$product_id = (int) $product_id;
 			$white_qty = isset($white_qtys[$idx]) ? (int) $white_qtys[$idx] : 0;
 			$black_qty = isset($black_qtys[$idx]) ? (int) $black_qtys[$idx] : 0;
-			$official_rate = isset($official_rates[$idx]) ? (float) $official_rates[$idx] : 0;
-			$actual_inr = isset($actual_inrs[$idx]) ? (float) $actual_inrs[$idx] : 0;
+			$rate = isset($rates[$idx]) ? (float) $rates[$idx] : 0;
+			$per_qty_bill_amt = isset($per_qty_bills[$idx]) ? (float) $per_qty_bills[$idx] : 0;
+			$gst_rate = isset($gst_rates[$idx]) ? (float) $gst_rates[$idx] : 0;
 
 			if ($product_id <= 0) {
 				continue;
@@ -10650,12 +10693,12 @@ class Inventory_model extends CI_Model
 				return simple_json_output($resultpost);
 			}
 
+			$amounts = $this->_sa_line_amounts($white_qty, $black_qty, $rate, $per_qty_bill_amt, $gst_rate);
 			$lines[] = array(
 				'product' => $product,
 				'white_qty' => $white_qty,
 				'black_qty' => $black_qty,
-				'official_rate_rs' => $official_rate,
-				'actual_inr' => $actual_inr,
+				'amounts' => $amounts,
 			);
 		}
 
@@ -10671,9 +10714,8 @@ class Inventory_model extends CI_Model
 			$product = $line['product'];
 			$white_qty = $line['white_qty'];
 			$black_qty = $line['black_qty'];
+			$amounts = $line['amounts'];
 			$total_qty = $white_qty + $black_qty;
-			$official_total = $white_qty * $line['official_rate_rs'];
-			$total_amt = ($white_qty * $line['official_rate_rs']) + ($black_qty * $line['actual_inr']);
 
 			$inv = array(
 				'supplier_id'       => null,
@@ -10687,11 +10729,13 @@ class Inventory_model extends CI_Model
 				'item_code'         => $product['item_code'],
 				'quantity'          => $total_qty,
 				'official_qty'      => $white_qty,
-				'official_rate_rs'  => $line['official_rate_rs'],
-				'official_total_rs' => $official_total,
-				'actual_inr'        => $line['actual_inr'],
+				'official_rate_rs'  => $amounts['per_qty_bill_amt'],
+				'official_total_rs' => $amounts['total_bill_amt'],
+				'actual_inr'        => $amounts['rate'],
 				'black_qty'         => $black_qty,
-				'total_amt'         => $total_amt,
+				'taxable_value'     => $amounts['total_bill_amt'],
+				'gst_amt'           => $amounts['gst_amt'],
+				'total_amt'         => $amounts['final_amt'],
 				'batch_no'          => $batch_no,
 			);
 			$this->db->insert('inventory', $inv);
@@ -10712,13 +10756,15 @@ class Inventory_model extends CI_Model
 				'status'            => 'manual_in',
 				'quantity'          => $total_qty,
 				'official_qty'      => $white_qty,
-				'official_rate_rs'  => $line['official_rate_rs'],
-				'official_total_rs' => $official_total,
+				'official_rate_rs'  => $amounts['per_qty_bill_amt'],
+				'official_total_rs' => $amounts['total_bill_amt'],
 				'black_qty'         => $black_qty,
-				'black_rate_rs'     => $line['actual_inr'],
-				'black_total_rs'    => $black_qty * $line['actual_inr'],
-				'actual_inr'        => $line['actual_inr'],
-				'total_amt'         => $total_amt,
+				'black_rate_rs'     => $amounts['per_qty_black_amt'],
+				'black_total_rs'    => $amounts['total_black_amt'],
+				'actual_inr'        => $amounts['rate'],
+				'taxable_value'     => $amounts['total_bill_amt'],
+				'gst_amt'           => $amounts['gst_amt'],
+				'total_amt'         => $amounts['final_amt'],
 				'received_date'     => date('Y-m-d'),
 				'batch_no'          => $batch_no,
 				'invoice_no'        => $batch_no,

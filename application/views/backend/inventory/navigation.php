@@ -15,7 +15,7 @@
 
 <div class="main-menu-content">
     <ul class="navigation navigation-main" id="main-menu-navigation" data-menu="menu-navigation">
-        <li class="nav-item <?php if ($page_name == 'dashboard' || $page_name == 'sales_dashboard' || $page_name == 'purchase_dashboard') echo 'active';?>">
+        <li class="nav-item <?php if ($page_name == 'dashboard' || $page_name == 'sales_dashboard' || $page_name == 'purchase_dashboard' || $page_name == 'pnl_report') echo 'active';?>">
         	<a class="d-flex align-items-center" href="<?php echo site_url('inventory/dashboard'); ?>">
         	    <i data-feather="home"></i>
         	    <span class="menu-title text-truncate fw-bolder" data-i18n="Dashboard">Dashboard</span>

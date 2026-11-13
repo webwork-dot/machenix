@@ -1,6 +1,6 @@
 <?php
 $__page = isset($page_name) ? $page_name : '';
-$__load_charts = in_array($__page, array('dashboard', 'sales_dashboard', 'purchase_dashboard'), true);
+$__load_charts = in_array($__page, array('dashboard', 'sales_dashboard', 'purchase_dashboard', 'pnl_report'), true);
 ?>
       <link rel="apple-touch-icon" href="<?php echo base_url()?>app-assets/images/logo/logo.svg">
       

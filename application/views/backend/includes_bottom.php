@@ -1,6 +1,6 @@
 <?php
 $__page = isset($page_name) ? $page_name : '';
-$__load_charts = in_array($__page, array('dashboard', 'sales_dashboard', 'purchase_dashboard'), true);
+$__load_charts = in_array($__page, array('dashboard', 'sales_dashboard', 'purchase_dashboard', 'pnl_report'), true);
 ?>
 <script src="<?php echo base_url('app-assets/vendors/js/forms/select/select2.full.min.js');?> "></script>
 <script src="<?php echo base_url('app-assets/js/core/app-menu.min.js');?>"></script>

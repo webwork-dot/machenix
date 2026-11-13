@@ -27,6 +27,11 @@ $route['purchase-dashboard']                  = 'purchase_dashboard/index';
 $route['purchase-dashboard/get_data_ajax']    = 'purchase_dashboard/get_data_ajax';
 $route[$r_inventory . '/purchase-dashboard']  = 'purchase_dashboard/index';
 
+/* P&L Report Dashboard */
+$route['pnl-report']                  = 'pnl_report/index';
+$route['pnl-report/get_data_ajax']    = 'pnl_report/get_data_ajax';
+$route[$r_inventory . '/pnl-report']  = 'pnl_report/index';
+
 $route[$r_admin . '/staff'] = 'admin/staff';
 $route[$r_admin . '/staff/add']    = 'admin/staff_form/staff_add';
 $route[$r_admin . '/staff/edit/(:num)'] = 'admin/staff_form/staff_edit/$1';

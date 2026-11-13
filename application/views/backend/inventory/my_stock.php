@@ -957,37 +957,87 @@
 
 <?php
 $sa_products = $this->db->query("
-	SELECT id, name, item_code
+	SELECT id, name, item_code, costing_price, gst
 	FROM raw_products
 	WHERE is_deleted = 0
 	ORDER BY name ASC
 ")->result_array();
-$sa_warehouse_name = '';
-if (!empty($warehouse_list)) {
-	foreach ($warehouse_list as $wh) {
-		if ((string)$wh['id'] === (string)$warehouse_id) {
-			$sa_warehouse_name = $wh['name'];
-			break;
-		}
-	}
-}
 ?>
 
 <!-- Stock Adjustment Modal -->
+<style>
+	#stockAdjustmentModal .modal-dialog {
+		max-width: min(1280px, calc(100vw - 1.5rem));
+		max-height: calc(100vh - 1.5rem);
+		margin: 0.75rem auto;
+	}
+	#stockAdjustmentModal .modal-content {
+		max-height: calc(100vh - 1.5rem);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	#stockAdjustmentModal #stockAdjustmentForm {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		flex: 1 1 auto;
+		overflow: hidden;
+	}
+	#stockAdjustmentModal .modal-body {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		flex: 1 1 auto;
+		overflow: hidden;
+	}
+	#stockAdjustmentModal .sa-products-scroll {
+		flex: 1 1 auto;
+		min-height: 140px;
+		max-height: calc(100vh - 260px);
+		overflow: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+	#stockAdjustmentModal .sa-products-scroll thead th {
+		position: sticky;
+		top: 0;
+		z-index: 2;
+		background: #f8f8fb;
+		white-space: nowrap;
+		font-size: 11px;
+	}
+	#stockAdjustmentModal .sa-products-scroll .form-control-sm {
+		min-width: 72px;
+	}
+	#stockAdjustmentModal .modal-footer {
+		flex-shrink: 0;
+	}
+	#stockAdjustmentModal .sa-modal-close {
+		background: transparent;
+		border: 0;
+		font-size: 1.5rem;
+		line-height: 1;
+		padding: 0.25rem 0.5rem;
+		color: #6e6b7b;
+		opacity: 0.85;
+	}
+	#stockAdjustmentModal .sa-modal-close:hover {
+		color: #5e5873;
+		opacity: 1;
+	}
+</style>
 <div class="modal fade" id="stockAdjustmentModal" tabindex="-1" aria-hidden="true">
-	<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+	<div class="modal-dialog modal-xl modal-dialog-centered">
 		<div class="modal-content border-0 shadow">
-			<div class="modal-header border-bottom py-2">
+			<div class="modal-header border-bottom py-2 flex-shrink-0">
 				<h5 class="modal-title fw-bolder text-dark">
 					<i class="feather icon-sliders me-1"></i>Stock Adjustment
-					<small class="text-muted fw-normal ms-1"><?php echo htmlspecialchars($sa_warehouse_name); ?></small>
 				</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="sa-modal-close" id="sa_modal_close_btn" aria-label="Close">&times;</button>
 			</div>
 			<form id="stockAdjustmentForm">
-				<input type="hidden" name="warehouse_id" value="<?php echo htmlspecialchars($warehouse_id); ?>">
 				<div class="modal-body p-3">
-					<div class="d-flex flex-wrap align-items-end mb-2" style="gap: 10px;">
+					<div class="d-flex flex-wrap align-items-end mb-2 flex-shrink-0" style="gap: 10px;">
 						<div class="btn-group" role="group">
 							<input type="radio" class="btn-check" name="mode" id="sa_mode_add" value="add" checked>
 							<label class="btn btn-outline-success btn-sm" for="sa_mode_add">Add Stock</label>
@@ -995,11 +1045,31 @@ if (!empty($warehouse_list)) {
 							<label class="btn btn-outline-danger btn-sm" for="sa_mode_deduct">Deduct Stock</label>
 						</div>
 
-						<div id="sa_batch_input_wrap" style="width: 240px; max-width: 100%; flex: 0 0 240px;">
+						<div style="width: 220px; max-width: 100%; flex: 0 0 220px;">
+							<label class="form-label mb-25">Warehouse <span class="text-danger">*</span></label>
+							<select class="form-control form-control-sm" name="warehouse_id" id="sa_warehouse_id" required>
+								<option value="">Select Warehouse</option>
+								<?php if (!empty($warehouse_list)) {
+									foreach ($warehouse_list as $wh) {
+										$wh_id = (string)$wh['id'];
+										if ($wh_id === '' || $wh_id === 'All') {
+											continue;
+										}
+										$selected = ((string)$warehouse_id === $wh_id) ? ' selected' : '';
+										?>
+										<option value="<?php echo htmlspecialchars($wh_id); ?>"<?php echo $selected; ?>>
+											<?php echo htmlspecialchars($wh['name']); ?>
+										</option>
+									<?php }
+								} ?>
+							</select>
+						</div>
+
+						<div id="sa_batch_input_wrap" style="width: 220px; max-width: 100%; flex: 0 0 220px;">
 							<label class="form-label mb-25">Batch No <span class="text-danger">*</span></label>
 							<input type="text" class="form-control form-control-sm" name="batch_no" id="sa_batch_no_input" placeholder="Enter new batch number">
 						</div>
-						<div class="d-none" id="sa_batch_select_wrap" style="width: 240px; max-width: 100%; flex: 0 0 240px;">
+						<div class="d-none" id="sa_batch_select_wrap" style="width: 220px; max-width: 100%; flex: 0 0 220px;">
 							<label class="form-label mb-25">Batch No <span class="text-danger">*</span></label>
 							<select class="form-control form-control-sm" id="sa_batch_no_select">
 								<option value="">Select Batch</option>
@@ -1011,30 +1081,37 @@ if (!empty($warehouse_list)) {
 						</button>
 					</div>
 
-					<div class="mb-1">
+					<div class="mb-1 flex-shrink-0">
 						<strong class="font-small-3">Products</strong>
 					</div>
-					<div class="table-responsive">
+					<div class="table-responsive sa-products-scroll border rounded">
 						<table class="table table-bordered table-sm mb-0" id="sa_products_table">
 							<thead class="table-light text-center">
 								<tr>
-									<th style="min-width:220px;">Product</th>
-									<th style="width:110px;">Avail White</th>
-									<th style="width:110px;">Avail Black</th>
-									<th style="width:110px;">White Qty</th>
-									<th style="width:110px;">Black Qty</th>
-									<th style="width:120px;">Official Rate</th>
-									<th style="width:120px;">Actual INR</th>
+									<th style="min-width:200px;">Product</th>
+									<th class="sa-col-avail" style="width:90px;">Avail White</th>
+									<th class="sa-col-avail" style="width:90px;">Avail Black</th>
+									<th style="width:90px;">White Qty</th>
+									<th style="width:90px;">Black Qty</th>
+									<th style="width:100px;">Rate</th>
+									<th style="width:100px;">Per Qty Bill</th>
+									<th style="width:100px;">Total Bill</th>
+									<th style="width:80px;">GST %</th>
+									<th style="width:100px;">GST Amt</th>
+									<th style="width:110px;">Bill + GST</th>
+									<th style="width:100px;">Per Qty Black</th>
+									<th style="width:100px;">Total Black</th>
+									<th style="width:100px;">Final Amt</th>
 									<th style="width:50px;"></th>
 								</tr>
 							</thead>
 							<tbody id="sa_products_tbody"></tbody>
 						</table>
 					</div>
-					<small class="text-muted" id="sa_help_text">Add mode creates a new batch. Enter white and/or black qty with rates.</small>
+					<small class="text-muted flex-shrink-0 mt-1 d-block" id="sa_help_text">Add mode creates a new batch. Enter white/black qty with rate, bill and GST.</small>
 				</div>
 				<div class="modal-footer py-2">
-					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-outline-secondary btn-sm" id="sa_modal_cancel_btn">Cancel</button>
 					<button type="submit" class="btn btn-primary btn-sm" id="sa_submit_btn">Submit</button>
 				</div>
 			</form>
@@ -1047,13 +1124,36 @@ var saAddProducts = <?php echo json_encode(array_map(function ($p) {
 	return array(
 		'id' => (int)$p['id'],
 		'label' => trim(($p['item_code'] ? $p['item_code'] . ' - ' : '') . $p['name']),
+		'rate' => (float)($p['costing_price'] ?? 0),
+		'gst' => (float)($p['gst'] ?? 0),
 	);
 }, $sa_products)); ?>;
 var saDeductProducts = [];
-var saWarehouseId = '<?php echo htmlspecialchars($warehouse_id); ?>';
+var saDefaultWarehouseId = '<?php echo htmlspecialchars(($warehouse_id !== 'All') ? $warehouse_id : ''); ?>';
 
 function saGetMode() {
 	return $('#stockAdjustmentForm input[name="mode"]:checked').val() || 'add';
+}
+
+function saGetWarehouseId() {
+	return String($('#sa_warehouse_id').val() || '').trim();
+}
+
+function saCloseModal() {
+	$('#stockAdjustmentModal').modal('hide');
+}
+
+function saOnWarehouseChange() {
+	saDeductProducts = [];
+	$('#sa_batch_no_select').html('<option value="">Select Batch</option>');
+	$('#sa_products_tbody').empty();
+	if (saGetMode() === 'deduct') {
+		if (saGetWarehouseId()) {
+			saLoadBatches();
+		}
+	} else {
+		saAddProductRow();
+	}
 }
 
 function saEsc(str) {
@@ -1063,14 +1163,79 @@ function saEsc(str) {
 		.replace(/"/g, '&quot;');
 }
 
+function saNum(val) {
+	var n = parseFloat(val);
+	return isNaN(n) ? 0 : n;
+}
+
+function saFixed(val) {
+	return saNum(val).toFixed(2);
+}
+
 function saBuildProductOptions(list, selectedId) {
 	var html = '<option value="">Select Product</option>';
 	(list || []).forEach(function (p) {
 		var id = p.id;
 		var selected = String(selectedId) === String(id) ? ' selected' : '';
-		html += '<option value="' + id + '"' + selected + '>' + saEsc(p.label) + '</option>';
+		html += '<option value="' + id + '"' + selected
+			+ ' data-rate="' + saEsc(saFixed(p.rate)) + '"'
+			+ ' data-gst="' + saEsc(saFixed(p.gst)) + '">'
+			+ saEsc(p.label) + '</option>';
 	});
 	return html;
+}
+
+function saAmountFieldsHtml(rate, bill, gst) {
+	rate = saFixed(rate);
+	bill = saFixed(bill);
+	gst = saFixed(gst);
+	return `
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-rate" name="rate[]" value="${rate}"></td>
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-per-qty-bill" name="per_qty_bill_amt[]" value="${bill}"></td>
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-total-bill" name="total_bill_amt[]" value="0.00" readonly tabindex="-1"></td>
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-gst-rate" name="gst_rate[]" value="${gst}"></td>
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-gst-amt" name="gst_amt[]" value="0.00" readonly tabindex="-1"></td>
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-total-bill-gst" name="total_bill_gst_amt[]" value="0.00" readonly tabindex="-1"></td>
+		<td><input type="number" step="any" class="form-control form-control-sm text-right sa-per-qty-black" name="per_qty_black_amt[]" value="0.00" readonly tabindex="-1"></td>
+		<td><input type="number" step="any" class="form-control form-control-sm text-right sa-total-black" name="total_black_amt[]" value="0.00" readonly tabindex="-1"></td>
+		<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-final-amt" name="final_amt[]" value="0.00" readonly tabindex="-1"></td>
+	`;
+}
+
+function saCalculateRow($row) {
+	if (!$row || !$row.length) return;
+	var rate = saNum($row.find('.sa-rate').val());
+	var whiteQty = saNum($row.find('.sa-white-qty').val());
+	var blackQty = saNum($row.find('.sa-black-qty').val());
+	var perQtyBill = saNum($row.find('.sa-per-qty-bill').val());
+	var gstRate = saNum($row.find('.sa-gst-rate').val());
+
+	var totalBill = perQtyBill * whiteQty;
+	var gstAmt = (totalBill * gstRate) / 100;
+	var totalBillGst = totalBill + gstAmt;
+	var perQtyBlack = rate - perQtyBill;
+	var totalBlack = (rate * blackQty) + ((rate - perQtyBill) * whiteQty);
+	var finalAmt = totalBillGst + totalBlack;
+
+	$row.find('.sa-total-bill').val(saFixed(totalBill));
+	$row.find('.sa-gst-amt').val(saFixed(gstAmt));
+	$row.find('.sa-total-bill-gst').val(saFixed(totalBillGst));
+	$row.find('.sa-per-qty-black').val(saFixed(perQtyBlack));
+	$row.find('.sa-total-black').val(saFixed(totalBlack));
+	$row.find('.sa-final-amt').val(saFixed(finalAmt));
+}
+
+function saApplyProductDefaults($row) {
+	var $opt = $row.find('.sa-product-select option:selected');
+	if (!$opt.length || !$opt.val()) {
+		return;
+	}
+	var rate = saFixed($opt.data('rate'));
+	var gst = saFixed($opt.data('gst'));
+	$row.find('.sa-rate').val(rate);
+	$row.find('.sa-per-qty-bill').val(rate);
+	$row.find('.sa-gst-rate').val(gst);
+	saCalculateRow($row);
 }
 
 function saToggleModeUI() {
@@ -1084,28 +1249,35 @@ function saToggleModeUI() {
 		$('#sa_batch_no_input').prop('disabled', true).val('');
 		$('#sa_batch_no_select').prop('disabled', false);
 		$('#sa_add_row_btn').addClass('d-none');
-		$('#sa_help_text').text('Select a batch to load all products. Enter qty only on products you want to deduct.');
-		$('#sa_products_table thead th').eq(1).show();
-		$('#sa_products_table thead th').eq(2).show();
-		saLoadBatches();
+		$('#sa_help_text').text('Select warehouse and batch to load products. Enter qty, rate, bill and GST for lines you want to deduct.');
+		$('#sa_products_table thead th.sa-col-avail').show();
+		if (saGetWarehouseId()) {
+			saLoadBatches();
+		} else {
+			$('#sa_batch_no_select').html('<option value="">Select warehouse first</option>');
+		}
 	} else {
 		$('#sa_batch_select_wrap').addClass('d-none');
 		$('#sa_batch_input_wrap').removeClass('d-none');
 		$('#sa_batch_no_select').prop('disabled', true).val('');
 		$('#sa_batch_no_input').prop('disabled', false);
 		$('#sa_add_row_btn').removeClass('d-none');
-		$('#sa_help_text').text('Add mode creates a new batch. Enter white and/or black qty with rates.');
-		$('#sa_products_table thead th').eq(1).hide();
-		$('#sa_products_table thead th').eq(2).hide();
+		$('#sa_help_text').text('Select warehouse, enter a new batch, then white/black qty with rate, bill and GST.');
+		$('#sa_products_table thead th.sa-col-avail').hide();
 		saAddProductRow();
 	}
 }
 
 function saLoadBatches() {
 	var $select = $('#sa_batch_no_select');
+	var warehouseId = saGetWarehouseId();
+	if (!warehouseId) {
+		$select.html('<option value="">Select warehouse first</option>');
+		return;
+	}
 	$select.html('<option value="">Loading...</option>');
 	$.post('<?php echo base_url('inventory/get_stock_adjustment_batches'); ?>', {
-		warehouse_id: saWarehouseId
+		warehouse_id: warehouseId
 	}, function (res) {
 		var rows = [];
 		try { rows = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { rows = []; }
@@ -1123,32 +1295,71 @@ function saLoadBatches() {
 function saRenderDeductRows(list) {
 	$('#sa_products_tbody').empty();
 	(list || []).forEach(function (item) {
+		var availWhite = parseInt(item.official_qty, 10) || 0;
+		var availBlack = parseInt(item.black_qty, 10) || 0;
+		var whiteDisabled = availWhite <= 0 ? ' disabled readonly' : '';
+		var blackDisabled = availBlack <= 0 ? ' disabled readonly' : '';
+		var whiteTitle = availWhite <= 0 ? ' title="No white stock available"' : '';
+		var blackTitle = availBlack <= 0 ? ' title="No black stock available"' : '';
+		var rate = saFixed(item.actual_inr);
+		var bill = saFixed(item.official_rate_rs);
+		var gst = saFixed(item.gst);
 		var row = `
-			<tr class="sa-product-row">
+			<tr class="sa-product-row" data-avail-white="${availWhite}" data-avail-black="${availBlack}">
 				<td>
 					<input type="hidden" name="inventory_id[]" class="sa-product-select" value="${item.id}">
 					<span class="font-small-3">${saEsc(item.label || item.product_name || '')}</span>
 				</td>
-				<td class="text-center sa-avail-white">${item.official_qty || 0}</td>
-				<td class="text-center sa-avail-black">${item.black_qty || 0}</td>
-				<td><input type="number" min="0" max="${item.official_qty || 0}" step="1" class="form-control form-control-sm text-right sa-white-qty" name="white_qty[]" value="0"></td>
-				<td><input type="number" min="0" max="${item.black_qty || 0}" step="1" class="form-control form-control-sm text-right sa-black-qty" name="black_qty[]" value="0"></td>
-				<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-official-rate" name="official_rate_rs[]" value="${parseFloat(item.official_rate_rs || 0).toFixed(2)}"></td>
-				<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-actual-inr" name="actual_inr[]" value="${parseFloat(item.actual_inr || 0).toFixed(2)}"></td>
+				<td class="text-center sa-avail-white">${availWhite}</td>
+				<td class="text-center sa-avail-black">${availBlack}</td>
+				<td><input type="number" min="0" max="${availWhite}" step="1" class="form-control form-control-sm text-right sa-white-qty" name="white_qty[]" value="0"${whiteDisabled}${whiteTitle}></td>
+				<td><input type="number" min="0" max="${availBlack}" step="1" class="form-control form-control-sm text-right sa-black-qty" name="black_qty[]" value="0"${blackDisabled}${blackTitle}></td>
+				${saAmountFieldsHtml(rate, bill, gst)}
 				<td class="text-center">-</td>
 			</tr>
 		`;
-		$('#sa_products_tbody').append(row);
+		var $row = $(row);
+		$('#sa_products_tbody').append($row);
+		saCalculateRow($row);
 	});
+}
+
+function saClampDeductQty($input) {
+	if (saGetMode() !== 'deduct' || !$input.length || $input.prop('disabled')) {
+		return;
+	}
+	var $row = $input.closest('tr.sa-product-row');
+	var isWhite = $input.hasClass('sa-white-qty');
+	var max = parseInt($input.attr('max'), 10);
+	if (isNaN(max)) {
+		max = parseInt($row.data(isWhite ? 'avail-white' : 'avail-black'), 10) || 0;
+	}
+	var val = parseInt($input.val(), 10);
+	if (isNaN(val) || val < 0) {
+		$input.val(0);
+		return;
+	}
+	if (val > max) {
+		$input.val(max);
+		Swal.fire({
+			toast: true,
+			position: 'top-end',
+			icon: 'warning',
+			title: 'Cannot deduct more than available (' + max + ')',
+			showConfirmButton: false,
+			timer: 1800
+		});
+	}
 }
 
 function saLoadBatchProducts(batchNo) {
 	saDeductProducts = [];
 	$('#sa_products_tbody').empty();
-	if (!batchNo) return;
+	var warehouseId = saGetWarehouseId();
+	if (!batchNo || !warehouseId) return;
 
 	$.post('<?php echo base_url('inventory/get_stock_adjustment_batch_products'); ?>', {
-		warehouse_id: saWarehouseId,
+		warehouse_id: warehouseId,
 		batch_no: batchNo
 	}, function (res) {
 		try { saDeductProducts = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { saDeductProducts = []; }
@@ -1180,8 +1391,7 @@ function saAddProductRow() {
 			<td class="text-center sa-avail-black d-none">-</td>
 			<td><input type="number" min="0" step="1" class="form-control form-control-sm text-right sa-white-qty" name="white_qty[]" value="0"></td>
 			<td><input type="number" min="0" step="1" class="form-control form-control-sm text-right sa-black-qty" name="black_qty[]" value="0"></td>
-			<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-official-rate" name="official_rate_rs[]" value="0"></td>
-			<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right sa-actual-inr" name="actual_inr[]" value="0"></td>
+			${saAmountFieldsHtml(0, 0, 0)}
 			<td class="text-center">
 				<button type="button" class="btn btn-sm btn-outline-danger sa-remove-row" title="Remove">&times;</button>
 			</td>
@@ -1195,21 +1405,34 @@ function saAddProductRow() {
 			width: '100%'
 		});
 	}
+	saCalculateRow($row);
 }
 
 $(document).on('click', '#btnStockAdjustment', function () {
-	if (!saWarehouseId || saWarehouseId === 'All') {
-		Swal.fire({ icon: 'warning', title: 'Select Warehouse', text: 'Please select a warehouse tab first.' });
+	if (!$('#sa_warehouse_id option').filter(function () { return $(this).val(); }).length) {
+		Swal.fire({ icon: 'warning', title: 'No Warehouse', text: 'No warehouse available for this company.' });
 		return;
 	}
 	$('#stockAdjustmentForm')[0].reset();
 	$('#sa_mode_add').prop('checked', true);
+	if (saDefaultWarehouseId) {
+		$('#sa_warehouse_id').val(saDefaultWarehouseId);
+	}
 	saToggleModeUI();
 	$('#stockAdjustmentModal').modal('show');
 });
 
+$(document).on('click', '#sa_modal_close_btn, #sa_modal_cancel_btn', function (e) {
+	e.preventDefault();
+	saCloseModal();
+});
+
 $(document).on('change', '#stockAdjustmentForm input[name="mode"]', function () {
 	saToggleModeUI();
+});
+
+$(document).on('change', '#sa_warehouse_id', function () {
+	saOnWarehouseChange();
 });
 
 $(document).on('change', '#sa_batch_no_select', function () {
@@ -1226,12 +1449,37 @@ $(document).on('click', '.sa-remove-row', function () {
 	$(this).closest('tr').remove();
 });
 
+$(document).on('change select2:select', '#sa_products_tbody .sa-product-select', function () {
+	if (saGetMode() !== 'add') return;
+	saApplyProductDefaults($(this).closest('tr.sa-product-row'));
+});
+
+$(document).on('input change', '#sa_products_tbody .sa-rate', function () {
+	var $row = $(this).closest('tr.sa-product-row');
+	$row.find('.sa-per-qty-bill').val(saFixed($(this).val()));
+	saCalculateRow($row);
+});
+
+$(document).on('input change blur', '#sa_products_tbody .sa-white-qty, #sa_products_tbody .sa-black-qty', function () {
+	saClampDeductQty($(this));
+	saCalculateRow($(this).closest('tr.sa-product-row'));
+});
+
+$(document).on('input change', '#sa_products_tbody .sa-per-qty-bill, #sa_products_tbody .sa-gst-rate', function () {
+	saCalculateRow($(this).closest('tr.sa-product-row'));
+});
+
 $(document).on('submit', '#stockAdjustmentForm', function (e) {
 	e.preventDefault();
 	var mode = saGetMode();
+	var warehouseId = saGetWarehouseId();
 	var batchNo = mode === 'deduct' ? $('#sa_batch_no_select').val() : $('#sa_batch_no_input').val();
 	batchNo = $.trim(batchNo || '');
 
+	if (!warehouseId) {
+		Swal.fire({ icon: 'warning', title: 'Warehouse Required', text: 'Please select a warehouse.' });
+		return;
+	}
 	if (!batchNo) {
 		Swal.fire({ icon: 'warning', title: 'Batch Required', text: 'Please enter/select a batch number.' });
 		return;
@@ -1246,6 +1494,7 @@ $(document).on('submit', '#stockAdjustmentForm', function (e) {
 	var selectedIds = [];
 	$('#sa_products_tbody tr.sa-product-row').each(function () {
 		var $row = $(this);
+		saCalculateRow($row);
 		var id = $row.find('.sa-product-select').val();
 		var whiteQty = parseInt($row.find('.sa-white-qty').val(), 10) || 0;
 		var blackQty = parseInt($row.find('.sa-black-qty').val(), 10) || 0;
@@ -1269,12 +1518,25 @@ $(document).on('submit', '#stockAdjustmentForm', function (e) {
 			Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'Quantity cannot be negative.' });
 			return false;
 		}
-		if (mode === 'deduct' && (whiteQty > 0 || blackQty > 0)) {
-			var maxW = parseInt($row.find('.sa-white-qty').attr('max'), 10) || 0;
-			var maxB = parseInt($row.find('.sa-black-qty').attr('max'), 10) || 0;
+		if (mode === 'deduct') {
+			var maxW = parseInt($row.attr('data-avail-white'), 10);
+			var maxB = parseInt($row.attr('data-avail-black'), 10);
+			if (isNaN(maxW)) maxW = parseInt($row.find('.sa-white-qty').attr('max'), 10) || 0;
+			if (isNaN(maxB)) maxB = parseInt($row.find('.sa-black-qty').attr('max'), 10) || 0;
+
+			if (maxW <= 0 && whiteQty > 0) {
+				invalid = true;
+				Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'No white stock available to deduct for this product.' });
+				return false;
+			}
+			if (maxB <= 0 && blackQty > 0) {
+				invalid = true;
+				Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'No black stock available to deduct for this product.' });
+				return false;
+			}
 			if (whiteQty > maxW || blackQty > maxB) {
 				invalid = true;
-				Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'Deduct qty cannot exceed available stock.' });
+				Swal.fire({ icon: 'warning', title: 'Invalid Qty', text: 'Deduct qty cannot exceed available white/black stock.' });
 				return false;
 			}
 		}
@@ -1289,12 +1551,13 @@ $(document).on('submit', '#stockAdjustmentForm', function (e) {
 	}
 
 	var formData = [];
-	formData.push({ name: 'warehouse_id', value: saWarehouseId });
+	formData.push({ name: 'warehouse_id', value: warehouseId });
 	formData.push({ name: 'batch_no', value: batchNo });
 	formData.push({ name: 'mode', value: mode });
 
 	$('#sa_products_tbody tr.sa-product-row').each(function () {
 		var $row = $(this);
+		saCalculateRow($row);
 		var id = $row.find('.sa-product-select').val();
 		var whiteQty = parseInt($row.find('.sa-white-qty').val(), 10) || 0;
 		var blackQty = parseInt($row.find('.sa-black-qty').val(), 10) || 0;
@@ -1303,13 +1566,22 @@ $(document).on('submit', '#stockAdjustmentForm', function (e) {
 		}
 		if (mode === 'deduct') {
 			formData.push({ name: 'inventory_id[]', value: id });
+			if ($row.find('.sa-white-qty').prop('disabled')) whiteQty = 0;
+			if ($row.find('.sa-black-qty').prop('disabled')) blackQty = 0;
 		} else {
 			formData.push({ name: 'product_id[]', value: id });
 		}
 		formData.push({ name: 'white_qty[]', value: whiteQty });
 		formData.push({ name: 'black_qty[]', value: blackQty });
-		formData.push({ name: 'official_rate_rs[]', value: $row.find('.sa-official-rate').val() || 0 });
-		formData.push({ name: 'actual_inr[]', value: $row.find('.sa-actual-inr').val() || 0 });
+		formData.push({ name: 'rate[]', value: $row.find('.sa-rate').val() || 0 });
+		formData.push({ name: 'per_qty_bill_amt[]', value: $row.find('.sa-per-qty-bill').val() || 0 });
+		formData.push({ name: 'total_bill_amt[]', value: $row.find('.sa-total-bill').val() || 0 });
+		formData.push({ name: 'gst_rate[]', value: $row.find('.sa-gst-rate').val() || 0 });
+		formData.push({ name: 'gst_amt[]', value: $row.find('.sa-gst-amt').val() || 0 });
+		formData.push({ name: 'total_bill_gst_amt[]', value: $row.find('.sa-total-bill-gst').val() || 0 });
+		formData.push({ name: 'per_qty_black_amt[]', value: $row.find('.sa-per-qty-black').val() || 0 });
+		formData.push({ name: 'total_black_amt[]', value: $row.find('.sa-total-black').val() || 0 });
+		formData.push({ name: 'final_amt[]', value: $row.find('.sa-final-amt').val() || 0 });
 	});
 
 	var $btn = $('#sa_submit_btn');
@@ -1322,7 +1594,7 @@ $(document).on('submit', '#stockAdjustmentForm', function (e) {
 		success: function (res) {
 			$btn.prop('disabled', false).text('Submit');
 			if (res && res.status == 200) {
-				$('#stockAdjustmentModal').modal('hide');
+				saCloseModal();
 				Swal.fire({ icon: 'success', title: 'Success', text: res.message || 'Stock adjusted successfully' });
 				if (typeof dataTable !== 'undefined') {
 					dataTable.ajax.reload(null, false);
