@@ -209,27 +209,33 @@ foreach ($storage_draws as $st) {
                       $sup_con_rate_label = ($sup_currency_type === 'rmb') ? 'USD Rate' : 'RMB Rate';
 
                       $batch_no_modal = $po_raw['voucher_no'] ?? '';
-                      $existing_exp = $this->db->get_where('po_expense', [
+
+                      $existing_charges = $this->db->get_where('po_expense', [
+                          'type'        => 'charges',
+                          'batch_no'    => $batch_no_modal,
+                          'supplier_id' => $supplier_id,
+                          'is_delete'   => 0
+                      ])->row_array();
+
+                      $existing_extras = $this->db->get_where('po_expense', [
                           'type'        => 'extras',
                           'batch_no'    => $batch_no_modal,
                           'supplier_id' => $supplier_id,
                           'is_delete'   => 0
                       ])->row_array();
 
-                      $existing_pay = $this->db->get_where('payments', [
-                          'payment_type' => 'extras',
-                          'batch_no'     => $batch_no_modal,
-                          'supplier_id'  => $supplier_id,
-                          'is_delete'    => 0
-                      ])->row_array();
+                      // Expense → charges; Extra Amount → extras (no payments)
+                      $existing_exp = $existing_charges;
 
                       $exp_rmb_val   = ($existing_exp && (float)$existing_exp['rmb'] != 0) ? (float)$existing_exp['rmb'] : '';
                       $exp_usd_val   = ($existing_exp && (float)$existing_exp['usd'] != 0) ? (float)$existing_exp['usd'] : '';
                       $exp_inr_val   = ($existing_exp && (float)$existing_exp['sub_total'] != 0) ? (float)$existing_exp['sub_total'] : (($existing_exp && (float)$existing_exp['grand_total'] != 0) ? (float)$existing_exp['grand_total'] : '');
 
-                      $extra_rmb_val = ($existing_pay && (float)$existing_pay['amount_rmb'] != 0) ? (float)$existing_pay['amount_rmb'] : '';
-                      $extra_usd_val = ($existing_pay && (float)$existing_pay['amount_dollar'] != 0) ? (float)$existing_pay['amount_dollar'] : '';
-                      $extra_inr_val = ($existing_pay && (float)$existing_pay['amount_rs'] != 0) ? (float)$existing_pay['amount_rs'] : '';
+                      $extra_rmb_val = ($existing_extras && (float)$existing_extras['rmb'] != 0) ? (float)$existing_extras['rmb'] : '';
+                      $extra_usd_val = ($existing_extras && (float)$existing_extras['usd'] != 0) ? (float)$existing_extras['usd'] : '';
+                      $extra_inr_val = ($existing_extras && (float)$existing_extras['sub_total'] != 0)
+                          ? (float)$existing_extras['sub_total']
+                          : (($existing_extras && (float)$existing_extras['grand_total'] != 0) ? (float)$existing_extras['grand_total'] : '');
                     ?>
                     <div class="supplier-section mb-2" data-supplier-id="<?php echo $supplier_id; ?>">
                         <h5>

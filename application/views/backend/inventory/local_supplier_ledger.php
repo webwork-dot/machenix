@@ -11,6 +11,7 @@ $summary      = $ledger['summary'] ?? [];
 $opening      = $ledger['opening'] ?? ['final' => 0, 'bank' => 0, 'cash' => 0];
 $closing      = $summary['closing'] ?? $opening;
 $col_totals   = $summary['column_totals'] ?? [];
+$prod_col_totals = $summary['product_column_totals'] ?? $col_totals;
 
 $addrLines = array_filter([
   trim($supplier['address'] ?? ''),
@@ -512,7 +513,8 @@ $s_out  = $summary['outstanding'] ?? ['final' => 0, 'official' => 0, 'unofficial
           <?php foreach ($product_rows as $row): ?>
             <?php
               $is_prod = !empty($row['is_product']);
-              $has_bal = array_key_exists('final_balance', $row) && $row['final_balance'] !== null;
+              $hide_amt = !empty($row['hide_amounts']);
+              $has_bal = !$hide_amt && array_key_exists('final_balance', $row) && $row['final_balance'] !== null;
               $fb = $has_bal ? $fmt_bal($row['final_balance']) : null;
               $bb = $has_bal ? $fmt_bal($row['bank_balance']) : null;
               $cb = $has_bal ? $fmt_bal($row['cash_balance']) : null;
@@ -525,17 +527,17 @@ $s_out  = $summary['outstanding'] ?? ['final' => 0, 'official' => 0, 'unofficial
               <td class="col-base"><?= html_escape($row['vch_no'] ?? '') ?></td>
               <td class="col-base text-end"><?= isset($row['qty']) && $row['qty'] !== null && $row['qty'] !== '' ? $fmt($row['qty'], true) : '' ?></td>
               <td class="col-base col-black-product-extra text-end"><?= $is_prod ? $fmt($row['rate_pc'] ?? 0) : '' ?></td>
-              <td class="col-base col-black-product-extra text-end"><?= $fmt($row['rate'] ?? 0) ?></td>
+              <td class="col-base col-black-product-extra text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['rate'] ?? 0) : '' ?></td>
               <td class="col-white-only text-end"><?= $is_prod ? $fmt($row['bill_amt_pc'] ?? 0) : '' ?></td>
-              <td class="col-white-only text-end"><?= $fmt($row['bill_amt'] ?? 0) ?></td>
-              <td class="col-white-only text-end"><?= $fmt($row['cgst'] ?? 0) ?></td>
-              <td class="col-white-only text-end"><?= $fmt($row['sgst'] ?? 0) ?></td>
-              <td class="col-white-only text-end"><?= $fmt($row['igst'] ?? 0) ?></td>
-              <td class="col-white-only text-end"><?= $fmt($row['final_bill'] ?? 0) ?></td>
-              <td class="col-black-only text-end"><?= $fmt($row['cash'] ?? 0) ?></td>
-              <td class="col-final-only text-end"><?= $fmt($row['final_sale'] ?? 0) ?></td>
-              <td class="col-white-only text-end"><?= !$is_prod ? $fmt($row['bank_amt'] ?? 0) : '' ?></td>
-              <td class="col-black-only text-end"><?= !$is_prod ? $fmt($row['cash_amt'] ?? 0) : '' ?></td>
+              <td class="col-white-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['bill_amt'] ?? 0) : '' ?></td>
+              <td class="col-white-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['cgst'] ?? 0) : '' ?></td>
+              <td class="col-white-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['sgst'] ?? 0) : '' ?></td>
+              <td class="col-white-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['igst'] ?? 0) : '' ?></td>
+              <td class="col-white-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['final_bill'] ?? 0) : '' ?></td>
+              <td class="col-black-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['cash'] ?? 0) : '' ?></td>
+              <td class="col-final-only text-end"><?= ($is_prod || !$hide_amt) ? $fmt($row['final_sale'] ?? 0) : '' ?></td>
+              <td class="col-white-only text-end"><?= !$is_prod && !$hide_amt ? $fmt($row['bank_amt'] ?? 0) : '' ?></td>
+              <td class="col-black-only text-end"><?= !$is_prod && !$hide_amt ? $fmt($row['cash_amt'] ?? 0) : '' ?></td>
               <?php if ($fb): ?>
                 <td class="col-final-only text-end <?= $fb['raw'] < 0 ? 'bal-cr' : 'bal-dr' ?>"><?= $fb['amt'] ?></td>
                 <td class="col-final-only fs-10 <?= $fb['raw'] < 0 ? 'bal-cr' : 'bal-dr' ?>"><?= $fb['side'] ?></td>
@@ -563,17 +565,17 @@ $s_out  = $summary['outstanding'] ?? ['final' => 0, 'official' => 0, 'unofficial
           <td class="col-base" colspan="4">Current Total</td>
           <td class="col-base"></td>
           <td class="col-base col-black-product-extra"></td>
-          <td class="col-base col-black-product-extra text-end"><?= number_format((float)($col_totals['rate'] ?? 0), 2) ?></td>
+          <td class="col-base col-black-product-extra text-end"><?= number_format((float)($prod_col_totals['rate'] ?? 0), 2) ?></td>
           <td class="col-white-only"></td>
-          <td class="col-white-only text-end"><?= number_format((float)($col_totals['bill_amt'] ?? 0), 2) ?></td>
-          <td class="col-white-only text-end"><?= number_format((float)($col_totals['cgst'] ?? 0), 2) ?></td>
-          <td class="col-white-only text-end"><?= number_format((float)($col_totals['sgst'] ?? 0), 2) ?></td>
-          <td class="col-white-only text-end"><?= number_format((float)($col_totals['igst'] ?? 0), 2) ?></td>
-          <td class="col-white-only text-end"><?= number_format((float)($col_totals['final_bill'] ?? 0), 2) ?></td>
-          <td class="col-black-only text-end"><?= number_format((float)($col_totals['cash'] ?? 0), 2) ?></td>
-          <td class="col-final-only text-end"><?= number_format((float)($col_totals['final_sale'] ?? 0), 2) ?></td>
-          <td class="col-white-only text-end"><?= number_format((float)($col_totals['bank_amt'] ?? 0), 2) ?></td>
-          <td class="col-black-only text-end"><?= number_format((float)($col_totals['cash_amt'] ?? 0), 2) ?></td>
+          <td class="col-white-only text-end"><?= number_format((float)($prod_col_totals['bill_amt'] ?? 0), 2) ?></td>
+          <td class="col-white-only text-end"><?= number_format((float)($prod_col_totals['cgst'] ?? 0), 2) ?></td>
+          <td class="col-white-only text-end"><?= number_format((float)($prod_col_totals['sgst'] ?? 0), 2) ?></td>
+          <td class="col-white-only text-end"><?= number_format((float)($prod_col_totals['igst'] ?? 0), 2) ?></td>
+          <td class="col-white-only text-end"><?= number_format((float)($prod_col_totals['final_bill'] ?? 0), 2) ?></td>
+          <td class="col-black-only text-end"><?= number_format((float)($prod_col_totals['cash'] ?? 0), 2) ?></td>
+          <td class="col-final-only text-end"><?= number_format((float)($prod_col_totals['final_sale'] ?? 0), 2) ?></td>
+          <td class="col-white-only text-end"><?= number_format((float)($prod_col_totals['bank_amt'] ?? 0), 2) ?></td>
+          <td class="col-black-only text-end"><?= number_format((float)($prod_col_totals['cash_amt'] ?? 0), 2) ?></td>
           <td class="col-final-only" colspan="2"></td>
           <td class="col-white-only" colspan="2"></td>
           <td class="col-black-only" colspan="2"></td>

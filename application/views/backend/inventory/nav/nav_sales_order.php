@@ -19,6 +19,7 @@
     <?php if (is_access('210')) { ?>
     <a href="<?php echo site_url('inventory/sales-order'); ?>" class="sub-link <?php echo ($page_name == 'sales_order') ? 'active' : ''; ?>">Pending</a>
     <?php } ?>
+    <a href="<?php echo site_url('inventory/sales-order-intimation'); ?>" class="sub-link <?php echo ($page_name == 'sales_order_intimation') ? 'active' : ''; ?>">Intimation</a>
     <?php if (is_access('211')) { ?>
     <a href="<?php echo site_url('inventory/sales-order-invoice'); ?>" class="sub-link <?php echo ($page_name == 'sales_order_invoice') ? 'active' : ''; ?>">Generate Invoice</a>
     <?php } ?>

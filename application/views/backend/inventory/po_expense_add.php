@@ -127,6 +127,7 @@ foreach ($other_charges_list as $charge) {
                 <input type="number" step="any" min="0" class="form-control form-control-sm text-right" name="con_rate" id="con_rate" placeholder="0" style="width:90px;">
                 <label class="mb-0 small">INR Rate</label>
                 <input type="number" step="any" min="0" class="form-control form-control-sm text-right" name="con_inr" id="con_inr" placeholder="0" style="width:90px;">
+                <button type="button" class="btn btn-primary btn-sm" id="applyConversionBtn">Apply</button>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="addExpenseRow">+ Add Expense</button>
               </div>
             </div>
@@ -382,12 +383,11 @@ $(function () {
   });
 
   // ---------- currency conversion ----------
+  // Match Purchase-In: USD→RMB always multiply, RMB→USD always divide, INR always multiply from mode base.
   function updateConRateLabel() {
     $('#con_rate_label').text($('#conv_type').val() === 'rmb' ? 'USD Rate' : 'RMB Rate');
   }
 
-  // USD to RMB: rate = RMB per 1 USD, INR rate = INR per 1 USD
-  // RMB to USD: rate = USD per 1 RMB, INR rate = INR per 1 RMB
   function convertRow($row, src) {
     const cur = getVendorCurrencies();
     if (!cur[src]) return;
@@ -416,10 +416,10 @@ $(function () {
 
     if (conRate > 0) {
       if (src === 'usd') {
-        rmb = (type === 'usd') ? usd * conRate : usd / conRate;
+        rmb = usd * conRate;
         if (otherAllowed) $other.val(trimNum(rmb, 5));
       } else {
-        usd = (type === 'usd') ? rmb / conRate : rmb * conRate;
+        usd = rmb / conRate;
         if (otherAllowed) $other.val(trimNum(usd, 5));
       }
     }
@@ -431,19 +431,42 @@ $(function () {
     }
   }
 
-  function applyConversionToAllRows() {
-    const baseCls = ($('#conv_type').val() === 'rmb') ? 'rmb' : 'usd';
-    const otherCls = baseCls === 'usd' ? 'rmb' : 'usd';
+  function applyConversionRates() {
+    const cur = getVendorCurrencies();
+    const type = $('#conv_type').val() || 'usd';
+    const conRate = toNum($('#con_rate').val());
+    const inrRate = toNum($('#con_inr').val());
 
     $tbody.find('tr.expense-row').each(function () {
       const $row = $(this);
-      let src = $row.data('cur_src');
-      if (!src) {
-        if (hasValue($row.find('.' + baseCls + '_amt').val())) src = baseCls;
-        else if (hasValue($row.find('.' + otherCls + '_amt').val())) src = otherCls;
+      const $usd = $row.find('.usd_amt');
+      const $rmb = $row.find('.rmb_amt');
+
+      if (type === 'usd') {
+        if (!cur.usd || !hasValue($usd.val())) return;
+        const usd = toNum($usd.val());
+        if (conRate > 0 && cur.rmb) {
+          $rmb.val(trimNum(usd * conRate, 5));
+        }
+        if (inrRate > 0 && cur.inr) {
+          $row.find('.amount').val(trimNum(usd * inrRate, 2));
+          setMode($row, 'amount');
+        }
+        $row.data('cur_src', 'usd');
+      } else {
+        if (!cur.rmb || !hasValue($rmb.val())) return;
+        const rmb = toNum($rmb.val());
+        if (conRate > 0 && cur.usd) {
+          $usd.val(trimNum(rmb / conRate, 5));
+        }
+        if (inrRate > 0 && cur.inr) {
+          $row.find('.amount').val(trimNum(rmb * inrRate, 2));
+          setMode($row, 'amount');
+        }
+        $row.data('cur_src', 'rmb');
       }
-      if (src) convertRow($row, src);
     });
+
     updateTotals();
   }
 
@@ -458,10 +481,11 @@ $(function () {
 
   $('#conv_type').on('change', function () {
     updateConRateLabel();
-    applyConversionToAllRows();
   });
 
-  $('#con_rate, #con_inr').on('input', applyConversionToAllRows);
+  $('#applyConversionBtn').on('click', function () {
+    applyConversionRates();
+  });
 
   // gst change should recalc based on the row mode
   $(document).on('input', '#expenseTable .gst', function () {

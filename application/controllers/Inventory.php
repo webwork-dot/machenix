@@ -4384,6 +4384,19 @@ class Inventory extends CI_Controller
         }
     }
 
+    public function sales_order_intimation()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        } else {
+            $this->session->set_userdata('previous_url', currentUrl());
+            $page_data['navigation']  = 'sales_order';
+            $page_data['page_name']  = 'sales_order_intimation';
+            $page_data['page_title'] = 'Intimation Sales Order';
+            $this->load->view('backend/index', $page_data);
+        }
+    }
+
     public function sales_order_invoice()
     {
         if ($this->session->userdata('inventory_login') != true) {
@@ -4974,6 +4987,16 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_sales_order();
+        }
+    }
+
+    public function get_sales_order_intimation()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_sales_order_intimation();
         }
     }
 

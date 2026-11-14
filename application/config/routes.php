@@ -377,12 +377,14 @@ $route[$r_inventory . '/customer-quotations/delete/(:num)']    = 'inventory/cust
 $route[$r_inventory . '/get_customer_quotations']              = 'inventory/get_customer_quotations';
 
 $route[$r_inventory . '/sales-order'] = 'inventory/sales_order';
+$route[$r_inventory . '/sales-order-intimation'] = 'inventory/sales_order_intimation';
 $route[$r_inventory . '/sales-order-invoice'] = 'inventory/sales_order_invoice';
 $route[$r_inventory . '/sales-order-complete'] = 'inventory/sales_order_complete';
 $route[$r_inventory . '/sales-order-all'] = 'inventory/sales_order_all';
 $route[$r_inventory . '/sales-order-cancelled'] = 'inventory/sales_order_cancelled';
 $route[$r_inventory . '/get_sales_order_product_wise'] = 'inventory/get_sales_order_product_wise';
 $route[$r_inventory . '/get_sales_order_all_order_wise'] = 'inventory/get_sales_order_all_order_wise';
+$route[$r_inventory . '/get_sales_order_intimation'] = 'inventory/get_sales_order_intimation';
 $route[$r_inventory . '/sales-commission'] = 'inventory/sales_commission';
 $route[$r_inventory . '/get_sales_commission'] = 'inventory/get_sales_commission';
 $route[$r_inventory . '/get_completed_sales_commission'] = 'inventory/get_completed_sales_commission';

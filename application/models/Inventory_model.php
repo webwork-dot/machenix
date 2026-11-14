@@ -9087,9 +9087,9 @@ class Inventory_model extends CI_Model
 			$extra_rmb = (float) ($supplier_extra_rmb[$supplier_id] ?? 0);
 			$extra_inr = (float) ($supplier_extra_inr[$supplier_id] ?? 0);
 
-			// 1. Handle po_expense table
+			// 1. Expense row → po_expense type = charges
 			$existing_exp = $this->db->get_where('po_expense', [
-				'type'        => 'extras',
+				'type'        => 'charges',
 				'batch_no'    => $batch_no,
 				'supplier_id' => $supplier_id,
 				'is_delete'   => 0
@@ -9109,7 +9109,7 @@ class Inventory_model extends CI_Model
 					$exp_insert_data = [
 						'input_method'  => 'import',
 						'company_id'    => $session_company_id,
-						'type'          => 'extras',
+						'type'          => 'charges',
 						'expense_type'  => 0,
 						'vendor_id'     => 0,
 						'supplier_id'   => $supplier_id,
@@ -9127,45 +9127,43 @@ class Inventory_model extends CI_Model
 				}
 			}
 
-			// 2. Handle payments table
-			$existing_pay = $this->db->get_where('payments', [
-				'payment_type' => 'extras',
-				'batch_no'     => $batch_no,
-				'supplier_id'  => $supplier_id,
-				'is_delete'    => 0
+			// 2. Extra Amount row → po_expense type = extras
+			$existing_extra_exp = $this->db->get_where('po_expense', [
+				'type'        => 'extras',
+				'batch_no'    => $batch_no,
+				'supplier_id' => $supplier_id,
+				'is_delete'   => 0
 			])->row_array();
 
-			if ($existing_pay) {
-				$pay_update_data = [
-					'amount_dollar' => $extra_usd,
-					'amount_rs'     => $extra_inr,
-					'amount_rmb'    => $extra_rmb,
-					'payment_date'  => date('Y-m-d'),
+			if ($existing_extra_exp) {
+				$extra_exp_update_data = [
+					'usd'          => $extra_usd,
+					'rmb'          => $extra_rmb,
+					'sub_total'    => $extra_inr,
+					'grand_total'  => $extra_inr,
+					'expense_date' => date('Y-m-d'),
 				];
-				$this->db->where('id', $existing_pay['id'])->update('payments', $pay_update_data);
+				$this->db->where('id', $existing_extra_exp['id'])->update('po_expense', $extra_exp_update_data);
 			} else {
 				if ($extra_usd != 0 || $extra_rmb != 0 || $extra_inr != 0) {
-					$sup_row = $this->db->get_where('supplier', ['id' => $supplier_id])->row_array();
-					$supplier_name = $sup_row['name'] ?? '';
-
-					$pay_insert_data = [
-						'company_id'           => $session_company_id,
-						'type'                 => 'payment',
-						'supplier_id'          => $supplier_id,
-						'supplier_name'        => $supplier_name,
-						'invoice_no'           => 'extra income',
-						'batch_no'             => $batch_no,
-						'amount_dollar'        => $extra_usd,
-						'amount_rs'            => $extra_inr,
-						'amount_rmb'           => $extra_rmb,
-						'payment_type'         => 'extras',
-						'payment_method'       => '',
-						'company_bank'         => 0,
-						'company_bank_account' => null,
-						'payment_date'         => date('Y-m-d'),
-						'added_by'             => $session_user_id,
+					$extra_exp_insert_data = [
+						'input_method'  => 'import',
+						'company_id'    => $session_company_id,
+						'type'          => 'extras',
+						'expense_type'  => 0,
+						'vendor_id'     => 0,
+						'supplier_id'   => $supplier_id,
+						'purchase_date' => date('Y-m-d H:i:s'),
+						'usd'           => $extra_usd,
+						'rmb'           => $extra_rmb,
+						'batch_no'      => $batch_no,
+						'expense_date'  => date('Y-m-d'),
+						'gst_type'      => '',
+						'sub_total'     => $extra_inr,
+						'grand_total'   => $extra_inr,
+						'added_by_id'   => $session_user_id,
 					];
-					$this->db->insert('payments', $pay_insert_data);
+					$this->db->insert('po_expense', $extra_exp_insert_data);
 				}
 			}
 		}
@@ -18826,6 +18824,263 @@ class Inventory_model extends CI_Model
 			"recordsFiltered" => $total_count,
 			"data" => $data,
 			"total_amount" => $total_amount_formatted
+		);
+		echo json_encode($json_data);
+	}
+
+	public function get_sales_order_intimation()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = $_REQUEST['start'];
+		$length = $_REQUEST['length'];
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword = $filter_data['keywords'];
+			$keyword_filter .= " AND (so.company_name like '%" . $keyword . "%' 
+            OR so.customer_name like '%" . $keyword . "%'
+            OR so.refrence_no like '%" . $keyword . "%'
+            OR so.order_no like '%" . $keyword . "%'
+            OR EXISTS (
+                SELECT 1 FROM sys_users su_sp
+                WHERE su_sp.id = so.sale_person_id
+                AND (
+                    su_sp.first_name LIKE '%" . $keyword . "%'
+                    OR su_sp.last_name LIKE '%" . $keyword . "%'
+                    OR TRIM(CONCAT(IFNULL(su_sp.first_name, ''), ' ', IFNULL(su_sp.last_name, ''))) LIKE '%" . $keyword . "%'
+                )
+            ))";
+		endif;
+
+		if (isset($_REQUEST['customer_id']) && $_REQUEST['customer_id'] != ""):
+			$keyword = $_REQUEST['customer_id'];
+			$keyword_filter .= " AND (so.customer_id = '" . $keyword . "')";
+		endif;
+
+		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
+			$added_date = explode(' - ', $_REQUEST['date_range']);
+			$from = date('Y-m-d', strtotime($added_date[0]));
+			$to = date('Y-m-d', strtotime($added_date[1]));
+			if ($from == $to) {
+				$keyword_filter .= " AND (DATE(so.date) = '$from')";
+			} else {
+				$keyword_filter .= " AND (DATE(so.date) BETWEEN '$from' AND '$to')";
+			}
+		}
+
+		if (isset($_REQUEST['delivery_date_range']) && $_REQUEST['delivery_date_range'] != "") {
+			$delivery_date = explode(' - ', $_REQUEST['delivery_date_range']);
+			$d_from = date('Y-m-d', strtotime($delivery_date[0]));
+			$d_to = date('Y-m-d', strtotime($delivery_date[1]));
+			if ($d_from == $d_to) {
+				$keyword_filter .= " AND (DATE(so.expected_date) = '$d_from')";
+			} else {
+				$keyword_filter .= " AND (DATE(so.expected_date) BETWEEN '$d_from' AND '$d_to')";
+			}
+		}
+
+		$company_id = (int) $this->session->userdata('company_id');
+		$keyword_filter .= " AND (so.company_id <> '$company_id')";
+		$keyword_filter .= " AND (so.is_intimation = 1)";
+		$keyword_filter .= " AND (so.type != 'company')";
+		$keyword_filter .= " AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)";
+
+		$session_batch_exists = "
+			EXISTS (
+				SELECT 1
+				FROM sales_order_intimation_products soip
+				WHERE soip.sales_order_id = so.id
+					AND soip.is_deleted = 0
+					AND (
+						(
+							soip.batch_type = 'inventory'
+							AND EXISTS (
+								SELECT 1 FROM inventory i
+								WHERE i.id = soip.batch_id
+								AND i.company_id = '$company_id'
+							)
+						)
+						OR (
+							soip.batch_type = 'po'
+							AND EXISTS (
+								SELECT 1
+								FROM purchase_order_product pop
+								INNER JOIN purchase_order po ON po.id = pop.parent_id
+								WHERE pop.id = soip.batch_id
+								AND po.company_id = '$company_id'
+							)
+						)
+						OR (
+							soip.batch_type = 'loading'
+							AND EXISTS (
+								SELECT 1
+								FROM loading_po_product lpp
+								INNER JOIN purchase_order po ON po.id = lpp.parent_id
+								WHERE lpp.id = soip.batch_id
+								AND po.company_id = '$company_id'
+							)
+						)
+					)
+			)
+		";
+
+		$total_count = $this->db->query("
+			SELECT so.id
+			FROM sales_order AS so
+			WHERE (so.is_deleted = '0')
+				AND $session_batch_exists
+				$keyword_filter
+			ORDER BY so.date DESC
+		")->num_rows();
+
+		$query = $this->db->query("
+			SELECT
+				so.id, so.order_type, so.order_no, so.refrence_no, so.is_generated, so.is_approved, so.is_intimation,
+				so.date, so.expected_date, so.customer_id, so.customer_name, so.warehouse_name, so.grand_total,
+				so.company_name, so.remark, so.invoice_no, so.invoice_date, so.added_by_name, so.sale_person_id,
+				TRIM(CONCAT(IFNULL(su.first_name, ''), ' ', IFNULL(su.last_name, ''))) AS sales_person_name
+			FROM sales_order AS so
+			LEFT JOIN sys_users AS su ON su.id = so.sale_person_id
+			WHERE (so.is_deleted = '0')
+				AND $session_batch_exists
+				$keyword_filter
+			ORDER BY so.date DESC
+			LIMIT $start, $length
+		");
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+
+				$view_intimation_url = "showLargeModal('" . base_url() . "modal/popup_inventory/sales_order_intimation_modal/" . $id . "/view_inbound', 'View Intimation')";
+				$action = '<div class="btn-group">
+					<button type="button" class="btn btn-md btn-outline-dark mj-action btn-rounded btn-icon " data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px !important;">
+					<i class="mdi mdi-dots-vertical"></i></button>
+					<div class="dropdown-menu">
+						<a href="javascript:void(0)" class="dropdown-item" onclick="' . $view_intimation_url . '"><i class="fa fa-eye" aria-hidden="true"></i> View</a>
+					</div>
+				</div>';
+
+				$qty_row = $this->db->query("
+					SELECT COALESCE(SUM(soip.quantity), 0) AS qty
+					FROM sales_order_intimation_products soip
+					WHERE soip.sales_order_id = ?
+						AND soip.is_deleted = 0
+						AND (
+							(
+								soip.batch_type = 'inventory'
+								AND EXISTS (
+									SELECT 1 FROM inventory i
+									WHERE i.id = soip.batch_id AND i.company_id = ?
+								)
+							)
+							OR (
+								soip.batch_type = 'po'
+								AND EXISTS (
+									SELECT 1
+									FROM purchase_order_product pop
+									INNER JOIN purchase_order po ON po.id = pop.parent_id
+									WHERE pop.id = soip.batch_id AND po.company_id = ?
+								)
+							)
+							OR (
+								soip.batch_type = 'loading'
+								AND EXISTS (
+									SELECT 1
+									FROM loading_po_product lpp
+									INNER JOIN purchase_order po ON po.id = lpp.parent_id
+									WHERE lpp.id = soip.batch_id AND po.company_id = ?
+								)
+							)
+						)
+				", array($id, $company_id, $company_id, $company_id))->row_array();
+				$qty = (int) ($qty_row['qty'] ?? 0);
+
+				$total_pro = $this->db->query("
+					SELECT COUNT(DISTINCT soip.order_product_id) AS cnt
+					FROM sales_order_intimation_products soip
+					WHERE soip.sales_order_id = ?
+						AND soip.is_deleted = 0
+						AND (
+							(
+								soip.batch_type = 'inventory'
+								AND EXISTS (
+									SELECT 1 FROM inventory i
+									WHERE i.id = soip.batch_id AND i.company_id = ?
+								)
+							)
+							OR (
+								soip.batch_type = 'po'
+								AND EXISTS (
+									SELECT 1
+									FROM purchase_order_product pop
+									INNER JOIN purchase_order po ON po.id = pop.parent_id
+									WHERE pop.id = soip.batch_id AND po.company_id = ?
+								)
+							)
+							OR (
+								soip.batch_type = 'loading'
+								AND EXISTS (
+									SELECT 1
+									FROM loading_po_product lpp
+									INNER JOIN purchase_order po ON po.id = lpp.parent_id
+									WHERE lpp.id = soip.batch_id AND po.company_id = ?
+								)
+							)
+						)
+				", array($id, $company_id, $company_id, $company_id))->row_array();
+				$total_pro = (int) ($total_pro['cnt'] ?? 0);
+
+				$booking_date = (!empty($item['date']) && $item['date'] != '0000-00-00') ? date('d M, Y', strtotime($item['date'])) : '-';
+				$delivery_date = (!empty($item['expected_date']) && $item['expected_date'] != '0000-00-00') ? date('d M, Y', strtotime($item['expected_date'])) : '-';
+				$booking_days = '-';
+				if (!empty($item['date']) && $item['date'] != '0000-00-00') {
+					$booking_days = (int) floor((strtotime(date('Y-m-d')) - strtotime($item['date'])) / 86400);
+					if ($booking_days < 0) {
+						$booking_days = 0;
+					}
+				}
+				$sales_person = trim($item['sales_person_name'] ?? '');
+				if ($sales_person === '') {
+					$sales_person = '-';
+				}
+
+				$status_label = '<span class="badge badge-light-success">Intimation Added</span>';
+
+				$data[] = array(
+					"sr_no" => ++$start,
+					"id" => $item['id'],
+					"order_no" => $item['order_no'],
+					"refrence_no" => $item['refrence_no'],
+					"customer_name" => $item['customer_name'],
+					"warehouse_name" => ($item['warehouse_name']) ? $item['warehouse_name'] : '-',
+					"company_name" => ($item['company_name'] != '' && $item['company_name'] != null) ? $item['company_name'] : '-',
+					"grand_total" => $item['grand_total'],
+					"date" => $booking_date,
+					"booking_date" => $booking_date,
+					"delivery_date" => $delivery_date,
+					"booking_days" => $booking_days,
+					"sales_person" => $sales_person,
+					"status" => $status_label,
+					"total_pro" => $total_pro,
+					"qty" => $qty,
+					"remark" => $item['remark'],
+					"invoice_no" => $item['invoice_no'],
+					"invoice_date" => ($item['invoice_date'] != '0000-00-00' && $item['invoice_date'] != null) ? date('d M, Y', strtotime($item['invoice_date'])) : '-',
+					"added_by" => ($item['added_by_name'] != '' && $item['added_by_name'] != null) ? $item['added_by_name'] : '-',
+					"action" => $action,
+				);
+			}
+		}
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"data" => $data
 		);
 		echo json_encode($json_data);
 	}
@@ -31300,14 +31555,34 @@ public function get_sales_return_reports()
 										AND po.voucher_no IS NOT NULL AND po.voucher_no != ''
 										ORDER BY po.voucher_no ASC");
 		} else {
-			$query = $this->db->query("SELECT DISTINCT po.voucher_no
+			// Import: supplier may be on purchase_in_product (purchase-in) and/or po_products (pre-in),
+			// and charges may exist on po_expense even when product rows differ. Ledger uses those sources.
+			$query = $this->db->query("SELECT voucher_no FROM (
+										SELECT DISTINCT po.voucher_no
 										FROM purchase_order po
-										JOIN po_products pp ON po.id = pp.parent_id
-										WHERE pp.supplier_id = '$supplier_id'
-										AND po.method = 'import'
+										LEFT JOIN purchase_in_product pip
+											ON pip.parent_id = po.id
+											AND pip.supplier_id = '$supplier_id'
+											AND (pip.is_deleted = 0 OR pip.is_deleted IS NULL)
+										LEFT JOIN po_products pop
+											ON pop.parent_id = po.id
+											AND pop.supplier_id = '$supplier_id'
+										WHERE po.method = 'import'
 										AND po.delivery_status = 'purchase_in'
 										AND po.is_deleted = '0'
-										ORDER BY po.voucher_no ASC");
+										AND po.voucher_no IS NOT NULL AND po.voucher_no != ''
+										AND (pip.id IS NOT NULL OR pop.id IS NOT NULL)
+
+										UNION
+
+										SELECT DISTINCT pe.batch_no AS voucher_no
+										FROM po_expense pe
+										WHERE pe.supplier_id = '$supplier_id'
+										AND pe.type = 'charges'
+										AND pe.is_delete = 0
+										AND pe.batch_no IS NOT NULL AND pe.batch_no != ''
+									) batches
+									ORDER BY voucher_no ASC");
 		}
 		return $query->result_array();
 	}
@@ -32326,7 +32601,13 @@ public function get_sales_return_reports()
 				'final_bill' => 0, 'cash' => 0, 'final_sale' => 0,
 				'bank_amt' => 0, 'cash_amt' => 0,
 			],
+			'product_column_totals' => [
+				'rate' => 0, 'bill_amt' => 0, 'cgst' => 0, 'sgst' => 0, 'igst' => 0,
+				'final_bill' => 0, 'cash' => 0, 'final_sale' => 0,
+				'bank_amt' => 0, 'cash_amt' => 0,
+			],
 		];
+		$product_column_totals = &$summary['product_column_totals'];
 
 		foreach ($entries as $entry) {
 			$d = $entry['sort_date'] ?? '';
@@ -32368,8 +32649,25 @@ public function get_sales_return_reports()
 
 			$order_rows[] = $row;
 
-			// Product-wise: parent + children (balances only on parent)
-			$product_rows[] = $row;
+			// Product-wise: parent + children (balances only on parent).
+			// Hide order-line amounts/balances when product children exist.
+			$prod_parent = $row;
+			if (!empty($entry['products'])) {
+				$prod_parent['hide_amounts'] = true;
+				$prod_parent['is_header'] = true;
+				$prod_parent['rate'] = null;
+				$prod_parent['bill_amt'] = null;
+				$prod_parent['cgst'] = null;
+				$prod_parent['sgst'] = null;
+				$prod_parent['igst'] = null;
+				$prod_parent['final_bill'] = null;
+				$prod_parent['cash'] = null;
+				$prod_parent['final_sale'] = null;
+				$prod_parent['final_balance'] = null;
+				$prod_parent['bank_balance'] = null;
+				$prod_parent['cash_balance'] = null;
+			}
+			$product_rows[] = $prod_parent;
 			foreach ($entry['products'] ?? [] as $child) {
 				$product_rows[] = array_merge($child, [
 					'is_opening'    => false,
@@ -32378,6 +32676,29 @@ public function get_sales_return_reports()
 					'cash_balance'  => null,
 					'entry_type'    => 'product',
 				]);
+				$product_column_totals['rate'] += (float) ($child['rate'] ?? 0);
+				$product_column_totals['bill_amt'] += (float) ($child['bill_amt'] ?? 0);
+				$product_column_totals['cgst'] += (float) ($child['cgst'] ?? 0);
+				$product_column_totals['sgst'] += (float) ($child['sgst'] ?? 0);
+				$product_column_totals['igst'] += (float) ($child['igst'] ?? 0);
+				$product_column_totals['final_bill'] += (float) ($child['final_bill'] ?? 0);
+				$product_column_totals['cash'] += (float) ($child['cash'] ?? 0);
+				$product_column_totals['final_sale'] += (float) ($child['final_sale'] ?? 0);
+			}
+			if (empty($entry['products'])) {
+				$product_column_totals['rate'] += (float) ($entry['rate'] ?? 0);
+				$product_column_totals['bill_amt'] += (float) ($entry['bill_amt'] ?? 0);
+				$product_column_totals['cgst'] += (float) ($entry['cgst'] ?? 0);
+				$product_column_totals['sgst'] += (float) ($entry['sgst'] ?? 0);
+				$product_column_totals['igst'] += (float) ($entry['igst'] ?? 0);
+				$product_column_totals['final_bill'] += (float) ($entry['final_bill'] ?? 0);
+				$product_column_totals['cash'] += (float) ($entry['cash'] ?? 0);
+				$product_column_totals['final_sale'] += (float) ($entry['final_sale'] ?? 0);
+				$product_column_totals['bank_amt'] += (float) ($entry['bank_amt'] ?? 0);
+				$product_column_totals['cash_amt'] += (float) ($entry['cash_amt'] ?? 0);
+			} else {
+				$product_column_totals['bank_amt'] += (float) ($entry['bank_amt'] ?? 0);
+				$product_column_totals['cash_amt'] += (float) ($entry['cash_amt'] ?? 0);
 			}
 
 			// Summary
@@ -32787,7 +33108,13 @@ public function get_sales_return_reports()
 				'final_bill' => 0, 'cash' => 0, 'final_sale' => 0,
 				'bank_amt' => 0, 'cash_amt' => 0,
 			],
+			'product_column_totals' => [
+				'rate' => 0, 'bill_amt' => 0, 'cgst' => 0, 'sgst' => 0, 'igst' => 0,
+				'final_bill' => 0, 'cash' => 0, 'final_sale' => 0,
+				'bank_amt' => 0, 'cash_amt' => 0,
+			],
 		];
+		$product_column_totals = &$summary['product_column_totals'];
 
 		foreach ($entries as $entry) {
 			$d = $entry['sort_date'] ?? '';
@@ -32828,7 +33155,24 @@ public function get_sales_return_reports()
 			];
 
 			$order_rows[] = $row;
-			$product_rows[] = $row;
+			// Product-wise: hide order-line amounts/balances when product children exist.
+			$prod_parent = $row;
+			if (!empty($entry['products'])) {
+				$prod_parent['hide_amounts'] = true;
+				$prod_parent['is_header'] = true;
+				$prod_parent['rate'] = null;
+				$prod_parent['bill_amt'] = null;
+				$prod_parent['cgst'] = null;
+				$prod_parent['sgst'] = null;
+				$prod_parent['igst'] = null;
+				$prod_parent['final_bill'] = null;
+				$prod_parent['cash'] = null;
+				$prod_parent['final_sale'] = null;
+				$prod_parent['final_balance'] = null;
+				$prod_parent['bank_balance'] = null;
+				$prod_parent['cash_balance'] = null;
+			}
+			$product_rows[] = $prod_parent;
 			foreach ($entry['products'] ?? [] as $child) {
 				$product_rows[] = array_merge($child, [
 					'is_opening'    => false,
@@ -32837,6 +33181,29 @@ public function get_sales_return_reports()
 					'cash_balance'  => null,
 					'entry_type'    => 'product',
 				]);
+				$product_column_totals['rate'] += (float) ($child['rate'] ?? 0);
+				$product_column_totals['bill_amt'] += (float) ($child['bill_amt'] ?? 0);
+				$product_column_totals['cgst'] += (float) ($child['cgst'] ?? 0);
+				$product_column_totals['sgst'] += (float) ($child['sgst'] ?? 0);
+				$product_column_totals['igst'] += (float) ($child['igst'] ?? 0);
+				$product_column_totals['final_bill'] += (float) ($child['final_bill'] ?? 0);
+				$product_column_totals['cash'] += (float) ($child['cash'] ?? 0);
+				$product_column_totals['final_sale'] += (float) ($child['final_sale'] ?? 0);
+			}
+			if (empty($entry['products'])) {
+				$product_column_totals['rate'] += (float) ($entry['rate'] ?? 0);
+				$product_column_totals['bill_amt'] += (float) ($entry['bill_amt'] ?? 0);
+				$product_column_totals['cgst'] += (float) ($entry['cgst'] ?? 0);
+				$product_column_totals['sgst'] += (float) ($entry['sgst'] ?? 0);
+				$product_column_totals['igst'] += (float) ($entry['igst'] ?? 0);
+				$product_column_totals['final_bill'] += (float) ($entry['final_bill'] ?? 0);
+				$product_column_totals['cash'] += (float) ($entry['cash'] ?? 0);
+				$product_column_totals['final_sale'] += (float) ($entry['final_sale'] ?? 0);
+				$product_column_totals['bank_amt'] += (float) ($entry['bank_amt'] ?? 0);
+				$product_column_totals['cash_amt'] += (float) ($entry['cash_amt'] ?? 0);
+			} else {
+				$product_column_totals['bank_amt'] += (float) ($entry['bank_amt'] ?? 0);
+				$product_column_totals['cash_amt'] += (float) ($entry['cash_amt'] ?? 0);
 			}
 
 			$etype = $entry['entry_type'];
@@ -32900,7 +33267,8 @@ public function get_sales_return_reports()
 
 	/**
 	 * Import supplier ledger (Bill Wise + Product Wise, with ALL, WHITE, BLACK modes).
-	 * Purchases from purchase_order / purchase_in_product; payments; adjustments.
+	 * Purchases from purchase_order / purchase_in_product; charges (supplier expense);
+	 * payments; adjustments. Charges add to outstanding (All + White).
 	 */
 	public function build_import_supplier_ledger($supplier_id, $from_date = null, $to_date = null, $batch_no = null)
 	{
@@ -32980,6 +33348,20 @@ public function get_sales_return_reports()
 			 WHERE sa.supplier_id = {$supplier_id}
 			   AND sa.is_deleted = 0
 			 ORDER BY sa.date ASC, sa.id ASC"
+		)->result_array();
+
+		// Purchase-in Expense row → po_expense type=charges only (ignore extras/official/unofficial)
+		$charges_expenses = $this->db->query(
+			"SELECT pe.*,
+			        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS added_by_name
+			 FROM po_expense pe
+			 LEFT JOIN sys_users u ON pe.added_by_id = u.id
+			 WHERE pe.supplier_id = '{$supplier_id}'
+			   AND pe.supplier_id IS NOT NULL
+			   AND pe.supplier_id != ''
+			   AND pe.type = 'charges'
+			   AND pe.is_delete = 0
+			 ORDER BY pe.expense_date ASC, pe.id ASC"
 		)->result_array();
 
 		$entries = [];
@@ -33070,6 +33452,48 @@ public function get_sales_return_reports()
 				'unoff_usd'   => $unoff_usd,
 				'unoff_inr'   => $unoff_inr,
 				'products'    => $prod_children,
+			];
+		}
+
+		foreach ($charges_expenses as $pe) {
+			$b_no = trim($pe['batch_no'] ?? '');
+			$rmb = (float) ($pe['rmb'] ?? 0);
+			$usd = (float) ($pe['usd'] ?? 0);
+			$inr = (float) (($pe['grand_total'] ?? 0) != 0 ? $pe['grand_total'] : ($pe['sub_total'] ?? 0));
+			if (abs($rmb) < 0.00001 && abs($usd) < 0.00001 && abs($inr) < 0.00001) {
+				continue;
+			}
+			$exp_date = !empty($pe['expense_date']) ? $pe['expense_date'] : date('Y-m-d', strtotime($pe['created_at'] ?? 'now'));
+			$added_by = trim($pe['added_by_name'] ?? '');
+			if ($added_by === '') {
+				$added_by = '—';
+			}
+
+			// Charges from purchase-in are official (white); still count in All.
+			$entries[] = [
+				'entry_type'      => 'expense',
+				'sort_date'       => $exp_date,
+				'sort_id'         => (int) $pe['id'],
+				'date'            => $exp_date,
+				'particulars'     => 'Supplier Expense',
+				'sub_particulars' => !empty($pe['narration']) ? $pe['narration'] : 'Charges',
+				'vch_type'        => 'Expense',
+				'batch_no'        => $b_no,
+				'vch_no'          => '',
+				'batch_vch'       => $b_no ?: '-',
+				'remark'          => trim($pe['narration'] ?? ''),
+				'added_by'        => $added_by,
+				'is_official'     => true,
+				'act_rmb'         => $rmb,
+				'act_usd'         => $usd,
+				'act_inr'         => $inr,
+				'off_rmb'         => $rmb,
+				'off_usd'         => $usd,
+				'off_inr'         => $inr,
+				'unoff_rmb'       => 0,
+				'unoff_usd'       => 0,
+				'unoff_inr'       => 0,
+				'products'        => [],
 			];
 		}
 
@@ -33170,7 +33594,7 @@ public function get_sales_return_reports()
 		});
 
 		$apply_entry_delta = function (&$bal, $rmb, $usd, $inr, $type) {
-			if ($type === 'purchase') {
+			if ($type === 'purchase' || $type === 'expense') {
 				$bal['rmb'] += $rmb;
 				$bal['usd'] += $usd;
 				$bal['inr'] += $inr;
@@ -33233,6 +33657,11 @@ public function get_sales_return_reports()
 				'white' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
 				'black' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
 			],
+			'expenses' => [
+				'total' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'white' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+				'black' => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
+			],
 			'payments' => [
 				'total'      => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
 				'official'   => ['rmb' => 0, 'usd' => 0, 'inr' => 0],
@@ -33274,6 +33703,7 @@ public function get_sales_return_reports()
 			$prod_rows[] = $open_row;
 
 			$col_totals = ['rmb' => 0, 'usd' => 0, 'inr' => 0];
+			$prod_col_totals = ['rmb' => 0, 'usd' => 0, 'inr' => 0];
 
 			foreach ($entries as $e) {
 				if ($is_batch_filter) {
@@ -33299,11 +33729,15 @@ public function get_sales_return_reports()
 				if ($mode === 'white') {
 					if ($e['entry_type'] === 'payment' && empty($e['is_official'])) continue;
 					if ($e['entry_type'] === 'adjustment' && empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'expense' && empty($e['is_official'])) continue;
 					if ($e['entry_type'] === 'purchase' && $e_rmb == 0 && $e_usd == 0 && $e_inr == 0) continue;
+					if ($e['entry_type'] === 'expense' && $e_rmb == 0 && $e_usd == 0 && $e_inr == 0) continue;
 				} elseif ($mode === 'black') {
 					if ($e['entry_type'] === 'payment' && !empty($e['is_official'])) continue;
 					if ($e['entry_type'] === 'adjustment' && !empty($e['is_official'])) continue;
+					if ($e['entry_type'] === 'expense' && !empty($e['is_official'])) continue; // charges are white
 					if ($e['entry_type'] === 'purchase' && $e_rmb == 0 && $e_usd == 0 && $e_inr == 0) continue;
+					if ($e['entry_type'] === 'expense' && $e_rmb == 0 && $e_usd == 0 && $e_inr == 0) continue;
 				}
 
 				$apply_entry_delta($cur_bal, $e_rmb, $e_usd, $e_inr, $e['entry_type']);
@@ -33345,6 +33779,16 @@ public function get_sales_return_reports()
 				$p_hdr['rate_rmb'] = null;
 				$p_hdr['rate_usd'] = null;
 				$p_hdr['rate_inr'] = null;
+				// Product-wise: amounts/balances belong on child rows; keep on header only when no children (e.g. expense).
+				$p_hdr['hide_amounts'] = in_array($e['entry_type'], ['purchase', 'payment', 'adjustment'], true);
+				if (!empty($p_hdr['hide_amounts'])) {
+					$p_hdr['rmb'] = null;
+					$p_hdr['usd'] = null;
+					$p_hdr['inr'] = null;
+					$p_hdr['bal_rmb'] = null;
+					$p_hdr['bal_usd'] = null;
+					$p_hdr['bal_inr'] = null;
+				}
 				$prod_rows[] = $p_hdr;
 
 				if ($e['entry_type'] === 'purchase') {
@@ -33378,6 +33822,10 @@ public function get_sales_return_reports()
 						$running_prod_usd += $c_usd;
 						$running_prod_inr += $c_inr;
 
+						$prod_col_totals['rmb'] += $c_rmb;
+						$prod_col_totals['usd'] += $c_usd;
+						$prod_col_totals['inr'] += $c_inr;
+
 						$prod_rows[] = [
 							'is_opening'  => false,
 							'is_product'  => true,
@@ -33401,6 +33849,9 @@ public function get_sales_return_reports()
 						];
 					}
 				} elseif ($e['entry_type'] === 'payment') {
+					$prod_col_totals['rmb'] += -$e_rmb;
+					$prod_col_totals['usd'] += -$e_usd;
+					$prod_col_totals['inr'] += -$e_inr;
 					$prod_rows[] = [
 						'is_opening'  => false,
 						'is_product'  => false,
@@ -33423,6 +33874,9 @@ public function get_sales_return_reports()
 						'entry_type'  => 'payment_sub',
 					];
 				} elseif ($e['entry_type'] === 'adjustment') {
+					$prod_col_totals['rmb'] += $disp_rmb;
+					$prod_col_totals['usd'] += $disp_usd;
+					$prod_col_totals['inr'] += $disp_inr;
 					$prod_rows[] = [
 						'is_opening'  => false,
 						'is_product'  => false,
@@ -33444,6 +33898,11 @@ public function get_sales_return_reports()
 						'added_by'    => '',
 						'entry_type'  => 'adjustment_sub',
 					];
+				} elseif ($e['entry_type'] === 'expense') {
+					// No child lines — count header amounts in product-wise totals.
+					$prod_col_totals['rmb'] += $disp_rmb;
+					$prod_col_totals['usd'] += $disp_usd;
+					$prod_col_totals['inr'] += $disp_inr;
 				}
 
 				if ($mode === 'all') {
@@ -33457,6 +33916,16 @@ public function get_sales_return_reports()
 						$summary['purchases']['black']['rmb'] += $e['unoff_rmb'];
 						$summary['purchases']['black']['usd'] += $e['unoff_usd'];
 						$summary['purchases']['black']['inr'] += $e['unoff_inr'];
+					} elseif ($e['entry_type'] === 'expense') {
+						$summary['expenses']['total']['rmb'] += $e['act_rmb'];
+						$summary['expenses']['total']['usd'] += $e['act_usd'];
+						$summary['expenses']['total']['inr'] += $e['act_inr'];
+						$summary['expenses']['white']['rmb'] += $e['off_rmb'];
+						$summary['expenses']['white']['usd'] += $e['off_usd'];
+						$summary['expenses']['white']['inr'] += $e['off_inr'];
+						$summary['expenses']['black']['rmb'] += $e['unoff_rmb'];
+						$summary['expenses']['black']['usd'] += $e['unoff_usd'];
+						$summary['expenses']['black']['inr'] += $e['unoff_inr'];
 					} elseif ($e['entry_type'] === 'payment') {
 						$summary['payments']['total']['rmb'] += $e['act_rmb'];
 						$summary['payments']['total']['usd'] += $e['act_usd'];
@@ -33488,11 +33957,12 @@ public function get_sales_return_reports()
 			}
 
 			$ledger_data[$mode] = [
-				'opening'     => ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black),
-				'bill_rows'   => $bill_rows,
-				'prod_rows'   => $prod_rows,
-				'col_totals'  => $col_totals,
-				'closing'     => $cur_bal,
+				'opening'          => ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black),
+				'bill_rows'        => $bill_rows,
+				'prod_rows'        => $prod_rows,
+				'col_totals'       => $col_totals,
+				'prod_col_totals'  => $prod_col_totals,
+				'closing'          => $cur_bal,
 			];
 		}
 
@@ -33852,6 +34322,7 @@ public function get_sales_return_reports()
 			$prod_rows[] = $open_row;
 
 			$col_totals = ['rmb' => 0, 'usd' => 0, 'inr' => 0];
+			$prod_col_totals = ['rmb' => 0, 'usd' => 0, 'inr' => 0];
 
 			foreach ($entries as $e) {
 				if ($is_batch_filter) {
@@ -33923,41 +34394,67 @@ public function get_sales_return_reports()
 				$p_hdr['rate_rmb'] = null;
 				$p_hdr['rate_usd'] = null;
 				$p_hdr['rate_inr'] = null;
+				// Product-wise: amounts/balances belong on child rows; keep on header only when no children.
+				$p_hdr['hide_amounts'] = (
+					($e['entry_type'] === 'expense' && !empty($e['products']))
+					|| in_array($e['entry_type'], ['payment', 'adjustment'], true)
+				);
+				if (!empty($p_hdr['hide_amounts'])) {
+					$p_hdr['rmb'] = null;
+					$p_hdr['usd'] = null;
+					$p_hdr['inr'] = null;
+					$p_hdr['bal_rmb'] = null;
+					$p_hdr['bal_usd'] = null;
+					$p_hdr['bal_inr'] = null;
+				}
 				$prod_rows[] = $p_hdr;
 
 				if ($e['entry_type'] === 'expense') {
-					$running_prod_rmb = $cur_bal['rmb'] - $e_rmb;
-					$running_prod_usd = $cur_bal['usd'] - $e_usd;
-					$running_prod_inr = $cur_bal['inr'] - $e_inr;
+					if (empty($e['products'])) {
+						$prod_col_totals['rmb'] += $disp_rmb;
+						$prod_col_totals['usd'] += $disp_usd;
+						$prod_col_totals['inr'] += $disp_inr;
+					} else {
+						$running_prod_rmb = $cur_bal['rmb'] - $e_rmb;
+						$running_prod_usd = $cur_bal['usd'] - $e_usd;
+						$running_prod_inr = $cur_bal['inr'] - $e_inr;
 
-					foreach ($e['products'] as $child) {
-						$running_prod_rmb += $child['rmb'];
-						$running_prod_usd += $child['usd'];
-						$running_prod_inr += $child['inr'];
+						foreach ($e['products'] as $child) {
+							$running_prod_rmb += $child['rmb'];
+							$running_prod_usd += $child['usd'];
+							$running_prod_inr += $child['inr'];
 
-						$prod_rows[] = [
-							'is_opening'  => false,
-							'is_product'  => true,
-							'is_sub'      => false,
-							'date'        => '',
-							'particulars' => $child['expense_name'],
-							'vch_type'    => '',
-							'batch_vch'   => '',
-							'qty'         => $child['qty'],
-							'rate_rmb'    => $child['rate_rmb'],
-							'rmb'         => $child['rmb'],
-							'rate_usd'    => $child['rate_usd'],
-							'usd'         => $child['usd'],
-							'rate_inr'    => $child['rate_inr'],
-							'inr'         => $child['inr'],
-							'bal_rmb'     => $running_prod_rmb,
-							'bal_usd'     => $running_prod_usd,
-							'bal_inr'     => $running_prod_inr,
-							'added_by'    => '',
-							'entry_type'  => 'product',
-						];
+							$prod_col_totals['rmb'] += $child['rmb'];
+							$prod_col_totals['usd'] += $child['usd'];
+							$prod_col_totals['inr'] += $child['inr'];
+
+							$prod_rows[] = [
+								'is_opening'  => false,
+								'is_product'  => true,
+								'is_sub'      => false,
+								'date'        => '',
+								'particulars' => $child['expense_name'],
+								'vch_type'    => '',
+								'batch_vch'   => '',
+								'qty'         => $child['qty'],
+								'rate_rmb'    => $child['rate_rmb'],
+								'rmb'         => $child['rmb'],
+								'rate_usd'    => $child['rate_usd'],
+								'usd'         => $child['usd'],
+								'rate_inr'    => $child['rate_inr'],
+								'inr'         => $child['inr'],
+								'bal_rmb'     => $running_prod_rmb,
+								'bal_usd'     => $running_prod_usd,
+								'bal_inr'     => $running_prod_inr,
+								'added_by'    => '',
+								'entry_type'  => 'product',
+							];
+						}
 					}
 				} elseif ($e['entry_type'] === 'payment') {
+					$prod_col_totals['rmb'] += -$e_rmb;
+					$prod_col_totals['usd'] += -$e_usd;
+					$prod_col_totals['inr'] += -$e_inr;
 					$prod_rows[] = [
 						'is_opening'  => false,
 						'is_product'  => false,
@@ -33980,6 +34477,9 @@ public function get_sales_return_reports()
 						'entry_type'  => 'payment_sub',
 					];
 				} elseif ($e['entry_type'] === 'adjustment') {
+					$prod_col_totals['rmb'] += $disp_rmb;
+					$prod_col_totals['usd'] += $disp_usd;
+					$prod_col_totals['inr'] += $disp_inr;
 					$prod_rows[] = [
 						'is_opening'  => false,
 						'is_product'  => false,
@@ -34045,11 +34545,12 @@ public function get_sales_return_reports()
 			}
 
 			$ledger_data[$mode] = [
-				'opening'     => ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black),
-				'bill_rows'   => $bill_rows,
-				'prod_rows'   => $prod_rows,
-				'col_totals'  => $col_totals,
-				'closing'     => $cur_bal,
+				'opening'         => ($mode === 'all') ? $open_all : (($mode === 'white') ? $open_white : $open_black),
+				'bill_rows'       => $bill_rows,
+				'prod_rows'       => $prod_rows,
+				'col_totals'      => $col_totals,
+				'prod_col_totals' => $prod_col_totals,
+				'closing'         => $cur_bal,
 			];
 		}
 

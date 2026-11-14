@@ -166,7 +166,7 @@ select.local-prod-field {
                 $(".loader").fadeOut("slow"); 
                 $('#total_count').html('('+total+')');
                 return 'Showing ' +start+ ' to ' + end + ' of '+ total + ' entries';
-            }, 
+            },
            
             'columnDefs': [
                 {

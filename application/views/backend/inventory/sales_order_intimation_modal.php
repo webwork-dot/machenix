@@ -1,7 +1,8 @@
 <?php
 $sales_order_id = (int) $param2;
 $mode = !empty($param3) ? $param3 : 'add';
-$is_view = ($mode === 'view');
+$is_view_inbound = ($mode === 'view_inbound');
+$is_view = ($mode === 'view' || $is_view_inbound);
 $is_edit = ($mode === 'edit');
 
 $sales_order = $this->db->query("SELECT * FROM sales_order WHERE id = ? AND is_deleted = '0'", array($sales_order_id))->row_array();
@@ -17,6 +18,59 @@ $existing_rows = $this->db->query(
 	"SELECT * FROM sales_order_intimation_products WHERE sales_order_id = ? AND is_deleted = 0 ORDER BY id ASC",
 	array($sales_order_id)
 )->result_array();
+
+// For inbound view: keep only batches owned by the session company
+if ($is_view_inbound) {
+	$owned_rows = array();
+	foreach ($existing_rows as $row) {
+		$batch_type = $row['batch_type'];
+		$batch_id = (int) $row['batch_id'];
+		$owned = false;
+		if ($batch_type === 'inventory' && $batch_id > 0) {
+			$check = $this->db->query(
+				"SELECT id FROM inventory WHERE id = ? AND company_id = ? LIMIT 1",
+				array($batch_id, $company_id)
+			)->row_array();
+			$owned = !empty($check);
+		} elseif ($batch_type === 'po' && $batch_id > 0) {
+			$check = $this->db->query(
+				"SELECT pop.id
+				FROM purchase_order_product pop
+				INNER JOIN purchase_order po ON po.id = pop.parent_id
+				WHERE pop.id = ? AND po.company_id = ?
+				LIMIT 1",
+				array($batch_id, $company_id)
+			)->row_array();
+			$owned = !empty($check);
+		} elseif ($batch_type === 'loading' && $batch_id > 0) {
+			$check = $this->db->query(
+				"SELECT lpp.id
+				FROM loading_po_product lpp
+				INNER JOIN purchase_order po ON po.id = lpp.parent_id
+				WHERE lpp.id = ? AND po.company_id = ?
+				LIMIT 1",
+				array($batch_id, $company_id)
+			)->row_array();
+			$owned = !empty($check);
+		}
+		if ($owned) {
+			$owned_rows[] = $row;
+		}
+	}
+	$existing_rows = $owned_rows;
+
+	$kept_order_product_ids = array();
+	foreach ($existing_rows as $row) {
+		$kept_order_product_ids[(int) $row['order_product_id']] = true;
+	}
+	$filtered_products = array();
+	foreach ($products as $product) {
+		if (isset($kept_order_product_ids[(int) $product['id']])) {
+			$filtered_products[] = $product;
+		}
+	}
+	$products = $filtered_products;
+}
 
 $existing_by_product = array();
 foreach ($existing_rows as $row) {
@@ -268,7 +322,7 @@ function intimation_batch_row_html($p_index, $batch, $is_view, $warehouse_name =
 		</div>
 
 		<?php if (empty($products)) { ?>
-			<div class="alert alert-warning mb-0">No products found on this sales order.</div>
+			<div class="alert alert-warning mb-0"><?php echo $is_view_inbound ? 'No products intimated with the current company batches.' : 'No products found on this sales order.'; ?></div>
 		<?php } else { ?>
 			<?php foreach ($products as $p_index => $product) {
 				$op_id = (int) $product['id'];

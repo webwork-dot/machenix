@@ -210,7 +210,7 @@
                         $sales_url = site_url('inventory/sales-order-cancelled');
                     }
                ?>
-                   <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order' || $page_name == 'sales_order_invoice' || $page_name == 'sales_order_complete' || $page_name == 'sales_order_all' || $page_name == 'sales_order_cancelled' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
+                   <li class="nav-item <?php if($navigation == 'sales_order' || $page_name == 'sales_order' || $page_name == 'sales_order_intimation' || $page_name == 'sales_order_invoice' || $page_name == 'sales_order_complete' || $page_name == 'sales_order_all' || $page_name == 'sales_order_cancelled' || $page_name == 'sales_order_add_salesman' || $page_name == 'sales_order_view' || $page_name == 'sales_order_products' || $page_name == 'sales_order_edit' || $page_name == 'sales_order_edit_salesman') echo 'active'; ?>">
                        <a class="d-flex align-items-center" href="<?php echo $sales_url; ?>">
                            <i class="feather icon-circle"></i>
                            <span class="menu-title text-truncate">Sales Booking</span>

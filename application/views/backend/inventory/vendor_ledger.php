@@ -556,6 +556,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
     $b_rows = $m_data['bill_rows'] ?? [];
     $p_rows = $m_data['prod_rows'] ?? [];
     $totals = $m_data['col_totals'] ?? ['rmb'=>0,'usd'=>0,'inr'=>0];
+    $prod_totals = $m_data['prod_col_totals'] ?? $totals;
     $closing = $m_data['closing'] ?? ['rmb'=>0,'usd'=>0,'inr'=>0];
     $is_active_mode = ($m === 'all');
   ?>
@@ -774,32 +775,33 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
                     <?= (isset($row['qty']) && $row['qty'] !== null) ? number_format((float)$row['qty'], 0) : '' ?>
                   </td>
 
+                  <?php $hide_amt = !empty($row['hide_amounts']); ?>
                   <!-- RMB Rates & Amount -->
                   <td class="col-curr col-curr-rmb text-end text-muted">
                     <?= $is_pr ? $fmt($row['rate_rmb'] ?? 0) : '' ?>
                   </td>
-                  <td class="col-curr col-curr-rmb text-end <?= $amt_cls($row['rmb'] ?? 0) ?>">
-                    <?= $fmt($row['rmb'] ?? 0) ?>
+                  <td class="col-curr col-curr-rmb text-end <?= $hide_amt ? '' : $amt_cls($row['rmb'] ?? 0) ?>">
+                    <?= $hide_amt ? '' : $fmt($row['rmb'] ?? 0) ?>
                   </td>
 
                   <!-- USD Rates & Amount -->
                   <td class="col-curr col-curr-usd text-end text-muted">
                     <?= $is_pr ? $fmt($row['rate_usd'] ?? 0) : '' ?>
                   </td>
-                  <td class="col-curr col-curr-usd text-end <?= $amt_cls($row['usd'] ?? 0) ?>">
-                    <?= $fmt($row['usd'] ?? 0) ?>
+                  <td class="col-curr col-curr-usd text-end <?= $hide_amt ? '' : $amt_cls($row['usd'] ?? 0) ?>">
+                    <?= $hide_amt ? '' : $fmt($row['usd'] ?? 0) ?>
                   </td>
 
                   <!-- INR Rates & Amount -->
                   <td class="col-curr col-curr-inr text-end text-muted">
                     <?= $is_pr ? $fmt($row['rate_inr'] ?? 0) : '' ?>
                   </td>
-                  <td class="col-curr col-curr-inr text-end <?= $amt_cls($row['inr'] ?? 0) ?>">
-                    <?= $fmt($row['inr'] ?? 0) ?>
+                  <td class="col-curr col-curr-inr text-end <?= $hide_amt ? '' : $amt_cls($row['inr'] ?? 0) ?>">
+                    <?= $hide_amt ? '' : $fmt($row['inr'] ?? 0) ?>
                   </td>
 
                   <!-- Bal RMB -->
-                  <?php if ($b_rmb): ?>
+                  <?php if (!$hide_amt && $b_rmb): ?>
                     <td class="col-curr col-curr-rmb text-end fw-semibold <?= ($b_rmb['raw'] > 0.00001) ? 'bal-cr' : 'bal-dr' ?>">
                       <?= $b_rmb['amt'] ?>
                     </td>
@@ -812,7 +814,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
                   <?php endif; ?>
 
                   <!-- Bal USD -->
-                  <?php if ($b_usd): ?>
+                  <?php if (!$hide_amt && $b_usd): ?>
                     <td class="col-curr col-curr-usd text-end fw-semibold <?= ($b_usd['raw'] > 0.00001) ? 'bal-cr' : 'bal-dr' ?>">
                       <?= $b_usd['amt'] ?>
                     </td>
@@ -825,7 +827,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
                   <?php endif; ?>
 
                   <!-- Bal INR -->
-                  <?php if ($b_inr): ?>
+                  <?php if (!$hide_amt && $b_inr): ?>
                     <td class="col-curr col-curr-inr text-end fw-semibold <?= ($b_inr['raw'] > 0.00001) ? 'bal-cr' : 'bal-dr' ?>">
                       <?= $b_inr['amt'] ?>
                     </td>
@@ -854,11 +856,11 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
               <td colspan="4" class="ps-3 text-end fw-bold vendor-main-text">Current Total :</td>
               <td></td>
               <td class="col-curr col-curr-rmb"></td>
-              <td class="col-curr col-curr-rmb text-end fw-bold"><?= number_format((float)($totals['rmb'] ?? 0), 2) ?></td>
+              <td class="col-curr col-curr-rmb text-end fw-bold"><?= number_format((float)($prod_totals['rmb'] ?? 0), 2) ?></td>
               <td class="col-curr col-curr-usd"></td>
-              <td class="col-curr col-curr-usd text-end fw-bold"><?= number_format((float)($totals['usd'] ?? 0), 2) ?></td>
+              <td class="col-curr col-curr-usd text-end fw-bold"><?= number_format((float)($prod_totals['usd'] ?? 0), 2) ?></td>
               <td class="col-curr col-curr-inr"></td>
-              <td class="col-curr col-curr-inr text-end fw-bold"><?= number_format((float)($totals['inr'] ?? 0), 2) ?></td>
+              <td class="col-curr col-curr-inr text-end fw-bold"><?= number_format((float)($prod_totals['inr'] ?? 0), 2) ?></td>
               <td class="col-curr col-curr-rmb" colspan="2"></td>
               <td class="col-curr col-curr-usd" colspan="2"></td>
               <td class="col-curr col-curr-inr" colspan="2"></td>

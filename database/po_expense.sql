@@ -2,7 +2,7 @@ CREATE TABLE `po_expense` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `input_method` varchar(50) DEFAULT NULL,
   `company_id` int(11) NOT NULL,
-  `type` enum('official','unofficial','extras') NOT NULL,
+  `type` enum('official','unofficial','extras','charges') NOT NULL,
   `expense_type` int(11) NOT NULL,
   `vendor_id` int(11) NOT NULL,
   `supplier_id` varchar(255) DEFAULT NULL,

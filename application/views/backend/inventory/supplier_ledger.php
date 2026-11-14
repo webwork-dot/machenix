@@ -47,6 +47,7 @@ $row_class = function ($row) {
   $t = $row['entry_type'] ?? '';
   if ($t === 'payment') return 'ledger-row-payment';
   if ($t === 'purchase') return 'ledger-row-purchase';
+  if ($t === 'expense') return 'ledger-row-expense';
   if ($t === 'adjustment') {
     return (stripos($row['vch_type'] ?? '', '+') !== false) ? 'ledger-row-adj-plus' : 'ledger-row-adj-minus';
   }
@@ -58,6 +59,7 @@ $badge_class = function ($row) {
   $t = $row['entry_type'] ?? '';
   if ($t === 'payment') return 'type-badge-payment';
   if ($t === 'purchase') return 'type-badge-po';
+  if ($t === 'expense') return 'type-badge-expense';
   if ($t === 'adjustment') {
     return (stripos($row['vch_type'] ?? '', '+') !== false) ? 'type-badge-adj-plus' : 'type-badge-adj-minus';
   }
@@ -233,6 +235,8 @@ $badge_class = function ($row) {
   .ledger-row-payment:hover { background: #dcfce7; }
   .ledger-row-purchase { background: #ffffff; }
   .ledger-row-purchase:hover { background: #f8fafc; }
+  .ledger-row-expense { background: #fff7ed; }
+  .ledger-row-expense:hover { background: #ffedd5; }
   .ledger-row-adj-plus { background: #eff6ff; }
   .ledger-row-adj-plus:hover { background: #dbeafe; }
   .ledger-row-adj-minus { background: #fff5f5; }
@@ -250,6 +254,7 @@ $badge_class = function ($row) {
   }
   .type-badge-payment { color: #0891b2; background: #ecfeff; border: 1px solid #a5f3fc; }
   .type-badge-po { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
+  .type-badge-expense { color: #c2410c; background: #fff7ed; border: 1px solid #fdba74; }
   .type-badge-opening { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
   .type-badge-adj-plus { color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; }
   .type-badge-adj-minus { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
@@ -377,6 +382,7 @@ $badge_class = function ($row) {
         <select class="form-select form-select-sm" id="vchTypeFilter">
           <option value="all">All Types</option>
           <option value="Purchase">Purchase</option>
+          <option value="Expense">Expense</option>
           <option value="Payment">Payment</option>
           <option value="Adjustment">Adjustment</option>
         </select>
@@ -444,6 +450,7 @@ $badge_class = function ($row) {
 <?php
 $s_open = $summary['opening'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'white' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'black' => ['rmb'=>0,'usd'=>0,'inr'=>0]];
 $s_pur  = $summary['purchases'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'white' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'black' => ['rmb'=>0,'usd'=>0,'inr'=>0]];
+$s_exp  = $summary['expenses'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'white' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'black' => ['rmb'=>0,'usd'=>0,'inr'=>0]];
 $s_pay  = $summary['payments'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'official' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'unofficial' => ['rmb'=>0,'usd'=>0,'inr'=>0]];
 $s_adj  = $summary['adjustments'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'official' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'unofficial' => ['rmb'=>0,'usd'=>0,'inr'=>0]];
 $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'official' => ['rmb'=>0,'usd'=>0,'inr'=>0], 'unofficial' => ['rmb'=>0,'usd'=>0,'inr'=>0]];
@@ -477,7 +484,21 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
     </div>
   </div>
 
-  <!-- Card 3: Payments -->
+  <!-- Card 3: Supplier Expense (charges) -->
+  <div class="ledger-summary-card">
+    <div class="lbl">Supplier Expense</div>
+    <div class="val text-danger">₹ <?= number_format((float)($s_exp['total']['inr'] ?? 0), 2) ?></div>
+    <div class="fs-10 text-muted mt-1">
+      <span class="curr-badge">USD</span> $ <?= number_format((float)($s_exp['total']['usd'] ?? 0), 2) ?> &nbsp;
+      <span class="curr-badge">RMB</span> ¥ <?= number_format((float)($s_exp['total']['rmb'] ?? 0), 2) ?>
+    </div>
+    <div class="sub-row">
+      <strong>White:</strong> ₹ <?= number_format((float)($s_exp['white']['inr'] ?? 0), 2) ?> &nbsp;|&nbsp; $ <?= number_format((float)($s_exp['white']['usd'] ?? 0), 2) ?><br>
+      <strong>Black:</strong> ₹ <?= number_format((float)($s_exp['black']['inr'] ?? 0), 2) ?> &nbsp;|&nbsp; $ <?= number_format((float)($s_exp['black']['usd'] ?? 0), 2) ?>
+    </div>
+  </div>
+
+  <!-- Card 4: Payments -->
   <div class="ledger-summary-card">
     <div class="lbl">Payments</div>
     <div class="val text-success">₹ <?= number_format((float)($s_pay['total']['inr'] ?? 0), 2) ?></div>
@@ -491,7 +512,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
     </div>
   </div>
 
-  <!-- Card 4: Adjustments -->
+  <!-- Card 5: Adjustments -->
   <div class="ledger-summary-card">
     <div class="lbl">Adjustments</div>
     <?php $adj_tot_inr = (float)($s_adj['total']['inr'] ?? 0); ?>
@@ -506,7 +527,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
     </div>
   </div>
 
-  <!-- Card 5: Outstanding -->
+  <!-- Card 6: Outstanding -->
   <div class="ledger-summary-card">
     <div class="lbl">Outstanding</div>
     <?php
@@ -550,6 +571,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
     $b_rows = $m_data['bill_rows'] ?? [];
     $p_rows = $m_data['prod_rows'] ?? [];
     $totals = $m_data['col_totals'] ?? ['rmb'=>0,'usd'=>0,'inr'=>0];
+    $prod_totals = $m_data['prod_col_totals'] ?? $totals;
     $closing = $m_data['closing'] ?? ['rmb'=>0,'usd'=>0,'inr'=>0];
     $is_active_mode = ($m === 'all');
   ?>
@@ -768,32 +790,33 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
                     <?= (isset($row['qty']) && $row['qty'] !== null) ? number_format((float)$row['qty'], 0) : '' ?>
                   </td>
 
+                  <?php $hide_amt = !empty($row['hide_amounts']); ?>
                   <!-- RMB Rates & Amount -->
                   <td class="col-curr col-curr-rmb text-end text-muted">
                     <?= $is_pr ? $fmt($row['rate_rmb'] ?? 0) : '' ?>
                   </td>
-                  <td class="col-curr col-curr-rmb text-end <?= $amt_cls($row['rmb'] ?? 0) ?>">
-                    <?= $fmt($row['rmb'] ?? 0) ?>
+                  <td class="col-curr col-curr-rmb text-end <?= $hide_amt ? '' : $amt_cls($row['rmb'] ?? 0) ?>">
+                    <?= $hide_amt ? '' : $fmt($row['rmb'] ?? 0) ?>
                   </td>
 
                   <!-- USD Rates & Amount -->
                   <td class="col-curr col-curr-usd text-end text-muted">
                     <?= $is_pr ? $fmt($row['rate_usd'] ?? 0) : '' ?>
                   </td>
-                  <td class="col-curr col-curr-usd text-end <?= $amt_cls($row['usd'] ?? 0) ?>">
-                    <?= $fmt($row['usd'] ?? 0) ?>
+                  <td class="col-curr col-curr-usd text-end <?= $hide_amt ? '' : $amt_cls($row['usd'] ?? 0) ?>">
+                    <?= $hide_amt ? '' : $fmt($row['usd'] ?? 0) ?>
                   </td>
 
                   <!-- INR Rates & Amount -->
                   <td class="col-curr col-curr-inr text-end text-muted">
                     <?= $is_pr ? $fmt($row['rate_inr'] ?? 0) : '' ?>
                   </td>
-                  <td class="col-curr col-curr-inr text-end <?= $amt_cls($row['inr'] ?? 0) ?>">
-                    <?= $fmt($row['inr'] ?? 0) ?>
+                  <td class="col-curr col-curr-inr text-end <?= $hide_amt ? '' : $amt_cls($row['inr'] ?? 0) ?>">
+                    <?= $hide_amt ? '' : $fmt($row['inr'] ?? 0) ?>
                   </td>
 
                   <!-- Bal RMB -->
-                  <?php if ($b_rmb): ?>
+                  <?php if (!$hide_amt && $b_rmb): ?>
                     <td class="col-curr col-curr-rmb text-end fw-semibold <?= ($b_rmb['raw'] > 0.00001) ? 'bal-cr' : 'bal-dr' ?>">
                       <?= $b_rmb['amt'] ?>
                     </td>
@@ -806,7 +829,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
                   <?php endif; ?>
 
                   <!-- Bal USD -->
-                  <?php if ($b_usd): ?>
+                  <?php if (!$hide_amt && $b_usd): ?>
                     <td class="col-curr col-curr-usd text-end fw-semibold <?= ($b_usd['raw'] > 0.00001) ? 'bal-cr' : 'bal-dr' ?>">
                       <?= $b_usd['amt'] ?>
                     </td>
@@ -819,7 +842,7 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
                   <?php endif; ?>
 
                   <!-- Bal INR -->
-                  <?php if ($b_inr): ?>
+                  <?php if (!$hide_amt && $b_inr): ?>
                     <td class="col-curr col-curr-inr text-end fw-semibold <?= ($b_inr['raw'] > 0.00001) ? 'bal-cr' : 'bal-dr' ?>">
                       <?= $b_inr['amt'] ?>
                     </td>
@@ -848,11 +871,11 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
               <td colspan="4" class="ps-3 text-end fw-bold supplier-main-text">Current Total :</td>
               <td></td>
               <td class="col-curr col-curr-rmb"></td>
-              <td class="col-curr col-curr-rmb text-end fw-bold"><?= number_format((float)($totals['rmb'] ?? 0), 2) ?></td>
+              <td class="col-curr col-curr-rmb text-end fw-bold"><?= number_format((float)($prod_totals['rmb'] ?? 0), 2) ?></td>
               <td class="col-curr col-curr-usd"></td>
-              <td class="col-curr col-curr-usd text-end fw-bold"><?= number_format((float)($totals['usd'] ?? 0), 2) ?></td>
+              <td class="col-curr col-curr-usd text-end fw-bold"><?= number_format((float)($prod_totals['usd'] ?? 0), 2) ?></td>
               <td class="col-curr col-curr-inr"></td>
-              <td class="col-curr col-curr-inr text-end fw-bold"><?= number_format((float)($totals['inr'] ?? 0), 2) ?></td>
+              <td class="col-curr col-curr-inr text-end fw-bold"><?= number_format((float)($prod_totals['inr'] ?? 0), 2) ?></td>
               <td class="col-curr col-curr-rmb" colspan="2"></td>
               <td class="col-curr col-curr-usd" colspan="2"></td>
               <td class="col-curr col-curr-inr" colspan="2"></td>
@@ -960,7 +983,14 @@ $s_out  = $summary['outstanding'] ?? ['total' => ['rmb'=>0,'usd'=>0,'inr'=>0], '
       document.querySelectorAll('.ledger-table tbody tr.ledger-row').forEach(function (tr) {
         if (tr.classList.contains('ledger-row-opening')) return; // always keep opening
         var vtype = (tr.getAttribute('data-vch-type') || '').toLowerCase();
-        var match = (filter === 'all' || vtype === filter || (filter === 'purchase' && vtype === 'product'));
+        var match = (
+          filter === 'all'
+          || vtype === filter
+          || (filter === 'purchase' && vtype === 'product')
+          || (filter === 'expense' && vtype === 'expense_sub')
+          || (filter === 'payment' && vtype === 'payment_sub')
+          || (filter === 'adjustment' && vtype === 'adjustment_sub')
+        );
         tr.style.display = match ? '' : 'none';
       });
     });
