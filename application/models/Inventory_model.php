@@ -10944,84 +10944,402 @@ class Inventory_model extends CI_Model
 	public function get_low_stock()
 	{
 		$params['draw'] = $_REQUEST['draw'];
-		$start = $_REQUEST['start'];
-		$length = $_REQUEST['length'];
+		$start = intval($_REQUEST['start'] ?? 0);
+		$length = intval($_REQUEST['length'] ?? 25);
 
-		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
 		$data = array();
-		$keyword_filter = "";
 
-		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
-			$keyword        = $filter_data['keywords'];
-			$keyword_filter .= " AND (i.item_code like '%" . $keyword . "%' OR i.product_name like '%" . $keyword . "%' OR s.name like '%" . $keyword . "%')";
-		endif;
+		$company_id        = $this->session->userdata('company_id');
 
-		$total_count = $this->db->query("
-			SELECT i.product_id
-			FROM inventory i
-			LEFT JOIN supplier s ON s.id = i.supplier_id
-			INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
-			WHERE 1=1 $keyword_filter
-			GROUP BY i.product_id, i.supplier_id, s.name, pv.intimation
-			HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
-		")->num_rows();
+		$warehouse_id = '';
+		$warehouse_join = "";
+		$warehouse_join_b = "";
+		$warehouse_join_s = "";
+		if (isset($_REQUEST['warehouse_id']) && $_REQUEST['warehouse_id'] != "" && $_REQUEST['warehouse_id'] != "All") {
+			$warehouse_id = $_REQUEST['warehouse_id'];
+			$warehouse_join = " AND i.warehouse_id = '$warehouse_id'";
+			$warehouse_join_b = " AND inv_b.warehouse_id = '$warehouse_id'";
+			$warehouse_join_s = " AND inv_s.warehouse_id = '$warehouse_id'";
+		}
 
-		$query = $this->db->query("
-			SELECT 
-				MAX(i.id) as id,
-				MAX(i.warehouse_name) as warehouse_name,
-				MAX(i.item_code) as item_code,
-				MAX(i.categories) as categories,
-				SUM(i.black_qty) as black_qty,
-				SUM(i.official_qty) as official_qty,
-				MAX(i.product_name) as product_name,
-				i.product_id,
-				SUM(i.quantity) as quantity,
-				'Merged' as batch_no,
-				SUM(i.official_total_rs) as official_total_rs,
-				SUM(i.total_amt) as total_amt,
-				s.name AS supplier_name
-			FROM inventory i
-			LEFT JOIN supplier s ON s.id = i.supplier_id
-			INNER JOIN product_variations pv ON pv.product_id = i.product_id AND pv.supplier_id = i.supplier_id
-			WHERE 1=1 $keyword_filter
-			GROUP BY i.product_id, i.supplier_id, s.name, pv.intimation
-			HAVING SUM(i.quantity) > 0 AND SUM(i.quantity) <= pv.intimation
-			ORDER BY id DESC 
-			LIMIT $start, $length
-		");
+		$search_filter = "";
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
+			$keyword = $this->db->escape_str(trim($filter_data['keywords']));
+			$search_filter = " AND (
+				p.name LIKE '%" . $keyword . "%'
+				OR p.item_code LIKE '%" . $keyword . "%'
+				OR cat.name LIKE '%" . $keyword . "%'
+				OR EXISTS (SELECT 1 FROM categories c WHERE c.name LIKE '%" . $keyword . "%' AND FIND_IN_SET(c.id, p.categories) > 0)
+				OR EXISTS (SELECT 1 FROM inventory inv_b WHERE inv_b.product_id = p.id AND inv_b.company_id = '$company_id' $warehouse_join_b AND inv_b.batch_no LIKE '%" . $keyword . "%')
+				OR EXISTS (SELECT 1 FROM inventory inv_s LEFT JOIN supplier sup ON sup.id = inv_s.supplier_id WHERE inv_s.product_id = p.id AND inv_s.company_id = '$company_id' $warehouse_join_s AND sup.name LIKE '%" . $keyword . "%')
+			)";
+		}
+
+		$stock_view_mode = strtolower(trim($_REQUEST['stock_view_mode'] ?? 'all'));
+		if (!in_array($stock_view_mode, ['all', 'white', 'black'])) {
+			$stock_view_mode = 'all';
+		}
+
+		if ($stock_view_mode === 'white') {
+			$cost_act_mult = 'i.official_qty';
+			$cost_off_mult = 'i.official_qty';
+		} elseif ($stock_view_mode === 'black') {
+			$cost_act_mult = 'i.black_qty';
+			$cost_off_mult = 'i.black_qty';
+		} else {
+			$cost_act_mult = 'i.quantity';
+			$cost_off_mult = 'i.official_qty';
+		}
+
+		$show_zero_qty = intval($_REQUEST['show_zero_qty'] ?? 0);
+
+		$booked_join = "
+			LEFT JOIN (
+				SELECT sop.product_id, COALESCE(SUM(sop.qty), 0) AS booked_qty
+				FROM sales_order_product sop
+				INNER JOIN sales_order so ON so.id = sop.order_id
+				WHERE so.company_id = '$company_id'
+				  AND so.is_approved = 0
+				  AND so.is_deleted = 0
+				  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+				GROUP BY sop.product_id
+			) bk ON bk.product_id = p.id
+		";
+
+		$low_stock_having = "(COALESCE(SUM(i.quantity), 0) - COALESCE(MAX(bk.booked_qty), 0)) <= COALESCE(MAX(p.intimation), 0)";
+
+		if ($show_zero_qty == 1) {
+			$total_count_row = $this->db->query("
+				SELECT COUNT(*) as total FROM (
+					SELECT p.id
+					FROM raw_products p
+					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+					LEFT JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+					$booked_join
+					WHERE p.is_deleted = '0' $search_filter
+					GROUP BY p.id
+					HAVING $low_stock_having
+				) as t
+			")->row_array();
+			$total_count = intval($total_count_row['total'] ?? 0);
+
+			$query = $this->db->query("
+				SELECT
+					COALESCE(MAX(i.id), 0) as id,
+					MAX(i.warehouse_name) as warehouse_name,
+					p.name as product_name,
+					p.item_code,
+					p.id as product_id,
+					p.categories,
+					COALESCE(MAX(p.intimation), 0) as intimation,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
+					COALESCE(SUM(i.quantity), 0) as quantity,
+					COALESCE(SUM(i.official_qty), 0) as white_qty,
+					COALESCE(SUM(i.black_qty), 0) as black_qty,
+					COALESCE(SUM(i.pending_qty), 0) as pending_qty,
+					COALESCE(SUM(i.actual_cost_with_exp * $cost_act_mult), 0) as actual_cost_with_exp_total,
+					COALESCE(SUM(i.actual_inr * $cost_act_mult), 0) as actual_cost_net_total,
+					COALESCE(SUM(i.official_exp_per_pc * $cost_off_mult), 0) as official_cost_with_exp_total,
+					COALESCE(SUM(i.official_rate_rs * $cost_off_mult), 0) as official_cost_net_total,
+					COALESCE(MAX(bk.booked_qty), 0) as booked_qty_sql
+				FROM raw_products p
+				LEFT JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+				$booked_join
+				WHERE p.is_deleted = '0' $search_filter
+				GROUP BY p.id
+				HAVING $low_stock_having
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
+				LIMIT $start, $length
+			");
+		} else {
+			$having_clause = "HAVING SUM(i.quantity) > 0 AND $low_stock_having";
+			if ($stock_view_mode === 'white') {
+				$having_clause = "HAVING (SUM(i.official_qty) > 0 OR SUM(i.pending_qty) > 0) AND $low_stock_having";
+			} elseif ($stock_view_mode === 'black') {
+				$having_clause = "HAVING SUM(i.black_qty) > 0 AND $low_stock_having";
+			}
+
+			$total_count_row = $this->db->query("
+				SELECT COUNT(*) as total FROM (
+					SELECT p.id
+					FROM raw_products p
+					JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+					$booked_join
+					WHERE p.is_deleted = '0' $search_filter
+					GROUP BY p.id
+					$having_clause
+				) as t
+			")->row_array();
+			$total_count = intval($total_count_row['total'] ?? 0);
+
+			$query = $this->db->query("
+				SELECT
+					COALESCE(MAX(i.id), 0) as id,
+					MAX(i.warehouse_name) as warehouse_name,
+					p.name as product_name,
+					p.item_code,
+					p.id as product_id,
+					p.categories,
+					COALESCE(MAX(p.intimation), 0) as intimation,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
+					SUM(i.quantity) as quantity,
+					SUM(i.official_qty) as white_qty,
+					SUM(i.black_qty) as black_qty,
+					SUM(i.pending_qty) as pending_qty,
+					SUM(i.actual_cost_with_exp * $cost_act_mult) as actual_cost_with_exp_total,
+					SUM(i.actual_inr * $cost_act_mult) as actual_cost_net_total,
+					SUM(i.official_exp_per_pc * $cost_off_mult) as official_cost_with_exp_total,
+					SUM(i.official_rate_rs * $cost_off_mult) as official_cost_net_total,
+					COALESCE(MAX(bk.booked_qty), 0) as booked_qty_sql
+				FROM raw_products p
+				JOIN inventory i ON p.id = i.product_id AND i.company_id = '$company_id' $warehouse_join
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+				$booked_join
+				WHERE p.is_deleted = '0' $search_filter
+				GROUP BY p.id
+				$having_clause
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
+				LIMIT $start, $length
+			");
+		}
 
 		if (!empty($query)) {
 			foreach ($query->result_array() as $item) {
 				$id = $item['id'];
 				$product_id = $item['product_id'];
 
-				$size_label = '';
-				$category = $this->common_model->getRowById('categories', 'name', ['id' => $item['categories']]);
-				$size_label = $category['name'] ?? '-';
+				$wid_for_po = (isset($warehouse_id) && $warehouse_id != '' && $warehouse_id != 'All') ? $warehouse_id : '';
+
+				$booked_query = $this->db->query("
+					SELECT COALESCE(SUM(sop.qty), 0) AS booked_qty
+					FROM sales_order_product sop
+					JOIN sales_order so ON so.id = sop.order_id
+					WHERE sop.product_id = '$product_id'
+					  AND so.company_id = '$company_id'
+					  AND so.is_approved = 0
+					  AND so.is_deleted = 0
+					  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+				")->row_array();
+				$booked_qty = intval($booked_query['booked_qty'] ?? 0);
+
+				$po_qty_arr = $this->get_product_po_list($product_id, $company_id, 'pending', $wid_for_po);
+				$po_qty = array_sum(array_column($po_qty_arr, 'quantity'));
+				$po_qty = max(0, $po_qty - $booked_qty);
+
+				$priority_qty_arr = $this->get_product_po_list($product_id, $company_id, 'priority', $wid_for_po);
+				$priority_qty = array_sum(array_column($priority_qty_arr, 'quantity'));
+				$priority_qty = max(0, $priority_qty - $booked_qty);
+
+				$loading_qty_arr = $this->get_product_po_list($product_id, $company_id, 'loading', $wid_for_po);
+				$loading_qty = array_sum(array_column($loading_qty_arr, 'quantity'));
+
+				$batch_where = "product_id = '$product_id' AND company_id = '$company_id'";
+				if ($wid_for_po != '') {
+					$batch_where .= " AND warehouse_id = '$wid_for_po'";
+				}
+				if ($show_zero_qty == 0) {
+					if ($stock_view_mode === 'white') {
+						$batch_where .= " AND (official_qty > 0 OR pending_qty > 0)";
+					} elseif ($stock_view_mode === 'black') {
+						$batch_where .= " AND black_qty > 0";
+					} else {
+						$batch_where .= " AND quantity > 0";
+					}
+				}
+				$batches_query = $this->db->query("
+					SELECT
+						id,
+						warehouse_id,
+						warehouse_name,
+						product_id,
+						product_name,
+						item_code,
+						categories,
+						quantity,
+						black_qty,
+						official_qty,
+						pending_qty,
+						actual_cost_with_exp,
+						actual_inr,
+						official_exp_per_pc,
+						official_rate_rs,
+						batch_no
+					FROM inventory
+					WHERE $batch_where
+					ORDER BY id DESC
+				");
+
+				$batches_data = array();
+				$b_start = 0;
+				if (!empty($batches_query)) {
+					$batches_result = $batches_query->result_array();
+					$batch_count = count($batches_result);
+					foreach ($batches_result as $b) {
+						$b_batch_no = $b['batch_no'] ?? '';
+						$b_booked = 0;
+						if (!empty($b_batch_no) && $b_batch_no != '-') {
+							$b_booked_res = $this->db->query("
+								SELECT COALESCE(SUM(sob.batch_qty), 0) as batch_booked
+								FROM sales_order_product_batch sob
+								JOIN sales_order so ON so.id = sob.order_id
+								WHERE sob.batch_no = ?
+								  AND so.company_id = ?
+								  AND so.is_approved = 0
+								  AND so.is_deleted = 0
+								  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+							", array($b_batch_no, $company_id))->row_array();
+							$b_booked = intval($b_booked_res['batch_booked'] ?? 0);
+						}
+						if ($b_booked == 0 && $batch_count == 1) {
+							$b_booked = $booked_qty;
+						}
+
+						$b_action = '';
+
+						$b_qty = intval($b['quantity']);
+						$b_white = intval($b['official_qty']);
+						$b_black = intval($b['black_qty']);
+						$b_pending = intval($b['pending_qty']);
+						$b_actual_cost_exp_pc = floatval($b['actual_cost_with_exp']);
+						$b_actual_inr_pc = floatval($b['actual_inr']);
+						$b_official_cost_exp_pc = floatval($b['official_exp_per_pc']);
+						$b_official_rate_pc = floatval($b['official_rate_rs']);
+
+						if ($stock_view_mode === 'white') {
+							$batch_act_mult = $b_white;
+							$batch_off_mult = $b_white;
+						} elseif ($stock_view_mode === 'black') {
+							$batch_act_mult = $b_black;
+							$batch_off_mult = $b_black;
+						} else {
+							$batch_act_mult = $b_qty;
+							$batch_off_mult = $b_white;
+						}
+
+						$batches_data[] = array(
+							'sr_no' => ++$b_start,
+							'id' => $b['id'],
+							'batch_no' => ($b_batch_no != '' && $b_batch_no != null) ? $b_batch_no : '-',
+							'quantity' => $b_qty,
+							'black_qty' => $b_black,
+							'white_qty' => $b_white,
+							'pending_qty' => $b_pending,
+							'total_white_qty' => $b_white + $b_pending,
+							'booked_qty' => $b_booked,
+							'actual_cost_per_pc_with_exp' => number_format($b_actual_cost_exp_pc, 2),
+							'actual_cost_with_exp' => number_format($b_actual_cost_exp_pc * $batch_act_mult, 2),
+							'actual_cost_per_pc_net' => number_format($b_actual_inr_pc, 2),
+							'actual_cost_net' => number_format($b_actual_inr_pc * $batch_act_mult, 2),
+							'official_cost_per_pc_with_exp' => number_format($b_official_cost_exp_pc, 2),
+							'official_cost_with_exp' => number_format($b_official_cost_exp_pc * $batch_off_mult, 2),
+							'official_cost_per_pc_net' => number_format($b_official_rate_pc, 2),
+							'official_cost_net' => number_format($b_official_rate_pc * $batch_off_mult, 2),
+							'action' => $b_action
+						);
+					}
+				}
+
+				$action = '<div class="d-inline-flex align-items-center">';
+				$action .= '<a href="' . base_url() . 'inventory/stock-history/' . $product_id . '" class="btn-table-action btn-action-view" data-toggle="tooltip" data-bs-placement="top" title="View History"><i class="feather icon-clock"></i></a>';
+				$action .= '</div>';
+
+				$booked_qty_btn = ($booked_qty > 0)
+					? "<a href='javascript:void(0)' onclick='showProductBookedList(" . $product_id . "," . $company_id . ")' class='stk-badge stk-badge-booked' title='View Booked Sales Orders'>" . number_format($booked_qty) . "</a>"
+					: "<span class='stk-badge-zero'>-</span>";
+
+				$po_qty_btn = ($po_qty > 0)
+					? "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id . "," . $company_id . ",\"pending\",\"" . $wid_for_po . "\")' class='stk-badge stk-badge-po' title='View Purchase Orders'>" . number_format($po_qty) . "</a>"
+					: "<span class='stk-badge-zero'>-</span>";
+
+				$priority_qty_btn = ($priority_qty > 0)
+					? "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id . "," . $company_id . ",\"priority\",\"" . $wid_for_po . "\")' class='stk-badge stk-badge-priority' title='View Priority POs'>" . number_format($priority_qty) . "</a>"
+					: "<span class='stk-badge-zero'>-</span>";
+
+				$loading_qty_btn = ($loading_qty > 0)
+					? "<a href='javascript:void(0)' onclick='showProductPOList(" . $product_id . "," . $company_id . ",\"loading\",\"" . $wid_for_po . "\")' class='stk-badge stk-badge-loading' title='View Loading POs'>" . number_format($loading_qty) . "</a>"
+					: "<span class='stk-badge-zero'>-</span>";
+
+				$sr_num = ++$start;
+				$has_batches = !empty($batches_data);
+				$expand_btn = '<div class="d-inline-flex align-items-center justify-content-center">
+					<button type="button" class="btn-expand-row' . (!$has_batches ? ' disabled' : '') . '" title="' . ($has_batches ? 'Expand Batches' : 'No Batches') . '">
+						<i class="feather icon-plus font-small-1"></i>
+					</button>
+					<span class="stk-sr-num">' . $sr_num . '</span>
+				</div>';
+
+				$black_qty_val = intval($item['black_qty']);
+				$white_qty_val = intval($item['white_qty']);
+				$pending_qty_val = intval($item['pending_qty']);
+				$total_white_val = $white_qty_val + $pending_qty_val;
+
+				$show_item_code = (!empty($item['item_code']) && strtolower(trim($item['item_code'])) != strtolower(trim($item['product_name'])));
+				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name']) . '</div>';
+				$model_no_html = $show_item_code
+					? '<span class="text-dark font-small-2">' . htmlspecialchars($item['item_code']) . '</span>'
+					: '<span class="stk-badge-zero">-</span>';
+
+				$black_qty_badge = ($black_qty_val > 0) ? '<span class="stk-badge stk-badge-black">' . number_format($black_qty_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$white_qty_badge = ($white_qty_val > 0) ? '<span class="stk-badge stk-badge-white">' . number_format($white_qty_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$pending_qty_badge = ($pending_qty_val > 0) ? '<span class="stk-badge stk-badge-pending">' . number_format($pending_qty_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$total_white_badge = ($total_white_val > 0) ? '<span class="stk-badge stk-badge-total-white">' . number_format($total_white_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+
+				$act_cost_exp_val = floatval($item['actual_cost_with_exp_total']);
+				$act_cost_net_val = floatval($item['actual_cost_net_total']);
+				$off_cost_exp_val = floatval($item['official_cost_with_exp_total']);
+				$off_cost_net_val = floatval($item['official_cost_net_total']);
 
 				$data[] = array(
-					"sr_no"       		=> ++$start,
-					"id"          		=> $item['id'],
-					"warehouse_name"	=> $item['warehouse_name'],
-					"category"			=> $size_label,
-					"item_code"			=> $item['item_code'],
-					"product_name"		=> $item['product_name'],
-					"supplier_name"		=> $item['supplier_name'],
-					"without_exp"		=> $item['official_total_rs'],
-					"with_exp"			=> $item['total_amt'],
-					"quantity"        	=> $item['quantity'],
-					"black_qty"			=> $item['black_qty'],
-					"official_qty"		=> $item['official_qty'],
-					"batch_no"        	=> ($item['batch_no'] != '' && $item['batch_no'] != null) ? $item['batch_no'] : '-',
+					"sr_no"             => $expand_btn,
+					"product_name"      => $prod_name_html,
+					"model_no"          => $model_no_html,
+					"quantity"          => '<span class="stk-qty-main">' . number_format($item['quantity']) . '</span>',
+					"black_qty"         => $black_qty_badge,
+					"white_qty"         => $white_qty_badge,
+					"pending_qty"       => $pending_qty_badge,
+					"total_white_qty"   => $total_white_badge,
+					"booked_qty"        => $booked_qty_btn,
+					"po_qty"            => $po_qty_btn,
+					"priority_qty"      => $priority_qty_btn,
+					"loading_qty"       => $loading_qty_btn,
+					"actual_cost_with_exp" => ($act_cost_exp_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($act_cost_exp_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"actual_cost_net"      => ($act_cost_net_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($act_cost_net_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"official_cost_with_exp" => ($off_cost_exp_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($off_cost_exp_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"official_cost_net"      => ($off_cost_net_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($off_cost_net_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"action"            => $action,
+					"batches"           => $batches_data,
+					"raw_product_name"  => $item['product_name'],
+					"category_name"     => !empty($item['category_name']) ? $item['category_name'] : 'Uncategorized',
+					"category_id"       => !empty($item['category_id']) ? intval($item['category_id']) : 0
 				);
 			}
 		}
+
+		$company_filter = " (id <> '') ";
+		if (!empty($company_id)) {
+			$company_filter .= " AND company_id = '" . $company_id . "' ";
+		}
+		$comp_totals = $this->db->query("
+			SELECT
+				COALESCE(SUM(quantity), 0) as total_qty,
+				COALESCE(SUM(official_qty), 0) as total_white_qty,
+				COALESCE(SUM(black_qty), 0) as total_black_qty
+			FROM inventory
+			WHERE $company_filter
+		")->row_array();
 
 		$json_data = array(
 			"draw" => intval($params['draw']),
 			"recordsTotal" => $total_count,
 			"recordsFiltered" => $total_count,
+			"total_qty" => number_format($comp_totals['total_qty'] ?? 0),
+			"total_white_qty" => number_format($comp_totals['total_white_qty'] ?? 0),
+			"total_black_qty" => number_format($comp_totals['total_black_qty'] ?? 0),
 			"data" => $data
 		);
 		echo json_encode($json_data);
@@ -28332,9 +28650,13 @@ class Inventory_model extends CI_Model
 		$expenses = ($all_batch_expenses->num_rows() > 0) ? $all_batch_expenses->result_array() : [];
 
 		foreach ($suppliers as &$supplier) {
-			// Actual Expense
+			// Actual Expense (official, unofficial, extras)
 			$act_exp = [];
 			foreach ($expenses as $exp) {
+				if (!in_array($exp['type'], ['official', 'unofficial', 'extras'], true)) {
+					continue;
+				}
+
 				$exp_suppliers = explode(',', $exp["supplier_id"]);
 
 				$total_act_cbm = 0;
@@ -28351,10 +28673,10 @@ class Inventory_model extends CI_Model
 				}
 			}
 
-				// Official Expense
+			// Official Expense (official, extras)
 			$off_exp = [];
 			foreach ($expenses as $exp) {
-				if ($exp['type'] == 'official') {
+				if (in_array($exp['type'], ['official', 'extras'], true)) {
 					$exp_suppliers = explode(',', $exp["supplier_id"]);
 
 					$total_off_cbm = 0;
@@ -31246,6 +31568,477 @@ public function get_sales_return_reports()
 		echo json_encode($json_data);
 	}
 
+	public function get_overall_low_stock()
+	{
+		$params['draw'] = $_REQUEST['draw'];
+		$start = intval($_REQUEST['start'] ?? 0);
+		$length = intval($_REQUEST['length'] ?? 25);
+		$row_num = $start;
+
+		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value'] ?? '');
+		$data = array();
+		$keyword_filter = "";
+
+		if (isset($filter_data['keywords']) && $filter_data['keywords'] != ""):
+			$keyword        = $this->db->escape_str(trim($filter_data['keywords']));
+			$keyword_filter .= " AND (
+				p.name LIKE '%" . $keyword . "%' 
+				OR p.item_code LIKE '%" . $keyword . "%' 
+				OR cat.name LIKE '%" . $keyword . "%' 
+				OR EXISTS (SELECT 1 FROM categories c WHERE c.name LIKE '%" . $keyword . "%' AND FIND_IN_SET(c.id, p.categories) > 0)
+				OR EXISTS (SELECT 1 FROM inventory inv_b WHERE inv_b.product_id = p.id AND inv_b.batch_no LIKE '%" . $keyword . "%')
+				OR EXISTS (SELECT 1 FROM inventory inv_s LEFT JOIN supplier sup ON sup.id = inv_s.supplier_id WHERE inv_s.product_id = p.id AND sup.name LIKE '%" . $keyword . "%')
+			)";
+		endif;
+
+		$stock_view_mode = strtolower(trim($_REQUEST['stock_view_mode'] ?? 'all'));
+		if (!in_array($stock_view_mode, ['all', 'white', 'black'])) {
+			$stock_view_mode = 'all';
+		}
+
+		if ($stock_view_mode === 'white') {
+			$cost_act_mult = 'i.official_qty';
+			$cost_off_mult = 'i.official_qty';
+		} elseif ($stock_view_mode === 'black') {
+			$cost_act_mult = 'i.black_qty';
+			$cost_off_mult = 'i.black_qty';
+		} else {
+			$cost_act_mult = 'i.quantity';
+			$cost_off_mult = 'i.official_qty';
+		}
+
+		$show_zero_qty = intval($_REQUEST['show_zero_qty'] ?? 0);
+
+		$booked_join = "
+			LEFT JOIN (
+				SELECT sop.product_id, COALESCE(SUM(sop.qty), 0) AS booked_qty
+				FROM sales_order_product sop
+				INNER JOIN sales_order so ON so.id = sop.order_id
+				WHERE so.is_approved = 0
+				  AND so.is_deleted = 0
+				  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+				GROUP BY sop.product_id
+			) bk ON bk.product_id = p.id
+		";
+
+		$low_stock_having = "(COALESCE(SUM(i.quantity), 0) - COALESCE(MAX(bk.booked_qty), 0)) <= COALESCE(MAX(p.intimation), 0)";
+
+		if ($show_zero_qty == 1) {
+			$total_count_row = $this->db->query("
+				SELECT COUNT(*) as total FROM (
+					SELECT p.id
+					FROM raw_products p
+					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+					LEFT JOIN inventory i ON p.id = i.product_id
+					$booked_join
+					WHERE p.is_deleted = '0' $keyword_filter
+					GROUP BY p.id
+					HAVING $low_stock_having
+				) as t
+			")->row_array();
+			$total_count = intval($total_count_row['total'] ?? 0);
+
+			$query = $this->db->query("
+				SELECT 
+					COALESCE(MAX(i.id), 0) as id,
+					p.name as product_name, 
+					p.item_code, 
+					p.id as product_id, 
+					p.categories,
+					COALESCE(MAX(p.intimation), 0) as intimation,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
+					COALESCE(SUM(i.quantity), 0) as quantity, 
+					COALESCE(SUM(i.official_qty), 0) as white_qty, 
+					COALESCE(SUM(i.black_qty), 0) as black_qty,
+					COALESCE(SUM(i.pending_qty), 0) as pending_qty,
+					COALESCE(SUM(i.actual_cost_with_exp * $cost_act_mult), 0) as actual_cost_with_exp_total,
+					COALESCE(SUM(i.actual_inr * $cost_act_mult), 0) as actual_cost_net_total,
+					COALESCE(SUM(i.official_exp_per_pc * $cost_off_mult), 0) as official_cost_with_exp_total,
+					COALESCE(SUM(i.official_rate_rs * $cost_off_mult), 0) as official_cost_net_total,
+					COALESCE(MAX(bk.booked_qty), 0) as booked_qty_sql
+				FROM raw_products p
+				LEFT JOIN inventory i ON p.id = i.product_id
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+				$booked_join
+				WHERE p.is_deleted = '0' $keyword_filter
+				GROUP BY p.id 
+				HAVING $low_stock_having
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
+				LIMIT $start, $length
+			");
+		} else {
+			$having_clause = "HAVING SUM(i.quantity) > 0 AND $low_stock_having";
+			if ($stock_view_mode === 'white') {
+				$having_clause = "HAVING (SUM(i.official_qty) > 0 OR SUM(i.pending_qty) > 0) AND $low_stock_having";
+			} elseif ($stock_view_mode === 'black') {
+				$having_clause = "HAVING SUM(i.black_qty) > 0 AND $low_stock_having";
+			}
+
+			$total_count_row = $this->db->query("
+				SELECT COUNT(*) as total FROM (
+					SELECT p.id 
+					FROM raw_products p
+					JOIN inventory i ON p.id = i.product_id
+					LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+					$booked_join
+					WHERE p.is_deleted = '0' $keyword_filter 
+					GROUP BY p.id 
+					$having_clause
+				) as t
+			")->row_array();
+			$total_count = intval($total_count_row['total'] ?? 0);
+
+			$query = $this->db->query("
+				SELECT 
+					COALESCE(MAX(i.id), 0) as id,
+					p.name as product_name, 
+					p.item_code, 
+					p.id as product_id, 
+					p.categories,
+					COALESCE(MAX(p.intimation), 0) as intimation,
+					COALESCE(MAX(cat.name), 'Uncategorized') as category_name,
+					COALESCE(MAX(cat.id), 0) as category_id,
+					SUM(i.quantity) as quantity, 
+					SUM(i.official_qty) as white_qty, 
+					SUM(i.black_qty) as black_qty,
+					SUM(i.pending_qty) as pending_qty,
+					SUM(i.actual_cost_with_exp * $cost_act_mult) as actual_cost_with_exp_total,
+					SUM(i.actual_inr * $cost_act_mult) as actual_cost_net_total,
+					SUM(i.official_exp_per_pc * $cost_off_mult) as official_cost_with_exp_total,
+					SUM(i.official_rate_rs * $cost_off_mult) as official_cost_net_total,
+					COALESCE(MAX(bk.booked_qty), 0) as booked_qty_sql
+				FROM raw_products p
+				JOIN inventory i ON p.id = i.product_id
+				LEFT JOIN categories cat ON cat.id = SUBSTRING_INDEX(p.categories, ',', 1)
+				$booked_join
+				WHERE p.is_deleted = '0' $keyword_filter 
+				GROUP BY p.id 
+				$having_clause
+				ORDER BY COALESCE(MAX(cat.name), 'ZZZZ') ASC, COALESCE(MAX(cat.id), 999999999) ASC, p.name ASC, p.id ASC
+				LIMIT $start, $length
+			");
+		}
+
+		if (!empty($query)) {
+			foreach ($query->result_array() as $item) {
+				$id = $item['id'];
+				$product_id = $item['product_id'];
+
+				// Overall Booked Qty across all companies
+				$booked_query = $this->db->query("
+					SELECT COALESCE(SUM(sop.qty), 0) AS booked_qty 
+					FROM sales_order_product sop
+					JOIN sales_order so ON so.id = sop.order_id
+					WHERE sop.product_id = '$product_id'
+					  AND so.is_approved = 0
+					  AND so.is_deleted = 0
+					  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+				")->row_array();
+				$booked_qty = intval($booked_query['booked_qty'] ?? 0);
+
+				// Overall PO, Priority, Loading Qty across all companies
+				$po_qty_arr = $this->get_product_po_list($product_id, '', 'pending');
+				$po_qty = array_sum(array_column($po_qty_arr, 'quantity'));
+				$po_qty = max(0, $po_qty - $booked_qty);
+
+				$priority_qty_arr = $this->get_product_po_list($product_id, '', 'priority');
+				$priority_qty = array_sum(array_column($priority_qty_arr, 'quantity'));
+				$priority_qty = max(0, $priority_qty - $booked_qty);
+
+				$loading_qty_arr = $this->get_product_po_list($product_id, '', 'loading');
+				$loading_qty = array_sum(array_column($loading_qty_arr, 'quantity'));
+
+				// Query Layer 2: Company-wise breakdown for this product
+				$comp_where = "i.product_id = '$product_id'";
+				if ($show_zero_qty == 0) {
+					if ($stock_view_mode === 'white') {
+						$comp_where .= " AND (i.official_qty > 0 OR i.pending_qty > 0)";
+					} elseif ($stock_view_mode === 'black') {
+						$comp_where .= " AND i.black_qty > 0";
+					} else {
+						$comp_where .= " AND i.quantity > 0";
+					}
+				}
+				$companies_query = $this->db->query("
+					SELECT 
+						i.company_id,
+						COALESCE(c.name, 'Unknown Company') as company_name,
+						i.warehouse_id,
+						COALESCE(w.name, 'Unknown Warehouse') as warehouse_name,
+						COALESCE(SUM(i.quantity), 0) as quantity,
+						COALESCE(SUM(i.black_qty), 0) as black_qty,
+						COALESCE(SUM(i.official_qty), 0) as white_qty,
+						COALESCE(SUM(i.pending_qty), 0) as pending_qty,
+						COALESCE(SUM(i.actual_cost_with_exp * $cost_act_mult), 0) as actual_cost_with_exp_total,
+						COALESCE(SUM(i.actual_inr * $cost_act_mult), 0) as actual_cost_net_total,
+						COALESCE(SUM(i.official_exp_per_pc * $cost_off_mult), 0) as official_cost_with_exp_total,
+						COALESCE(SUM(i.official_rate_rs * $cost_off_mult), 0) as official_cost_net_total
+					FROM inventory i
+					LEFT JOIN company c ON c.id = i.company_id
+					LEFT JOIN warehouse w ON w.id = i.warehouse_id
+					WHERE $comp_where
+					GROUP BY i.company_id, i.warehouse_id
+					ORDER BY c.name ASC, w.name ASC
+				");
+
+				$companies_data = array();
+				$c_start = 0;
+				if (!empty($companies_query)) {
+					foreach ($companies_query->result_array() as $c_item) {
+						$cid = $c_item['company_id'];
+						$wid = $c_item['warehouse_id'];
+
+						// Company Booked Qty
+						$c_booked_query = $this->db->query("
+							SELECT COALESCE(SUM(sop.qty), 0) AS booked_qty 
+							FROM sales_order_product sop
+							JOIN sales_order so ON so.id = sop.order_id
+							WHERE sop.product_id = '$product_id'
+							  AND so.company_id = '$cid'
+							  AND so.is_approved = 0
+							  AND so.is_deleted = 0
+							  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+						")->row_array();
+						$c_booked_qty = intval($c_booked_query['booked_qty'] ?? 0);
+
+						// Company PO, Priority, Loading Qty
+						$c_po_arr = $this->get_product_po_list($product_id, $cid, 'pending', $wid);
+						$c_po_qty = array_sum(array_column($c_po_arr, 'quantity'));
+						$c_po_qty = max(0, $c_po_qty - $c_booked_qty);
+
+						$c_priority_arr = $this->get_product_po_list($product_id, $cid, 'priority', $wid);
+						$c_priority_qty = array_sum(array_column($c_priority_arr, 'quantity'));
+						$c_priority_qty = max(0, $c_priority_qty - $c_booked_qty);
+
+						$c_loading_arr = $this->get_product_po_list($product_id, $cid, 'loading', $wid);
+						$c_loading_qty = array_sum(array_column($c_loading_arr, 'quantity'));
+
+						// Query Layer 3: Batches under this company and warehouse
+						$b_where = "product_id = '$product_id' AND company_id = '$cid' AND warehouse_id = '$wid'";
+						if ($show_zero_qty == 0) {
+							if ($stock_view_mode === 'white') {
+								$b_where .= " AND (official_qty > 0 OR pending_qty > 0)";
+							} elseif ($stock_view_mode === 'black') {
+								$b_where .= " AND black_qty > 0";
+							} else {
+								$b_where .= " AND quantity > 0";
+							}
+						}
+						$batches_query = $this->db->query("
+							SELECT 
+								id, warehouse_id, warehouse_name, product_id, product_name,
+								item_code, categories, quantity, black_qty, official_qty,
+								pending_qty, actual_cost_with_exp, actual_inr,
+								official_exp_per_pc, official_rate_rs, batch_no
+							FROM inventory
+							WHERE $b_where
+							ORDER BY id DESC
+						");
+
+						$batches_data = array();
+						$b_start = 0;
+						if (!empty($batches_query)) {
+							$batches_result = $batches_query->result_array();
+							$b_count = count($batches_result);
+							foreach ($batches_result as $b) {
+								$b_batch_no = $b['batch_no'] ?? '';
+								$b_booked = 0;
+								if (!empty($b_batch_no) && $b_batch_no != '-') {
+									$b_booked_res = $this->db->query("
+										SELECT COALESCE(SUM(sob.batch_qty), 0) as batch_booked
+										FROM sales_order_product_batch sob
+										JOIN sales_order so ON so.id = sob.order_id
+										WHERE sob.batch_no = ?
+										  AND so.company_id = ?
+										  AND so.is_approved = 0
+										  AND so.is_deleted = 0
+										  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
+									", array($b_batch_no, $cid))->row_array();
+									$b_booked = intval($b_booked_res['batch_booked'] ?? 0);
+								}
+								if ($b_booked == 0 && $b_count == 1) {
+									$b_booked = $c_booked_qty;
+								}
+
+								$b_action = '';
+
+								$b_qty = intval($b['quantity']);
+								$b_white = intval($b['official_qty']);
+								$b_black = intval($b['black_qty']);
+								$b_pending = intval($b['pending_qty']);
+								$b_actual_cost_exp_pc = floatval($b['actual_cost_with_exp']);
+								$b_actual_inr_pc = floatval($b['actual_inr']);
+								$b_official_cost_exp_pc = floatval($b['official_exp_per_pc']);
+								$b_official_rate_pc = floatval($b['official_rate_rs']);
+
+								if ($stock_view_mode === 'white') {
+									$batch_act_mult = $b_white;
+									$batch_off_mult = $b_white;
+								} elseif ($stock_view_mode === 'black') {
+									$batch_act_mult = $b_black;
+									$batch_off_mult = $b_black;
+								} else {
+									$batch_act_mult = $b_qty;
+									$batch_off_mult = $b_white;
+								}
+
+								$batches_data[] = array(
+									'sr_no' => ++$b_start,
+									'id' => $b['id'],
+									'batch_no' => ($b_batch_no != '' && $b_batch_no != null) ? $b_batch_no : '-',
+									'warehouse_name' => $b['warehouse_name'] ?? $c_item['warehouse_name'],
+									'quantity' => $b_qty,
+									'black_qty' => $b_black,
+									'white_qty' => $b_white,
+									'pending_qty' => $b_pending,
+									'total_white_qty' => $b_white + $b_pending,
+									'booked_qty' => $b_booked,
+									'actual_cost_per_pc_with_exp' => number_format($b_actual_cost_exp_pc, 2),
+									'actual_cost_with_exp' => number_format($b_actual_cost_exp_pc * $batch_act_mult, 2),
+									'actual_cost_per_pc_net' => number_format($b_actual_inr_pc, 2),
+									'actual_cost_net' => number_format($b_actual_inr_pc * $batch_act_mult, 2),
+									'official_cost_per_pc_with_exp' => number_format($b_official_cost_exp_pc, 2),
+									'official_cost_with_exp' => number_format($b_official_cost_exp_pc * $batch_off_mult, 2),
+									'official_cost_per_pc_net' => number_format($b_official_rate_pc, 2),
+									'official_cost_net' => number_format($b_official_rate_pc * $batch_off_mult, 2),
+									'action' => $b_action
+								);
+							}
+						}
+
+						$c_qty = intval($c_item['quantity']);
+						$c_white = intval($c_item['white_qty']);
+						$c_black = intval($c_item['black_qty']);
+						$c_act_exp_total = floatval($c_item['actual_cost_with_exp_total']);
+						$c_act_net_total = floatval($c_item['actual_cost_net_total']);
+						$c_off_exp_total = floatval($c_item['official_cost_with_exp_total']);
+						$c_off_net_total = floatval($c_item['official_cost_net_total']);
+
+						if ($stock_view_mode === 'white') {
+							$c_act_div = $c_white;
+							$c_off_div = $c_white;
+						} elseif ($stock_view_mode === 'black') {
+							$c_act_div = $c_black;
+							$c_off_div = $c_black;
+						} else {
+							$c_act_div = $c_qty;
+							$c_off_div = $c_white;
+						}
+
+						$c_act_exp_pc = ($c_act_div > 0) ? ($c_act_exp_total / $c_act_div) : 0;
+						$c_act_net_pc = ($c_act_div > 0) ? ($c_act_net_total / $c_act_div) : 0;
+						$c_off_exp_pc = ($c_off_div > 0) ? ($c_off_exp_total / $c_off_div) : 0;
+						$c_off_net_pc = ($c_off_div > 0) ? ($c_off_net_total / $c_off_div) : 0;
+
+						$companies_data[] = array(
+							'sr_no' => ++$c_start,
+							'company_id' => $cid,
+							'company_name' => $c_item['company_name'],
+							'warehouse_id' => $wid,
+							'warehouse_name' => $c_item['warehouse_name'],
+							'quantity' => $c_qty,
+							'black_qty' => intval($c_item['black_qty']),
+							'white_qty' => $c_white,
+							'pending_qty' => intval($c_item['pending_qty']),
+							'total_white_qty' => $c_white + intval($c_item['pending_qty']),
+							'booked_qty' => $c_booked_qty,
+							'po_qty' => $c_po_qty,
+							'priority_qty' => $c_priority_qty,
+							'loading_qty' => $c_loading_qty,
+							'actual_cost_per_pc_with_exp' => number_format($c_act_exp_pc, 2),
+							'actual_cost_with_exp' => number_format($c_act_exp_total, 2),
+							'actual_cost_per_pc_net' => number_format($c_act_net_pc, 2),
+							'actual_cost_net' => number_format($c_act_net_total, 2),
+							'official_cost_per_pc_with_exp' => number_format($c_off_exp_pc, 2),
+							'official_cost_with_exp' => number_format($c_off_exp_total, 2),
+							'official_cost_per_pc_net' => number_format($c_off_net_pc, 2),
+							'official_cost_net' => number_format($c_off_net_total, 2),
+							'batches' => $batches_data
+						);
+					}
+				}
+
+				// Badges and formatting for Main Table (Layer 1)
+				$black_val = intval($item['black_qty']);
+				$white_val = intval($item['white_qty']);
+				$pending_val = intval($item['pending_qty']);
+				$total_white_val = $white_val + $pending_val;
+
+				$black_qty_badge = ($black_val > 0) ? '<span class="stk-badge stk-badge-black">' . number_format($black_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$white_qty_badge = ($white_val > 0) ? '<span class="stk-badge stk-badge-white">' . number_format($white_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$pending_qty_badge = ($pending_val > 0) ? '<span class="stk-badge stk-badge-pending">' . number_format($pending_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$total_white_badge = ($total_white_val > 0) ? '<span class="stk-badge stk-badge-total-white">' . number_format($total_white_val) . '</span>' : '<span class="stk-badge-zero">-</span>';
+				$booked_qty_btn = ($booked_qty > 0) ? '<a href="javascript:void(0);" onclick="showProductBookedList(' . $product_id . ', \'\')" class="stk-badge stk-badge-booked" title="View Booked Orders">' . number_format($booked_qty) . '</a>' : '<span class="stk-badge-zero">-</span>';
+				$po_qty_btn = ($po_qty > 0) ? '<a href="javascript:void(0);" onclick="showProductPOList(' . $product_id . ', \'\', \'pending\')" class="stk-badge stk-badge-po" title="View Pending POs">' . number_format($po_qty) . '</a>' : '<span class="stk-badge-zero">-</span>';
+				$priority_qty_btn = ($priority_qty > 0) ? '<a href="javascript:void(0);" onclick="showProductPOList(' . $product_id . ', \'\', \'priority\')" class="stk-badge stk-badge-priority" title="View Priority POs">' . number_format($priority_qty) . '</a>' : '<span class="stk-badge-zero">-</span>';
+				$loading_qty_btn = ($loading_qty > 0) ? '<a href="javascript:void(0);" onclick="showProductPOList(' . $product_id . ', \'\', \'loading\')" class="stk-badge stk-badge-loading" title="View Loading POs">' . number_format($loading_qty) . '</a>' : '<span class="stk-badge-zero">-</span>';
+
+				$act_cost_exp_val = floatval($item['actual_cost_with_exp_total']);
+				$act_cost_net_val = floatval($item['actual_cost_net_total']);
+				$off_cost_exp_val = floatval($item['official_cost_with_exp_total']);
+				$off_cost_net_val = floatval($item['official_cost_net_total']);
+
+				$has_companies = count($companies_data) > 0;
+				$expand_btn = '<button type="button" class="btn-expand-row ' . (!$has_companies ? 'disabled' : '') . '" data-id="' . $product_id . '" title="' . ($has_companies ? 'Click to expand companies' : 'No companies') . '"><i class="feather icon-plus"></i></button>';
+				$sr_no_html = '<div class="d-flex align-items-center justify-content-center">' . $expand_btn . '<span class="stk-sr-num">' . (++$row_num) . '</span></div>';
+
+				$show_item_code = (!empty($item['item_code']) && strtolower(trim($item['item_code'])) != strtolower(trim($item['product_name'])));
+				$prod_name_html = '<div class="fw-bold text-dark font-small-3">' . htmlspecialchars($item['product_name'] ?? 'Product #' . $product_id) . '</div>';
+				$model_no_html = $show_item_code
+					? '<span class="text-dark font-small-2">' . htmlspecialchars($item['item_code']) . '</span>'
+					: '<span class="stk-badge-zero">-</span>';
+
+				$action = '';
+
+				$data[] = array(
+					"sr_no"             => $sr_no_html,
+					"product_id"        => $product_id,
+					"product_name"      => $prod_name_html,
+					"model_no"          => $model_no_html,
+					"quantity"          => '<span class="stk-qty-main">' . number_format($item['quantity']) . '</span>',
+					"black_qty"         => $black_qty_badge,
+					"white_qty"         => $white_qty_badge,
+					"pending_qty"       => $pending_qty_badge,
+					"total_white_qty"   => $total_white_badge,
+					"booked_qty"        => $booked_qty_btn,
+					"po_qty"            => $po_qty_btn,
+					"priority_qty"      => $priority_qty_btn,
+					"loading_qty"       => $loading_qty_btn,
+					"actual_cost_with_exp" => ($act_cost_exp_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($act_cost_exp_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"actual_cost_net"      => ($act_cost_net_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($act_cost_net_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"official_cost_with_exp" => ($off_cost_exp_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($off_cost_exp_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"official_cost_net"      => ($off_cost_net_val > 0) ? '<span class="stk-cost stk-cost-accent">₹' . number_format($off_cost_net_val, 2) . '</span>' : '<span class="stk-cost stk-zero">₹0.00</span>',
+					"action"            => $action,
+					"companies"         => $companies_data,
+					"raw_product_name"  => $item['product_name'],
+					"category_name"     => !empty($item['category_name']) ? $item['category_name'] : 'Uncategorized',
+					"category_id"       => !empty($item['category_id']) ? intval($item['category_id']) : 0
+				);
+			}
+		}
+
+		$comp_totals = $this->db->query("
+			SELECT 
+				COALESCE(SUM(quantity), 0) as total_qty,
+				COALESCE(SUM(official_qty), 0) as total_white_qty,
+				COALESCE(SUM(black_qty), 0) as total_black_qty
+			FROM inventory
+			WHERE (id <> '')
+		")->row_array();
+
+		$json_data = array(
+			"draw" => intval($params['draw']),
+			"recordsTotal" => $total_count,
+			"recordsFiltered" => $total_count,
+			"total_qty" => number_format($comp_totals['total_qty'] ?? 0),
+			"total_white_qty" => number_format($comp_totals['total_white_qty'] ?? 0),
+			"total_black_qty" => number_format($comp_totals['total_black_qty'] ?? 0),
+			"data" => $data
+		);
+		echo json_encode($json_data);
+	}
+
 	public function get_overall_stock_company()
 	{
 		$params['draw'] = $_REQUEST['draw'];
@@ -31477,16 +32270,21 @@ public function get_sales_return_reports()
 										so.id,
 										so.order_no,
 										so.date,
+										so.expected_date,
+										so.warehouse_name,
 										so.customer_name,
+										so.sale_person_id,
+										TRIM(CONCAT(IFNULL(su.first_name, ''), ' ', IFNULL(su.last_name, ''))) AS sales_person_name,
 										SUM(sop.qty) as quantity
 									FROM sales_order so
 									JOIN sales_order_product sop ON so.id = sop.order_id
+									LEFT JOIN sys_users su ON su.id = so.sale_person_id
 									WHERE sop.product_id = '$product_id'
 									  $where_cid
 									  AND so.is_approved = 0
 									  AND so.is_deleted = 0
 									  AND (so.is_cancelled = 0 OR so.is_cancelled IS NULL)
-									GROUP BY so.id, so.order_no, so.date, so.customer_name
+									GROUP BY so.id, so.order_no, so.date, so.expected_date, so.warehouse_name, so.customer_name, so.sale_person_id, su.first_name, su.last_name
 									ORDER BY so.date DESC, so.id DESC");
 		return $query->result_array();
 	}

@@ -322,6 +322,8 @@ $route[$r_inventory . '/get-stock-history'] = 'inventory/get_stock_history';
 $route[$r_inventory . '/qc-pending'] = 'inventory/qc_pending';
 $route[$r_inventory . '/low-stock'] = 'inventory/low_stock';
 $route[$r_inventory . '/get-low-stock'] = 'inventory/get_low_stock';
+$route[$r_inventory . '/overall-low-stock'] = 'inventory/overall_low_stock';
+$route[$r_inventory . '/get-overall-low-stock'] = 'inventory/get_overall_low_stock';
 
 $route[$r_inventory . '/stock-transfer'] = 'inventory/stock_transfer';
 $route[$r_inventory . '/stock-transfer-list'] = 'inventory/stock_transfer_list';

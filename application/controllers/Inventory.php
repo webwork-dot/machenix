@@ -3094,9 +3094,13 @@ class Inventory extends CI_Controller
         $g_off_per_pc = 0;
         $g_cost_without_exp = 0;
         foreach ($suppliers as &$supplier) {
-            // Actual Expense
+            // Actual Expense (official, unofficial, extras)
             $act_exp = [];
             foreach ($expenses as $exp) {
+                if (!in_array($exp['type'], ['official', 'unofficial', 'extras'], true)) {
+                    continue;
+                }
+
                 $exp_suppliers = explode(',', $exp["supplier_id"]);
                 
                 // Supplier Total
@@ -3123,10 +3127,10 @@ class Inventory extends CI_Controller
                 }
             }
            
-            // Official Expense
+            // Official Expense (official, extras)
             $off_exp = [];
             foreach ($expenses as $exp) {
-                if($exp['type'] == 'official') {
+                if(in_array($exp['type'], ['official', 'extras'], true)) {
                     $exp_suppliers = explode(',', $exp["supplier_id"]);
     
                     // Supplier Total
@@ -3388,8 +3392,11 @@ class Inventory extends CI_Controller
             redirect(site_url('login'), 'refresh');
         } else {
             $this->session->set_userdata('previous_url', currentUrl());
-            $page_data['page_name']  = 'low_stock';
-            $page_data['page_title'] = get_phrase('low_stock');
+
+            $page_data['warehouse_list'] = $this->common_model->getSessionWarehouse();
+            $page_data['total']          = $this->inventory_model->get_stock_totals();
+            $page_data['page_name']      = 'low_stock';
+            $page_data['page_title']     = get_phrase('low_stock');
             $this->load->view('backend/index', $page_data);
         }
     }
@@ -3401,6 +3408,30 @@ class Inventory extends CI_Controller
         }
         if ($this->input->is_ajax_request()) {
             $this->inventory_model->get_low_stock();
+        }
+    }
+
+    public function overall_low_stock()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            redirect(site_url('login'), 'refresh');
+        }
+
+        $page_data['total']      = $this->inventory_model->get_overall_stock_totals();
+        $page_data['page_name']  = 'overall_low_stock';
+        $page_data['page_title'] = 'Overall Low Stock';
+        $this->load->view('backend/index', $page_data);
+    }
+
+    public function get_overall_low_stock()
+    {
+        if ($this->session->userdata('inventory_login') != true) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            return;
+        }
+
+        if ($this->input->is_ajax_request()) {
+            $this->inventory_model->get_overall_low_stock();
         }
     }
 

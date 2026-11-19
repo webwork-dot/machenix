@@ -162,7 +162,7 @@
         <?php } ?>
         
 
-	    <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'stock_history' || $page_name == 'my_stock_batch' || $page_name == 'overall_stock' || $page_name == 'low_stock') echo 'active'; ?>">
+	    <li class="nav-item <?php if($page_name == 'my_stock' || $page_name == 'qc_pending' || $page_name == 'my_stock_history' || $page_name == 'stock_history' || $page_name == 'my_stock_batch' || $page_name == 'overall_stock' || $page_name == 'low_stock' || $page_name == 'overall_low_stock') echo 'active'; ?>">
            <a class="d-flex align-items-center" href="#">
                <i data-feather="database"></i>
                <span class="menu-title text-truncate fw-bolder" data-i18n="admin">Stock</span>
@@ -184,6 +184,12 @@
                   <a class="d-flex align-items-center" href="<?php echo site_url('inventory/low-stock'); ?>">
                       <i class="feather icon-circle"></i>
                       <span class="menu-title text-truncate">Low Stock</span>
+                  </a>
+               </li>
+               <li class="nav-item <?php if($page_name == 'overall_low_stock') echo 'active'; ?>">
+                  <a class="d-flex align-items-center" href="<?php echo site_url('inventory/overall-low-stock'); ?>">
+                      <i class="feather icon-circle"></i>
+                      <span class="menu-title text-truncate">Overall Low Stock</span>
                   </a>
                </li>
            </ul>
