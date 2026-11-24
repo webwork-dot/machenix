@@ -38,8 +38,22 @@
           </div>
         </div>
 
-        <!-- Row 2: Payment Method, Bank Account, Amount -->
+        <!-- Row 2: Ledger, Payment Method, Bank Account, Amount -->
         <div class="row mb-1">
+          <div class="col-12 col-md-4">
+            <div class="form-group">
+              <label>Ledger <span class="required">*</span></label>
+              <select class="form-control select2" name="ledger_id" id="ledger_id" required>
+                <option value="">Select</option>
+                <?php foreach ($ledgers as $ledger): ?>
+                  <option value="<?php echo (int)$ledger['id']; ?>" <?php if(($data['customer_id'] ?? '') == $ledger['id']) echo 'selected'; ?>>
+                    <?php echo htmlspecialchars($ledger['name']); ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
           <div class="col-12 col-md-4">
             <div class="form-group">
               <label>Payment Method <span class="required">*</span></label>
@@ -66,7 +80,7 @@
             </div>
           </div>
 
-          <div class="col-12 col-md-<?php echo (($data['payment_method'] ?? '') == 'cheque') ? '4' : '8'; ?>" id="amount_wrap">
+          <div class="col-12 col-md-4" id="amount_wrap">
             <div class="form-group">
               <label>Amount (in INR) <span class="required">*</span></label>
               <input type="number" name="amount_rs" id="amount_rs" class="form-control" placeholder="0.00" min="0.01" step="0.01" value="<?php echo htmlspecialchars($data['amount'] ?? ''); ?>" required>
@@ -111,16 +125,12 @@
       $('.bank_required').toggle(showBank);
 
       if (showBank) {
-        $('#amount_wrap').removeClass('col-md-8').addClass('col-md-4');
         if (!isInitial) {
           updateAccountNo();
         }
-      } else {
-        if (!isInitial) {
-          $('#company_bank').val('').trigger('change');
-          $('#company_bank_account').val('');
-        }
-        $('#amount_wrap').removeClass('col-md-4').addClass('col-md-8');
+      } else if (!isInitial) {
+        $('#company_bank').val('').trigger('change');
+        $('#company_bank_account').val('');
       }
     }
 

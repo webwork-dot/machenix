@@ -85,7 +85,6 @@
   $rec_sql = "SELECT IFNULL(SUM(amount), 0) as total_amt 
               FROM customer_payment 
               WHERE (LOWER(payment_method) != 'cash' OR payment_method IS NULL)
-              AND (payment_mode != 'return' OR payment_mode IS NULL)
               AND (type = 'customer' OR type IS NULL OR type = '')
               AND is_deleted = 0";
   if (!empty($company_id)) {
@@ -140,6 +139,7 @@
                 <?php if (is_access('851')) { ?><th>Inv No</th><?php } ?>
                 <?php if (is_access('852')) { ?><th>Customer Name</th><?php } ?>
                 <?php if (is_access('853')) { ?><th>Amount</th><?php } ?>
+                <th>Mode</th>
                 <?php if (is_access('854')) { ?><th>Type</th><?php } ?>
                 <?php if (is_access('855')) { ?><th>Method</th><?php } ?>
                 <?php if (is_access('856')) { ?><th>Added By</th><?php } ?>
@@ -148,6 +148,7 @@
                 <?php if (is_access('861')) { ?><th>Inv No</th><?php } ?>
                 <?php if (is_access('862')) { ?><th>Customer Name</th><?php } ?>
                 <?php if (is_access('863')) { ?><th>Amount</th><?php } ?>
+                <th>Mode</th>
                 <?php if (is_access('864')) { ?><th>Type</th><?php } ?>
                 <?php if (is_access('865')) { ?><th>Method</th><?php } ?>
                 <?php if (is_access('866')) { ?><th>Added By</th><?php } ?>
@@ -213,6 +214,7 @@ $(document).ready(function($) {
         <?php if (is_access('851')) { ?>{ "data": "inv_no" },<?php } ?>
         <?php if (is_access('852')) { ?>{ "data": "customer_name" },<?php } ?>
         <?php if (is_access('853')) { ?>{ "data": "amount" },<?php } ?>
+        { "data": "payment_mode", "className": "text-center" },
         <?php if (is_access('854')) { ?>{ "data": "payment_type" },<?php } ?>
         <?php if (is_access('855')) { ?>{ "data": "payment_method" },<?php } ?>
         <?php if (is_access('856')) { ?>{ "data": "added_by_name" },<?php } ?>
@@ -221,6 +223,7 @@ $(document).ready(function($) {
         <?php if (is_access('861')) { ?>{ "data": "inv_no" },<?php } ?>
         <?php if (is_access('862')) { ?>{ "data": "customer_name" },<?php } ?>
         <?php if (is_access('863')) { ?>{ "data": "amount" },<?php } ?>
+        { "data": "payment_mode", "className": "text-center" },
         <?php if (is_access('864')) { ?>{ "data": "payment_type" },<?php } ?>
         <?php if (is_access('865')) { ?>{ "data": "payment_method" },<?php } ?>
         <?php if (is_access('866')) { ?>{ "data": "added_by_name" },<?php } ?>

@@ -142,6 +142,7 @@
 					<?php if (is_access('225')) { ?><th>Tot Amt</th><?php } ?>
 					<?php if (is_access('226')) { ?><th>Sales Person</th><?php } ?>
 					<?php if (is_access('227')) { ?><th>Status</th><?php } ?>
+					<?php if (is_access('1017')) { ?><th>Added By</th><?php } ?>
 					<?php if (is_access('230') || is_access('231') || is_access('232') || is_access('233') || is_access('234') || is_access('235') || is_access('236') || is_access('237') || is_access('238')) { ?><th>Actions</th><?php } ?>
                   </tr>
                </thead>
@@ -209,6 +210,7 @@
                 <?php if (is_access('225')) { ?>{ "data": "grand_total", "className": "text-center" },<?php } ?>
                 <?php if (is_access('226')) { ?>{ "data": "sales_person" },<?php } ?>
                 <?php if (is_access('227')) { ?>{ "data": "status", "className": "text-center" },<?php } ?>
+                <?php if (is_access('1017')) { ?>{ "data": "added_by" },<?php } ?>
                 <?php if (is_access('230') || is_access('231') || is_access('232') || is_access('233') || is_access('234') || is_access('235') || is_access('236') || is_access('237') || is_access('238')) { ?>{ "data": "action" },<?php } ?>
              ],
             

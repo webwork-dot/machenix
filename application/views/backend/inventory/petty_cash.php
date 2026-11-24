@@ -145,6 +145,22 @@
     background-color: rgba(255, 159, 67, 0.12) !important;
     color: #ff9f43 !important;
   }
+  .cb-table-title-row {
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .cb-table-title-row .stock-filter-dropdown {
+    position: relative;
+    z-index: 5;
+  }
+  .cb-table-title-row .stock-filter-menu {
+    min-width: 320px;
+    max-width: 360px;
+  }
+  #report-datatable tr.cb-total-row td {
+    background: #eef3ff !important;
+    font-weight: 700;
+  }
 </style>
 
 <?php
@@ -253,11 +269,101 @@
   <div class="col-12">
     <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col-12 mt-10">
-            <h5 class="mb-0"><b><?= $tab_title; ?><span id="total_count"> (0)</span></b>
-            </h5>
+        <div class="d-flex align-items-center flex-wrap gap-1 cb-table-title-row">
+          <h5 class="mb-0"><b><?= $tab_title; ?><span id="total_count"> (0)</span></b></h5>
+
+          <?php
+            $has_cash_col_filters = ($tab == 'cash') && (
+              is_access('777') || is_access('778') || is_access('782') || is_access('1022')
+              || is_access('779') || is_access('780') || is_access('781')
+              || is_access('783') || is_access('784')
+            );
+          ?>
+          <?php if ($has_cash_col_filters) { ?>
+          <div class="dropdown stock-filter-dropdown ms-50">
+            <button class="btn-filter-dropdown dropdown-toggle" type="button" id="cbFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <i class="feather icon-filter"></i>
+              <span>Filters</span>
+              <span class="filter-count-badge" id="filter-active-count">0</span>
+            </button>
+            <div class="dropdown-menu stock-filter-menu" aria-labelledby="cbFilterDropdown">
+              <div class="filter-menu-header">
+                <span class="title">Table Filters</span>
+              </div>
+              <div class="filter-menu-body" id="column-filters-container">
+                <div class="filter-menu-label">Columns</div>
+                <?php if (is_access('777')) { ?>
+                <label class="filter-chip active" for="toggle-date" title="Toggle Date column">
+                  <input type="checkbox" id="toggle-date" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Date</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('778')) { ?>
+                <label class="filter-chip active" for="toggle-customer-name" title="Toggle Customer Name column">
+                  <input type="checkbox" id="toggle-customer-name" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Customer Name</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('782')) { ?>
+                <label class="filter-chip active" for="toggle-debit" title="Toggle Debit Amt column">
+                  <input type="checkbox" id="toggle-debit" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Debit Amt</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1022')) { ?>
+                <label class="filter-chip active" for="toggle-credit" title="Toggle Credit Amt column">
+                  <input type="checkbox" id="toggle-credit" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Credit Amt</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('779')) { ?>
+                <label class="filter-chip active" for="toggle-source" title="Toggle Source column">
+                  <input type="checkbox" id="toggle-source" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Source</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('780')) { ?>
+                <label class="filter-chip active" for="toggle-direction" title="Toggle In/Out column">
+                  <input type="checkbox" id="toggle-direction" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">In/Out</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('781')) { ?>
+                <label class="filter-chip active" for="toggle-type" title="Toggle Type column">
+                  <input type="checkbox" id="toggle-type" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Type</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('783')) { ?>
+                <label class="filter-chip active" for="toggle-narration" title="Toggle Narration column">
+                  <input type="checkbox" id="toggle-narration" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Narration</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('784')) { ?>
+                <label class="filter-chip active" for="toggle-added-by" title="Toggle Added By column">
+                  <input type="checkbox" id="toggle-added-by" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Added By</span>
+                </label>
+                <?php } ?>
+              </div>
+              <div class="filter-menu-footer">
+                <button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
+                  <i class="feather icon-rotate-ccw"></i> Reset Filters
+                </button>
+              </div>
+            </div>
           </div>
+          <?php } ?>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
@@ -275,12 +381,13 @@
               <th style="width: 50px;" class="text-center">#</th>
               <?php if ($tab == 'cash') { ?>
                 <?php if (is_access('777')) { ?><th>Date</th><?php } ?>
-                <?php if (is_access('778')) { ?><th>Particular</th><?php } ?>
+                <?php if (is_access('778')) { ?><th>Customer Name</th><?php } ?>
+                <?php if (is_access('782')) { ?><th>Debit Amt</th><?php } ?>
+                <?php if (is_access('1022')) { ?><th>Credit Amt</th><?php } ?>
                 <?php if (is_access('779')) { ?><th>Source</th><?php } ?>
                 <?php if (is_access('780')) { ?><th>In/Out</th><?php } ?>
                 <?php if (is_access('781')) { ?><th>Type</th><?php } ?>
-                <?php if (is_access('782')) { ?><th>Amount</th><?php } ?>
-                <?php if (is_access('783')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('783')) { ?><th>Narration</th><?php } ?>
                 <?php if (is_access('784')) { ?><th>Added By</th><?php } ?>
               <?php } elseif ($tab == 'pending_transfer') { ?>
                 <?php if (is_access('790')) { ?><th>Date</th><?php } ?>
@@ -314,6 +421,26 @@ $(document).ready(function($) {
     $('#form_filter').append('<input type="hidden" name="tab" value="<?php echo $tab; ?>">');
   }
 
+  function fmtAmt(val) {
+    var n = parseFloat(val) || 0;
+    return '₹ ' + Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  <?php if ($tab == 'cash') {
+    $ci = 0;
+    $col_date = $col_customer = $col_debit = $col_credit = 0;
+    $col_source = $col_direction = $col_type = $col_narration = $col_added = 0;
+    if (is_access('777')) { $ci++; $col_date = $ci; }
+    if (is_access('778')) { $ci++; $col_customer = $ci; }
+    if (is_access('782')) { $ci++; $col_debit = $ci; }
+    if (is_access('1022')) { $ci++; $col_credit = $ci; }
+    if (is_access('779')) { $ci++; $col_source = $ci; }
+    if (is_access('780')) { $ci++; $col_direction = $ci; }
+    if (is_access('781')) { $ci++; $col_type = $ci; }
+    if (is_access('783')) { $ci++; $col_narration = $ci; }
+    if (is_access('784')) { $ci++; $col_added = $ci; }
+  } ?>
+
   var dataTable = $('#report-datatable').DataTable({
     "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
@@ -330,6 +457,11 @@ $(document).ready(function($) {
     "drawCallback": function(settings, json) {
       $('[data-toggle="tooltip"]').tooltip('update');
     },
+    "createdRow": function(row, data) {
+      if (data && data.is_total) {
+        $(row).addClass('cb-total-row');
+      }
+    },
 
     "ajax": {
       "url": "<?php echo base_url('inventory/get_petty_cash_ajax'); ?>",
@@ -340,7 +472,35 @@ $(document).ready(function($) {
         data.tab = '<?php echo $tab; ?>';
       },
       "dataSrc": function(json) {
-        return json.data;
+        var rows = json.data || [];
+        <?php if ($tab == 'cash') { ?>
+        var debitTotal = 0;
+        var creditTotal = 0;
+        for (var i = 0; i < rows.length; i++) {
+          debitTotal += parseFloat(rows[i].debit_raw) || 0;
+          creditTotal += parseFloat(rows[i].credit_raw) || 0;
+        }
+        if (rows.length > 0) {
+          rows.push({
+            is_total: 1,
+            sr_no: '',
+            date: '<span class="fw-bold">TOTAL</span>',
+            supplier_name: '',
+            debit_amt: '<span class="fw-bold">' + fmtAmt(debitTotal) + '</span>',
+            credit_amt: '<span class="fw-bold">' + fmtAmt(creditTotal) + '</span>',
+            debit_raw: 0,
+            credit_raw: 0,
+            source: '',
+            direction: '',
+            payment_type: '',
+            remark: '',
+            status: '',
+            added_by_name: '',
+            actions: ''
+          });
+        }
+        <?php } ?>
+        return rows;
       },
       "beforeSend": function() {
         $('.loader').show();
@@ -353,12 +513,13 @@ $(document).ready(function($) {
     "columns": [
       { "data": "sr_no", "className": "text-center" },
       <?php if ($tab == 'cash') { ?>
-        <?php if (is_access('777')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('777')) { ?>{ "data": "date", "className": "text-center" },<?php } ?>
         <?php if (is_access('778')) { ?>{ "data": "supplier_name" },<?php } ?>
-        <?php if (is_access('779')) { ?>{ "data": "source" },<?php } ?>
-        <?php if (is_access('780')) { ?>{ "data": "direction" },<?php } ?>
-        <?php if (is_access('781')) { ?>{ "data": "payment_type" },<?php } ?>
-        <?php if (is_access('782')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('782')) { ?>{ "data": "debit_amt", "className": "text-end" },<?php } ?>
+        <?php if (is_access('1022')) { ?>{ "data": "credit_amt", "className": "text-end" },<?php } ?>
+        <?php if (is_access('779')) { ?>{ "data": "source", "className": "text-center" },<?php } ?>
+        <?php if (is_access('780')) { ?>{ "data": "direction", "className": "text-center" },<?php } ?>
+        <?php if (is_access('781')) { ?>{ "data": "payment_type", "className": "text-center" },<?php } ?>
         <?php if (is_access('783')) { ?>{ "data": "remark" },<?php } ?>
         <?php if (is_access('784')) { ?>{ "data": "added_by_name" },<?php } ?>
       <?php } elseif ($tab == 'pending_transfer') { ?>
@@ -399,16 +560,73 @@ $(document).ready(function($) {
       $(".loader").fadeOut("slow");
       $('#total_count').html('(' + total + ')');
       return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
-    },
-
-    'columnDefs': [{
-      "targets": 0,
-      "className": "text-center",
-    }, ]
+    }
 
   }).on('draw.dt', function() {
     $(".loader").fadeOut("slow");
   });
+
+  <?php if ($tab == 'cash') { ?>
+  function updateFilterCount() {
+    var defaults = {
+      <?php if (is_access('777')) { ?>'toggle-date': true,<?php } ?>
+      <?php if (is_access('778')) { ?>'toggle-customer-name': true,<?php } ?>
+      <?php if (is_access('782')) { ?>'toggle-debit': true,<?php } ?>
+      <?php if (is_access('1022')) { ?>'toggle-credit': true,<?php } ?>
+      <?php if (is_access('779')) { ?>'toggle-source': true,<?php } ?>
+      <?php if (is_access('780')) { ?>'toggle-direction': true,<?php } ?>
+      <?php if (is_access('781')) { ?>'toggle-type': true,<?php } ?>
+      <?php if (is_access('783')) { ?>'toggle-narration': true,<?php } ?>
+      <?php if (is_access('784')) { ?>'toggle-added-by': true<?php } ?>
+    };
+    var count = 0;
+    $.each(defaults, function (id, defaultOn) {
+      if ($('#' + id).length && $('#' + id).is(':checked') !== defaultOn) {
+        count++;
+      }
+    });
+    var $badge = $('#filter-active-count');
+    $badge.text(count);
+    $badge.toggleClass('has-count', count > 0);
+  }
+
+  function applyColumnFilters() {
+    <?php if (is_access('777')) { ?>dataTable.column(<?php echo (int)$col_date; ?>).visible($('#toggle-date').is(':checked'), false);<?php } ?>
+    <?php if (is_access('778')) { ?>dataTable.column(<?php echo (int)$col_customer; ?>).visible($('#toggle-customer-name').is(':checked'), false);<?php } ?>
+    <?php if (is_access('782')) { ?>dataTable.column(<?php echo (int)$col_debit; ?>).visible($('#toggle-debit').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1022')) { ?>dataTable.column(<?php echo (int)$col_credit; ?>).visible($('#toggle-credit').is(':checked'), false);<?php } ?>
+    <?php if (is_access('779')) { ?>dataTable.column(<?php echo (int)$col_source; ?>).visible($('#toggle-source').is(':checked'), false);<?php } ?>
+    <?php if (is_access('780')) { ?>dataTable.column(<?php echo (int)$col_direction; ?>).visible($('#toggle-direction').is(':checked'), false);<?php } ?>
+    <?php if (is_access('781')) { ?>dataTable.column(<?php echo (int)$col_type; ?>).visible($('#toggle-type').is(':checked'), false);<?php } ?>
+    <?php if (is_access('783')) { ?>dataTable.column(<?php echo (int)$col_narration; ?>).visible($('#toggle-narration').is(':checked'), false);<?php } ?>
+    <?php if (is_access('784')) { ?>dataTable.column(<?php echo (int)$col_added; ?>).visible($('#toggle-added-by').is(':checked'), false);<?php } ?>
+    dataTable.columns.adjust();
+    updateFilterCount();
+  }
+
+  $('.column-filter-checkbox').on('change', function() {
+    var isChecked = $(this).is(':checked');
+    $(this).closest('.filter-chip').toggleClass('active', isChecked);
+    applyColumnFilters();
+  });
+
+  $('#btn-reset-col-filters').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    <?php if (is_access('777')) { ?>$('#toggle-date').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('778')) { ?>$('#toggle-customer-name').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('782')) { ?>$('#toggle-debit').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('1022')) { ?>$('#toggle-credit').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('779')) { ?>$('#toggle-source').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('780')) { ?>$('#toggle-direction').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('781')) { ?>$('#toggle-type').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('783')) { ?>$('#toggle-narration').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('784')) { ?>$('#toggle-added-by').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    applyColumnFilters();
+  });
+
+  applyColumnFilters();
+  <?php } ?>
 });
 
 </script>

@@ -18812,6 +18812,7 @@ class Inventory_model extends CI_Model
             OR so.customer_name like '%" . $keyword . "%'
             OR so.refrence_no like '%" . $keyword . "%'
             OR so.order_no like '%" . $keyword . "%'
+            OR so.added_by_name like '%" . $keyword . "%'
             OR EXISTS (
                 SELECT 1 FROM sys_users su_sp
                 WHERE su_sp.id = so.sale_person_id
@@ -32185,6 +32186,7 @@ public function get_sales_return_reports()
 											po.id,
 											po.voucher_no,
 											po.date,
+											po.expected_date,
 											po.supplier_name,
 											SUM(pop.quantity) as quantity
 										FROM purchase_order po
@@ -32194,7 +32196,7 @@ public function get_sales_return_reports()
 										AND po.delivery_status = 'pending'
 										AND po.is_deleted = '0'
 										$where_wid
-										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
+										GROUP BY po.id, po.voucher_no, po.date, po.expected_date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
 		} elseif ($status == 'loading') {
 			// Loading list = delivery_status = 'loading', using loading_qty from loading_po_product
@@ -32202,6 +32204,8 @@ public function get_sales_return_reports()
 											po.id,
 											po.voucher_no,
 											po.date,
+											po.expected_date,
+											po.arrival_date,
 											po.supplier_name,
 											SUM(CASE WHEN pp.loading_qty > 0 THEN pp.loading_qty ELSE pp.quantity END) as quantity
 										FROM purchase_order po
@@ -32211,7 +32215,7 @@ public function get_sales_return_reports()
 										AND po.delivery_status = 'loading'
 										AND po.is_deleted = '0'
 										$where_wid
-										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
+										GROUP BY po.id, po.voucher_no, po.date, po.expected_date, po.arrival_date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
 		} elseif($status == 'no_expense') {
 			// No Expense list = all orders except purchase_in, using quantity from po_products
@@ -32247,6 +32251,7 @@ public function get_sales_return_reports()
 											po.id,
 											po.voucher_no,
 											po.date,
+											po.expected_date,
 											po.supplier_name,
 											SUM(pp.quantity) as quantity
 										FROM purchase_order po
@@ -32257,7 +32262,7 @@ public function get_sales_return_reports()
 										AND po.is_deleted = '0'
 										AND pp.quantity > 0
 										$where_wid
-										GROUP BY po.id, po.voucher_no, po.date, po.supplier_name
+										GROUP BY po.id, po.voucher_no, po.date, po.expected_date, po.supplier_name
 										ORDER BY po.date DESC, po.id DESC");
 		}
 		return $query->result_array();
@@ -33032,7 +33037,9 @@ public function get_sales_return_reports()
 			 FROM customer_payment p
 			 LEFT JOIN sys_users u ON p.added_by = u.id
 			 LEFT JOIN bank_accounts ba ON (ba.id = p.company_bank OR ba.id = p.company_bank_account)
-			 WHERE p.customer_id = {$customer_id} {$pay_del_filter}
+			 WHERE p.customer_id = {$customer_id}
+			   AND (p.type = 'customer' OR p.type IS NULL OR p.type = '')
+			   {$pay_del_filter}
 			 ORDER BY p.date ASC, p.id ASC"
 		)->result_array();
 
@@ -35579,8 +35586,23 @@ public function get_sales_return_reports()
 		$payment_type   = $this->input->post('payment_type') ?: 'official';
 		$amount         = (float) $this->input->post('amount_rs');
 		$company_id     = (int)($this->session->userdata('company_id') ?: 0);
+		$ledger_id      = (int)$this->input->post('ledger_id');
 		$company_bank = NULL;
 		$company_bank_account = NULL;
+
+		$ledger = $this->db->get_where('expense_type', [
+			'id' => $ledger_id,
+			'company_id' => $company_id,
+			'is_delete' => '0',
+		])->row_array();
+		if (empty($ledger)) {
+			echo json_encode([
+				'status'  => 400,
+				'message' => 'Please select a valid ledger',
+				'url'     => base_url('inventory/manual-payment'),
+			]);
+			exit();
+		}
 
 		if ($amount <= 0) {
 			echo json_encode([
@@ -35618,8 +35640,8 @@ public function get_sales_return_reports()
 		$data = [
 			'company_id'           => $company_id,
 			'type'                 => 'manual',
-			'customer_id'          => NULL,
-			'customer_name'        => NULL,
+			'customer_id'          => (int)$ledger['id'],
+			'customer_name'        => $ledger['name'],
 			'date'                 => $this->input->post('payment_date'),
 			'inv_no'               => '',
 			'amount'               => $amount,
@@ -35672,8 +35694,23 @@ public function get_sales_return_reports()
 		$payment_mode   = ($payment_mode === 'return') ? 'return' : 'payment';
 		$payment_type   = $this->input->post('payment_type') ?: 'official';
 		$amount         = (float) $this->input->post('amount_rs');
+		$ledger_id      = (int)$this->input->post('ledger_id');
 		$company_bank = NULL;
 		$company_bank_account = NULL;
+
+		$ledger = $this->db->get_where('expense_type', [
+			'id' => $ledger_id,
+			'company_id' => $company_id,
+			'is_delete' => '0',
+		])->row_array();
+		if (empty($ledger)) {
+			echo json_encode([
+				'status'  => 400,
+				'message' => 'Please select a valid ledger',
+				'url'     => base_url('inventory/manual-payment'),
+			]);
+			exit();
+		}
 
 		if ($amount <= 0) {
 			echo json_encode([
@@ -35721,6 +35758,8 @@ public function get_sales_return_reports()
 		}
 
 		$data = [
+			'customer_id'          => (int)$ledger['id'],
+			'customer_name'        => $ledger['name'],
 			'date'                 => $this->input->post('payment_date'),
 			'inv_no'               => '',
 			'amount'               => $amount,
@@ -35768,11 +35807,11 @@ public function get_sales_return_reports()
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
-		$keyword_filter = " AND type = 'manual' AND is_deleted = 0";
+		$keyword_filter = " AND cp.type = 'manual' AND cp.is_deleted = 0";
 
 		if (isset($filter_data['keywords']) && $filter_data['keywords'] != "") {
 			$keyword = $filter_data['keywords'];
-			$keyword_filter .= " AND (narration LIKE '%" . $keyword . "%' OR amount LIKE '%" . $keyword . "%' OR payment_type LIKE '%" . $keyword . "%' OR payment_method LIKE '%" . $keyword . "%' OR added_by_name LIKE '%" . $keyword . "%')";
+			$keyword_filter .= " AND (cp.narration LIKE '%" . $keyword . "%' OR cp.customer_name LIKE '%" . $keyword . "%' OR cp.amount LIKE '%" . $keyword . "%' OR cp.payment_type LIKE '%" . $keyword . "%' OR cp.payment_method LIKE '%" . $keyword . "%' OR cp.added_by_name LIKE '%" . $keyword . "%')";
 		}
 
 		if (isset($_REQUEST['date_range']) && $_REQUEST['date_range'] != "") {
@@ -35780,27 +35819,27 @@ public function get_sales_return_reports()
 			$from = date('Y-m-d', strtotime($date_range['0']));
 			$to = date('Y-m-d', strtotime($date_range['1']));
 
-			$keyword_filter .= " AND (DATE(date) >= '" . $from . "' AND DATE(date) <= '" . $to . "')";
+			$keyword_filter .= " AND (DATE(cp.date) >= '" . $from . "' AND DATE(cp.date) <= '" . $to . "')";
 		}
 
 		$company_id = $this->session->userdata('company_id');
 		if (!empty($company_id)) {
-			$keyword_filter .= " AND company_id = '$company_id'";
+			$keyword_filter .= " AND cp.company_id = '$company_id'";
 		}
 
-		$total_count = $this->db->query("SELECT id FROM customer_payment WHERE 1=1" . $keyword_filter)->num_rows();
+		$total_count = $this->db->query("SELECT cp.id FROM customer_payment cp WHERE 1=1" . $keyword_filter)->num_rows();
 
 		$summary = [
 			'official'   => ['total' => 0.0, 'receive' => 0.0, 'transfer' => 0.0],
 			'unofficial' => ['total' => 0.0, 'receive' => 0.0, 'transfer' => 0.0],
 		];
 
-		$sum_sql = "SELECT payment_type,
-				IFNULL(SUM(CASE WHEN (payment_mode = 'payment' OR payment_mode IS NULL) THEN amount ELSE 0 END), 0) as receive_amt,
-				IFNULL(SUM(CASE WHEN payment_mode = 'return' THEN amount ELSE 0 END), 0) as transfer_amt
-			FROM customer_payment
+		$sum_sql = "SELECT cp.payment_type,
+				IFNULL(SUM(CASE WHEN (cp.payment_mode = 'payment' OR cp.payment_mode IS NULL) THEN cp.amount ELSE 0 END), 0) as receive_amt,
+				IFNULL(SUM(CASE WHEN cp.payment_mode = 'return' THEN cp.amount ELSE 0 END), 0) as transfer_amt
+			FROM customer_payment cp
 			WHERE 1=1" . $keyword_filter . "
-			GROUP BY payment_type";
+			GROUP BY cp.payment_type";
 		$sum_q = $this->db->query($sum_sql);
 		if (!empty($sum_q)) {
 			foreach ($sum_q->result_array() as $row) {
@@ -35815,7 +35854,10 @@ public function get_sales_return_reports()
 
 		$total_payment_amount = $summary['official']['total'] + $summary['unofficial']['total'];
 
-		$query = $this->db->query("SELECT * FROM customer_payment WHERE 1=1" . $keyword_filter . " ORDER BY id DESC LIMIT $start, $length");
+		$query = $this->db->query("SELECT cp.*, ba.bank_name
+			FROM customer_payment cp
+			LEFT JOIN bank_accounts ba ON ba.id = cp.company_bank
+			WHERE 1=1" . $keyword_filter . " ORDER BY cp.id DESC LIMIT $start, $length");
 
 		if (!empty($query)) {
 			$sr_no = $start;
@@ -35855,17 +35897,38 @@ public function get_sales_return_reports()
 					? '<span class="badge bg-light-danger text-danger">Transfer</span>'
 					: '<span class="badge bg-light-success text-success">Receive</span>';
 
-				$amount_display = ($mode === 'transfer')
-					? '<span class="text-danger fw-bold">-₹' . number_format($item['amount'], 2) . '</span>'
-					: '<span class="text-dark fw-bold">₹' . number_format($item['amount'], 2) . '</span>';
+				$amt = (float)($item['amount'] ?? 0);
+				$debit_raw = ($mode === 'receive') ? $amt : 0;
+				$credit_raw = ($mode === 'transfer') ? $amt : 0;
+				$debit_amt = ($debit_raw > 0) ? '<span class="fw-bold">₹' . number_format($debit_raw, 2) . '</span>' : '—';
+				$credit_amt = ($credit_raw > 0) ? '<span class="fw-bold text-danger">₹' . number_format($credit_raw, 2) . '</span>' : '—';
+
+				$bank_detail = '—';
+				$method = strtolower($item['payment_method'] ?? '');
+				if ($method === 'cheque' || $method === 'bank') {
+					$bank_parts = [];
+					if (!empty($item['bank_name'])) {
+						$bank_parts[] = $item['bank_name'];
+					}
+					if (!empty($item['company_bank_account'])) {
+						$bank_parts[] = $item['company_bank_account'];
+					}
+					$bank_detail = !empty($bank_parts) ? htmlspecialchars(implode(' / ', $bank_parts)) : '—';
+				}
 
 				$data[] = array(
 					"sr_no"          => ++$sr_no,
 					"date"           => $item['date'] ? date('d M, Y', strtotime($item['date'])) : '-',
-					"amount"         => $amount_display,
+					"customer_name"  => !empty($item['customer_name']) ? htmlspecialchars($item['customer_name']) : '—',
+					"debit_amt"      => $debit_amt,
+					"credit_amt"     => $credit_amt,
+					"debit_raw"      => $debit_raw,
+					"credit_raw"     => $credit_raw,
 					"payment_mode"   => $mode_badge,
 					"payment_type"   => $type_badge,
-					"payment_method" => ucfirst($item['payment_method']),
+					"payment_method" => ucfirst($item['payment_method'] ?: '-'),
+					"bank_detail"    => $bank_detail,
+					"narration"      => !empty($item['narration']) ? nl2br(htmlspecialchars($item['narration'])) : '—',
 					"added_by_name"  => $item['added_by_name'] ?: '—',
 					"actions"        => $action
 				);
@@ -36046,7 +36109,7 @@ public function get_sales_return_reports()
 
 		$filter_data['keywords'] = clean_and_escape($_REQUEST['search']['value']);
 		$data = array();
-		$keyword_filter = " AND is_deleted = 0 AND (type = 'customer' OR type IS NULL OR type = '') AND (payment_mode != 'return' OR payment_mode IS NULL)";
+		$keyword_filter = " AND is_deleted = 0 AND (type = 'customer' OR type IS NULL OR type = '')";
 
 		$company_id = $this->session->userdata('company_id');
 		if (!empty($company_id)) {
@@ -36110,6 +36173,11 @@ public function get_sales_return_reports()
 					$action = '-';
 				}
 
+				$mode = $item['payment_mode'] ?? 'payment';
+				$mode_badge = ($mode == 'return')
+					? '<span class="badge bg-light-danger text-danger">Return</span>'
+					: '<span class="badge bg-light-success text-success">Payment</span>';
+
 				$type_badge = ($item['payment_type'] == 'official')
 					? '<span class="badge bg-light-primary text-primary">Official</span>'
 					: '<span class="badge bg-light-secondary text-secondary">Unofficial</span>';
@@ -36120,6 +36188,7 @@ public function get_sales_return_reports()
 					"inv_no"         => $item['inv_no'],
 					"customer_name"  => $item['customer_name'],
 					"amount"         => '₹' . number_format($item['amount'], 2),
+					"payment_mode"   => $mode_badge,
 					"payment_type"   => $type_badge,
 					"payment_method" => ucfirst($item['payment_method']),
 					"added_by_name"  => $item['added_by_name'],
@@ -36988,9 +37057,14 @@ public function get_sales_return_reports()
 							: '<span class="badge bg-light-primary text-primary">' . $ptype . '</span>';
 
 						$amt = (float)($item['amount'] ?? 0);
-						$amount_html = ($direction === 'in')
-							? '<span class="text-success font-weight-bold">+ ₹' . number_format($amt, 2) . '</span>'
-							: '<span class="text-danger font-weight-bold">- ₹' . number_format($amt, 2) . '</span>';
+						$debit_raw = ($direction === 'in') ? $amt : 0;
+						$credit_raw = ($direction === 'out') ? $amt : 0;
+						$debit_amt = ($debit_raw > 0)
+							? '<span class="fw-bold text-success">₹' . number_format($debit_raw, 2) . '</span>'
+							: '—';
+						$credit_amt = ($credit_raw > 0)
+							? '<span class="fw-bold text-danger">₹' . number_format($credit_raw, 2) . '</span>'
+							: '—';
 
 						$action = '-';
 						if (!empty($item['can_edit']) && ($item['source_table'] ?? '') === 'payments') {
@@ -37019,10 +37093,13 @@ public function get_sales_return_reports()
 							"sr_no"         => ++$sr_no,
 							"date"          => !empty($item['entry_date']) ? date('d M, Y', strtotime($item['entry_date'])) : '-',
 							"supplier_name" => $party,
+							"debit_amt"     => $debit_amt,
+							"credit_amt"    => $credit_amt,
+							"debit_raw"     => $debit_raw,
+							"credit_raw"    => $credit_raw,
 							"source"        => $source_badge,
 							"direction"     => $direction_badge,
 							"payment_type"  => $ptype_badge,
-							"amount"        => $amount_html,
 							"remark"        => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
 							"status"        => '-',
 							"added_by_name" => trim($item['added_by_name'] ?? '') ?: '-',
@@ -37601,6 +37678,7 @@ public function get_sales_return_reports()
 				CASE WHEN cp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
 				CAST(cp.amount AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(cp.company_bank_account), ''), '-') AS bank_account,
+				IFNULL(cp.company_bank, 0) AS company_bank,
 				IFNULL(cp.narration, '') AS remark,
 				IFNULL(cp.added_by_name, '') AS added_by_name,
 				'customer_payment' AS source_table,
@@ -37621,6 +37699,7 @@ public function get_sales_return_reports()
 				CASE WHEN p.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
 				CAST(p.amount_rs AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(p.company_bank_account), ''), '-') AS bank_account,
+				IFNULL(p.company_bank, 0) AS company_bank,
 				IFNULL(p.narration, '') AS remark,
 				TRIM(CONCAT(IFNULL(u.first_name, ''), ' ', IFNULL(u.last_name, ''))) AS added_by_name,
 				'payments' AS source_table,
@@ -37642,6 +37721,7 @@ public function get_sales_return_reports()
 				CASE WHEN vp.payment_type = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
 				CAST(vp.inr AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(vp.company_bank_account), ''), '-') AS bank_account,
+				IFNULL(vp.company_bank, 0) AS company_bank,
 				IFNULL(vp.narration, '') AS remark,
 				TRIM(CONCAT(IFNULL(vu.first_name, ''), ' ', IFNULL(vu.last_name, ''))) AS added_by_name,
 				'vendor_payments' AS source_table,
@@ -37663,6 +37743,7 @@ public function get_sales_return_reports()
 				CASE WHEN tc.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
 				CAST(tc.amount AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(tc.company_bank_account_from), ''), '-') AS bank_account,
+				IFNULL(tc.company_bank_from, 0) AS company_bank,
 				IFNULL(tc.remark, '') AS remark,
 				IFNULL(tc.added_by_name, '') AS added_by_name,
 				'transferred_cash' AS source_table,
@@ -37687,6 +37768,7 @@ public function get_sales_return_reports()
 				END AS payment_type,
 				CAST(tc.amount AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(tc.company_bank_account_to), ''), '-') AS bank_account,
+				IFNULL(tc.company_bank_to, 0) AS company_bank,
 				IFNULL(tc.remark, '') AS remark,
 				IFNULL(tc.added_by_name, '') AS added_by_name,
 				'transferred_cash' AS source_table,
@@ -37708,6 +37790,7 @@ public function get_sales_return_reports()
 				CASE WHEN cv.converted_from = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
 				CAST(cv.amount AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(cv.company_bank_account_from), ''), '-') AS bank_account,
+				IFNULL(cv.company_bank_from, 0) AS company_bank,
 				IFNULL(cv.narration, '') AS remark,
 				IFNULL(cv.added_by_name, '') AS added_by_name,
 				'converted_payment' AS source_table,
@@ -37727,6 +37810,7 @@ public function get_sales_return_reports()
 				CASE WHEN cv.converted_to = 'unofficial' THEN 'unofficial' ELSE 'official' END AS payment_type,
 				CAST(cv.amount AS DECIMAL(16,5)) AS amount,
 				COALESCE(NULLIF(TRIM(cv.company_bank_account_to), ''), '-') AS bank_account,
+				IFNULL(cv.company_bank_to, 0) AS company_bank,
 				IFNULL(cv.narration, '') AS remark,
 				IFNULL(cv.added_by_name, '') AS added_by_name,
 				'converted_payment' AS source_table,
@@ -37802,8 +37886,27 @@ public function get_sales_return_reports()
 			];
 
 			if (!empty($query)) {
+				$rows = $query->result_array();
+				$bank_ids = [];
+				foreach ($rows as $row) {
+					$bid = (int)($row['company_bank'] ?? 0);
+					if ($bid > 0) {
+						$bank_ids[$bid] = $bid;
+					}
+				}
+				$bank_map = [];
+				if (!empty($bank_ids)) {
+					$id_list = implode(',', array_map('intval', $bank_ids));
+					$ba_q = $this->db->query("SELECT id, bank_name, account_no FROM bank_accounts WHERE id IN ({$id_list})");
+					if (!empty($ba_q)) {
+						foreach ($ba_q->result_array() as $ba) {
+							$bank_map[(int)$ba['id']] = $ba;
+						}
+					}
+				}
+
 				$sr_no = $start;
-				foreach ($query->result_array() as $item) {
+				foreach ($rows as $item) {
 					$source_key = $item['source'] ?? '';
 					$src_meta = $source_labels[$source_key] ?? [ucfirst(str_replace('_', ' ', $source_key)), 'bg-light-secondary text-secondary'];
 					$source_badge = '<span class="badge ' . $src_meta[1] . '">' . $src_meta[0] . '</span>';
@@ -37819,24 +37922,36 @@ public function get_sales_return_reports()
 						: '<span class="badge bg-light-primary text-primary">' . $ptype . '</span>';
 
 					$amt = (float)($item['amount'] ?? 0);
-					$amount_html = ($direction === 'in')
-						? '<span class="text-success font-weight-bold">+ ₹' . number_format($amt, 2) . '</span>'
-						: '<span class="text-danger font-weight-bold">- ₹' . number_format($amt, 2) . '</span>';
+					$debit_raw = ($direction === 'in') ? $amt : 0;
+					$credit_raw = ($direction === 'out') ? $amt : 0;
+					$debit_amt = ($debit_raw > 0)
+						? '<span class="fw-bold text-success">₹' . number_format($debit_raw, 2) . '</span>'
+						: '—';
+					$credit_amt = ($credit_raw > 0)
+						? '<span class="fw-bold text-danger">₹' . number_format($credit_raw, 2) . '</span>'
+						: '—';
 
 					$party = !empty($item['party_name']) ? htmlspecialchars($item['party_name']) : '-';
-					$bank  = !empty($item['bank_account']) && $item['bank_account'] !== '-'
+					$bank_id = (int)($item['company_bank'] ?? 0);
+					$ba = ($bank_id > 0 && isset($bank_map[$bank_id])) ? $bank_map[$bank_id] : null;
+					$bank_name = !empty($ba['bank_name']) ? htmlspecialchars($ba['bank_name']) : '—';
+					$account_no = !empty($item['bank_account']) && $item['bank_account'] !== '-'
 						? htmlspecialchars($item['bank_account'])
-						: '-';
+						: (!empty($ba['account_no']) ? htmlspecialchars($ba['account_no']) : '—');
 
 					$data[] = array(
 						"sr_no"         => ++$sr_no,
 						"date"          => !empty($item['entry_date']) ? date('d M, Y', strtotime($item['entry_date'])) : '-',
 						"supplier_name" => $party,
+						"debit_amt"     => $debit_amt,
+						"credit_amt"    => $credit_amt,
+						"debit_raw"     => $debit_raw,
+						"credit_raw"    => $credit_raw,
 						"source"        => $source_badge,
 						"direction"     => $direction_badge,
 						"payment_type"  => $ptype_badge,
-						"bank_account"  => $bank,
-						"amount"        => $amount_html,
+						"bank_name"     => $bank_name,
+						"account_no"    => $account_no,
 						"remark"        => !empty($item['remark']) ? htmlspecialchars($item['remark']) : '-',
 						"added_by_name" => trim($item['added_by_name'] ?? '') ?: '-',
 						"actions"       => '-'
@@ -38133,13 +38248,14 @@ public function get_sales_return_reports()
 			"url"     => base_url('inventory/cash-book'),
 		);
 
-		$company_id   = (int) ($this->session->userdata('company_id') ?: 0);
-		$added_by     = (int) $this->session->userdata('super_user_id');
-		$amount_rs    = (float) $this->input->post('amount_rs');
-		$supplier_id  = (int) $this->input->post('supplier_id');
-		$payment_type = clean_and_escape($this->input->post('payment_type'));
-		$payment_date = $this->input->post('payment_date') ?: null;
-		$narration    = clean_and_escape($this->input->post('narration'));
+		$company_id       = (int) ($this->session->userdata('company_id') ?: 0);
+		$added_by         = (int) $this->session->userdata('super_user_id');
+		$amount_rs        = (float) $this->input->post('amount_rs');
+		$supplier_id      = (int) $this->input->post('supplier_id');
+		$expense_type_id  = (int) $this->input->post('expense_type_id');
+		$payment_type     = clean_and_escape($this->input->post('payment_type'));
+		$payment_date     = $this->input->post('payment_date') ?: null;
+		$narration        = clean_and_escape($this->input->post('narration'));
 
 		if ($amount_rs <= 0) {
 			$resultpost['status']  = 400;
@@ -38173,13 +38289,24 @@ public function get_sales_return_reports()
 			return simple_json_output($resultpost);
 		}
 
+		$expense_type = $this->db->get_where('other_charges', [
+			'id'         => $expense_type_id,
+			'company_id' => $company_id,
+			'is_delete'  => '0',
+		])->row_array();
+		if (empty($expense_type)) {
+			$resultpost['status']  = 400;
+			$resultpost['message'] = "Please select a valid expense type.";
+			return simple_json_output($resultpost);
+		}
+
 		$data = array(
 			'company_id'        => $company_id,
 			'type'              => 'expense',
 			'supplier_id'       => $supplier_id,
 			'supplier_name'     => $supplier['name'],
-			'invoice_no'        => null,
-			'batch_no'          => null,
+			'invoice_no'        => (string) $expense_type['id'],
+			'batch_no'          => $expense_type['name'],
 			'amount_dollar'     => number_format(0, 5, '.', ''),
 			'amount_rs'         => number_format($amount_rs, 5, '.', ''),
 			'amount_rmb'        => number_format(0, 5, '.', ''),
@@ -38227,10 +38354,11 @@ public function get_sales_return_reports()
 		$existing_amount = (float)($existing_record['amount_rs'] ?? 0);
 		$existing_type   = ($existing_record['payment_type'] ?? '') === 'unofficial' ? 'unofficial' : 'official';
 
-		$supplier_id  = (int) $this->input->post('supplier_id');
-		$payment_type = clean_and_escape($this->input->post('payment_type'));
-		$payment_date = $this->input->post('payment_date') ?: null;
-		$narration    = clean_and_escape($this->input->post('narration'));
+		$supplier_id     = (int) $this->input->post('supplier_id');
+		$expense_type_id = (int) $this->input->post('expense_type_id');
+		$payment_type    = clean_and_escape($this->input->post('payment_type'));
+		$payment_date    = $this->input->post('payment_date') ?: null;
+		$narration       = clean_and_escape($this->input->post('narration'));
 
 		if ($amount_rs <= 0) {
 			$resultpost['status']  = 400;
@@ -38268,11 +38396,22 @@ public function get_sales_return_reports()
 			return simple_json_output($resultpost);
 		}
 
+		$expense_type = $this->db->get_where('other_charges', [
+			'id'         => $expense_type_id,
+			'company_id' => $company_id,
+			'is_delete'  => '0',
+		])->row_array();
+		if (empty($expense_type)) {
+			$resultpost['status']  = 400;
+			$resultpost['message'] = "Please select a valid expense type.";
+			return simple_json_output($resultpost);
+		}
+
 		$data = array(
 			'supplier_id'       => $supplier_id,
 			'supplier_name'     => $supplier['name'],
-			'invoice_no'        => null,
-			'batch_no'          => null,
+			'invoice_no'        => (string) $expense_type['id'],
+			'batch_no'          => $expense_type['name'],
 			'amount_dollar'     => number_format(0, 5, '.', ''),
 			'amount_rs'         => number_format($amount_rs, 5, '.', ''),
 			'amount_rmb'        => number_format(0, 5, '.', ''),
@@ -38596,7 +38735,9 @@ public function get_sales_return_reports()
 										CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as added_by_name
 									FROM customer_payment p
 									LEFT JOIN sys_users u ON p.added_by = u.id
-									WHERE p.customer_id = '$customer_id' {$pay_del_filter}
+									WHERE p.customer_id = '$customer_id'
+									  AND (p.type = 'customer' OR p.type IS NULL OR p.type = '')
+									  {$pay_del_filter}
 									ORDER BY p.date DESC, p.id DESC");
 		return $query->result_array();
 	}

@@ -85,6 +85,22 @@
     background-color: rgba(255, 159, 67, 0.12) !important;
     color: #ff9f43 !important;
   }
+  .cb-table-title-row {
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .cb-table-title-row .stock-filter-dropdown {
+    position: relative;
+    z-index: 5;
+  }
+  .cb-table-title-row .stock-filter-menu {
+    min-width: 320px;
+    max-width: 360px;
+  }
+  #report-datatable tr.cb-total-row td {
+    background: #eef3ff !important;
+    font-weight: 700;
+  }
 </style>
 
 <?php
@@ -111,7 +127,7 @@
   $show_actions = false;
   $show_export = false;
   if ($tab == 'bank') {
-    $show_actions = false;
+    $show_actions = true;
     $show_export = is_access('824');
   } elseif ($tab == 'pending_transfer') {
     $show_actions = is_access('833');
@@ -191,10 +207,115 @@
   <div class="col-12">
     <div class="card" style="border-top-left-radius: 0;">
       <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col-12 mt-10">
-            <h5 class="mb-0"><b><?= $tab_title; ?><span id="total_count"> (0)</span></b></h5>
+        <div class="d-flex align-items-center flex-wrap gap-1 cb-table-title-row">
+          <h5 class="mb-0"><b><?= $tab_title; ?><span id="total_count"> (0)</span></b></h5>
+
+          <?php
+            $has_bank_col_filters = ($tab == 'bank') && (
+              is_access('814') || is_access('815') || is_access('820') || is_access('1023')
+              || is_access('816') || is_access('817') || is_access('818')
+              || is_access('819') || is_access('1024') || is_access('821') || is_access('822')
+            );
+          ?>
+          <?php if ($has_bank_col_filters) { ?>
+          <div class="dropdown stock-filter-dropdown ms-50">
+            <button class="btn-filter-dropdown dropdown-toggle" type="button" id="bbFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <i class="feather icon-filter"></i>
+              <span>Filters</span>
+              <span class="filter-count-badge" id="filter-active-count">0</span>
+            </button>
+            <div class="dropdown-menu stock-filter-menu" aria-labelledby="bbFilterDropdown">
+              <div class="filter-menu-header">
+                <span class="title">Table Filters</span>
+              </div>
+              <div class="filter-menu-body" id="column-filters-container">
+                <div class="filter-menu-label">Columns</div>
+                <?php if (is_access('814')) { ?>
+                <label class="filter-chip active" for="toggle-date" title="Toggle Date column">
+                  <input type="checkbox" id="toggle-date" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Date</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('815')) { ?>
+                <label class="filter-chip active" for="toggle-customer-name" title="Toggle Customer Name column">
+                  <input type="checkbox" id="toggle-customer-name" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Customer Name</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('820')) { ?>
+                <label class="filter-chip active" for="toggle-debit" title="Toggle Debit Amt column">
+                  <input type="checkbox" id="toggle-debit" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Debit Amt</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1023')) { ?>
+                <label class="filter-chip active" for="toggle-credit" title="Toggle Credit Amt column">
+                  <input type="checkbox" id="toggle-credit" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Credit Amt</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('816')) { ?>
+                <label class="filter-chip active" for="toggle-source" title="Toggle Source column">
+                  <input type="checkbox" id="toggle-source" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Source</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('817')) { ?>
+                <label class="filter-chip active" for="toggle-direction" title="Toggle In/Out column">
+                  <input type="checkbox" id="toggle-direction" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">In/Out</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('818')) { ?>
+                <label class="filter-chip active" for="toggle-type" title="Toggle Type column">
+                  <input type="checkbox" id="toggle-type" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Type</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('819')) { ?>
+                <label class="filter-chip active" for="toggle-bank-name" title="Toggle Bank Name column">
+                  <input type="checkbox" id="toggle-bank-name" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Bank Name</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1024')) { ?>
+                <label class="filter-chip active" for="toggle-account-no" title="Toggle AC No column">
+                  <input type="checkbox" id="toggle-account-no" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">AC No</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('821')) { ?>
+                <label class="filter-chip active" for="toggle-narration" title="Toggle Narration column">
+                  <input type="checkbox" id="toggle-narration" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Narration</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('822')) { ?>
+                <label class="filter-chip active" for="toggle-added-by" title="Toggle Added By column">
+                  <input type="checkbox" id="toggle-added-by" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Added By</span>
+                </label>
+                <?php } ?>
+              </div>
+              <div class="filter-menu-footer">
+                <button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
+                  <i class="feather icon-rotate-ccw"></i> Reset Filters
+                </button>
+              </div>
+            </div>
           </div>
+          <?php } ?>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
@@ -207,13 +328,15 @@
               <th style="width: 50px;" class="text-center">#</th>
               <?php if ($tab == 'bank') { ?>
                 <?php if (is_access('814')) { ?><th>Date</th><?php } ?>
-                <?php if (is_access('815')) { ?><th>Particular</th><?php } ?>
+                <?php if (is_access('815')) { ?><th>Customer Name</th><?php } ?>
+                <?php if (is_access('820')) { ?><th>Debit Amt</th><?php } ?>
+                <?php if (is_access('1023')) { ?><th>Credit Amt</th><?php } ?>
                 <?php if (is_access('816')) { ?><th>Source</th><?php } ?>
                 <?php if (is_access('817')) { ?><th>In/Out</th><?php } ?>
                 <?php if (is_access('818')) { ?><th>Type</th><?php } ?>
-                <?php if (is_access('819')) { ?><th>Bank Account</th><?php } ?>
-                <?php if (is_access('820')) { ?><th>Amount</th><?php } ?>
-                <?php if (is_access('821')) { ?><th>Remark / Narration</th><?php } ?>
+                <?php if (is_access('819')) { ?><th>Bank Name</th><?php } ?>
+                <?php if (is_access('1024')) { ?><th>AC No</th><?php } ?>
+                <?php if (is_access('821')) { ?><th>Narration</th><?php } ?>
                 <?php if (is_access('822')) { ?><th>Added By</th><?php } ?>
               <?php } elseif ($tab == 'pending_transfer') { ?>
                 <?php if (is_access('825')) { ?><th>Date</th><?php } ?>
@@ -249,13 +372,40 @@ $(document).ready(function($) {
     $('#form_filter').append('<input type="hidden" name="tab" value="<?php echo $tab; ?>">');
   }
 
-  $('#report-datatable').DataTable({
+  function fmtAmt(val) {
+    var n = parseFloat(val) || 0;
+    return '₹ ' + Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  <?php if ($tab == 'bank') {
+    $ci = 0;
+    $col_date = $col_customer = $col_debit = $col_credit = 0;
+    $col_source = $col_direction = $col_type = $col_bank_name = $col_account_no = $col_narration = $col_added = 0;
+    if (is_access('814')) { $ci++; $col_date = $ci; }
+    if (is_access('815')) { $ci++; $col_customer = $ci; }
+    if (is_access('820')) { $ci++; $col_debit = $ci; }
+    if (is_access('1023')) { $ci++; $col_credit = $ci; }
+    if (is_access('816')) { $ci++; $col_source = $ci; }
+    if (is_access('817')) { $ci++; $col_direction = $ci; }
+    if (is_access('818')) { $ci++; $col_type = $ci; }
+    if (is_access('819')) { $ci++; $col_bank_name = $ci; }
+    if (is_access('1024')) { $ci++; $col_account_no = $ci; }
+    if (is_access('821')) { $ci++; $col_narration = $ci; }
+    if (is_access('822')) { $ci++; $col_added = $ci; }
+  } ?>
+
+  var dataTable = $('#report-datatable').DataTable({
     "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
     "pagingType": "simple_numbers",
     "processing": true,
     'scrollX': true,
     "serverSide": true,
+    "createdRow": function(row, data) {
+      if (data && data.is_total) {
+        $(row).addClass('cb-total-row');
+      }
+    },
     "ajax": {
       "url": "<?php echo base_url('inventory/get_bank_book_ajax'); ?>",
       "dataType": "json",
@@ -265,7 +415,37 @@ $(document).ready(function($) {
         data.tab = '<?php echo $tab; ?>';
       },
       "dataSrc": function(json) {
-        return json.data;
+        var rows = json.data || [];
+        <?php if ($tab == 'bank') { ?>
+        var debitTotal = 0;
+        var creditTotal = 0;
+        for (var i = 0; i < rows.length; i++) {
+          debitTotal += parseFloat(rows[i].debit_raw) || 0;
+          creditTotal += parseFloat(rows[i].credit_raw) || 0;
+        }
+        if (rows.length > 0) {
+          rows.push({
+            is_total: 1,
+            sr_no: '',
+            date: '<span class="fw-bold">TOTAL</span>',
+            supplier_name: '',
+            debit_amt: '<span class="fw-bold">' + fmtAmt(debitTotal) + '</span>',
+            credit_amt: '<span class="fw-bold">' + fmtAmt(creditTotal) + '</span>',
+            debit_raw: 0,
+            credit_raw: 0,
+            source: '',
+            direction: '',
+            payment_type: '',
+            bank_name: '',
+            account_no: '',
+            remark: '',
+            status: '',
+            added_by_name: '',
+            actions: ''
+          });
+        }
+        <?php } ?>
+        return rows;
       },
       "beforeSend": function() { $('.loader').show(); },
       "complete": function() { $('.loader').hide(); }
@@ -273,13 +453,15 @@ $(document).ready(function($) {
     "columns": [
       { "data": "sr_no", "className": "text-center" },
       <?php if ($tab == 'bank') { ?>
-        <?php if (is_access('814')) { ?>{ "data": "date" },<?php } ?>
+        <?php if (is_access('814')) { ?>{ "data": "date", "className": "text-center" },<?php } ?>
         <?php if (is_access('815')) { ?>{ "data": "supplier_name" },<?php } ?>
-        <?php if (is_access('816')) { ?>{ "data": "source" },<?php } ?>
-        <?php if (is_access('817')) { ?>{ "data": "direction" },<?php } ?>
-        <?php if (is_access('818')) { ?>{ "data": "payment_type" },<?php } ?>
-        <?php if (is_access('819')) { ?>{ "data": "bank_account" },<?php } ?>
-        <?php if (is_access('820')) { ?>{ "data": "amount" },<?php } ?>
+        <?php if (is_access('820')) { ?>{ "data": "debit_amt", "className": "text-end" },<?php } ?>
+        <?php if (is_access('1023')) { ?>{ "data": "credit_amt", "className": "text-end" },<?php } ?>
+        <?php if (is_access('816')) { ?>{ "data": "source", "className": "text-center" },<?php } ?>
+        <?php if (is_access('817')) { ?>{ "data": "direction", "className": "text-center" },<?php } ?>
+        <?php if (is_access('818')) { ?>{ "data": "payment_type", "className": "text-center" },<?php } ?>
+        <?php if (is_access('819')) { ?>{ "data": "bank_name" },<?php } ?>
+        <?php if (is_access('1024')) { ?>{ "data": "account_no" },<?php } ?>
         <?php if (is_access('821')) { ?>{ "data": "remark" },<?php } ?>
         <?php if (is_access('822')) { ?>{ "data": "added_by_name" },<?php } ?>
       <?php } elseif ($tab == 'pending_transfer') { ?>
@@ -321,5 +503,73 @@ $(document).ready(function($) {
       return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
     }
   });
+
+  <?php if ($tab == 'bank') { ?>
+  function updateFilterCount() {
+    var defaults = {
+      <?php if (is_access('814')) { ?>'toggle-date': true,<?php } ?>
+      <?php if (is_access('815')) { ?>'toggle-customer-name': true,<?php } ?>
+      <?php if (is_access('820')) { ?>'toggle-debit': true,<?php } ?>
+      <?php if (is_access('1023')) { ?>'toggle-credit': true,<?php } ?>
+      <?php if (is_access('816')) { ?>'toggle-source': true,<?php } ?>
+      <?php if (is_access('817')) { ?>'toggle-direction': true,<?php } ?>
+      <?php if (is_access('818')) { ?>'toggle-type': true,<?php } ?>
+      <?php if (is_access('819')) { ?>'toggle-bank-name': true,<?php } ?>
+      <?php if (is_access('1024')) { ?>'toggle-account-no': true,<?php } ?>
+      <?php if (is_access('821')) { ?>'toggle-narration': true,<?php } ?>
+      <?php if (is_access('822')) { ?>'toggle-added-by': true<?php } ?>
+    };
+    var count = 0;
+    $.each(defaults, function (id, defaultOn) {
+      if ($('#' + id).length && $('#' + id).is(':checked') !== defaultOn) {
+        count++;
+      }
+    });
+    var $badge = $('#filter-active-count');
+    $badge.text(count);
+    $badge.toggleClass('has-count', count > 0);
+  }
+
+  function applyColumnFilters() {
+    <?php if (is_access('814')) { ?>dataTable.column(<?php echo (int)$col_date; ?>).visible($('#toggle-date').is(':checked'), false);<?php } ?>
+    <?php if (is_access('815')) { ?>dataTable.column(<?php echo (int)$col_customer; ?>).visible($('#toggle-customer-name').is(':checked'), false);<?php } ?>
+    <?php if (is_access('820')) { ?>dataTable.column(<?php echo (int)$col_debit; ?>).visible($('#toggle-debit').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1023')) { ?>dataTable.column(<?php echo (int)$col_credit; ?>).visible($('#toggle-credit').is(':checked'), false);<?php } ?>
+    <?php if (is_access('816')) { ?>dataTable.column(<?php echo (int)$col_source; ?>).visible($('#toggle-source').is(':checked'), false);<?php } ?>
+    <?php if (is_access('817')) { ?>dataTable.column(<?php echo (int)$col_direction; ?>).visible($('#toggle-direction').is(':checked'), false);<?php } ?>
+    <?php if (is_access('818')) { ?>dataTable.column(<?php echo (int)$col_type; ?>).visible($('#toggle-type').is(':checked'), false);<?php } ?>
+    <?php if (is_access('819')) { ?>dataTable.column(<?php echo (int)$col_bank_name; ?>).visible($('#toggle-bank-name').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1024')) { ?>dataTable.column(<?php echo (int)$col_account_no; ?>).visible($('#toggle-account-no').is(':checked'), false);<?php } ?>
+    <?php if (is_access('821')) { ?>dataTable.column(<?php echo (int)$col_narration; ?>).visible($('#toggle-narration').is(':checked'), false);<?php } ?>
+    <?php if (is_access('822')) { ?>dataTable.column(<?php echo (int)$col_added; ?>).visible($('#toggle-added-by').is(':checked'), false);<?php } ?>
+    dataTable.columns.adjust();
+    updateFilterCount();
+  }
+
+  $('.column-filter-checkbox').on('change', function() {
+    var isChecked = $(this).is(':checked');
+    $(this).closest('.filter-chip').toggleClass('active', isChecked);
+    applyColumnFilters();
+  });
+
+  $('#btn-reset-col-filters').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    <?php if (is_access('814')) { ?>$('#toggle-date').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('815')) { ?>$('#toggle-customer-name').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('820')) { ?>$('#toggle-debit').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('1023')) { ?>$('#toggle-credit').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('816')) { ?>$('#toggle-source').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('817')) { ?>$('#toggle-direction').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('818')) { ?>$('#toggle-type').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('819')) { ?>$('#toggle-bank-name').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('1024')) { ?>$('#toggle-account-no').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('821')) { ?>$('#toggle-narration').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('822')) { ?>$('#toggle-added-by').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    applyColumnFilters();
+  });
+
+  applyColumnFilters();
+  <?php } ?>
 });
 </script>

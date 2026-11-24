@@ -205,6 +205,11 @@
       </div>
 
       <div class="meta-item">
+        <span class="meta-label">Ledger</span>
+        <span class="meta-value"><?= htmlspecialchars($payment['customer_name'] ?: '—'); ?></span>
+      </div>
+
+      <div class="meta-item">
         <span class="meta-label">Payment Method</span>
         <span class="meta-value">
           <?php if ($payment['payment_method'] == 'cheque' || $payment['payment_method'] == 'bank'): ?>

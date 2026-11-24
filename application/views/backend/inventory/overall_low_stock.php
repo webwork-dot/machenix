@@ -953,8 +953,8 @@
 				<h5 class="modal-title fw-bolder text-dark" id="poListModalTitle">PO List</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-3">
-                <p class="text-muted font-small-2 mb-2" id="poListModalSubTitle">Details of Purchase Orders</p>
+            <div class="modal-body p-2">
+                <p class="text-muted font-small-2 mb-2" id="poListModalSubTitle">Purchase orders for this product</p>
                 <div id="poListContent">
                     <div class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
@@ -975,7 +975,7 @@
                 <h5 class="modal-title fw-bolder text-danger" id="bookedListModalTitle"><i class="feather icon-shopping-cart me-1"></i>Booked Sales Orders</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-3">
+            <div class="modal-body p-2">
                 <p class="text-muted font-small-2 mb-2">Unapproved Sales Orders currently booking stock for this product</p>
                 <div id="bookedListContent">
                     <div class="text-center py-4">

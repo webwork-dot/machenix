@@ -48,11 +48,7 @@
                         <td class="text-center"><?= $sr ?></td>
                         <td><?= htmlspecialchars($sales_person) ?></td>
                         <td class="text-center"><?= $booking_days ?></td>
-                        <td>
-                            <a href="<?= base_url('inventory/sales-order-view/' . $order['id']) ?>" target="_blank" class="text-primary fw-bold">
-                                <?= htmlspecialchars($order['order_no'] ?? '-') ?> <i class="fa fa-external-link font-small-2"></i>
-                            </a>
-                        </td>
+                        <td><?= htmlspecialchars($order['order_no'] ?? '-') ?></td>
                         <td class="text-center"><?= $booking_date ?></td>
                         <td class="text-center"><?= $delivery_date ?></td>
                         <td><?= htmlspecialchars($order['warehouse_name'] ?? '-') ?></td>

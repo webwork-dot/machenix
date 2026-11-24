@@ -21,28 +21,17 @@
     border-radius: .428rem;
   }
 
-  .sub-link {
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
-    margin-right: 4px;
-    background: white;
-    padding: 8px 18px;
-    min-width: 100px;
-    text-align: center;
-    text-decoration: none;
-    font-weight: 600;
-    color: #5e5873;
-    display: inline-block;
-    transition: all 0.2s ease;
+  .mp-table-title-row {
+    gap: 10px;
+    margin-bottom: 4px;
   }
-
-  .sub-link:hover {
-    color: #5a79c0;
+  .mp-table-title-row .stock-filter-dropdown {
+    position: relative;
+    z-index: 5;
   }
-
-  .sub-link.active {
-    background: #5a79c0 !important;
-    color: white !important;
+  .mp-table-title-row .stock-filter-menu {
+    min-width: 320px;
+    max-width: 360px;
   }
 
   .cash-stat-card {
@@ -100,6 +89,10 @@
   .cash-stat-card .stat-detail span b {
     color: #1e1e1e;
   }
+  #report-datatable tr.mp-total-row td {
+    background: #eef3ff !important;
+    font-weight: 700;
+  }
 </style>
 
 <?php
@@ -139,6 +132,10 @@
 
   $official_net   = (float)$summary['official']['total'];
   $unofficial_net = (float)$summary['unofficial']['total'];
+
+  $has_col_filters = is_access('762') || is_access('1018') || is_access('763') || is_access('1019')
+    || is_access('764') || is_access('765') || is_access('766') || is_access('1020')
+    || is_access('1021') || is_access('767');
 ?>
 
 <div class="row" id="table-bordered">
@@ -183,10 +180,101 @@
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col-12 mt-10">
-            <h5 class="mb-0"><b>Total Manual Payments<span id="total_count"> (0)</span></b></h5>
+        <div class="d-flex align-items-center flex-wrap gap-1 mp-table-title-row">
+          <h5 class="mb-0"><b>Total Manual Payments<span id="total_count"> (0)</span></b></h5>
+
+          <?php if ($has_col_filters) { ?>
+          <div class="dropdown stock-filter-dropdown ms-50">
+            <button class="btn-filter-dropdown dropdown-toggle" type="button" id="mpFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <i class="feather icon-filter"></i>
+              <span>Filters</span>
+              <span class="filter-count-badge" id="filter-active-count">0</span>
+            </button>
+            <div class="dropdown-menu stock-filter-menu" aria-labelledby="mpFilterDropdown">
+              <div class="filter-menu-header">
+                <span class="title">Table Filters</span>
+              </div>
+              <div class="filter-menu-body" id="column-filters-container">
+                <div class="filter-menu-label">Columns</div>
+                <?php if (is_access('762')) { ?>
+                <label class="filter-chip active" for="toggle-date" title="Toggle Date column">
+                  <input type="checkbox" id="toggle-date" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Date</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1018')) { ?>
+                <label class="filter-chip active" for="toggle-customer-name" title="Toggle Customer Name column">
+                  <input type="checkbox" id="toggle-customer-name" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Customer Name</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('763')) { ?>
+                <label class="filter-chip active" for="toggle-debit" title="Toggle Debit Amt column">
+                  <input type="checkbox" id="toggle-debit" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Debit Amt</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1019')) { ?>
+                <label class="filter-chip active" for="toggle-credit" title="Toggle Credit Amt column">
+                  <input type="checkbox" id="toggle-credit" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Credit Amt</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('764')) { ?>
+                <label class="filter-chip active" for="toggle-mode" title="Toggle Mode column">
+                  <input type="checkbox" id="toggle-mode" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Mode</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('765')) { ?>
+                <label class="filter-chip active" for="toggle-type" title="Toggle Type column">
+                  <input type="checkbox" id="toggle-type" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Type</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('766')) { ?>
+                <label class="filter-chip active" for="toggle-method" title="Toggle Method column">
+                  <input type="checkbox" id="toggle-method" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Method</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1020')) { ?>
+                <label class="filter-chip" for="toggle-bank" title="Toggle Bank Name & AC No column">
+                  <input type="checkbox" id="toggle-bank" class="column-filter-checkbox">
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Bank Name & AC No</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('1021')) { ?>
+                <label class="filter-chip" for="toggle-narration" title="Toggle Narration column">
+                  <input type="checkbox" id="toggle-narration" class="column-filter-checkbox">
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Narration</span>
+                </label>
+                <?php } ?>
+                <?php if (is_access('767')) { ?>
+                <label class="filter-chip active" for="toggle-added-by" title="Toggle Added By column">
+                  <input type="checkbox" id="toggle-added-by" class="column-filter-checkbox" checked>
+                  <span class="chip-box"><i class="feather icon-check"></i></span>
+                  <span class="chip-text">Added By</span>
+                </label>
+                <?php } ?>
+              </div>
+              <div class="filter-menu-footer">
+                <button type="button" class="btn-reset-filters" id="btn-reset-col-filters" title="Reset column filters to default">
+                  <i class="feather icon-rotate-ccw"></i> Reset Filters
+                </button>
+              </div>
+            </div>
           </div>
+          <?php } ?>
         </div>
       </div>
       <div class="card-datatable d-report mb-2">
@@ -200,10 +288,14 @@
             <tr>
               <th>#</th>
               <?php if (is_access('762')) { ?><th>Date</th><?php } ?>
-              <?php if (is_access('763')) { ?><th>Amount</th><?php } ?>
+              <?php if (is_access('1018')) { ?><th>Customer Name</th><?php } ?>
+              <?php if (is_access('763')) { ?><th>Debit Amt</th><?php } ?>
+              <?php if (is_access('1019')) { ?><th>Credit Amt</th><?php } ?>
               <?php if (is_access('764')) { ?><th>Mode</th><?php } ?>
               <?php if (is_access('765')) { ?><th>Type</th><?php } ?>
               <?php if (is_access('766')) { ?><th>Method</th><?php } ?>
+              <?php if (is_access('1020')) { ?><th>Bank Name & AC No</th><?php } ?>
+              <?php if (is_access('1021')) { ?><th>Narration</th><?php } ?>
               <?php if (is_access('767')) { ?><th>Added By</th><?php } ?>
               <?php if (is_access('769') || is_access('770') || is_access('771')) { ?><th style="width: 80px;" class="text-center">Action</th><?php } ?>
             </tr>
@@ -221,6 +313,22 @@ $(document).ready(function($) {
     return '₹ ' + Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
 
+  <?php
+    $ci = 0;
+    $col_date = $col_customer = $col_debit = $col_credit = 0;
+    $col_mode = $col_type = $col_method = $col_bank = $col_narration = $col_added = 0;
+    if (is_access('762')) { $ci++; $col_date = $ci; }
+    if (is_access('1018')) { $ci++; $col_customer = $ci; }
+    if (is_access('763')) { $ci++; $col_debit = $ci; }
+    if (is_access('1019')) { $ci++; $col_credit = $ci; }
+    if (is_access('764')) { $ci++; $col_mode = $ci; }
+    if (is_access('765')) { $ci++; $col_type = $ci; }
+    if (is_access('766')) { $ci++; $col_method = $ci; }
+    if (is_access('1020')) { $ci++; $col_bank = $ci; }
+    if (is_access('1021')) { $ci++; $col_narration = $ci; }
+    if (is_access('767')) { $ci++; $col_added = $ci; }
+  ?>
+
   var dataTable = $('#report-datatable').DataTable({
     "dom": '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l B><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
     "ordering": false,
@@ -236,6 +344,11 @@ $(document).ready(function($) {
     },
     "drawCallback": function(settings, json) {
       $('[data-toggle="tooltip"]').tooltip('update');
+    },
+    "createdRow": function(row, data) {
+      if (data && data.is_total) {
+        $(row).addClass('mp-total-row');
+      }
     },
 
     "ajax": {
@@ -267,7 +380,34 @@ $(document).ready(function($) {
           $('#unofficial_receive').html(fmtAmt(json.summary.unofficial.receive));
           $('#unofficial_transfer').html(fmtAmt(json.summary.unofficial.transfer));
         }
-        return json.data;
+
+        var rows = json.data || [];
+        var debitTotal = 0;
+        var creditTotal = 0;
+        for (var i = 0; i < rows.length; i++) {
+          debitTotal += parseFloat(rows[i].debit_raw) || 0;
+          creditTotal += parseFloat(rows[i].credit_raw) || 0;
+        }
+        if (rows.length > 0) {
+          rows.push({
+            is_total: 1,
+            sr_no: '',
+            date: '<span class="fw-bold">TOTAL</span>',
+            customer_name: '',
+            debit_amt: '<span class="fw-bold">' + fmtAmt(debitTotal) + '</span>',
+            credit_amt: '<span class="fw-bold">' + fmtAmt(creditTotal) + '</span>',
+            debit_raw: 0,
+            credit_raw: 0,
+            payment_mode: '',
+            payment_type: '',
+            payment_method: '',
+            bank_detail: '',
+            narration: '',
+            added_by_name: '',
+            actions: ''
+          });
+        }
+        return rows;
       },
       "beforeSend": function() {
         $('.loader').show();
@@ -278,12 +418,16 @@ $(document).ready(function($) {
     },
 
     "columns": [
-      { "data": "sr_no" },
-      <?php if (is_access('762')) { ?>{ "data": "date" },<?php } ?>
-      <?php if (is_access('763')) { ?>{ "data": "amount" },<?php } ?>
-      <?php if (is_access('764')) { ?>{ "data": "payment_mode" },<?php } ?>
-      <?php if (is_access('765')) { ?>{ "data": "payment_type" },<?php } ?>
-      <?php if (is_access('766')) { ?>{ "data": "payment_method" },<?php } ?>
+      { "data": "sr_no", "className": "text-center" },
+      <?php if (is_access('762')) { ?>{ "data": "date", "className": "text-center" },<?php } ?>
+      <?php if (is_access('1018')) { ?>{ "data": "customer_name" },<?php } ?>
+      <?php if (is_access('763')) { ?>{ "data": "debit_amt", "className": "text-end" },<?php } ?>
+      <?php if (is_access('1019')) { ?>{ "data": "credit_amt", "className": "text-end" },<?php } ?>
+      <?php if (is_access('764')) { ?>{ "data": "payment_mode", "className": "text-center" },<?php } ?>
+      <?php if (is_access('765')) { ?>{ "data": "payment_type", "className": "text-center" },<?php } ?>
+      <?php if (is_access('766')) { ?>{ "data": "payment_method", "className": "text-center" },<?php } ?>
+      <?php if (is_access('1020')) { ?>{ "data": "bank_detail", "visible": false },<?php } ?>
+      <?php if (is_access('1021')) { ?>{ "data": "narration", "visible": false },<?php } ?>
       <?php if (is_access('767')) { ?>{ "data": "added_by_name" },<?php } ?>
       <?php if (is_access('769') || is_access('770') || is_access('771')) { ?>{ "data": "actions", "className": "text-center" },<?php } ?>
     ],
@@ -306,15 +450,73 @@ $(document).ready(function($) {
       $(".loader").fadeOut("slow");
       $('#total_count').html('(' + total + ')');
       return 'Showing ' + start + ' to ' + end + ' of ' + total + ' entries';
-    },
-
-    'columnDefs': [{
-      "targets": 0,
-      "className": "text-center",
-    }, ]
+    }
 
   }).on('draw.dt', function() {
     $(".loader").fadeOut("slow");
   });
+
+  function updateFilterCount() {
+    var defaults = {
+      <?php if (is_access('762')) { ?>'toggle-date': true,<?php } ?>
+      <?php if (is_access('1018')) { ?>'toggle-customer-name': true,<?php } ?>
+      <?php if (is_access('763')) { ?>'toggle-debit': true,<?php } ?>
+      <?php if (is_access('1019')) { ?>'toggle-credit': true,<?php } ?>
+      <?php if (is_access('764')) { ?>'toggle-mode': true,<?php } ?>
+      <?php if (is_access('765')) { ?>'toggle-type': true,<?php } ?>
+      <?php if (is_access('766')) { ?>'toggle-method': true,<?php } ?>
+      <?php if (is_access('1020')) { ?>'toggle-bank': false,<?php } ?>
+      <?php if (is_access('1021')) { ?>'toggle-narration': false,<?php } ?>
+      <?php if (is_access('767')) { ?>'toggle-added-by': true<?php } ?>
+    };
+    var count = 0;
+    $.each(defaults, function (id, defaultOn) {
+      if ($('#' + id).length && $('#' + id).is(':checked') !== defaultOn) {
+        count++;
+      }
+    });
+    var $badge = $('#filter-active-count');
+    $badge.text(count);
+    $badge.toggleClass('has-count', count > 0);
+  }
+
+  function applyColumnFilters() {
+    <?php if (is_access('762')) { ?>dataTable.column(<?php echo (int)$col_date; ?>).visible($('#toggle-date').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1018')) { ?>dataTable.column(<?php echo (int)$col_customer; ?>).visible($('#toggle-customer-name').is(':checked'), false);<?php } ?>
+    <?php if (is_access('763')) { ?>dataTable.column(<?php echo (int)$col_debit; ?>).visible($('#toggle-debit').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1019')) { ?>dataTable.column(<?php echo (int)$col_credit; ?>).visible($('#toggle-credit').is(':checked'), false);<?php } ?>
+    <?php if (is_access('764')) { ?>dataTable.column(<?php echo (int)$col_mode; ?>).visible($('#toggle-mode').is(':checked'), false);<?php } ?>
+    <?php if (is_access('765')) { ?>dataTable.column(<?php echo (int)$col_type; ?>).visible($('#toggle-type').is(':checked'), false);<?php } ?>
+    <?php if (is_access('766')) { ?>dataTable.column(<?php echo (int)$col_method; ?>).visible($('#toggle-method').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1020')) { ?>dataTable.column(<?php echo (int)$col_bank; ?>).visible($('#toggle-bank').is(':checked'), false);<?php } ?>
+    <?php if (is_access('1021')) { ?>dataTable.column(<?php echo (int)$col_narration; ?>).visible($('#toggle-narration').is(':checked'), false);<?php } ?>
+    <?php if (is_access('767')) { ?>dataTable.column(<?php echo (int)$col_added; ?>).visible($('#toggle-added-by').is(':checked'), false);<?php } ?>
+    dataTable.columns.adjust();
+    updateFilterCount();
+  }
+
+  $('.column-filter-checkbox').on('change', function() {
+    var isChecked = $(this).is(':checked');
+    $(this).closest('.filter-chip').toggleClass('active', isChecked);
+    applyColumnFilters();
+  });
+
+  $('#btn-reset-col-filters').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    <?php if (is_access('762')) { ?>$('#toggle-date').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('1018')) { ?>$('#toggle-customer-name').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('763')) { ?>$('#toggle-debit').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('1019')) { ?>$('#toggle-credit').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('764')) { ?>$('#toggle-mode').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('765')) { ?>$('#toggle-type').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('766')) { ?>$('#toggle-method').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    <?php if (is_access('1020')) { ?>$('#toggle-bank').prop('checked', false).closest('.filter-chip').removeClass('active');<?php } ?>
+    <?php if (is_access('1021')) { ?>$('#toggle-narration').prop('checked', false).closest('.filter-chip').removeClass('active');<?php } ?>
+    <?php if (is_access('767')) { ?>$('#toggle-added-by').prop('checked', true).closest('.filter-chip').addClass('active');<?php } ?>
+    applyColumnFilters();
+  });
+
+  applyColumnFilters();
 });
 </script>

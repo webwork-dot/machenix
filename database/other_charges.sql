@@ -1,5 +1,6 @@
 CREATE TABLE `other_charges` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL DEFAULT '0',
   `name` varchar(255) NOT NULL,
   `gst` decimal(16,2) NOT NULL DEFAULT 0.00,
   `price` decimal(16,2) NOT NULL DEFAULT 0.00,

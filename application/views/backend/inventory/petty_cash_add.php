@@ -62,6 +62,20 @@
             </div>
           </div>
 
+          <div class="col-12 col-sm-4 mb-1">
+            <div class="form-group">
+              <label>Expense Type <span class="required">*</span></label>
+              <select class="form-control select2" name="expense_type_id" id="expense_type_id" required>
+                <option value="">Select</option>
+                <?php foreach ($expense_types as $expense_type): ?>
+                  <option value="<?php echo (int)$expense_type['id']; ?>">
+                    <?php echo htmlspecialchars($expense_type['name']); ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
           <div class="col-md-4 mb-1">
             <div class="form-group">
               <label>Payment type <span class="required">*</span></label>

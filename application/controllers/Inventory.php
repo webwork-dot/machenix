@@ -1334,6 +1334,8 @@ class Inventory extends CI_Controller
         $company_id = $this->session->userdata('company_id');
         $bank_accounts = $this->common_model->getResultById('bank_accounts', 'id, bank_name, account_no', ['is_delete' => '0', 'company_id' => $company_id]);
         $page_data['bank_accounts'] = ($bank_accounts != '') ? $bank_accounts : [];
+        $ledgers = $this->common_model->getResultById('expense_type', 'id, name', ['is_delete' => '0', 'company_id' => $company_id]);
+        $page_data['ledgers'] = ($ledgers != '') ? $ledgers : [];
 
         if ($param1 == 'add') {
             $page_data['navigation'] = 'manual_payment';
@@ -1543,6 +1545,11 @@ class Inventory extends CI_Controller
             'type'       => 'local',
         ]);
         $page_data['supplier_list'] = ($supplier_list != '') ? $supplier_list : [];
+        $expense_types = $this->common_model->getResultById('other_charges', 'id, name', [
+            'is_delete'  => '0',
+            'company_id' => $company_id,
+        ]);
+        $page_data['expense_types'] = ($expense_types != '') ? $expense_types : [];
         $page_data['cash_summary']  = $cash_summary;
         $page_data['cash_in_hand']  = $cash_summary['cash_in_hand'];
         $page_data['official_cash']   = (float)($cash_summary['official']['cash_in_hand'] ?? 0);

@@ -241,6 +241,7 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 (225, 210, 'columns', 'Tot Amt', 'grand_total', 9, 0, '2026-10-17 15:02:00'),
 (226, 210, 'columns', 'Sales Person', 'sales_person', 10, 0, '2026-10-17 15:02:00'),
 (227, 210, 'columns', 'Status', 'status', 11, 0, '2026-10-17 15:02:00'),
+(1017, 210, 'columns', 'Added By', 'added_by', 12, 0, '2026-11-24 16:00:00'),
 (228, 210, 'actions', 'Add', 'inventory/sales-order/add', 1, 0, '2026-10-17 15:02:00'),
 (229, 210, 'actions', 'Add Invoice', 'inventory/sales-invoice/add', 2, 0, '2026-10-17 15:02:00'),
 (230, 210, 'actions', 'View Order', '', 3, 0, '2026-10-17 15:02:00'),
@@ -844,11 +845,15 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 -- =========================================================
 (761, 0, 'module', 'Manual Payment', 'inventory/manual-payment', 28, 0, '2026-10-17 19:07:00'),
 (762, 761, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
-(763, 761, 'columns', 'Amount', 'amount', 2, 0, '2026-10-17 19:07:00'),
-(764, 761, 'columns', 'Mode', 'payment_mode', 3, 0, '2026-10-17 19:07:00'),
-(765, 761, 'columns', 'Type', 'payment_type', 4, 0, '2026-10-17 19:07:00'),
-(766, 761, 'columns', 'Method', 'payment_method', 5, 0, '2026-10-17 19:07:00'),
-(767, 761, 'columns', 'Added By', 'added_by_name', 6, 0, '2026-10-17 19:07:00'),
+(1018, 761, 'columns', 'Customer Name', 'customer_name', 2, 0, '2026-11-24 17:00:00'),
+(763, 761, 'columns', 'Debit Amt', 'debit_amt', 3, 0, '2026-10-17 19:07:00'),
+(1019, 761, 'columns', 'Credit Amt', 'credit_amt', 4, 0, '2026-11-24 17:00:00'),
+(764, 761, 'columns', 'Mode', 'payment_mode', 5, 0, '2026-10-17 19:07:00'),
+(765, 761, 'columns', 'Type', 'payment_type', 6, 0, '2026-10-17 19:07:00'),
+(766, 761, 'columns', 'Method', 'payment_method', 7, 0, '2026-10-17 19:07:00'),
+(1020, 761, 'columns', 'Bank Name & AC No', 'bank_detail', 8, 0, '2026-11-24 17:00:00'),
+(1021, 761, 'columns', 'Narration', 'narration', 9, 0, '2026-11-24 17:00:00'),
+(767, 761, 'columns', 'Added By', 'added_by_name', 10, 0, '2026-10-17 19:07:00'),
 (768, 761, 'actions', 'Add', 'inventory/manual-payment/add', 1, 0, '2026-10-17 19:07:00'),
 (769, 761, 'actions', 'View Payment', '', 2, 0, '2026-10-17 19:07:00'),
 (770, 761, 'actions', 'Edit', 'inventory/manual-payment/edit/[:id]', 3, 0, '2026-10-17 19:07:00'),
@@ -865,13 +870,14 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 
 -- Cash (774)
 (777, 774, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
-(778, 774, 'columns', 'Particular', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
-(779, 774, 'columns', 'Source', 'source', 3, 0, '2026-10-17 19:07:00'),
-(780, 774, 'columns', 'In/Out', 'direction', 4, 0, '2026-10-17 19:07:00'),
-(781, 774, 'columns', 'Type', 'payment_type', 5, 0, '2026-10-17 19:07:00'),
-(782, 774, 'columns', 'Amount', 'amount', 6, 0, '2026-10-17 19:07:00'),
-(783, 774, 'columns', 'Remark / Narration', 'remark', 7, 0, '2026-10-17 19:07:00'),
-(784, 774, 'columns', 'Added By', 'added_by_name', 8, 0, '2026-10-17 19:07:00'),
+(778, 774, 'columns', 'Customer Name', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(782, 774, 'columns', 'Debit Amt', 'debit_amt', 3, 0, '2026-10-17 19:07:00'),
+(1022, 774, 'columns', 'Credit Amt', 'credit_amt', 4, 0, '2026-11-24 18:00:00'),
+(779, 774, 'columns', 'Source', 'source', 5, 0, '2026-10-17 19:07:00'),
+(780, 774, 'columns', 'In/Out', 'direction', 6, 0, '2026-10-17 19:07:00'),
+(781, 774, 'columns', 'Type', 'payment_type', 7, 0, '2026-10-17 19:07:00'),
+(783, 774, 'columns', 'Narration', 'remark', 8, 0, '2026-10-17 19:07:00'),
+(784, 774, 'columns', 'Added By', 'added_by_name', 9, 0, '2026-10-17 19:07:00'),
 (785, 774, 'actions', 'Add Expense', 'inventory/cash-book/add', 1, 0, '2026-10-17 19:07:00'),
 (786, 774, 'actions', 'Transfer', '', 2, 0, '2026-10-17 19:07:00'),
 (787, 774, 'actions', 'Edit', 'inventory/cash-book/edit/[:id]', 3, 0, '2026-10-17 19:07:00'),
@@ -912,14 +918,16 @@ INSERT INTO `access_manager` (`id`, `parent_id`, `type`, `name`, `structure`, `s
 
 -- Bank (811)
 (814, 811, 'columns', 'Date', 'date', 1, 0, '2026-10-17 19:07:00'),
-(815, 811, 'columns', 'Particular', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
-(816, 811, 'columns', 'Source', 'source', 3, 0, '2026-10-17 19:07:00'),
-(817, 811, 'columns', 'In/Out', 'direction', 4, 0, '2026-10-17 19:07:00'),
-(818, 811, 'columns', 'Type', 'payment_type', 5, 0, '2026-10-17 19:07:00'),
-(819, 811, 'columns', 'Bank Account', 'bank_account', 6, 0, '2026-10-17 19:07:00'),
-(820, 811, 'columns', 'Amount', 'amount', 7, 0, '2026-10-17 19:07:00'),
-(821, 811, 'columns', 'Remark / Narration', 'remark', 8, 0, '2026-10-17 19:07:00'),
-(822, 811, 'columns', 'Added By', 'added_by_name', 9, 0, '2026-10-17 19:07:00'),
+(815, 811, 'columns', 'Customer Name', 'supplier_name', 2, 0, '2026-10-17 19:07:00'),
+(820, 811, 'columns', 'Debit Amt', 'debit_amt', 3, 0, '2026-10-17 19:07:00'),
+(1023, 811, 'columns', 'Credit Amt', 'credit_amt', 4, 0, '2026-11-24 19:00:00'),
+(816, 811, 'columns', 'Source', 'source', 5, 0, '2026-10-17 19:07:00'),
+(817, 811, 'columns', 'In/Out', 'direction', 6, 0, '2026-10-17 19:07:00'),
+(818, 811, 'columns', 'Type', 'payment_type', 7, 0, '2026-10-17 19:07:00'),
+(819, 811, 'columns', 'Bank Name', 'bank_name', 8, 0, '2026-10-17 19:07:00'),
+(1024, 811, 'columns', 'AC No', 'account_no', 9, 0, '2026-11-24 19:00:00'),
+(821, 811, 'columns', 'Narration', 'remark', 10, 0, '2026-10-17 19:07:00'),
+(822, 811, 'columns', 'Added By', 'added_by_name', 11, 0, '2026-10-17 19:07:00'),
 (823, 811, 'actions', 'Transfer', '', 1, 0, '2026-10-17 19:07:00'),
 (824, 811, 'actions', 'Excel / PDF Export', '', 2, 0, '2026-10-17 19:07:00'),
 
@@ -1182,7 +1190,7 @@ ALTER TABLE `access_manager`
 -- AUTO_INCREMENT for table `access_manager`
 --
 ALTER TABLE `access_manager`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1017;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1025;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
